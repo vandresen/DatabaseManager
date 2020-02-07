@@ -1,0 +1,22 @@
+﻿@page "/ppdmtoppdm"
+@using DatabaseManager.Shared
+@inject HttpClient Http
+
+<h1>PPDM to PPDM Data Transfer</h1>
+
+<p>
+    <button @onclick="@StartDatabaseTransfer">Start transfer</button>
+</p>
+
+@code {
+    private void StartDatabaseTransfer()
+    {
+        TransferParameters transferParameters = new TransferParameters();
+        Console.WriteLine("Start database transfer");
+        
+        foreach (string tableName in DatabaseTables.Names)
+        {
+            Console.WriteLine($"Deleting from {tableName}");
+        }
+    }
+}
