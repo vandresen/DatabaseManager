@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DatabaseManager.Server.Helpers;
+using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,18 +14,29 @@ namespace DatabaseManager.Server.Controllers
     public class DeleteController : ControllerBase
     {
         [HttpPost]
-        public string Delete()
+        public ActionResult Delete(TransferParameters transferParameters)
         {
-            string message = "Good ";
-            //if (student == null)
-            //{
-            //    return NotFound();
-            //}
+            DbUtilities dbConn = new DbUtilities();
+            ConnectParameters destination = new ConnectParameters();
+            destination.Database = transferParameters.TargetDatabase;
+            destination.DatabaseServer = transferParameters.TargetDatabaseServer;
+            destination.DatabaseUser = transferParameters.TargetDatabaseUser;
+            destination.DatabasePassword = transferParameters.TargetDatabasePassword;
+            string table = transferParameters.Table;
+            try
+            {
+                dbConn.OpenConnection(destination);
+                if (String.IsNullOrEmpty(table)) return BadRequest();
+                dbConn.DBDelete(table);
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
 
-            //_context.Students.Remove(student);
-            //await _context.SaveChangesAsync();
-
-            return message;
+            string message = $"{table} has been cleared";
+            dbConn.CloseConnection();
+            return Ok(message);
         }
     }
 }
