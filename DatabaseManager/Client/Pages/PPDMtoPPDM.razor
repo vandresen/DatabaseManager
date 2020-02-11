@@ -1,5 +1,7 @@
 ﻿@page "/ppdmtoppdm"
 @using DatabaseManager.Shared
+@using System.Text
+@using System.Text.Json
 @inject HttpClient Http
 
 <h1>PPDM to PPDM Data Transfer</h1>
@@ -8,15 +10,46 @@
     <button @onclick="@StartDatabaseTransfer">Start transfer</button>
 </p>
 
+<p>Current status: @statusMessage</p>
+
 @code {
-    private void StartDatabaseTransfer()
+    private string statusMessage = "Not started";
+    private string jsonString = "";
+    private StringContent content;
+    private HttpClient client = new HttpClient();
+    private TransferParameters transferParameters { get; set; } = new TransferParameters() 
+    { 
+        TargetDatabase = "PPDM_TEST1",
+        TargetDatabaseServer = "DESKTOP-PAGHL5S",
+        TargetDatabasePassword = "",
+        TargetDatabaseUser = ""
+    };
+
+    protected async Task StartDatabaseTransfer()
     {
-        TransferParameters transferParameters = new TransferParameters();
-        Console.WriteLine("Start database transfer");
-        
+        client.Timeout = TimeSpan.FromMinutes(10);
         foreach (string tableName in DatabaseTables.Names)
         {
-            Console.WriteLine($"Deleting from {tableName}");
+            transferParameters.Table = tableName;
+            jsonString = JsonSerializer.Serialize(transferParameters);
+            content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+            statusMessage = $"Deleting from {tableName}";
+            StateHasChanged();
+            HttpResponseMessage response = await client.PostAsync("https://localhost:44386/api/Delete", content);
+            if (response.IsSuccessStatusCode)
+            {
+                using (HttpContent respContent = response.Content)
+                {
+                    string tr = respContent.ReadAsStringAsync().Result;
+                    statusMessage = $"Deleting from {tableName} completed";
+                    StateHasChanged();
+                }
+            }
+            else
+            {
+                statusMessage = $"Deleting from {tableName} was not successful";
+                break;
+            }
         }
     }
 }

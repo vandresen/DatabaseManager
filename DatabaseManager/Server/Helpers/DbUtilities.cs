@@ -43,9 +43,8 @@ namespace DatabaseManager.Server.Helpers
                 }
                 catch (SqlException ex)
                 {
-                    Exception error = new Exception($"Sorry! Error deleting from table {table}: ", ex);
+                    Exception error = new Exception($"Sorry! Error deleting from table {table}: {ex}");
                     throw error;
-
                 }
             }
         }
