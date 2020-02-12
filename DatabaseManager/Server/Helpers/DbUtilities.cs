@@ -49,7 +49,7 @@ namespace DatabaseManager.Server.Helpers
             }
         }
 
-        private string GetConnectionString(ConnectParameters connection)
+        public static string GetConnectionString(ConnectParameters connection)
         {
             string source = $"Source={connection.DatabaseServer};";
             string database = $"Initial Catalog ={connection.Database};";
