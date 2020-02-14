@@ -1,32 +1,27 @@
 ﻿@page "/ppdmtoppdm"
-@using DatabaseManager.Shared
 @using System.Text
-@using System.Text.Json
+@*@using System.Text.Json*@
 @inject HttpClient Http
 
 <h1>PPDM to PPDM Data Transfer</h1>
 
-<p>
-    <button @onclick="@StartDatabaseTransfer">Start transfer</button>
-</p>
+<TransferParametersForm TransferParameters="transferParameters" OnValidSubmit="StartDatabaseTransfer" />
 
-<p>Current status: @statusMessage</p>
+<div>
+    <p>Current status: @statusMessage</p>
+</div>
+
 
 @code {
     private string statusMessage = "Not started";
     private string jsonString = "";
     private StringContent content;
     private HttpClient client = new HttpClient();
-    private TransferParameters transferParameters { get; set; } = new TransferParameters() 
-    { 
-        TargetDatabase = "PPDM_TEST1",
-        TargetDatabaseServer = "DESKTOP-PAGHL5S",
-        TargetDatabasePassword = "",
-        TargetDatabaseUser = ""
-    };
+    private TransferParameters transferParameters { get; set; } = new TransferParameters();
 
     protected async Task StartDatabaseTransfer()
     {
+        Console.WriteLine($"Database is {transferParameters.TargetDatabase}");
         client.Timeout = TimeSpan.FromMinutes(10);
         foreach (string tableName in DatabaseTables.Names)
         {
@@ -48,8 +43,35 @@
             else
             {
                 statusMessage = $"Deleting from {tableName} was not successful";
-                break;
+                return;
             }
         }
+
+        foreach (string tableName in CopyTables.Names)
+        {
+            transferParameters.Table = tableName;
+            jsonString = JsonSerializer.Serialize(transferParameters);
+            content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+            statusMessage = $"Copying table {tableName}";
+            StateHasChanged();
+            HttpResponseMessage response = await client.PostAsync("https://localhost:44386/api/Copy", content);
+            if (response.IsSuccessStatusCode)
+            {
+                using (HttpContent respContent = response.Content)
+                {
+                    string tr = respContent.ReadAsStringAsync().Result;
+                    statusMessage = $"Copying {tableName} completed";
+                    StateHasChanged();
+                }
+            }
+            else
+            {
+                statusMessage = $"Copying {tableName} was not successful";
+                return;
+            }
+        }
+
+        statusMessage = $"Transfer Complete";
+        StateHasChanged();
     }
 }

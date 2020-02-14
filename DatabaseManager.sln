@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29519.181
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.Server", "DatabaseManager\Server\DatabaseManager.Server.csproj", "{FA78B9E1-74B5-41B2-9C1E-8BFA249503BB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Server", "DatabaseManager\Server\DatabaseManager.Server.csproj", "{FA78B9E1-74B5-41B2-9C1E-8BFA249503BB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.Client", "DatabaseManager\Client\DatabaseManager.Client.csproj", "{4318C3EF-6424-497A-94F5-BE97C511E893}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Client", "DatabaseManager\Client\DatabaseManager.Client.csproj", "{4318C3EF-6424-497A-94F5-BE97C511E893}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.Shared", "DatabaseManager\Shared\DatabaseManager.Shared.csproj", "{386E0182-3078-467C-AD1D-B2799953D6D7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Shared", "DatabaseManager\Shared\DatabaseManager.Shared.csproj", "{386E0182-3078-467C-AD1D-B2799953D6D7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
