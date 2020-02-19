@@ -1,7 +1,5 @@
 ﻿@page "/ppdmtoppdm"
-@using System.Text
-@*@using System.Text.Json*@
-@inject HttpClient Http
+@inject IDatabaseTransfer databaseTransfer
 
 <h1>PPDM to PPDM Data Transfer</h1>
 
@@ -15,34 +13,21 @@
 @code {
     private string statusMessage = "Not started";
     private string jsonString = "";
-    private StringContent content;
-    private HttpClient client = new HttpClient();
-    private TransferParameters transferParameters { get; set; } = new TransferParameters();
+    TransferParameters transferParameters = new TransferParameters();
 
     protected async Task StartDatabaseTransfer()
     {
-        Console.WriteLine($"Database is {transferParameters.TargetDatabase}");
-        client.Timeout = TimeSpan.FromMinutes(10);
         foreach (string tableName in DatabaseTables.Names)
         {
             transferParameters.Table = tableName;
-            jsonString = JsonSerializer.Serialize(transferParameters);
-            content = new StringContent(jsonString, Encoding.UTF8, "application/json");
-            statusMessage = $"Deleting from {tableName}";
-            StateHasChanged();
-            HttpResponseMessage response = await client.PostAsync("https://localhost:44386/api/Delete", content);
-            if (response.IsSuccessStatusCode)
+            progress($"Deleting from {tableName}");
+            try
             {
-                using (HttpContent respContent = response.Content)
-                {
-                    string tr = respContent.ReadAsStringAsync().Result;
-                    statusMessage = $"Deleting from {tableName} completed";
-                    StateHasChanged();
-                }
+                await databaseTransfer.Delete(transferParameters);
             }
-            else
+            catch (Exception ex)
             {
-                statusMessage = $"Deleting from {tableName} was not successful";
+                progress($"Error Deleting from {tableName}: {ex.Message}");
                 return;
             }
         }
@@ -50,28 +35,24 @@
         foreach (string tableName in CopyTables.Names)
         {
             transferParameters.Table = tableName;
-            jsonString = JsonSerializer.Serialize(transferParameters);
-            content = new StringContent(jsonString, Encoding.UTF8, "application/json");
-            statusMessage = $"Copying table {tableName}";
-            StateHasChanged();
-            HttpResponseMessage response = await client.PostAsync("https://localhost:44386/api/Copy", content);
-            if (response.IsSuccessStatusCode)
+            progress($"Copying table {tableName}");
+            try
             {
-                using (HttpContent respContent = response.Content)
-                {
-                    string tr = respContent.ReadAsStringAsync().Result;
-                    statusMessage = $"Copying {tableName} completed";
-                    StateHasChanged();
-                }
+                await databaseTransfer.Copy(transferParameters);
             }
-            else
+            catch (Exception ex)
             {
-                statusMessage = $"Copying {tableName} was not successful";
+                progress($"Error copying from {tableName}: {ex.Message}");
                 return;
             }
         }
 
-        statusMessage = $"Transfer Complete";
+        progress($"Transfer Complete");
+    }
+
+    private void progress(string message)
+    {
+        statusMessage = message;
         StateHasChanged();
     }
 }

@@ -13,6 +13,7 @@ namespace DatabaseManager.Server.Controllers
     [ApiController]
     public class DeleteController : ControllerBase
     {
+        
         [HttpPost]
         public ActionResult Delete(TransferParameters transferParameters)
         {
