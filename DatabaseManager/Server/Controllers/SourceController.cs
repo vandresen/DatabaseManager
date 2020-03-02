@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DatabaseManager.Server.Entities;
+using DatabaseManager.Server.Helpers;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Extensions.Configuration;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -18,10 +18,33 @@ namespace DatabaseManager.Server.Controllers
     {
         private readonly string connectionString;
         private readonly string container = "sources";
-
+         
         public SourceController(IConfiguration configuration)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
+        }
+
+        public async Task<ActionResult<List<ConnectParameters>>> Get()
+        {
+            List<ConnectParameters> connectors = new List<ConnectParameters>();
+            CloudTable table = Common.GetTableConnect(connectionString, container);
+
+            TableQuery<SourceEntity> tableQuery = new TableQuery<SourceEntity>().
+                Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, "PPDM"));
+            foreach (SourceEntity entity in table.ExecuteQuery(tableQuery))
+            {
+                connectors.Add(new ConnectParameters()
+                {
+                    SourceName = entity.RowKey,
+                    Database = entity.DatabaseName,
+                    DatabaseServer = entity.DatabaseServer,
+                    DatabasePassword = entity.Password,
+                    ConnectionString = entity.ConnectionString,
+                    DatabaseUser = entity.User
+                });
+            }
+
+            return connectors;
         }
 
         [HttpPost]
@@ -29,9 +52,7 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-                CloudTableClient client = account.CreateCloudTableClient();
-                CloudTable table = client.GetTableReference(container);
+                CloudTable table = Common.GetTableConnect(connectionString, container);
                 await table.CreateIfNotExistsAsync();
 
                 string name = connectParameters.SourceName;
