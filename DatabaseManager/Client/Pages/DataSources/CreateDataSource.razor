@@ -1,0 +1,28 @@
+﻿@page "/datasources/create"
+@inject IDataSources dataSources
+@inject NavigationManager navigationManager
+
+<h3>Create Data Connector</h3>
+
+<DataSourceForm ConnectParameters="connectParameters" OnValidSubmit="Create" />
+
+@code {
+    private ConnectParameters connectParameters = new ConnectParameters();
+
+    private async Task Create()
+    {
+        string connectStr = Common.GetConnectionString(connectParameters);
+        connectParameters.ConnectionString = connectStr;
+        Console.WriteLine("Create connector");
+        Console.WriteLine(connectStr);
+        try
+        {
+            await dataSources.CreateSource(connectParameters);
+            navigationManager.NavigateTo("datasources");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}

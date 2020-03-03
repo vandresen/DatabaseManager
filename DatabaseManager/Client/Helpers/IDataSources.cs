@@ -8,6 +8,7 @@ namespace DatabaseManager.Client.Helpers
 {
     public interface IDataSources
     {
+        Task CreateSource(ConnectParameters connectParameters);
         Task<List<ConnectParameters>> GetSources();
     }
 }
