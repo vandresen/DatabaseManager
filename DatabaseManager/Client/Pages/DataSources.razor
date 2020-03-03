@@ -1,6 +1,54 @@
 ﻿@page "/datasources"
-<h3>Data Sources</h3>
+@inject IDataSources dataSources
+
+<h3>Data Connectors</h3>
+
+
+<GenericList List="ConnectParameters">
+    <WholeListTemplate>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Name</th>
+                    <th>Database Name</th>
+                    <th>Database Server</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in ConnectParameters)
+                {
+                    <tr>
+                        <td>
+                            <a class="btn btn-success">Edit</a>
+                            <button class="btn btn-danger">Delete</button>
+                        </td>
+                        <td>@item.SourceName</td>
+                        <td>@item.Database</td>
+                        <td>@item.DatabaseServer</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </WholeListTemplate>
+</GenericList>
 
 @code {
+    List<ConnectParameters> ConnectParameters;
 
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            ConnectParameters = await dataSources.GetSources();
+            foreach (ConnectParameters conn in ConnectParameters)
+            {
+                Console.WriteLine($"{conn.Database}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
 }

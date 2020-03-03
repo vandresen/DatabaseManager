@@ -1,0 +1,29 @@
+﻿using DatabaseManager.Shared;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace DatabaseManager.Client.Helpers
+{
+    public class DataSources : IDataSources
+    {
+        private readonly IHttpService httpService;
+        private string url = "api/source";
+
+        public DataSources(IHttpService httpService)
+        {
+            this.httpService = httpService;
+        }
+
+        public async Task<List<ConnectParameters>> GetSources()
+        {
+            var response = await httpService.Get<List<ConnectParameters>>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+    }
+}
