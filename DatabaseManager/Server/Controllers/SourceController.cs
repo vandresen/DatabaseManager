@@ -24,32 +24,94 @@ namespace DatabaseManager.Server.Controllers
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
         }
 
+        [HttpGet]
         public async Task<ActionResult<List<ConnectParameters>>> Get()
         {
             List<ConnectParameters> connectors = new List<ConnectParameters>();
-            CloudTable table = Common.GetTableConnect(connectionString, container);
-
-            TableQuery<SourceEntity> tableQuery = new TableQuery<SourceEntity>().
-                Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, "PPDM"));
-            foreach (SourceEntity entity in table.ExecuteQuery(tableQuery))
+            try
             {
-                connectors.Add(new ConnectParameters()
+                CloudTable table = Common.GetTableConnect(connectionString, container);
+                TableQuery<SourceEntity> tableQuery = new TableQuery<SourceEntity>().
+                    Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, "PPDM"));
+                foreach (SourceEntity entity in table.ExecuteQuery(tableQuery))
                 {
-                    SourceName = entity.RowKey,
-                    Database = entity.DatabaseName,
-                    DatabaseServer = entity.DatabaseServer,
-                    DatabasePassword = entity.Password,
-                    ConnectionString = entity.ConnectionString,
-                    DatabaseUser = entity.User
-                });
+                    connectors.Add(new ConnectParameters()
+                    {
+                        SourceName = entity.RowKey,
+                        Database = entity.DatabaseName,
+                        DatabaseServer = entity.DatabaseServer,
+                        DatabasePassword = entity.Password,
+                        ConnectionString = entity.ConnectionString,
+                        DatabaseUser = entity.User
+                    });
+                }
+            }
+            catch (Exception)
+            {
+                return NotFound();
+            }
+            
+            return connectors;
+        }
+
+        [HttpGet("{name}")]
+        public async Task<ActionResult<ConnectParameters>> Get(string name)
+        {
+            ConnectParameters connector = new ConnectParameters();
+            try
+            {
+                CloudTable table = Common.GetTableConnect(connectionString, container);
+                TableOperation retrieveOperation = TableOperation.Retrieve<SourceEntity>("PPDM", name);
+                TableResult result = await table.ExecuteAsync(retrieveOperation);
+                SourceEntity entity = result.Result as SourceEntity;
+                if (entity == null) { return NotFound(); }
+                connector.SourceName = name;
+                connector.Database = entity.DatabaseName;
+                connector.DatabaseServer = entity.DatabaseServer;
+                connector.DatabaseUser = entity.User;
+                connector.DatabasePassword = entity.Password;
+                connector.ConnectionString = entity.ConnectionString;
+            }
+            catch (Exception)
+            {
+                return NotFound();
+            }
+            
+            return connector;
+        }
+
+        [HttpPut]
+        public async Task<ActionResult<string>> UpdateSource(ConnectParameters connectParameters)
+        {
+            if (connectParameters == null) return BadRequest();
+            try
+            {
+                CloudTable table = Common.GetTableConnect(connectionString, container);
+                string name = connectParameters.SourceName;
+                if (String.IsNullOrEmpty(name)) return BadRequest();
+                SourceEntity sourceEntity = new SourceEntity(name)
+                {
+                    DatabaseName = connectParameters.Database,
+                    DatabaseServer = connectParameters.DatabaseServer,
+                    User = connectParameters.DatabaseUser,
+                    Password = connectParameters.DatabasePassword,
+                    ConnectionString = connectParameters.ConnectionString
+                };
+                TableOperation insertOrMergeOperation = TableOperation.InsertOrMerge(sourceEntity);
+                TableResult result = await table.ExecuteAsync(insertOrMergeOperation);
+            }
+            catch (Exception)
+            {
+                return BadRequest();
             }
 
-            return connectors;
+            return Ok($"OK");
         }
 
         [HttpPost]
         public async Task<ActionResult<string>> SaveSource(ConnectParameters connectParameters)
         {
+            if (connectParameters == null) return BadRequest();
             try
             {
                 CloudTable table = Common.GetTableConnect(connectionString, container);
