@@ -1,6 +1,28 @@
-﻿@page "/datasources/edit"
-<h3>EditDataSource</h3>
+﻿@page "/datasources/edit/{SourceName}"
+@inject IDataSources dataSources
+@inject NavigationManager navigationManager
+
+<h3>Edit Data Source</h3>
+
+@if (connectParameters != null)
+{
+    <DataSourceForm ConnectParameters="connectParameters" OnValidSubmit="Edit" ReadOnlySourceName="true"/>
+}
 
 @code {
+    [Parameter] public string SourceName { get; set; }
+    public ConnectParameters connectParameters;
 
+    protected override async Task OnInitializedAsync()
+    {
+        connectParameters = await dataSources.GetSource(SourceName);
+
+    }
+
+    private void Edit()
+    {
+        Console.WriteLine("Edit");
+        dataSources.UpdateSource(connectParameters);
+        navigationManager.NavigateTo("datasources");
+    }
 }

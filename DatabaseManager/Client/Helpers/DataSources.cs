@@ -26,9 +26,28 @@ namespace DatabaseManager.Client.Helpers
             return response.Response;
         }
 
+        public async Task<ConnectParameters> GetSource(string Name)
+        {
+            var response = await httpService.Get<ConnectParameters>($"{url}/{Name}");
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
         public async Task CreateSource(ConnectParameters connectParameters)
         {
             var response = await httpService.Post(url, connectParameters);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
+
+        public async Task UpdateSource(ConnectParameters connectParameters)
+        {
+            var response = await httpService.Put(url, connectParameters);
             if (!response.Success)
             {
                 throw new ApplicationException(await response.GetBody());
