@@ -1,6 +1,55 @@
 ﻿@page "/"
+@inject IDataSources dataSources
+@inject SingletonServices singleton
 
-    <div class="jumbotron">
-        <h1>Welcome to Database Manager tool</h1>
-        <p class="lead">The tool to transfer data from your data ware house to the PetrodataOnline project store</p>
+<div class="jumbotron">
+    <h1>Welcome to Database Manager tool</h1>
+    <p class="lead">The tool to transfer data from your data ware house to the PetrodataOnline project store</p>
+</div>
+
+@if (options == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <div class="form-group">
+        <label for="targetlist">Database Target:</label>
+        <select class="form-control" id="targetlist" @onchange="Selected">
+            <option selected hidden>Choose Connector</option>
+            @foreach (var option in options)
+            {
+                <option>@option</option>
+            }
+        </select>
     </div>
+}
+
+@code {
+    private List<string> options { get; set; } = new List<string>();
+    List<ConnectParameters> ConnectParameters;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            ConnectParameters = await dataSources.GetSources();
+            Console.WriteLine(ConnectParameters.Count());
+            foreach (ConnectParameters conn in ConnectParameters)
+            {
+                Console.WriteLine(conn.Database);
+                options.Add(conn.Database);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private void Selected(ChangeEventArgs e)
+    {
+        string selectedString = e.Value.ToString();
+        singleton.TargetConnector = selectedString;
+    }
+}

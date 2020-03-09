@@ -8,6 +8,7 @@ namespace DatabaseManager.Client
     {
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<SingletonServices>();
             services.AddScoped<IHttpService, HttpService>();
             services.AddScoped<IDatabaseTransfer, DatabaseTransfer>();
             services.AddScoped<IDataSources, DataSources>();
