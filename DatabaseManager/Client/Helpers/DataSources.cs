@@ -53,5 +53,14 @@ namespace DatabaseManager.Client.Helpers
                 throw new ApplicationException(await response.GetBody());
             }
         }
+
+        public async Task DeleteSource(string Name)
+        {
+            var response = await httpService.Delete($"{url}/{Name}");
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
     }
 }

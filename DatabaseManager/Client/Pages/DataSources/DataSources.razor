@@ -25,7 +25,7 @@
                     <tr>
                         <td>
                             <a class="btn btn-success" href="/datasources/edit/@item.SourceName">Edit</a>
-                            <button class="btn btn-danger">Delete</button>
+                            <button class="btn btn-danger" @onclick="@(() => DeleteSources(item.SourceName))">Delete</button>
                         </td>
                         <td>@item.SourceName</td>
                         <td>@item.Database</td>
@@ -45,14 +45,20 @@
         try
         {
             ConnectParameters = await dataSources.GetSources();
-            foreach (ConnectParameters conn in ConnectParameters)
-            {
-                Console.WriteLine($"{conn.Database}");
-            }
+            //foreach (ConnectParameters conn in ConnectParameters)
+            //{
+            //    Console.WriteLine($"{conn.Database}");
+            //}
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Errors: {ex}");
         }
+    }
+
+    private async Task DeleteSources(string Name)
+    {
+        await dataSources.DeleteSource(Name);
+        ConnectParameters = await dataSources.GetSources();
     }
 }
