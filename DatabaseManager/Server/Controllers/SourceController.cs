@@ -137,5 +137,30 @@ namespace DatabaseManager.Server.Controllers
             
             return Ok($"OK");
         }
+
+        [HttpDelete("{name}")]
+        public async Task<ActionResult> Delete(string name)
+        {
+            try
+            {
+                CloudTable table = Common.GetTableConnect(connectionString, container);
+                TableOperation retrieveOperation = TableOperation.Retrieve<SourceEntity>("PPDM", name);
+                TableResult result = await table.ExecuteAsync(retrieveOperation);
+                SourceEntity entity = result.Result as SourceEntity;
+                if (entity == null)
+                {
+                    return BadRequest();
+                }
+
+                TableOperation deleteOperation = TableOperation.Delete(entity);
+                result = await table.ExecuteAsync(deleteOperation);
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+            
+            return NoContent();
+        }
     }
 }
