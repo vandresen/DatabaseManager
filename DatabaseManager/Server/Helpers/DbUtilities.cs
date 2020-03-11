@@ -30,6 +30,24 @@ namespace DatabaseManager.Server.Helpers
             sqlCn.Close();
         }
 
+        public void SQLExecute(string sql)
+        {
+            using (SqlCommand cmd = new SqlCommand(sql, this.sqlCn))
+            {
+                try
+                {
+                    cmd.CommandTimeout = _sqlTimeOut;
+                    cmd.ExecuteNonQuery();
+                }
+                catch (SqlException ex)
+                {
+                    Exception error = new Exception("SQLExecute: Error executing SQL: ", ex);
+                    throw error;
+                }
+
+            }
+        }
+
         public void DBDelete(string table, string query = "")
         {
             int rows;
