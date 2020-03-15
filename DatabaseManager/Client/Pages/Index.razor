@@ -37,8 +37,7 @@ else
             Console.WriteLine(ConnectParameters.Count());
             foreach (ConnectParameters conn in ConnectParameters)
             {
-                Console.WriteLine(conn.Database);
-                options.Add(conn.Database);
+                options.Add(conn.SourceName);
             }
         }
         catch (Exception ex)

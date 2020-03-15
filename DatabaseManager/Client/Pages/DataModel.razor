@@ -1,10 +1,57 @@
 ﻿@page "/datamodel"
 @inject SingletonServices singleton
+@inject IDataModelCreate dataModelCreate
+@inject IDatabaseTransfer databaseTransfer
 
 <h3>Data Model</h3>
 
-<p>Target: @singleton.TargetConnector</p>
+<p>Target Database: @singleton.TargetConnector</p>
+
+<div>
+    <button class="btn btn-primary" @onclick="CreateDataModel">Create Data Model</button>
+</div>
+
+<div style="margin-top:20px">
+    <ProgressBar ValueNow="barValue" Label="@barLabel" />
+</div>
+
+<div style="margin-top:20px">
+    <p>Current status: @statusMessage</p>
+</div>
 
 @code {
+    private string statusMessage = "Not started";
+    public int barValue = 0;
+    public string barLabel = "0%";
+    DataModelParameters dmParameters = new DataModelParameters();
 
+    protected async Task CreateDataModel()
+    {
+        dmParameters.DataConnector = singleton.TargetConnector;
+        dmParameters.FileShare = "ppdm39";
+        int interval = 100/(DataModelSqlFiles.Names.Count());
+        foreach (string sqlFile in DataModelSqlFiles.Names)
+        {
+            dmParameters.FileName = sqlFile;
+            progress($"Executing {sqlFile}");
+            try
+            {
+                await dataModelCreate.Create(dmParameters);
+            }
+            catch (Exception ex)
+            {
+                progress($"Error creating data model: {ex.Message}");
+            }
+            barValue = barValue + interval;
+            barLabel = $"{barValue}%";
+        }
+
+        progress($"Model creation complete");
+    }
+
+    private void progress(string message)
+    {
+        statusMessage = message;
+        StateHasChanged();
+    }
 }

@@ -8,7 +8,7 @@ namespace DatabaseManager.Shared
     {
         public static readonly IList<string> Names = new string[]
         {
-            "WELL","" +
+            "WELL",
             "BUSINESS_ASSOCIATE",
             "FIELD",
             "R_WELL_DATUM_TYPE",

@@ -12,6 +12,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IHttpService, HttpService>();
             services.AddScoped<IDatabaseTransfer, DatabaseTransfer>();
             services.AddScoped<IDataSources, DataSources>();
+            services.AddScoped<IDataModelCreate, DataModelCreate>();
         }
 
         public void Configure(IComponentsApplicationBuilder app)
