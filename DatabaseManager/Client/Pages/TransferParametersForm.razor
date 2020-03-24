@@ -1,73 +1,63 @@
-﻿<EditForm Model="TransferParameters" OnValidSubmit="OnValidSubmit">
-    <DataAnnotationsValidator />
-    <div>
-        <h3>Target Database</h3>
-    </div>
-    <div class="form-group">
-        <label>Name:</label>
-        <div>
-            <InputText class="form-control" @bind-Value="@TransferParameters.TargetDatabase" />
-            <ValidationMessage For="@(() => TransferParameters.TargetDatabase)" />
-        </div>
-    </div>
-    <div class="form-group">
-        <label>Server:</label>
-        <div>
-            <InputText class="form-control" @bind-Value="@TransferParameters.TargetDatabaseServer" />
-            <ValidationMessage For="@(() => TransferParameters.TargetDatabaseServer)" />
-        </div>
-    </div>
-    <div class="form-group">
-        <label>User:</label>
-        <div>
-            <InputText class="form-control" @bind-Value="@TransferParameters.TargetDatabaseUser" />
-            <ValidationMessage For="@(() => TransferParameters.TargetDatabaseUser)" />
-        </div>
-    </div>
-    <div class="form-group">
-        <label>Password:</label>
-        <div>
-            <InputText type ="password" class="form-control" @bind-Value="@TransferParameters.TargetDatabasePassword" />
-            <ValidationMessage For="@(() => TransferParameters.TargetDatabasePassword)" />
-        </div>
-    </div>
+﻿@inject SingletonServices singleton
+@inject IDataSources dataSources
 
-    <div>
-        <h3>Source Database</h3>
-    </div>
-    <div class="form-group">
-        <label>Name:</label>
+    <EditForm Model="TransferParameters" OnValidSubmit="OnValidSubmit">
         <div>
-            <InputText class="form-control" @bind-Value="@TransferParameters.SourceDatabase" />
-            <ValidationMessage For="@(() => TransferParameters.SourceDatabase)" />
+            <h3>Target Database</h3>
         </div>
-    </div>
-    <div class="form-group">
-        <label>Server:</label>
-        <div>
-            <InputText class="form-control" @bind-Value="@TransferParameters.SourceDatabaseServer" />
-            <ValidationMessage For="@(() => TransferParameters.SourceDatabaseServer)" />
-        </div>
-    </div>
-    <div class="form-group">
-        <label>User:</label>
-        <div>
-            <InputText class="form-control" @bind-Value="@TransferParameters.SourceDatabaseUser" />
-            <ValidationMessage For="@(() => TransferParameters.SourceDatabaseUser)" />
-        </div>
-    </div>
-    <div class="form-group">
-        <label>Password:</label>
-        <div>
-            <InputText type ="password" class="form-control" @bind-Value="@TransferParameters.SourceDatabasePassword" />
-            <ValidationMessage For="@(() => TransferParameters.SourceDatabasePassword)" />
-        </div>
-    </div>
+        <p>Target Database: @singleton.TargetConnector</p>
 
-    <button class="btn btn-success" type="submit">Start Transfer</button>
-</EditForm>
+        <div>
+            <h3>Source Database</h3>
+        </div>
+
+        @if (options == null)
+        {
+            <text>Loading...</text>
+        }
+        else
+        {
+            <div class="form-group">
+                <label for="targetlist">Database Target:</label>
+                <select class="form-control" id="targetlist" @onchange="Selected">
+                    <option selected hidden>Choose Connector</option>
+                    @foreach (var option in options)
+                    {
+                        <option>@option</option>
+                    }
+                </select>
+            </div>
+        }
+
+        <button class="btn btn-success" type="submit">Start Transfer</button>
+    </EditForm>
 
 @code {
     [Parameter] public TransferParameters TransferParameters { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
+    private List<string> options { get; set; } = new List<string>();
+    List<ConnectParameters> ConnectParameters;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            ConnectParameters = await dataSources.GetSources();
+            Console.WriteLine(ConnectParameters.Count());
+            foreach (ConnectParameters conn in ConnectParameters)
+            {
+                options.Add(conn.SourceName);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private void Selected(ChangeEventArgs e)
+    {
+        string selectedString = e.Value.ToString();
+        TransferParameters.SourceName = selectedString;
+    }
 }

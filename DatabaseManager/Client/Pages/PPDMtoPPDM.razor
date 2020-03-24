@@ -1,5 +1,6 @@
 ﻿@page "/ppdmtoppdm"
 @inject IDatabaseTransfer databaseTransfer
+@inject SingletonServices singleton
 
 <h1>PPDM to PPDM Data Transfer</h1>
 
@@ -17,10 +18,12 @@
 
     protected async Task StartDatabaseTransfer()
     {
+        Console.WriteLine("Start database transfer");
         foreach (string tableName in DatabaseTables.Names)
         {
             transferParameters.Table = tableName;
-            progress($"Deleting from {tableName}");
+            transferParameters.TargetName = singleton.TargetConnector;
+            progress($"Deleting from {tableName}"); 
             try
             {
                 await databaseTransfer.Delete(transferParameters);

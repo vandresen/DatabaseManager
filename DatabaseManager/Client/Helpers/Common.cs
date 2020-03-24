@@ -12,7 +12,7 @@ namespace DatabaseManager.Client.Helpers
         {
             string source = $"Source={connection.DatabaseServer};";
             string database = $"Initial Catalog ={connection.Database};";
-            string timeout = "Connection Timeout=180";
+            string timeout = "Connection Timeout=120";
             string persistSecurity = "Persist Security Info=False;";
             string multipleActive = "MultipleActiveResultSets=True;";
             string integratedSecurity = "";

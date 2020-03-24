@@ -21,7 +21,8 @@
 
     private void Edit()
     {
-        Console.WriteLine("Edit");
+        string connectStr = Common.GetConnectionString(connectParameters);
+        connectParameters.ConnectionString = connectStr;
         dataSources.UpdateSource(connectParameters);
         navigationManager.NavigateTo("datasources");
     }

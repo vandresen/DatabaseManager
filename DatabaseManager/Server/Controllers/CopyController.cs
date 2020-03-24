@@ -7,6 +7,7 @@ using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -14,50 +15,62 @@ namespace DatabaseManager.Server.Controllers
     [ApiController]
     public class CopyController : ControllerBase
     {
+        private readonly string connectionString;
+        private readonly string container = "sources";
+
+        public CopyController(IConfiguration configuration)
+        {
+            connectionString = configuration.GetConnectionString("AzureStorageConnection");
+        }
+
         [HttpPost]
         public ActionResult Copy(TransferParameters transferParameters)
         {
+            string message = "";
             string table = transferParameters.Table;
             try
             {
                 CopyTable(transferParameters);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.ToString());
             }
 
-            string message = $"{table} has been copied";
+            message = $"{table} has been copied";
             return Ok(message);
         }
 
         private void CopyTable(TransferParameters transferParameters)
         {
-            ConnectParameters destination = new ConnectParameters();
-            destination.Database = transferParameters.TargetDatabase;
-            destination.DatabaseServer = transferParameters.TargetDatabaseServer;
-            destination.DatabaseUser = transferParameters.TargetDatabaseUser;
-            destination.DatabasePassword = transferParameters.TargetDatabasePassword;
-            string destCnStr = DbUtilities.GetConnectionString(destination);
+            ConnectParameters destination = Common.GetConnectParameters(connectionString, container,
+                transferParameters.TargetName);
+            string destCnStr = destination.ConnectionString;
 
-            ConnectParameters source = new ConnectParameters();
-            source.Database = transferParameters.SourceDatabase;
-            source.DatabaseServer = transferParameters.SourceDatabaseServer;
-            source.DatabaseUser = transferParameters.SourceDatabaseUser;
-            source.DatabasePassword = transferParameters.SourceDatabasePassword;
-            string sourceCnStr = DbUtilities.GetConnectionString(source);
+            ConnectParameters source = Common.GetConnectParameters(connectionString, container,
+                transferParameters.SourceName);
+            string sourceCnStr = source.ConnectionString;
 
             string table = transferParameters.Table;
-
             SqlConnection sourceConn = new SqlConnection(sourceCnStr);
             SqlConnection destinationConn = new SqlConnection(destCnStr);
-            sourceConn.Open();
-            destinationConn.Open();
-
-            BulkCopy(sourceConn, destinationConn, table);
-
-            sourceConn.Close();
-            destinationConn.Close();
+            try
+            {   
+                sourceConn.Open();
+                destinationConn.Open();
+                BulkCopy(sourceConn, destinationConn, table);
+                
+            }
+            catch (Exception ex)
+            {
+                Exception error = new Exception($"Sorry! Error copying table: {table}; {ex}");
+                throw error;
+            }
+            finally
+            {
+                sourceConn.Close();
+                destinationConn.Close();
+            }
         }
 
         private void BulkCopy(SqlConnection source, SqlConnection destination, string table)

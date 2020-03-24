@@ -6,6 +6,7 @@ using DatabaseManager.Server.Helpers;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -13,20 +14,24 @@ namespace DatabaseManager.Server.Controllers
     [ApiController]
     public class DeleteController : ControllerBase
     {
-        
+        private readonly string connectionString;
+        private readonly string container = "sources";
+
+        public DeleteController(IConfiguration configuration)
+        {
+            connectionString = configuration.GetConnectionString("AzureStorageConnection");
+        }
+
         [HttpPost]
         public ActionResult Delete(TransferParameters transferParameters)
         {
+            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, 
+                transferParameters.TargetName);
             DbUtilities dbConn = new DbUtilities();
-            ConnectParameters destination = new ConnectParameters();
-            destination.Database = transferParameters.TargetDatabase;
-            destination.DatabaseServer = transferParameters.TargetDatabaseServer;
-            destination.DatabaseUser = transferParameters.TargetDatabaseUser;
-            destination.DatabasePassword = transferParameters.TargetDatabasePassword;
             string table = transferParameters.Table;
             try
             {
-                dbConn.OpenConnection(destination);
+                dbConn.OpenConnection(connector);
                 if (String.IsNullOrEmpty(table)) return BadRequest();
                 dbConn.DBDelete(table);
             }
