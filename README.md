@@ -13,8 +13,8 @@ ideally a serverless architecture.
 Database Manager is released under the GPLv3 or higher license.
 
 ## Contribution 
-You can contribute to the enhancement of Database Transfer either by providing 
-bug fixes or enhancements to the Database Transfer source code following the 
+You can contribute to the enhancement of Database Manager either by providing 
+bug fixes or enhancements to the Database Manager source code following the 
 usual Github Fork-Pull Request process.
 
 ## Building the software
