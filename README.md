@@ -2,8 +2,8 @@
 
 Database Manager is a free, open source web based tool to manage 
 PPDM database. So far this version provides functionality to:
-*Load the PPDM model
-*Transfer well data 
+* Load the PPDM model
+* Transfer well data 
 from one PPDM database to another. More functionality wil come later including 
 ideally a serverless architecture.
 
