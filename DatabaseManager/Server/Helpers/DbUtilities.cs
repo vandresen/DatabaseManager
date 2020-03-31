@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -91,6 +92,29 @@ namespace DatabaseManager.Server.Helpers
             cnStr = cnStr + timeout;
 
             return cnStr;
+        }
+
+        public DataTable GetDataTable(string select, string query)
+        {
+            DataTable dt = new DataTable();
+
+            string sql = string.Format(select + query);
+            using (SqlCommand cmd = new SqlCommand(sql, this.sqlCn))
+            {
+                try
+                {
+                    cmd.CommandTimeout = _sqlTimeOut;
+                    SqlDataReader dr = cmd.ExecuteReader();
+                    dt.Load(dr);
+                    dr.Close();
+                }
+                catch (SqlException ex)
+                {
+                    Exception error = new Exception("Sorry! Error getting data: ", ex);
+                    throw error;
+                }
+            }
+            return dt;
         }
     }
 }

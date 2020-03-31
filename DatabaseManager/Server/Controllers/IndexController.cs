@@ -1,0 +1,149 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Threading.Tasks;
+using DatabaseManager.Server.Entities;
+using DatabaseManager.Server.Helpers;
+using DatabaseManager.Shared;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
+
+namespace DatabaseManager.Server.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class IndexController : ControllerBase
+    {
+        private readonly string connectionString;
+        private readonly string container = "sources";
+
+        public IndexController(IConfiguration configuration)
+        {
+            connectionString = configuration.GetConnectionString("AzureStorageConnection");
+        }
+
+        [HttpGet("{source}")]
+        public async Task<ActionResult<List<DmsIndex>>> Get(string source)
+        {
+            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
+            if (connector == null) return BadRequest();
+            DbUtilities dbConn = new DbUtilities();
+            List<DmsIndex> index = new List<DmsIndex>();
+            try
+            {
+                dbConn.OpenConnection(connector);
+                DbQueries dbq = new DbQueries();
+                string select = dbq["Index"];
+                string query = " where INDEXLEVEL = 1";
+                DataTable dt = dbConn.GetDataTable(select, query);
+                foreach (DataRow qcRow in dt.Rows)
+                {
+                    string dataType = qcRow["Dataname"].ToString();
+                    string indexNode = qcRow["Text_IndexNode"].ToString();
+                    int indexId = Convert.ToInt32(qcRow["INDEXID"]);
+                    string strProcedure = $"EXEC GetDescendants '{indexNode}'";
+                    query = "";
+                    DataTable qc = dbConn.GetDataTable(strProcedure, query);
+                    int nrOfObjects = qc.Rows.Count - 1;
+                    index.Add(new DmsIndex()
+                    {
+                        Id = indexId,
+                        DataType = dataType,
+                        NumberOfDataObjects = nrOfObjects
+                    });
+                }
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+
+            dbConn.CloseConnection();
+            return index;
+        }
+
+        [HttpGet("{source}/{id}")]
+        public async Task<ActionResult<string>> GetChildren(string source, int id)
+        {
+            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
+            if (connector == null) return BadRequest();
+            DbUtilities dbConn = new DbUtilities();
+            dbConn.OpenConnection(connector);
+            DbQueries dbq = new DbQueries();
+            string select = dbq["Index"];
+            string query = $" where INDEXID = {id}";
+            DataTable dt = dbConn.GetDataTable(select, query);
+            if (dt.Rows.Count == 0)
+                return NotFound();
+            string dataType = dt.Rows[0]["DATATYPE"].ToString();
+            string indexNode = dt.Rows[0]["Text_IndexNode"].ToString();
+            int indexLevel = Convert.ToInt32(dt.Rows[0]["INDEXLEVEL"]) + 1;
+            query = $" WHERE IndexNode.IsDescendantOf('{indexNode}') = 1 and INDEXLEVEL = {indexLevel}";
+            DataTable idx = dbConn.GetDataTable(select, query);
+
+            string result = "[]";
+            if (idx.Rows.Count > 0)
+            {
+                result = ProcessAllChildren(dbConn, idx);
+            }
+
+            dbConn.CloseConnection();
+            return result;
+        }
+
+        private string ProcessAllChildren(DbUtilities dbConn, DataTable idx)
+        {
+            bool node = false;
+            string jsonString = "[";
+            List<DmsIndex> qcIndex = new List<DmsIndex>();
+            DbQueries dbq = new DbQueries();
+            DataTable tmp = new DataTable();
+
+            foreach (DataRow idxRow in idx.Rows)
+            {
+                string dataKey = idxRow["DATAKEY"].ToString();
+                string dataType = idxRow["DATATYPE"].ToString();
+                string indexId = idxRow["INDEXID"].ToString();
+                string jsonData = idxRow["JSONDATAOBJECT"].ToString();
+                int intIndexId = Convert.ToInt32(indexId);
+
+                if (dataKey == "")
+                {
+                    node = true;
+                    string indexNode = idxRow["Text_IndexNode"].ToString();
+                    string strProcedure = $"EXEC GetDescendants '{indexNode}'";
+                    string query = "";
+                    DataTable qc = dbConn.GetDataTable(strProcedure, query);
+                    int nrOfObjects = qc.Rows.Count - 1;
+                    qcIndex.Add(new DmsIndex()
+                    {
+                        Id = intIndexId,
+                        DataType = dataType,
+                        NumberOfDataObjects = nrOfObjects
+                    });
+                }
+                else
+                {
+                    dynamic deserializedJson = JsonConvert.DeserializeObject(jsonData);
+                    deserializedJson.id = indexId;
+                    jsonData = JsonConvert.SerializeObject(deserializedJson);
+                    jsonString = jsonString + jsonData + ",";
+                }
+            }
+
+            if (node)
+            {
+                jsonString = JsonConvert.SerializeObject(qcIndex);
+            }
+            else
+            {
+                jsonString = jsonString.Remove(jsonString.Length - 1, 1) + "]";
+            }
+
+            return jsonString;
+        }
+    }
+}

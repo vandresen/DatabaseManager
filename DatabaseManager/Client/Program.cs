@@ -14,15 +14,20 @@ namespace DatabaseManager.Client
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("app");
-
-            builder.Services.AddBaseAddressHttpClient();
-            builder.Services.AddSingleton<SingletonServices>();
-            builder.Services.AddScoped<IHttpService, HttpService>();
-            builder.Services.AddScoped<IDatabaseTransfer, DatabaseTransfer>();
-            builder.Services.AddScoped<IDataSources, DataSources>();
-            builder.Services.AddScoped<IDataModelCreate, DataModelCreate>();
+            ConfigureServices(builder.Services);
 
             await builder.Build().RunAsync();
+        }
+
+        private static void ConfigureServices(IServiceCollection services)
+        {
+            services.AddBaseAddressHttpClient();
+            services.AddOptions();
+            services.AddSingleton<SingletonServices>();
+            services.AddScoped<IHttpService, HttpService>();
+            services.AddScoped<IDatabaseTransfer, DatabaseTransfer>();
+            services.AddScoped<IDataSources, DataSources>();
+            services.AddScoped<IDataModelCreate, DataModelCreate>();
         }
     }
 }
