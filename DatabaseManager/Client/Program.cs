@@ -28,6 +28,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IDatabaseTransfer, DatabaseTransfer>();
             services.AddScoped<IDataSources, DataSources>();
             services.AddScoped<IDataModelCreate, DataModelCreate>();
+            services.AddScoped<IIndexData, IndexData>();
         }
     }
 }

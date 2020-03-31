@@ -10,7 +10,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="3.2.0-preview3.20168.3" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Build" Version="3.2.0-preview3.20168.3" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="3.2.0-preview3.20168.3" />
-    <PackageReference Include="Radzen.Blazor" Version="2.4.4" />
+    <PackageReference Include="Radzen.Blazor" Version="2.4.5" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Shared\DatabaseManager.Shared.csproj" />
