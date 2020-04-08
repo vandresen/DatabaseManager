@@ -24,14 +24,21 @@ else
             }
         </select>
     </div>
+}
 
+@if (index == null)
+{
+    <text>No index available</text>
+}
+else
+{
     <RadzenGrid AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                 AllowPaging="true" PageSize="5" AllowSorting="true"
                 Data="@index" TItem="DmsIndex">
         <Columns>
-            <RadzenGridColumn TItem="DmsIndex" Property="DataType" Title="Data Type" Width="200px"/>
-            <RadzenGridColumn TItem="DmsIndex" Property="NumberOfDataObjects" Title="Number of data objects" 
-                              TextAlign="TextAlign.Center" Width="70px"/>
+            <RadzenGridColumn TItem="DmsIndex" Property="DataType" Title="Data Type" Width="200px" />
+            <RadzenGridColumn TItem="DmsIndex" Property="NumberOfDataObjects" Title="Number of data objects"
+                              TextAlign="TextAlign.Center" Width="70px" />
         </Columns>
     </RadzenGrid>
 }
@@ -67,7 +74,14 @@ else
 
     private async Task GetIndexData()
     {
-        index = await indexData.GetIndex(singleton.TargetConnector);
-        //Console.WriteLine(index.Count);
+        try
+        {
+            index = await indexData.GetIndex(singleton.TargetConnector);
+        }
+        catch (Exception ex)
+        {
+            index = null;
+            Console.WriteLine(ex);
+        }
     }
 }

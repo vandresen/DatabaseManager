@@ -7,7 +7,21 @@
 
 <p>Target Database: @singleton.TargetConnector</p>
 
-<div>
+<p>Select model option: </p>
+@foreach (var item in new string[] { "PPDM Model", "DMS Model", "Stored Procedures" })
+{
+<div class="form-check">
+    <label for="@item" class="form-check-label">
+        <input type="radio" class="form-check-input" name="optradio" @onchange="ModelSelection" 
+               id="@item" value="@item" 
+               checked=@(selectedAnswer.Equals(item,StringComparison.OrdinalIgnoreCase))/>@item
+    </label>
+    @*<input type="radio" />*@
+    @*<label for="@item">@item</label>*@
+</div>
+}
+
+<div style="margin-top:20px">
     <button class="btn btn-primary" @onclick="CreateDataModel">Create Data Model</button>
 </div>
 
@@ -20,33 +34,78 @@
 </div>
 
 @code {
+    string selectedAnswer = "";
+    string modelOption = "PPDM Model";
     private string statusMessage = "Not started";
     public int barValue = 0;
     public string barLabel = "0%";
     DataModelParameters dmParameters = new DataModelParameters();
 
+    void ModelSelection(ChangeEventArgs args)
+    {
+        modelOption = args.Value.ToString();
+    }
+
     protected async Task CreateDataModel()
     {
+        dmParameters.ModelOption = modelOption;
         dmParameters.DataConnector = singleton.TargetConnector;
-        dmParameters.FileShare = "ppdm39";
-        int interval = 100/(DataModelSqlFiles.Names.Count());
-        foreach (string sqlFile in DataModelSqlFiles.Names)
+        if (modelOption == "PPDM Model")
         {
-            dmParameters.FileName = sqlFile;
-            progress($"Executing {sqlFile}");
-            try
-            {
-                await dataModelCreate.Create(dmParameters);
-            }
-            catch (Exception ex)
-            {
-                progress($"Error creating data model: {ex.Message}");
-            }
-            barValue = barValue + interval;
-            barLabel = $"{barValue}%";
+            await CreatePPDMModel();
         }
+        else if(modelOption == "DMS Model")
+        {
+            await CreateDMSModel();
+        }
+        else if (modelOption == "Stored Procedures")
+        {
+            Console.WriteLine("Create Stored procedures");
+        }
+        else
+        {
+            Console.WriteLine("Bad model option");
+        }
+    }
 
-        progress($"Model creation complete");
+    protected async Task CreateDMSModel()
+    {
+        try
+        {
+            progress($"Start DMS Model Creation");
+            await dataModelCreate.Create(dmParameters);
+            progress($"Model creation complete");
+        }
+        catch (Exception ex)
+        {
+            progress($"Error creating data model: {ex.Message}");
+        }
+        barValue = 100;
+        barLabel = $"{barValue}%";
+    }
+
+    protected async Task CreatePPDMModel()
+    {
+        try
+        {
+            dmParameters.FileShare = "ppdm39";
+            int interval = 100 / (DataModelSqlFiles.Names.Count());
+            foreach (string sqlFile in DataModelSqlFiles.Names)
+            {
+                dmParameters.FileName = sqlFile;
+                progress($"Executing {sqlFile}");
+                await dataModelCreate.Create(dmParameters);
+                barValue = barValue + interval;
+                barLabel = $"{barValue}%";
+            }
+            progress($"Model creation complete");
+        }
+        catch (Exception ex)
+        {
+            progress($"Error creating data model: {ex.Message}");
+        }
+        barValue = 100;
+        barLabel = $"{barValue}%";
     }
 
     private void progress(string message)
