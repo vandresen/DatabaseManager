@@ -1,0 +1,31 @@
+﻿[
+  {
+    "DataName": "WellBore",
+    "NameAttribute": "UWI",
+    "LatitudeAttribute": "SURFACE_LATITUDE",
+    "LongitudeAttribute": "SURFACE_LONGITUDE",
+    "Keys": "UWI",
+    "Select": "Select UWI, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE,LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS,GROUND_ELEV, REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY from WELL",
+    "DataObjects": [
+      {
+        "DataName": "Log",
+        "NameAttribute": "CURVE_ID",
+        "Select": "Select UWI, CURVE_ID, NULL_REPRESENTATION, VALUE_COUNT, MAX_INDEX, MIN_INDEX, ROW_CHANGED_DATE, ROW_CHANGED_BY from well_log_curve",
+        "ParentKey": "UWI = [UWI]",
+        "Keys": "UWI, CURVE_ID",
+        "DataObjects": [
+          {
+            "DataName": "LogCurve",
+            "NameAttribute": "INDEX_VALUE",
+            "Select": "Select UWI, CURVE_ID, SAMPLE_ID, INDEX_VALUE, MEASURED_VALUE from well_log_curve_value",
+            "ParentKey": "UWI = [UWI], CURVE_ID = [CURVE_ID]",
+            "Keys": "UWI, CURVE_ID, SAMPLE_ID",
+            "UseParentLocation": false
+          }
+        ],
+        "UseParentLocation": false
+      }
+      
+    ]
+  }
+]

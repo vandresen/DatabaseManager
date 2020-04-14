@@ -1,8 +1,10 @@
 ﻿using DatabaseManager.Server.Entities;
 using DatabaseManager.Shared;
 using Microsoft.Azure.Cosmos.Table;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -39,6 +41,35 @@ namespace DatabaseManager.Server.Helpers
                 connector.ConnectionString = entity.ConnectionString;
             }
             return connector;
+        }
+
+        public static string ConvertDataRowToJson(DataRow dataRow, DataTable dt)
+        {
+            DataTable tmp = new DataTable();
+            tmp = dt.Clone();
+            tmp.Rows.Add(dataRow.ItemArray);
+            string jsonData = JsonConvert.SerializeObject(tmp);
+            jsonData = jsonData.Replace("[", "");
+            jsonData = jsonData.Replace("]", "");
+            return jsonData;
+        }
+
+        public static string FixAposInStrings(string st)
+        {
+            string fixString = st;
+            int length;
+            int start = 0;
+            int end = st.IndexOf("'");
+            while (end >= 0)
+            {
+                length = end;
+                string s1 = fixString.Substring(0, length);
+                string s2 = fixString.Substring(end);
+                fixString = s1 + "'" + s2;
+                start = end + 2;
+                end = fixString.IndexOf("'", start);
+            }
+            return fixString;
         }
     }
 }

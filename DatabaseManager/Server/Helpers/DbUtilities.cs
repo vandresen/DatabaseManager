@@ -116,5 +116,64 @@ namespace DatabaseManager.Server.Helpers
             }
             return dt;
         }
+
+        public int InsertIndex(int parentId, string dataName, string dataType, string dataKey,
+            string jsonData, double latitude, double longitude)
+        {
+            int id = -1;
+            string sql;
+            Boolean nullLocation = (latitude == -99999.0 | longitude == -99999.0);
+            Boolean zeroLocation = (latitude == 0.0 & longitude == 0.0);
+            Boolean addLocationParameters = false;
+            if (parentId == -1)
+            {
+                sql = "spCreateIndex";
+            }
+            else if (nullLocation || zeroLocation)
+            {
+                sql = "spAddIndex";
+            }
+            
+            else
+            {
+                sql = "spAddIndexWithLocation";
+                addLocationParameters = true;
+            }
+
+            using (SqlCommand cmd = new SqlCommand(sql, this.sqlCn))
+            {
+                try
+                {
+                    cmd.CommandTimeout = _sqlTimeOut;
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    if (parentId != -1)
+                    {
+                        cmd.Parameters.AddWithValue("@parentid", parentId);
+                        cmd.Parameters.AddWithValue("@d_name", dataName);
+                        cmd.Parameters.AddWithValue("@type", dataType);
+                        cmd.Parameters.AddWithValue("@datakey", dataKey);
+                        cmd.Parameters.AddWithValue("@jsondataobject", jsonData);
+                    }
+                    if (addLocationParameters)
+                    {
+                        cmd.Parameters.AddWithValue("@latitude", latitude);
+                        cmd.Parameters.AddWithValue("@longitude", longitude);
+                    }
+                    object value = cmd.ExecuteScalar();
+                    if (value != null)
+                    {
+                        id = Convert.ToInt32(value);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Exception error = new Exception("Sorry! Error inserting index: ", ex);
+                    string strError = "ParameterInsertQcIndex:" + error.ToString();
+                    throw error;
+                }
+
+            }
+            return id;
+        }
     }
 }

@@ -51,6 +51,22 @@ namespace DatabaseManager.Client.Helpers
             return new HttpResponseWrapper<object>(null, response.IsSuccessStatusCode, response);
         }
 
+        public async Task<HttpResponseWrapper<TResponse>> Post<T, TResponse>(string url, T data)
+        {
+            var dataJson = JsonSerializer.Serialize(data);
+            var stringContent = new StringContent(dataJson, Encoding.UTF8, "application/json");
+            var response = await httpClient.PostAsync(url, stringContent);
+            if (response.IsSuccessStatusCode)
+            {
+                var responseDeserialized = await Deserialize<TResponse>(response, defaultJsonSerializerOptions);
+                return new HttpResponseWrapper<TResponse>(responseDeserialized, true, response);
+            }
+            else
+            {
+                return new HttpResponseWrapper<TResponse>(default, false, response);
+            }
+        }
+
         public async Task<HttpResponseWrapper<object>> Delete(string url)
         {
             var responseHTTP = await httpClient.DeleteAsync(url);

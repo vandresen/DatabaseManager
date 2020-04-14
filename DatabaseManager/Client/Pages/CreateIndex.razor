@@ -1,0 +1,59 @@
+﻿@page "/createindex"
+@inject ICreateIndex createIndex
+@inject SingletonServices singleton
+
+<h2>Create Index</h2>
+
+<button class="btn btn-primary" @onclick="StartIndex">Start Indexing</button>
+
+<div>
+    <p>Current status: @statusMessage</p>
+</div>
+
+@code {
+    List<ParentIndexNodes> pNodes;
+    CreateIndexParameters iParameters = new CreateIndexParameters();
+    private string statusMessage = "Not started";
+
+    protected async Task StartIndex()
+    {
+        progress("Starting indexing...");
+        iParameters.DataConnector = singleton.TargetConnector;
+        iParameters.IndexName = "Default";
+
+        try
+        {
+            pNodes = await createIndex.CreateParentNodes(iParameters);
+            Console.WriteLine(pNodes.Count);
+
+            for (int j = 0; j < pNodes.Count; j++)
+            {
+                ParentIndexNodes node = pNodes[j];
+                iParameters.ParentNodeNumber = j;
+                iParameters.ParentNodeId = node.ParentNodeId;
+                Console.WriteLine($"Node name: {node.Name}, Number: {node.NodeCount}");
+                for (int i = 0; i < node.NodeCount; i++)
+                {
+                    iParameters.ParentNumber = i;
+                    await createIndex.CreateChildIndexes(iParameters);
+                    //iBuilder.PopulateIndex(k, i, parentNo
+                }
+            }
+
+            
+            progress("Indexing complete");
+        }
+        catch (Exception ex)
+        {
+            progress($"Error indexing: {ex.Message}");
+            return;
+        }
+
+    }
+
+    private void progress(string message)
+    {
+        statusMessage = message;
+        StateHasChanged();
+    }
+}
