@@ -13,19 +13,16 @@
         "Select": "Select UWI, CURVE_ID, NULL_REPRESENTATION, VALUE_COUNT, MAX_INDEX, MIN_INDEX, ROW_CHANGED_DATE, ROW_CHANGED_BY from well_log_curve",
         "ParentKey": "UWI = [UWI]",
         "Keys": "UWI, CURVE_ID",
-        "DataObjects": [
-          {
-            "DataName": "LogCurve",
-            "NameAttribute": "INDEX_VALUE",
-            "Select": "Select UWI, CURVE_ID, SAMPLE_ID, INDEX_VALUE, MEASURED_VALUE from well_log_curve_value",
-            "ParentKey": "UWI = [UWI], CURVE_ID = [CURVE_ID]",
-            "Keys": "UWI, CURVE_ID, SAMPLE_ID",
-            "UseParentLocation": false
-          }
-        ],
         "UseParentLocation": false
+      },
+      {
+        "DataName": "MarkerPick",
+        "NameAttribute": "STRAT_UNIT_ID",
+        "Select": "Select STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH,REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY  from STRAT_WELL_SECTION",
+        "ParentKey": "UWI = [UWI]",
+        "Keys": "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI",
+        "UseParentLocation": true
       }
-      
     ]
   }
 ]

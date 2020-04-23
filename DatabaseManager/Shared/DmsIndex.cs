@@ -9,5 +9,6 @@ namespace DatabaseManager.Shared
         public int Id { get; set; }
         public string DataType { get; set; }
         public int NumberOfDataObjects { get; set; }
+        public string JsonData { get; set; }
     }
 }

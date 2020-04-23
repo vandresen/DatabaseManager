@@ -8,6 +8,7 @@ namespace DatabaseManager.Client.Helpers
 {
     public interface IIndexData
     {
+        Task<List<DmsIndex>> GetChildren(string source, int id);
         Task<List<DmsIndex>> GetIndex(string source);
     }
 }

@@ -16,8 +16,6 @@
                id="@item" value="@item" 
                checked=@(selectedAnswer.Equals(item,StringComparison.OrdinalIgnoreCase))/>@item
     </label>
-    @*<input type="radio" />*@
-    @*<label for="@item">@item</label>*@
 </div>
 }
 
@@ -60,11 +58,25 @@
         }
         else if (modelOption == "Stored Procedures")
         {
-            Console.WriteLine("Create Stored procedures");
+            await CreateStoredProcedures();
         }
         else
         {
             Console.WriteLine("Bad model option");
+        }
+    }
+
+    protected async Task CreateStoredProcedures()
+    {
+        try
+        {
+            progress($"Start Stored Procedures Creation");
+            await dataModelCreate.Create(dmParameters);
+            progress($"Stored procedures creation complete");
+        }
+        catch (Exception ex)
+        {
+            progress($"Error creating stored procedures: {ex.Message}");
         }
     }
 

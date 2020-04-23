@@ -19,11 +19,19 @@
 
     }
 
-    private void Edit()
+    private async Task Edit()
     {
-        string connectStr = Common.GetConnectionString(connectParameters);
-        connectParameters.ConnectionString = connectStr;
-        dataSources.UpdateSource(connectParameters);
-        navigationManager.NavigateTo("datasources");
+        try
+        {
+            string connectStr = Common.GetConnectionString(connectParameters);
+            Console.WriteLine(connectStr);
+            connectParameters.ConnectionString = connectStr;
+            await dataSources.UpdateSource(connectParameters);
+            navigationManager.NavigateTo("datasources");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
     }
 }

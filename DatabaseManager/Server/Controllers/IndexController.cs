@@ -44,7 +44,7 @@ namespace DatabaseManager.Server.Controllers
                     string dataType = qcRow["Dataname"].ToString();
                     string indexNode = qcRow["Text_IndexNode"].ToString();
                     int indexId = Convert.ToInt32(qcRow["INDEXID"]);
-                    string strProcedure = $"EXEC GetDescendants '{indexNode}'";
+                    string strProcedure = $"EXEC spGetDescendants '{indexNode}'";
                     query = "";
                     DataTable qc = dbConn.GetDataTable(strProcedure, query);
                     int nrOfObjects = qc.Rows.Count - 1;
@@ -96,52 +96,28 @@ namespace DatabaseManager.Server.Controllers
 
         private string ProcessAllChildren(DbUtilities dbConn, DataTable idx)
         {
-            bool node = false;
-            string jsonString = "[";
             List<DmsIndex> qcIndex = new List<DmsIndex>();
-            DbQueries dbq = new DbQueries();
-            DataTable tmp = new DataTable();
 
             foreach (DataRow idxRow in idx.Rows)
             {
-                string dataKey = idxRow["DATAKEY"].ToString();
                 string dataType = idxRow["DATATYPE"].ToString();
                 string indexId = idxRow["INDEXID"].ToString();
                 string jsonData = idxRow["JSONDATAOBJECT"].ToString();
                 int intIndexId = Convert.ToInt32(indexId);
-
-                if (dataKey == "")
+                string indexNode = idxRow["Text_IndexNode"].ToString();
+                string strProcedure = $"EXEC spGetDescendants '{indexNode}'";
+                string query = "";
+                DataTable qc = dbConn.GetDataTable(strProcedure, query);
+                int nrOfObjects = qc.Rows.Count - 1;
+                qcIndex.Add(new DmsIndex()
                 {
-                    node = true;
-                    string indexNode = idxRow["Text_IndexNode"].ToString();
-                    string strProcedure = $"EXEC GetDescendants '{indexNode}'";
-                    string query = "";
-                    DataTable qc = dbConn.GetDataTable(strProcedure, query);
-                    int nrOfObjects = qc.Rows.Count - 1;
-                    qcIndex.Add(new DmsIndex()
-                    {
-                        Id = intIndexId,
-                        DataType = dataType,
-                        NumberOfDataObjects = nrOfObjects
-                    });
-                }
-                else
-                {
-                    dynamic deserializedJson = JsonConvert.DeserializeObject(jsonData);
-                    deserializedJson.id = indexId;
-                    jsonData = JsonConvert.SerializeObject(deserializedJson);
-                    jsonString = jsonString + jsonData + ",";
-                }
+                    Id = intIndexId,
+                    DataType = dataType,
+                    NumberOfDataObjects = nrOfObjects,
+                    JsonData = jsonData
+                });
             }
-
-            if (node)
-            {
-                jsonString = JsonConvert.SerializeObject(qcIndex);
-            }
-            else
-            {
-                jsonString = jsonString.Remove(jsonString.Length - 1, 1) + "]";
-            }
+            string jsonString = JsonConvert.SerializeObject(qcIndex);
 
             return jsonString;
         }

@@ -46,7 +46,7 @@ namespace DatabaseManager.Server.Controllers
                 }
                 else if (dmParameters.ModelOption == "Stored Procedures")
                 {
-
+                    CreateStoredProcedures(connector);
                 }
                 else
                 {
@@ -59,6 +59,33 @@ namespace DatabaseManager.Server.Controllers
             }
 
             return Ok($"OK");
+        }
+
+        private void CreateStoredProcedures(ConnectParameters connector)
+        {
+            try
+            {
+                string contentRootPath = _env.ContentRootPath;
+                string sqlFile = contentRootPath + @"\DataBase\StoredProcedures.sql";
+                string sql = System.IO.File.ReadAllText(sqlFile);
+                string[] commandText = sql.Split(new string[] { String.Format("{0}GO{0}", Environment.NewLine) }, StringSplitOptions.RemoveEmptyEntries);
+                DbUtilities dbConn = new DbUtilities();
+                dbConn.OpenConnection(connector);
+                for (int x = 0; x < commandText.Length; x++)
+                {
+                    if (commandText[x].Trim().Length > 0)
+                    {
+                        dbConn.SQLExecute(commandText[x]);
+                    }
+                }
+                
+                dbConn.CloseConnection();
+            }
+            catch (Exception ex)
+            {
+                Exception error = new Exception("Create DMS Model Error: ", ex);
+                throw error;
+            }
         }
 
         private void CreateDMSModel(ConnectParameters connector)
@@ -78,7 +105,6 @@ namespace DatabaseManager.Server.Controllers
                 Exception error = new Exception("Create DMS Model Error: ", ex);
                 throw error;
             }
-            
         }
 
         private void CreatePPDMModel(DataModelParameters dmParameters, ConnectParameters connector)
