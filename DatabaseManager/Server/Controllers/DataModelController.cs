@@ -48,6 +48,10 @@ namespace DatabaseManager.Server.Controllers
                 {
                     CreateStoredProcedures(connector);
                 }
+                else if (dmParameters.ModelOption == "PPDM Modifications")
+                {
+                    CreatePpdmModifications(connector);
+                }
                 else
                 {
 
@@ -98,6 +102,32 @@ namespace DatabaseManager.Server.Controllers
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);
                 dbConn.SQLExecute(sql);
+                dbConn.CloseConnection();
+            }
+            catch (Exception ex)
+            {
+                Exception error = new Exception("Create DMS Model Error: ", ex);
+                throw error;
+            }
+        }
+
+        private void CreatePpdmModifications(ConnectParameters connector)
+        {
+            try
+            {
+                string contentRootPath = _env.ContentRootPath;
+                string sqlFile = contentRootPath + @"\DataBase\PpdmModifications.sql";
+                string sql = System.IO.File.ReadAllText(sqlFile);
+                string[] commandText = sql.Split(new string[] { String.Format("{0}GO{0}", Environment.NewLine) }, StringSplitOptions.RemoveEmptyEntries);
+                DbUtilities dbConn = new DbUtilities();
+                dbConn.OpenConnection(connector);
+                for (int x = 0; x < commandText.Length; x++)
+                {
+                    if (commandText[x].Trim().Length > 0)
+                    {
+                        dbConn.SQLExecute(commandText[x]);
+                    }
+                }
                 dbConn.CloseConnection();
             }
             catch (Exception ex)

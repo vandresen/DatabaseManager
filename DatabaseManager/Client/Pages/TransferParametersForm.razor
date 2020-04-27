@@ -17,16 +17,7 @@
         }
         else
         {
-            <div class="form-group">
-                <label for="targetlist">Database Target:</label>
-                <select class="form-control" id="targetlist" @onchange="Selected">
-                    <option selected hidden>Choose Connector</option>
-                    @foreach (var option in options)
-                    {
-                        <option>@option</option>
-                    }
-                </select>
-            </div>
+            <ConnectorSelector Options="options" SelectedConnector="Selected" />
         }
 
         <button class="btn btn-success" type="submit">Start Transfer</button>
@@ -43,7 +34,6 @@
         try
         {
             ConnectParameters = await dataSources.GetSources();
-            Console.WriteLine(ConnectParameters.Count());
             foreach (ConnectParameters conn in ConnectParameters)
             {
                 options.Add(conn.SourceName);
@@ -55,9 +45,8 @@
         }
     }
 
-    private void Selected(ChangeEventArgs e)
+    private void Selected(string selectedString)
     {
-        string selectedString = e.Value.ToString();
         TransferParameters.SourceName = selectedString;
     }
 }

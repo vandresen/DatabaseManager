@@ -8,7 +8,7 @@
 <p>Target Database: @singleton.TargetConnector</p>
 
 <p>Select model option: </p>
-@foreach (var item in new string[] { "PPDM Model", "DMS Model", "Stored Procedures" })
+@foreach (var item in new string[] { "PPDM Model", "PPDM Modifications", "DMS Model", "Stored Procedures" })
 {
 <div class="form-check">
     <label for="@item" class="form-check-label">
@@ -48,6 +48,8 @@
     {
         dmParameters.ModelOption = modelOption;
         dmParameters.DataConnector = singleton.TargetConnector;
+        barValue = 1;
+        barLabel = $"{barValue}%";
         if (modelOption == "PPDM Model")
         {
             await CreatePPDMModel();
@@ -59,6 +61,10 @@
         else if (modelOption == "Stored Procedures")
         {
             await CreateStoredProcedures();
+        }
+        else if (modelOption == "PPDM Modifications")
+        {
+            await CreatePpdmModifications();
         }
         else
         {
@@ -78,6 +84,22 @@
         {
             progress($"Error creating stored procedures: {ex.Message}");
         }
+    }
+
+    protected async Task CreatePpdmModifications()
+    {
+        try
+        {
+            progress($"Start Modify PPDM");
+            await dataModelCreate.Create(dmParameters);
+            progress($"PPDM Modifications complete");
+        }
+        catch (Exception ex)
+        {
+            progress($"Error creating stored procedures: {ex.Message}");
+        }
+        barValue = 100;
+        barLabel = $"{barValue}%";
     }
 
     protected async Task CreateDMSModel()

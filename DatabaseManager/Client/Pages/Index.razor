@@ -17,16 +17,7 @@
 }
 else
 {
-    <div class="form-group">
-        <label for="targetlist">Database Target:</label>
-        <select class="form-control" id="targetlist" @onchange="Selected">
-            <option selected hidden>Choose Connector</option>
-            @foreach (var option in options)
-            {
-                <option>@option</option>
-            }
-        </select>
-    </div>
+    <ConnectorSelector Options="options" SelectedConnector="Selected"/>
 }
 
 @if (index == null)
@@ -50,7 +41,6 @@ else
                     {
                         <tr>
                             <td>
-                                @*<a class="btn btn-info" href="/indexdata/@item.Id">...</a>*@
                                 <button class="btn btn-info" @onclick="@(() => DataTypes(item))">...</button>
                             </td>
                             <td>@item.DataType</td>
@@ -85,11 +75,10 @@ else
         }
     }
 
-    private async Task Selected(ChangeEventArgs e)
+    private async Task Selected(string selectedString)
     {
         indexStatus = "Fetching index";
         StateHasChanged();
-        string selectedString = e.Value.ToString();
         singleton.TargetConnector = selectedString;
         await GetIndexData();
     }

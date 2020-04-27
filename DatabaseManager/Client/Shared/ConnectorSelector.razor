@@ -1,0 +1,22 @@
+﻿@inject SingletonServices singleton
+
+<div class="form-group">
+    <select class="form-control" id="targetlist" @onchange="Selected">
+        <option selected hidden>Choose Connector</option>
+        @foreach (var option in Options)
+        {
+            <option>@option</option>
+        }
+    </select>
+</div>
+
+@code {
+    [Parameter] public List<string> Options { get; set; }
+    [Parameter] public EventCallback<string> SelectedConnector { get; set; }
+
+    private async Task Selected(ChangeEventArgs e)
+    {
+        string selectedString = e.Value.ToString();
+        await SelectedConnector.InvokeAsync(selectedString);
+    }
+}
