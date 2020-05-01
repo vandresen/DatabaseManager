@@ -2,6 +2,7 @@
 using DatabaseManager.Shared;
 using Microsoft.Azure.Cosmos.Table;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -70,6 +71,26 @@ namespace DatabaseManager.Server.Helpers
                 end = fixString.IndexOf("'", start);
             }
             return fixString;
+        }
+
+        public static string[] GetAttributes(string select)
+        {
+            int from = 7;
+            int to = select.IndexOf("from");
+            int length = to - 8;
+            string attributes = select.Substring(from, length);
+            string[] words = attributes.Split(',');
+
+            return words;
+        }
+
+        public static string SetJsonDataObjectDate(string jsonText, string attribute)
+        {
+            string jsonDate = DateTime.Now.ToString("yyyy-MM-dd");
+            JObject dataObject = JObject.Parse(jsonText);
+            dataObject[attribute] = jsonDate;
+            jsonText = dataObject.ToString();
+            return jsonText;
         }
     }
 }

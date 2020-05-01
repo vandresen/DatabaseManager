@@ -30,6 +30,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IDataModelCreate, DataModelCreate>();
             services.AddScoped<ICreateIndex, CreateIndex>();
             services.AddScoped<IIndexData, IndexData>();
+            services.AddScoped<IDataFile, DataFile>();
         }
     }
 }

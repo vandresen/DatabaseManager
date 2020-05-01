@@ -68,6 +68,24 @@ namespace DatabaseManager.Server.Helpers
             }
         }
 
+        public void DBInsert(string strInsert, string strValue, string strQuery)
+        {
+            string sql = strInsert + strValue + strQuery;
+            using (SqlCommand cmd = new SqlCommand(sql, this.sqlCn))
+            {
+                try
+                {
+                    cmd.CommandTimeout = _sqlTimeOut;
+                    cmd.ExecuteNonQuery();
+                }
+                catch (SqlException ex)
+                {
+                    Exception error = new Exception("Error inserting into table: ", ex);
+                    throw error;
+                }
+            }
+        }
+
         public static string GetConnectionString(ConnectParameters connection)
         {
             string source = $"Source={connection.DatabaseServer};";
@@ -115,6 +133,28 @@ namespace DatabaseManager.Server.Helpers
                 }
             }
             return dt;
+        }
+
+        public void InsertDataObject(string jsonData, string dataType)
+        {
+            string sql = "spInsert" + dataType;
+            string paramName = "@json";
+            using (SqlCommand cmd = new SqlCommand(sql, this.sqlCn))
+            {
+                try
+                {
+                    cmd.CommandTimeout = _sqlTimeOut;
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue(paramName, jsonData);
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    Exception error = new Exception("Sorry! Error inserting data object: ", ex);
+                    throw error;
+                }
+
+            }
         }
 
         public int InsertIndex(int parentId, string dataName, string dataType, string dataKey,

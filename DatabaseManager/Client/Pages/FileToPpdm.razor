@@ -1,0 +1,56 @@
+﻿@page "/filetoppdm"
+@inject IDataFile dataFile
+@inject SingletonServices singleton
+
+<h3>File To PPDM Transfer</h3>
+
+<div>
+    <h3>Target Database</h3>
+</div>
+<p>@singleton.TargetConnector</p>
+
+<button class="btn btn-primary" @onclick="StartTransfer">Start Transfer</button>
+
+<div style="margin-top:20px">
+    <ProgressBar ValueNow="barValue" Label="@barLabel" />
+</div>
+
+<div>
+    <p>Current status: @statusMessage</p>
+</div>
+
+@code {
+    private string statusMessage = "Not started";
+    public int barValue = 0;
+    public string barLabel = "0%";
+
+    protected async Task StartTransfer()
+    {
+        barValue = 1;
+        barLabel = $"{barValue}%";
+        string dataType = "logs";
+        progress($"Start Transfer");
+        try
+        {
+            List<string> files = await dataFile.GetFiles(dataType);
+            foreach(string file in files)
+            {
+                progress($"processing {file}");
+                Console.WriteLine(file);
+            }
+            progress($"Transfer Complete");
+        }
+        catch (Exception ex)
+        {
+            progress($"Error in transfer: {ex.Message}");
+        }
+        barValue = 1;
+        barLabel = $"{barValue}%";
+    }
+
+    private void progress(string message)
+    {
+        statusMessage = message;
+        StateHasChanged();
+    }
+}

@@ -10,6 +10,8 @@ using DatabaseManager.Shared;
 using Microsoft.Azure.Storage;
 using Microsoft.Azure.Storage.File;
 using Microsoft.AspNetCore.Hosting;
+using DatabaseManager.Server.Entities;
+using System.Data;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -82,6 +84,9 @@ namespace DatabaseManager.Server.Controllers
                         dbConn.SQLExecute(commandText[x]);
                     }
                 }
+
+                CreateInsertStoredProcedure(dbConn);
+                CreateUpdateStoredProcedure(dbConn);
                 
                 dbConn.CloseConnection();
             }
@@ -90,6 +95,210 @@ namespace DatabaseManager.Server.Controllers
                 Exception error = new Exception("Create DMS Model Error: ", ex);
                 throw error;
             }
+        }
+
+        static void CreateInsertStoredProcedure(DbUtilities dbConn)
+        {
+            string comma;
+            string attributes;
+
+            DbQueries dbQueries = new DbQueries();
+            DbKeys dbKeys = new DbKeys();
+            DbDataTypes dbDataTypes = new DbDataTypes();
+
+            for (int j = 0; j < dbDataTypes.DataTypes.Length; j++)
+            {
+                string dataType = dbDataTypes.DataTypes[j];
+                string sqlCommand = "";
+
+                string sql = dbQueries[dataType];
+                string[] keys = dbKeys[dataType].Split(',');
+
+                string table = GetTable(sql);
+                ColumnProperties attributeProperties = GetColumnSchema(dbConn, sql);
+                string[] tableAttributes = Common.GetAttributes(sql);
+                tableAttributes = tableAttributes.Where(w => w != "Id").ToArray();
+
+                sqlCommand = sqlCommand + $"CREATE PROCEDURE spInsert{dataType} ";
+                sqlCommand = sqlCommand + " @json NVARCHAR(max) ";
+                sqlCommand = sqlCommand + " AS ";
+                sqlCommand = sqlCommand + " BEGIN ";
+
+                sqlCommand = sqlCommand + $" INSERT INTO {table }";
+                attributes = " (";
+                comma = "";
+                foreach (var word in tableAttributes)
+                {
+                    string attribute = word.Trim();
+                    attributes = attributes + comma + "[" + attribute + "]";
+                    comma = ",";
+                }
+                attributes = attributes + ")";
+                sqlCommand = sqlCommand + attributes;
+
+                sqlCommand = sqlCommand + $"  SELECT";
+                comma = "    ";
+                attributes = "";
+                foreach (var word in tableAttributes)
+                {
+                    string attribute = word.Trim();
+                    attributes = attributes + comma + attribute;
+                    comma = ",";
+                }
+                sqlCommand = sqlCommand + attributes;
+                sqlCommand = sqlCommand + $" FROM OPENJSON(@json)";
+
+                comma = "";
+                attributes = "    WITH (";
+                foreach (var word in tableAttributes)
+                {
+                    string attribute = word.Trim();
+                    string dataProperty = attributeProperties[attribute];
+                    attributes = attributes + comma + attribute + " " + dataProperty +
+                        " '$." + attribute + "'";
+                    comma = ",";
+                }
+                sqlCommand = sqlCommand + attributes;
+                sqlCommand = sqlCommand + ") AS jsonValues ";
+
+                sqlCommand = sqlCommand + " END";
+                dbConn.SQLExecute(sqlCommand);
+            }
+        }
+
+        static void CreateUpdateStoredProcedure(DbUtilities dbConn)
+        {
+            string comma;
+            string attributes;
+
+            DbQueries dbQueries = new DbQueries();
+            DbKeys dbKeys = new DbKeys();
+            DbDataTypes dbDataTypes = new DbDataTypes();
+
+            for (int j = 0; j < dbDataTypes.DataTypes.Length; j++)
+            {
+                string dataType = dbDataTypes.DataTypes[j];
+                string sqlCommand = "";
+
+                string sql = dbQueries[dataType];
+                string[] keys = dbKeys[dataType].Split(',');
+                //keys = keys.Where(w => w != "Id").ToArray();
+
+                string table = GetTable(sql);
+                ColumnProperties attributeProperties = GetColumnSchema(dbConn, sql);
+                string[] tableAttributes = Common.GetAttributes(sql);
+
+                sqlCommand = sqlCommand + $"CREATE PROCEDURE spUpdate{dataType} ";
+                sqlCommand = sqlCommand + "@json NVARCHAR(max) ";
+                sqlCommand = sqlCommand + "AS ";
+                sqlCommand = sqlCommand + "BEGIN ";
+
+                sqlCommand = sqlCommand + $"SELECT ";
+                comma = "    ";
+                attributes = "";
+                foreach (var word in tableAttributes)
+                {
+                    string attribute = word.Trim();
+                    attributes = attributes + comma + attribute;
+                    comma = ",";
+                }
+                sqlCommand = sqlCommand + attributes;
+
+                sqlCommand = sqlCommand + " INTO #TempJson ";
+                sqlCommand = sqlCommand + $" FROM OPENJSON(@json) ";
+                comma = "";
+                attributes = "    WITH (";
+                foreach (var word in tableAttributes)
+                {
+                    string attribute = word.Trim();
+                    string dataProperty = attributeProperties[attribute];
+                    attributes = attributes + comma + attribute + " " + dataProperty +
+                        " '$." + attribute + "'";
+                    comma = ",";
+                }
+                sqlCommand = sqlCommand + attributes;
+                sqlCommand = sqlCommand + ") AS jsonValues ";
+
+                sqlCommand = sqlCommand + $" UPDATE A ";
+                sqlCommand = sqlCommand + $" SET ";
+                comma = "    ";
+                attributes = "";
+                foreach (var word in tableAttributes)
+                {
+                    if (word != "Id")
+                    {
+                        string attribute = word.Trim();
+                        attributes = attributes + comma + "A." + attribute + " = " + "B." + attribute;
+                        comma = ",";
+                    }
+                }
+                sqlCommand = sqlCommand + attributes;
+                sqlCommand = sqlCommand + $" FROM ";
+                sqlCommand = sqlCommand + $" {table} AS A ";
+                sqlCommand = sqlCommand + " INNER JOIN #TempJson AS B ON ";
+                comma = "    ";
+                attributes = "";
+                foreach (string key in keys)
+                {
+                    attributes = attributes + comma + "A." + key.Trim() + " = " + "B." + key.Trim();
+                    comma = " AND ";
+                }
+                sqlCommand = sqlCommand + attributes;
+                sqlCommand = sqlCommand + " END";
+
+                dbConn.SQLExecute(sqlCommand);
+            }
+        }
+
+        static ColumnProperties GetColumnSchema(DbUtilities dbConn, string sql)
+        {
+            ColumnProperties colProps = new ColumnProperties();
+            string attributeType = "";
+            string table = GetTable(sql);
+            string select = $"Select * from INFORMATION_SCHEMA.COLUMNS ";
+            string query = $" where TABLE_NAME = '{table}'";
+            DataTable dt = dbConn.GetDataTable(select, query);
+
+            string[] sqlAttributes = Common.GetAttributes(sql);
+            dt.CaseSensitive = false;
+
+            foreach (string attribute in sqlAttributes)
+            {
+                string attributeIndex = attribute.Trim();
+                query = $"COLUMN_NAME = '{attributeIndex}'";
+                DataRow[] dtRows = dt.Select(query);
+                if (dtRows.Length == 1)
+                {
+                    attributeType = dtRows[0]["DATA_TYPE"].ToString();
+                    if (attributeType == "nvarchar")
+                    {
+                        string charLength = dtRows[0]["CHARACTER_MAXIMUM_LENGTH"].ToString();
+                        attributeType = attributeType + "(" + charLength + ")";
+                    }
+                    else if (attributeType == "numeric")
+                    {
+                        string numericPrecision = dtRows[0]["NUMERIC_PRECISION"].ToString();
+                        string numericScale = dtRows[0]["NUMERIC_SCALE"].ToString();
+                        attributeType = attributeType + "(" + numericPrecision + "," + numericScale + ")";
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Warning: attribute not found");
+                }
+
+                colProps[attributeIndex] = attributeType;
+            }
+
+            return colProps;
+        }
+
+        static string GetTable(string select)
+        {
+            select = select.ToUpper();
+            int from = select.IndexOf(" FROM ") + 6;
+            string table = select.Substring(from);
+            return table;
         }
 
         private void CreateDMSModel(ConnectParameters connector)

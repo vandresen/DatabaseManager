@@ -23,7 +23,7 @@ namespace DatabaseManager.Server.Entities
                     " from pdo_qc_index" },
                     { "WellBore", "Select UWI, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE," +
                     "LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS," +
-                    "GROUND_ELEV, REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY" +
+                    "GROUND_ELEV, REMARK, ROW_CREATED_DATE, ROW_CHANGED_DATE, ROW_CHANGED_BY" +
                     " from WELL" },
                     { "MarkerPick", "Select STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH," +
                     "REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY " +
