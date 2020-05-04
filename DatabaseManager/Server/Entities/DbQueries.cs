@@ -34,7 +34,10 @@ namespace DatabaseManager.Server.Entities
                     { "WellTop", "Select STRAT_NAME_SET_ID, STRAT_UNIT_ID, LONG_NAME, ORDINAL_AGE_CODE," +
                     "REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY " +
                     " from STRAT_UNIT" },
-                    { "Log", "Select UWI, CURVE_ID, NULL_REPRESENTATION, VALUE_COUNT, MAX_INDEX, MIN_INDEX, ROW_CHANGED_DATE, ROW_CHANGED_BY from well_log_curve"}
+                    { "Log", "Select UWI, CURVE_ID, NULL_REPRESENTATION, VALUE_COUNT, MAX_INDEX, MIN_INDEX, ROW_CHANGED_DATE, ROW_CHANGED_BY," +
+                    " ROW_CREATED_DATE from well_log_curve"},
+                    { "LogCurve", "Select UWI, CURVE_ID, SAMPLE_ID, INDEX_VALUE, MEASURED_VALUE, ROW_CHANGED_DATE, ROW_CHANGED_BY," +
+                    " ROW_CREATED_DATE from well_log_curve_value"}
                 };
         }
 

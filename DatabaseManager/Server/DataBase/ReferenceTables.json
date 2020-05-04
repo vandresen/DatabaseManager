@@ -1,0 +1,34 @@
+﻿[
+  {
+    "DataType": "WellBore",
+    "Table": "FIELD",
+    "KeyAttribute": "FIELD_ID",
+    "ValueAttribute": "FIELD_NAME",
+    "ReferenceAttribute": "ASSIGNED_FIELD",
+    "Insert": true
+  },
+  {
+    "DataType": "WellBore",
+    "Table": "BUSINESS_ASSOCIATE",
+    "KeyAttribute": "BUSINESS_ASSOCIATE_ID",
+    "ValueAttribute": "BA_LONG_NAME",
+    "ReferenceAttribute": "OPERATOR",
+    "Insert": true
+  },
+  {
+    "DataType": "WellBore",
+    "Table": "R_WELL_STATUS",
+    "KeyAttribute": "STATUS",
+    "ValueAttribute": "LONG_NAME",
+    "ReferenceAttribute": "CURRENT_STATUS",
+    "Insert": false
+  },
+  {
+    "DataType": "WellBore",
+    "Table": "R_WELL_DATUM_TYPE",
+    "KeyAttribute": "WELL_DATUM_TYPE",
+    "ValueAttribute": "LONG_NAME",
+    "ReferenceAttribute": "DEPTH_DATUM",
+    "Insert": true
+  }
+]

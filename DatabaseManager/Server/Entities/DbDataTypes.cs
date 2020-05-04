@@ -18,7 +18,8 @@ namespace DatabaseManager.Server.Entities
                 "WellBore",
                 "MarkerPick",
                 "WellTop",
-                "Log"
+                "Log",
+                "LogCurve"
             };
             DataTypes = _datatypes;
         }

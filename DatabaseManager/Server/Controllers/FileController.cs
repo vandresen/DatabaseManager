@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using DatabaseManager.Server.Helpers;
 using DatabaseManager.Shared;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Storage;
@@ -18,10 +19,12 @@ namespace DatabaseManager.Server.Controllers
     {
         private readonly string connectionString;
         private readonly string container = "sources";
+        private readonly IWebHostEnvironment _env;
 
-        public FileController(IConfiguration configuration)
+        public FileController(IConfiguration configuration, IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
+            _env = env;
         }
 
         [HttpGet("{datatype}")]
@@ -66,7 +69,7 @@ namespace DatabaseManager.Server.Controllers
                     if (file.Exists())
                     {
                         string fileText = file.DownloadTextAsync().Result;
-                        LASLoader ls = new LASLoader();
+                        LASLoader ls = new LASLoader(_env);
                         ls.LoadLASFile(connector, fileText);
                         //DbUtilities dbConn = new DbUtilities();
                         //dbConn.OpenConnection(connector);

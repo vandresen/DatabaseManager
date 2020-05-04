@@ -20,7 +20,8 @@ namespace DatabaseManager.Server.Entities
                     { "MarkerPick", "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI" },
                     { "MarkerWell", "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI" },
                     { "WellTop", "STRAT_NAME_SET_ID, STRAT_UNIT_ID" },
-                    { "Log", "UWI, CURVE_ID"}
+                    { "Log", "UWI, CURVE_ID"},
+                    { "LogCurve", "UWI, CURVE_ID, SAMPLE_ID"}
                 };
         }
 

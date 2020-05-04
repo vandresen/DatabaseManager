@@ -1,5 +1,6 @@
 ﻿using DatabaseManager.Server.Entities;
 using DatabaseManager.Shared;
+using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -15,44 +16,33 @@ namespace DatabaseManager.Server.Helpers
     {
         private DbUtilities _dbConn;
         private string _uwi;
+        private string _nullRepresentation;
         private List<string> _logNames = new List<string>();
         private List<double> _curveValues = new List<double>();
+        private List<double> _indexValues = new List<double>();
         private List<ReferenceTable> _references = new List<ReferenceTable>();
+        private List<DataAccessDef> _dataDef = new List<DataAccessDef>();
 
-        public LASLoader()
+        public LASLoader(IWebHostEnvironment env)
         {
             _dbConn = new DbUtilities();
-            _references.Add(new ReferenceTable { DataType = "WellBore", Table = "FIELD", 
-                KeyAttribute = "FIELD_ID", ValueAttribute = "FIELD_NAME", ReferenceAttribute = "ASSIGNED_FIELD",
-                Insert = true
-            });
-            _references.Add(new ReferenceTable
+            _nullRepresentation = "-999.25";
+
+            try
             {
-                DataType = "WellBore",
-                Table = "BUSINESS_ASSOCIATE",
-                KeyAttribute = "BUSINESS_ASSOCIATE_ID",
-                ValueAttribute = "BA_LONG_NAME",
-                ReferenceAttribute = "OPERATOR",
-                Insert = true
-            });
-            _references.Add(new ReferenceTable
+                string contentRootPath = env.ContentRootPath;
+                string jsonFile = contentRootPath + @"\DataBase\ReferenceTables.json";
+                string json = System.IO.File.ReadAllText(jsonFile);
+                _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(json);
+                jsonFile = contentRootPath + @"\DataBase\PPDMDataAccess.json";
+                json = System.IO.File.ReadAllText(jsonFile);
+                _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(json);
+            }
+            catch (Exception ex)
             {
-                DataType = "WellBore",
-                Table = "R_WELL_STATUS",
-                KeyAttribute = "STATUS",
-                ValueAttribute = "LONG_NAME",
-                ReferenceAttribute = "CURRENT_STATUS",
-                Insert = false
-            });
-            _references.Add(new ReferenceTable
-            {
-                DataType = "WellBore",
-                Table = "R_WELL_DATUM_TYPE",
-                KeyAttribute = "WELL_DATUM_TYPE",
-                ValueAttribute = "LONG_NAME",
-                ReferenceAttribute = "DEPTH_DATUM",
-                Insert = true
-            });
+                Exception error = new Exception("Read refernce table file error: ", ex);
+                throw error;
+            }
         }
 
         public void LoadLASFile(ConnectParameters connector, string fileText)
@@ -79,9 +69,100 @@ namespace DatabaseManager.Server.Helpers
             GetHeaderInfo(wellInfo);
             GetCurveInfo(curveInfo);
             GetDataInfo(dataInfo);
+            LoadLogs();
 
             _dbConn.CloseConnection();
         }
+
+        private void LoadLogs()
+        {
+            DataAccessDef dataType = _dataDef.First(x => x.DataType == "Log");
+            int logCount = _logNames.Count();
+            GetIndexValues();
+            for (int k = 1; k < logCount; k++)
+            {
+                Dictionary<string, string> logHeader = new Dictionary<string, string>();
+                string[] attributes = Common.GetAttributes(dataType.Select);
+                foreach (string attribute in attributes)
+                {
+                    logHeader.Add(attribute.Trim(), "");
+                }
+                logHeader["NULL_REPRESENTATION"] = _nullRepresentation;
+                logHeader["VALUE_COUNT"] = "99999.0";
+                logHeader["MAX_INDEX"] = "99999.0";
+                logHeader["MIN_INDEX"] = "99999.0";
+                logHeader["UWI"] = _uwi;
+                string logName = Common.FixAposInStrings(_logNames[k]);
+                logHeader["CURVE_ID"] = logName;
+                string json = JsonConvert.SerializeObject(logHeader, Formatting.Indented);
+                LoadLogHeader(json, logName, k);
+            }
+        }
+
+        private void GetIndexValues()
+        {
+            int logCount = _logNames.Count();
+            int valueCount = _curveValues.Count() / logCount;
+            int index = 0;
+            for (int m = 0; m < valueCount; m++)
+            {
+                index = m * logCount;
+                _indexValues.Add(_curveValues[index]);
+            }
+        }
+
+        private void LoadLogHeader(string json, string logName, int pointer)
+        {
+            DataAccessDef dataType = _dataDef.First(x => x.DataType == "Log");
+            string select = dataType.Select;
+            string query = $" where UWI = '{_uwi}' and CURVE_ID = '{logName}'";
+            DataTable dt = _dbConn.GetDataTable(select, query);
+            if (dt.Rows.Count == 0)
+            {
+                json = Common.SetJsonDataObjectDate(json, "ROW_CREATED_DATE");
+                json = Common.SetJsonDataObjectDate(json, "ROW_CHANGED_DATE");
+                _dbConn.InsertDataObject(json, "Log");
+                LoadLogCurve(pointer, logName);
+            }
+        }
+
+        private void LoadLogCurve(int pointer, string logName)
+        {
+            string comma = "";
+            DataAccessDef dataType = _dataDef.First(x => x.DataType == "LogCurve");
+            int indexCount = _indexValues.Count();
+            int logCount = _logNames.Count();
+            string jsonArray = @"[";
+            for (int i = 0; i < indexCount; i++)
+            {
+                jsonArray = jsonArray + comma;
+                Dictionary<string, string> logCurve = new Dictionary<string, string>();
+                string[] attributes = Common.GetAttributes(dataType.Select);
+                foreach (string attribute in attributes)
+                {
+                    logCurve.Add(attribute.Trim(), "");
+                }
+                logCurve["UWI"] = _uwi;
+                logCurve["CURVE_ID"] = logName;
+                logCurve["SAMPLE_ID"] = i.ToString();
+                logCurve["INDEX_VALUE"] = _indexValues[i].ToString();
+                logCurve["MEASURED_VALUE"] = _curveValues[pointer + (i * logCount)].ToString();
+                string json = JsonConvert.SerializeObject(logCurve, Formatting.Indented);
+                json = Common.SetJsonDataObjectDate(json, "ROW_CREATED_DATE");
+                json = Common.SetJsonDataObjectDate(json, "ROW_CHANGED_DATE");
+                jsonArray = jsonArray + json;
+                comma = ",";
+            }
+            jsonArray = jsonArray + @"]";
+            string select = dataType.Select;
+            string query = $" where UWI = '{_uwi}' and CURVE_ID = '{logName}'";
+            DataTable dt = _dbConn.GetDataTable(select, query);
+            if (dt.Rows.Count == 0)
+            {
+                _dbConn.InsertDataObject(jsonArray, "LogCurve");
+            }
+        }
+
 
         private void GetDataInfo(string dataInfo)
         {
@@ -118,9 +199,9 @@ namespace DatabaseManager.Server.Helpers
 
         private void GetCurveInfo(string curveInfo)
         {
-            DbQueries select = new DbQueries();
+            DataAccessDef dataType = _dataDef.First(x => x.DataType == "Log");
             Dictionary<string, string> log = new Dictionary<string, string>();
-            string[] attributes = Common.GetAttributes(select["Log"]);
+            string[] attributes = Common.GetAttributes(dataType.Select);
             foreach (string attribute in attributes)
             {
                 log.Add(attribute.Trim(), "");
@@ -141,13 +222,14 @@ namespace DatabaseManager.Server.Helpers
             }
         }
 
+        
         private void GetHeaderInfo(string wellInfo)
         {
             LASHeaderMappings headMap = new LASHeaderMappings();
-            DbQueries select = new DbQueries();
+            DataAccessDef dataType = _dataDef.First(x => x.DataType == "WellBore");
             string input = null;
             Dictionary<string, string> header = new Dictionary<string, string>();
-            string[] attributes = Common.GetAttributes(select["WellBore"]);
+            string[] attributes = Common.GetAttributes(dataType.Select);
             foreach (string attribute in attributes)
             {
                 header.Add(attribute.Trim(), "");
@@ -172,6 +254,7 @@ namespace DatabaseManager.Server.Helpers
                     {
                         string key = headMap[line.Mnem];
                         header[key] = line.Data;
+                        if (key == "NULL") _nullRepresentation = line.Data;
                     }
                     catch (Exception)
                     {
@@ -191,8 +274,8 @@ namespace DatabaseManager.Server.Helpers
             {
                 json = CheckHeaderForeignKeys(json, reference);
             }
-            DbQueries dbQueries = new DbQueries();
-            string select = dbQueries["WellBore"];
+            DataAccessDef dataType = _dataDef.First(x => x.DataType == "WellBore");
+            string select = dataType.Select;
             string query = $" where UWI = '{_uwi}'";
             DataTable dt = _dbConn.GetDataTable(select, query);
             if (dt.Rows.Count == 0)
