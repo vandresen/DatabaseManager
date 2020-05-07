@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DatabaseManager.Shared;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,6 +24,15 @@ namespace DatabaseManager.Client.Helpers
                 throw new ApplicationException(await response.GetBody());
             }
             return response.Response;
+        }
+
+        public async Task LoadFile(FileParameters fileParameters)
+        {
+            var response = await httpService.Post(url, fileParameters);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
         }
     }
 }

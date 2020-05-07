@@ -21,11 +21,15 @@
 
 @code {
     private string statusMessage = "Not started";
+    private int failedFiles = 0;
     public int barValue = 0;
     public string barLabel = "0%";
+    FileParameters fileParameters = new FileParameters();
 
     protected async Task StartTransfer()
     {
+        fileParameters.DataConnector = singleton.TargetConnector;
+        fileParameters.FileShare = "logs";
         barValue = 1;
         barLabel = $"{barValue}%";
         string dataType = "logs";
@@ -33,19 +37,38 @@
         try
         {
             List<string> files = await dataFile.GetFiles(dataType);
-            foreach(string file in files)
-            {
-                progress($"processing {file}");
-                Console.WriteLine(file);
-            }
-            progress($"Transfer Complete");
+            await ProcessFiles(files);
+            progress($"Complete, {files.Count - failedFiles} out of {files.Count} transferred");
         }
         catch (Exception ex)
         {
             progress($"Error in transfer: {ex.Message}");
         }
-        barValue = 1;
+        barValue = 100;
         barLabel = $"{barValue}%";
+    }
+
+    protected async Task ProcessFiles(List<string> files)
+    {
+        int failedFiles = 0;
+        int interval = 100 / (files.Count());
+        foreach (string file in files)
+        {
+            try
+            {
+                progress($"processing {file}");
+                Console.WriteLine(file);
+                fileParameters.FileName = file;
+                await dataFile.LoadFile(fileParameters);
+                barValue = barValue + interval;
+                barLabel = $"{barValue}%";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                failedFiles = failedFiles + 1;
+            }
+        }
     }
 
     private void progress(string message)
