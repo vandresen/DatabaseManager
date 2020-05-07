@@ -5,9 +5,10 @@ PPDM database. So far this version provides functionality to:
 * Load the PPDM model
 * Manage PPDM data connectors
 * Transfer well data from one PPDM database to another 
+* Load data from LAS files into PPDM
+* Create a DSM index
 
-More functionality wil come later including 
-ideally a serverless architecture.
+More functionality wil come later
 
 ## License 
 Database Manager is released under the GPLv3 or higher license.
