@@ -6,6 +6,10 @@
 
 <TransferParametersForm TransferParameters="transferParameters" OnValidSubmit="StartDatabaseTransfer" />
 
+<div style="margin-top:20px">
+    <ProgressBar ValueNow="barValue" Label="@barLabel" />
+</div>
+
 <div>
     <p>Current status: @statusMessage</p>
 </div>
@@ -15,18 +19,22 @@
     private string statusMessage = "Not started";
     private string jsonString = "";
     TransferParameters transferParameters = new TransferParameters();
+    public int barValue = 0;
+    public string barLabel = "0%";
 
     protected async Task StartDatabaseTransfer()
     {
         Console.WriteLine("Start database transfer");
+        int barInt = 50 / DatabaseTables.Names.Count;
         foreach (string tableName in DatabaseTables.Names)
         {
             transferParameters.Table = tableName;
             transferParameters.TargetName = singleton.TargetConnector;
-            progress($"Deleting from {tableName}"); 
+            progress($"Deleting from {tableName}");
             try
             {
                 await databaseTransfer.Delete(transferParameters);
+                barValue = barValue + barInt;
             }
             catch (Exception ex)
             {
@@ -35,6 +43,7 @@
             }
         }
 
+        barInt = 50 / CopyTables.Names.Count;
         foreach (string tableName in CopyTables.Names)
         {
             transferParameters.Table = tableName;
@@ -42,6 +51,7 @@
             try
             {
                 await databaseTransfer.Copy(transferParameters);
+                barValue = barValue + barInt;
             }
             catch (Exception ex)
             {
@@ -50,6 +60,8 @@
             }
         }
 
+        barValue = 100;
+        barLabel = $"{barValue}%";
         progress($"Transfer Complete");
     }
 

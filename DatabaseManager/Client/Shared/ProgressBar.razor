@@ -5,10 +5,7 @@
          aria-valuenow="@ValueNow"
          aria-valuemin="0"
          aria-valuemax="100">
-        @if (!string.IsNullOrWhiteSpace(Label))
-        {
-            @Label
-        }
+            @barLabel
     </div>
 </div>
 
@@ -19,4 +16,5 @@
     public string Label { get; set; }
 
     private string Width => $"{ValueNow}%";
+    private string barLabel => $"{ValueNow}%";
 }
