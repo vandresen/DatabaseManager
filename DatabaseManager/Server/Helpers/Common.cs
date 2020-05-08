@@ -92,5 +92,10 @@ namespace DatabaseManager.Server.Helpers
             jsonText = dataObject.ToString();
             return jsonText;
         }
+
+        public static bool Between(double x, double min, double max)
+        {
+            return (min < x) && (x < max);
+        }
     }
 }

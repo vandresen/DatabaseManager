@@ -224,10 +224,18 @@ namespace DatabaseManager.Server.Helpers
 
             }
             location.Latitude = GetLocation(dr, latitudeAttribute);
+            if (location.Latitude != -99999.0)
+            {
+                if (!Common.Between(location.Latitude, 90.0, -90.0))
+                {
+                    location.Latitude = -99999.0;
+                }
+            }
             location.Longitude = GetLocation(dr, longitudeAttribute);
 
             return location;
         }
+
 
         private double GetLocation(DataRow dr, string attribute)
         {

@@ -4,7 +4,13 @@
 
 <h2>Create Index</h2>
 
+<p>Target Database: @singleton.TargetConnector</p>
+
 <button class="btn btn-primary" @onclick="StartIndex">Start Indexing</button>
+
+<div style="margin-top:20px">
+    <ProgressBar ValueNow="barValue" Label="@barLabel" />
+</div>
 
 <div>
     <p>Current status: @statusMessage</p>
@@ -14,6 +20,8 @@
     List<ParentIndexNodes> pNodes;
     CreateIndexParameters iParameters = new CreateIndexParameters();
     private string statusMessage = "Not started";
+    public int barValue = 0;
+    public string barLabel = "0%";
 
     protected async Task StartIndex()
     {
@@ -24,23 +32,22 @@
         try
         {
             pNodes = await createIndex.CreateParentNodes(iParameters);
-            Console.WriteLine(pNodes.Count);
-
+            int nodeInt = 100 / pNodes.Count;
             for (int j = 0; j < pNodes.Count; j++)
             {
                 ParentIndexNodes node = pNodes[j];
                 iParameters.ParentNodeNumber = j;
                 iParameters.ParentNodeId = node.ParentNodeId;
-                Console.WriteLine($"Node name: {node.Name}, Number: {node.NodeCount}");
+                int childInt = nodeInt / node.NodeCount;
                 for (int i = 0; i < node.NodeCount; i++)
                 {
                     iParameters.ParentNumber = i;
                     await createIndex.CreateChildIndexes(iParameters);
-                    //iBuilder.PopulateIndex(k, i, parentNo
+                    barValue = barValue + childInt;
                 }
             }
-
-            
+            barValue = 100;
+            barLabel = $"{barValue}%";
             progress("Indexing complete");
         }
         catch (Exception ex)
