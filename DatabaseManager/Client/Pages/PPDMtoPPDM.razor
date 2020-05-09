@@ -7,7 +7,7 @@
 <TransferParametersForm TransferParameters="transferParameters" OnValidSubmit="StartDatabaseTransfer" />
 
 <div style="margin-top:20px">
-    <ProgressBar ValueNow="barValue" Label="@barLabel" />
+    <ProgressBar ValueNow="barValue"/>
 </div>
 
 <div>
@@ -20,7 +20,6 @@
     private string jsonString = "";
     TransferParameters transferParameters = new TransferParameters();
     public int barValue = 0;
-    public string barLabel = "0%";
 
     protected async Task StartDatabaseTransfer()
     {
@@ -61,7 +60,6 @@
         }
 
         barValue = 100;
-        barLabel = $"{barValue}%";
         progress($"Transfer Complete");
     }
 

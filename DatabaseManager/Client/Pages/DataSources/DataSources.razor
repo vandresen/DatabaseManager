@@ -20,7 +20,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in ConnectParameters)
+                @foreach (var item in cpPagination)
                 {
                     <tr>
                         <td>
@@ -34,17 +34,28 @@
                 }
             </tbody>
         </table>
+        <Pagination CurrentPage="@curPage" TotalAmountPages="totalPages"
+                    SelectedPage="SelectedPage" />
     </WholeListTemplate>
 </GenericList>
 
 @code {
     List<ConnectParameters> ConnectParameters;
+    List<ConnectParameters> cpPagination;
+
+    int totalPages;
+    int totalRecords;
+    int curPage = 1;
+    int pageSize = 10;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             ConnectParameters = await dataSources.GetSources();
+            cpPagination = GetPage((curPage - 1) * pageSize, pageSize);
+            totalRecords = ConnectParameters.Count();
+            totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
         }
         catch (Exception ex)
         {
@@ -52,9 +63,23 @@
         }
     }
 
+    private async Task SelectedPage(int page)
+    {
+        curPage = page;
+        cpPagination = GetPage((curPage - 1) * pageSize, pageSize);
+        this.StateHasChanged();
+    }
+
     private async Task DeleteSources(string Name)
     {
         await dataSources.DeleteSource(Name);
         ConnectParameters = await dataSources.GetSources();
+    }
+
+    private List<ConnectParameters> GetPage(int page, int size)
+    {
+        List<ConnectParameters> wb = new List<ConnectParameters>();
+        wb = ConnectParameters.Skip(page).Take(size).ToList();
+        return wb;
     }
 }

@@ -1,5 +1,6 @@
 ﻿using DatabaseManager.Server.Entities;
 using DatabaseManager.Shared;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.Cosmos.Table;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -96,6 +97,24 @@ namespace DatabaseManager.Server.Helpers
         public static bool Between(double x, double min, double max)
         {
             return (min < x) && (x < max);
+        }
+
+        public static List<DataAccessDef> GetDataAccessDefinition(IWebHostEnvironment env)
+        {
+            List<DataAccessDef> accessDef = new List<DataAccessDef>();
+            try
+            {
+                string contentRootPath = env.ContentRootPath;
+                string jsonFile = contentRootPath + @"\DataBase\PPDMDataAccess.json";
+                string json = System.IO.File.ReadAllText(jsonFile);
+                accessDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(json);
+            }
+            catch (Exception ex)
+            {
+                Exception error = new Exception("Read data access definition table file error: ", ex);
+                throw error;
+            }
+            return accessDef;
         }
     }
 }

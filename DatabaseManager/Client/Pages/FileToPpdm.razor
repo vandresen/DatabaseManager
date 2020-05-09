@@ -12,7 +12,7 @@
 <button class="btn btn-primary" @onclick="StartTransfer">Start Transfer</button>
 
 <div style="margin-top:20px">
-    <ProgressBar ValueNow="barValue" Label="@barLabel" />
+    <ProgressBar ValueNow="barValue" />
 </div>
 
 <div>
@@ -23,7 +23,6 @@
     private string statusMessage = "Not started";
     private int failedFiles = 0;
     public int barValue = 0;
-    public string barLabel = "0%";
     FileParameters fileParameters = new FileParameters();
 
     protected async Task StartTransfer()
@@ -31,7 +30,6 @@
         fileParameters.DataConnector = singleton.TargetConnector;
         fileParameters.FileShare = "logs";
         barValue = 1;
-        barLabel = $"{barValue}%";
         string dataType = "logs";
         progress($"Start Transfer");
         try
@@ -45,7 +43,6 @@
             progress($"Error in transfer: {ex.Message}");
         }
         barValue = 100;
-        barLabel = $"{barValue}%";
     }
 
     protected async Task ProcessFiles(List<string> files)
@@ -61,7 +58,6 @@
                 fileParameters.FileName = file;
                 await dataFile.LoadFile(fileParameters);
                 barValue = barValue + interval;
-                barLabel = $"{barValue}%";
             }
             catch (Exception ex)
             {

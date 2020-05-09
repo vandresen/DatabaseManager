@@ -1,4 +1,4 @@
-﻿<div class="progress">
+﻿<div class="progress" style="margin-top:20px">
     <div class="progress-bar"
          role="progressbar"
          style="width: @Width"
@@ -12,8 +12,6 @@
 @code {
     [Parameter]
     public int ValueNow { get; set; }
-    [Parameter]
-    public string Label { get; set; }
 
     private string Width => $"{ValueNow}%";
     private string barLabel => $"{ValueNow}%";

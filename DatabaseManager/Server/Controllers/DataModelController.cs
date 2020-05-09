@@ -12,6 +12,7 @@ using Microsoft.Azure.Storage.File;
 using Microsoft.AspNetCore.Hosting;
 using DatabaseManager.Server.Entities;
 using System.Data;
+using Newtonsoft.Json;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -97,22 +98,23 @@ namespace DatabaseManager.Server.Controllers
             }
         }
 
-        static void CreateInsertStoredProcedure(DbUtilities dbConn)
+        private void CreateInsertStoredProcedure(DbUtilities dbConn)
         {
             string comma;
             string attributes;
 
-            DbQueries dbQueries = new DbQueries();
-            DbKeys dbKeys = new DbKeys();
+            List<DataAccessDef> accessDefs = Common.GetDataAccessDefinition(_env);
             DbDataTypes dbDataTypes = new DbDataTypes();
-
             for (int j = 0; j < dbDataTypes.DataTypes.Length; j++)
             {
                 string dataType = dbDataTypes.DataTypes[j];
-                string sqlCommand = "";
+                string sqlCommand = $"DROP PROCEDURE IF EXISTS spInsert{dataType} ";
+                dbConn.SQLExecute(sqlCommand);
+                sqlCommand = "";
 
-                string sql = dbQueries[dataType];
-                string[] keys = dbKeys[dataType].Split(',');
+                DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
+                string sql = accessDef.Select;
+                string[] keys = accessDef.Keys.Split(',');
 
                 string table = GetTable(sql);
                 ColumnProperties attributeProperties = GetColumnSchema(dbConn, sql);
@@ -166,23 +168,23 @@ namespace DatabaseManager.Server.Controllers
             }
         }
 
-        static void CreateUpdateStoredProcedure(DbUtilities dbConn)
+        private void CreateUpdateStoredProcedure(DbUtilities dbConn)
         {
             string comma;
             string attributes;
 
-            DbQueries dbQueries = new DbQueries();
-            DbKeys dbKeys = new DbKeys();
+            List<DataAccessDef> accessDefs = Common.GetDataAccessDefinition(_env);
             DbDataTypes dbDataTypes = new DbDataTypes();
-
             for (int j = 0; j < dbDataTypes.DataTypes.Length; j++)
             {
                 string dataType = dbDataTypes.DataTypes[j];
-                string sqlCommand = "";
+                string sqlCommand = $"DROP PROCEDURE IF EXISTS spUpdate{dataType} ";
+                dbConn.SQLExecute(sqlCommand);
+                sqlCommand = "";
 
-                string sql = dbQueries[dataType];
-                string[] keys = dbKeys[dataType].Split(',');
-                //keys = keys.Where(w => w != "Id").ToArray();
+                DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
+                string sql = accessDef.Select;
+                string[] keys = accessDef.Keys.Split(',');
 
                 string table = GetTable(sql);
                 ColumnProperties attributeProperties = GetColumnSchema(dbConn, sql);

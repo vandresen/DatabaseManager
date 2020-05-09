@@ -8,8 +8,8 @@
 
 <button class="btn btn-primary" @onclick="StartIndex">Start Indexing</button>
 
-<div style="margin-top:20px">
-    <ProgressBar ValueNow="barValue" Label="@barLabel" />
+<div>
+    <ProgressBar ValueNow="barValue" />
 </div>
 
 <div>
@@ -21,7 +21,6 @@
     CreateIndexParameters iParameters = new CreateIndexParameters();
     private string statusMessage = "Not started";
     public int barValue = 0;
-    public string barLabel = "0%";
 
     protected async Task StartIndex()
     {
@@ -47,7 +46,6 @@
                 }
             }
             barValue = 100;
-            barLabel = $"{barValue}%";
             progress("Indexing complete");
         }
         catch (Exception ex)
