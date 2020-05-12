@@ -22,12 +22,14 @@ namespace DatabaseManager.Server.Controllers
     {
         private readonly IWebHostEnvironment _env;
         private readonly string connectionString;
+        private readonly string _contentRootPath;
         private readonly string container = "sources";
 
         public DataModelController(IConfiguration configuration, IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             _env = env;
+            _contentRootPath = _env.ContentRootPath;
         }
 
         [HttpPost]
@@ -307,12 +309,12 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                string contentRootPath = _env.ContentRootPath;
-                string sqlFile = contentRootPath + @"\DataBase\DataScienceManagement.sql";
+                string sqlFile = _contentRootPath + @"\DataBase\DataScienceManagement.sql";
                 string sql = System.IO.File.ReadAllText(sqlFile);
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);
                 dbConn.SQLExecute(sql);
+                RuleUtilities.SaveRulesFile(dbConn, _contentRootPath);
                 dbConn.CloseConnection();
             }
             catch (Exception ex)

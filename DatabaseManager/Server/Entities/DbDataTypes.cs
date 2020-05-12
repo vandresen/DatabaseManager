@@ -15,6 +15,7 @@ namespace DatabaseManager.Server.Entities
             _datatypes = new string[]
             {
                 "Rules",
+                "Functions",
                 "WellBore",
                 "MarkerPick",
                 "WellTop",

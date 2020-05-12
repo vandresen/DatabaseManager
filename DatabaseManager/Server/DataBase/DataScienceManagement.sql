@@ -1,4 +1,5 @@
-﻿CREATE TABLE pdo_qc_index  
+﻿DROP TABLE IF EXISTS pdo_qc_index;
+CREATE TABLE pdo_qc_index  
 (  
    IndexNode hierarchyid PRIMARY KEY CLUSTERED,  
    IndexLevel AS IndexNode.GetLevel(),  
@@ -13,6 +14,7 @@
    JsonDataObject NVARCHAR(max),
    QC_STRING NVARCHAR(400)  
 );
+DROP TABLE IF EXISTS pdo_qc_rules;
 CREATE TABLE pdo_qc_rules
 (
 	Id INT IDENTITY(1,1) PRIMARY KEY, 
@@ -34,17 +36,20 @@ CREATE TABLE pdo_qc_rules
 	ModifiedDate datetime NULL,
 	KeyNumber int NOT NULL
 );
+DROP TABLE IF EXISTS pdo_rule_functions;
 CREATE TABLE pdo_rule_functions (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     FunctionName NVARCHAR(255) NOT NULL,
     FunctionUrl NVARCHAR(255) NOT NULL,
     FunctionKey NVARCHAR(255)
 );
+DROP TABLE IF EXISTS pdo_rule_models;
 CREATE TABLE pdo_rule_models (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     RuleId INT NOT NULL,
     JsonData NVARCHAR(max)
 );
+DROP TABLE IF EXISTS pdo_indexes;
 CREATE TABLE pdo_indexes (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     IndexName NVARCHAR(255) NOT NULL UNIQUE,
@@ -52,6 +57,7 @@ CREATE TABLE pdo_indexes (
     ModifiedBy NVARCHAR(255) NULL,
     ModifiedDate datetime NULL
 );
+DROP TABLE IF EXISTS pdo_version_table;
 CREATE TABLE pdo_version_table (
     VersionNumber INT NULL,
     ModifiedDate datetime NULL
