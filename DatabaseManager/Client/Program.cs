@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using DatabaseManager.Client.Helpers;
+using System.Net.Http;
 
 namespace DatabaseManager.Client
 {
@@ -14,6 +15,7 @@ namespace DatabaseManager.Client
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("app");
+            builder.Services.AddSingleton(new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
             ConfigureServices(builder.Services);
 
             await builder.Build().RunAsync();
@@ -21,7 +23,6 @@ namespace DatabaseManager.Client
 
         private static void ConfigureServices(IServiceCollection services)
         {
-            services.AddBaseAddressHttpClient();
             services.AddOptions();
             services.AddSingleton<SingletonServices>();
             services.AddScoped<IHttpService, HttpService>();
