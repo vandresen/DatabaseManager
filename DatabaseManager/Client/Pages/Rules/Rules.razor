@@ -1,0 +1,94 @@
+﻿@page "/rules"
+@inject IRules rules
+@inject SingletonServices singleton
+
+<h3>Rules</h3>
+
+@if (RuleList == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <GenericList List="RuleList">
+        <WholeListTemplate>
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Data Type</th>
+                        <th>Category</th>
+                        <th>Rule Name</th>
+                        <th>Active</th>
+                        <th>Rule Key</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in rulePagination)
+                    {
+                        <tr>
+                            <td>
+                                <a class="btn btn-success" href="/rules/edit/@singleton.TargetConnector/@item.Id">Edit</a>
+                                <button class="btn btn-danger" @onclick="@(() => DeleteSources(singleton.TargetConnector))">Delete</button>
+                            </td>
+                            <td>@item.DataType</td>
+                            <td>@item.RuleType</td>
+                            <td>@item.RuleName</td>
+                            <td>@item.Active</td>
+                            <td>@item.RuleKey</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <Pagination CurrentPage="@curPage" TotalAmountPages="totalPages"
+                        SelectedPage="SelectedPage" />
+        </WholeListTemplate>
+    </GenericList>
+}
+
+       @code {
+           List<RuleModel> RuleList;
+           List<RuleModel> rulePagination;
+
+           int totalPages;
+           int totalRecords;
+           int curPage = 1;
+           int pageSize = 10;
+
+           protected override async Task OnInitializedAsync()
+           {
+               try
+               {
+                   RuleList = await rules.GetRules(singleton.TargetConnector);
+                   Console.WriteLine(RuleList.Count());
+                   rulePagination = GetPage((curPage - 1) * pageSize, pageSize);
+                   totalRecords = RuleList.Count();
+                   totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
+               }
+               catch (Exception ex)
+               {
+                   Console.WriteLine($"Errors: {ex}");
+               }
+           }
+
+           private async Task DeleteSources(string Name)
+           {
+               Console.WriteLine(Name);
+               //await dataSources.DeleteSource(Name);
+               //ConnectParameters = await dataSources.GetSources();
+           }
+
+           private async Task SelectedPage(int page)
+           {
+               curPage = page;
+               rulePagination = GetPage((curPage - 1) * pageSize, pageSize);
+               this.StateHasChanged();
+           }
+
+           private List<RuleModel> GetPage(int page, int size)
+           {
+               List<RuleModel> rl = new List<RuleModel>();
+               rl = RuleList.Skip(page).Take(size).ToList();
+               return rl;
+           }
+        }
