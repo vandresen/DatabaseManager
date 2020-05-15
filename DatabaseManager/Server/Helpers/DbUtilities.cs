@@ -157,6 +157,28 @@ namespace DatabaseManager.Server.Helpers
             }
         }
 
+        public void UpdateDataObject(string jsonData, string dataType)
+        {
+            string sql = "spUpdate" + dataType;
+            string paramName = "@json";
+            using (SqlCommand cmd = new SqlCommand(sql, this.sqlCn))
+            {
+                try
+                {
+                    cmd.CommandTimeout = _sqlTimeOut;
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue(paramName, jsonData);
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    Exception error = new Exception($"Sorry! Error updating data object", ex);
+                    throw error;
+                }
+
+            }
+        }
+
         public int InsertIndex(int parentId, string dataName, string dataType, string dataKey,
             string jsonData, double latitude, double longitude)
         {

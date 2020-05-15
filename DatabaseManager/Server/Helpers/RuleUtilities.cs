@@ -1,4 +1,5 @@
 ﻿using DatabaseManager.Server.Entities;
+using DatabaseManager.Shared;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -34,6 +35,18 @@ namespace DatabaseManager.Server.Helpers
                 Exception error = new Exception($"Error saving rule: {ex}");
                 throw;
             }
+        }
+
+        public static void SaveRule(DbUtilities dbConn, RuleModel rule)
+        {
+            string jsonInsert = JsonConvert.SerializeObject(rule, Formatting.Indented);
+            dbConn.InsertDataObject(jsonInsert, "Rules");
+        }
+
+        public static void UpdateRule(DbUtilities dbConn, RuleModel rule)
+        {
+            string jsonInsert = JsonConvert.SerializeObject(rule, Formatting.Indented);
+            dbConn.UpdateDataObject(jsonInsert, "Rules");
         }
 
         public static string SaveRuleFunction(DbUtilities dbConn, string ruleFunction, string path)
