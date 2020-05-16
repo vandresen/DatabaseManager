@@ -1,9 +1,11 @@
 ﻿using DatabaseManager.Server.Entities;
 using DatabaseManager.Shared;
+using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -37,10 +39,13 @@ namespace DatabaseManager.Server.Helpers
             }
         }
 
-        public static void SaveRule(DbUtilities dbConn, RuleModel rule)
+        public static void SaveRule(DbUtilities dbConn, RuleModel rule, DataAccessDef ruleAccessDef)
         {
             string jsonInsert = JsonConvert.SerializeObject(rule, Formatting.Indented);
-            dbConn.InsertDataObject(jsonInsert, "Rules");
+            string json = GetRuleKey(dbConn, jsonInsert, ruleAccessDef);
+            json = Common.SetJsonDataObjectDate(json, "CreatedDate");
+            json = Common.SetJsonDataObjectDate(json, "ModifiedDate");
+            dbConn.InsertDataObject(json, "Rules");
         }
 
         public static void UpdateRule(DbUtilities dbConn, RuleModel rule)
@@ -84,6 +89,32 @@ namespace DatabaseManager.Server.Helpers
             dbConn.InsertDataObject(jsonInsert, "Functions");
 
             return functionname;
+        }
+
+        private static string GetRuleKey(DbUtilities dbConn, string jsonInput, DataAccessDef ruleAccessDef)
+        {
+            JObject dataObject = JObject.Parse(jsonInput);
+            string category = dataObject["RuleType"].ToString();
+            string select = ruleAccessDef.Select;
+            string query = $" where RuleType = '{category}' order by keynumber desc";
+            DataTable dt = dbConn.GetDataTable(select, query);
+            int key = 1;
+            if (dt.Rows.Count > 0)
+            {
+                int.TryParse(dt.Rows[0]["KeyNumber"].ToString(), out key);
+                if (key == 0)
+                {
+                    throw new System.ArgumentException("KeyNumber is bad", "original");
+                }
+                key++;
+            }
+            string strKey = key.ToString();
+            dataObject["KeyNumber"] = strKey;
+            RuleTypeDictionary rt = new RuleTypeDictionary();
+            string ruleKey = rt[category];
+            dataObject["RuleKey"] = ruleKey + strKey;
+            string json = dataObject.ToString();
+            return json;
         }
     }
 }

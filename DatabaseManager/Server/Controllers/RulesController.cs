@@ -21,11 +21,15 @@ namespace DatabaseManager.Server.Controllers
         private readonly string connectionString;
         private readonly string container = "sources";
         private readonly IWebHostEnvironment _env;
+        List<DataAccessDef> _accessDefs;
+        DataAccessDef _ruleAccessDef;
 
         public RulesController(IConfiguration configuration, IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             _env = env;
+            _accessDefs = Common.GetDataAccessDefinition(_env);
+            _ruleAccessDef = _accessDefs.First(x => x.DataType == "Rules");
         }
 
         [HttpGet("{source}")]
@@ -33,14 +37,12 @@ namespace DatabaseManager.Server.Controllers
         {
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
-            List<DataAccessDef> accessDefs = Common.GetDataAccessDefinition(_env);
-            DataAccessDef accessDef = accessDefs.First(x => x.DataType == "Rules");
             string result = "";
             DbUtilities dbConn = new DbUtilities();
             try
             {
                 dbConn.OpenConnection(connector);
-                string select = accessDef.Select;
+                string select = _ruleAccessDef.Select;
                 string query = "";
                 DataTable dt = dbConn.GetDataTable(select, query);
                 result = JsonConvert.SerializeObject(dt, Formatting.Indented);
@@ -64,7 +66,7 @@ namespace DatabaseManager.Server.Controllers
             try
             {
                 dbConn.OpenConnection(connector);
-                RuleUtilities.SaveRule(dbConn, rule);
+                RuleUtilities.SaveRule(dbConn, rule, _ruleAccessDef);
             }
             catch (Exception ex)
             {
