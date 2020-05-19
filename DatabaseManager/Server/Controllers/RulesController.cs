@@ -56,6 +56,32 @@ namespace DatabaseManager.Server.Controllers
             return result;
         }
 
+        [HttpGet("{source}/{id:int}")]
+        public async Task<ActionResult<string>> GetRule(string source, int id)
+        {
+            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
+            if (connector == null) return BadRequest();
+            string result = "";
+            DbUtilities dbConn = new DbUtilities();
+            try
+            {
+                dbConn.OpenConnection(connector);
+                string select = _ruleAccessDef.Select;
+                string query = $" where Id = {id}";
+                DataTable dt = dbConn.GetDataTable(select, query);
+                result = JsonConvert.SerializeObject(dt, Formatting.Indented);
+                result = result.Replace("[", "");
+                result = result.Replace("]", "");
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+
+            dbConn.CloseConnection();
+            return result;
+        }
+
         [HttpPost("{source}")]
         public async Task<ActionResult<string>> SaveRule(string source, RuleModel rule)
         {
@@ -76,7 +102,7 @@ namespace DatabaseManager.Server.Controllers
             return Ok($"OK");
         }
 
-        [HttpPut("{source}/{id}")]
+        [HttpPut("{source}/{id:int}")]
         public async Task<ActionResult<string>> UpdateRule(string source, int id, RuleModel rule)
         {
             if (rule == null) return BadRequest();

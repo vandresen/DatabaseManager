@@ -29,7 +29,7 @@ else
                         <tr>
                             <td>
                                 <a class="btn btn-success" href="/rules/edit/@singleton.TargetConnector/@item.Id">Edit</a>
-                                <button class="btn btn-danger" @onclick="@(() => DeleteSources(singleton.TargetConnector))">Delete</button>
+                                <button class="btn btn-danger" @onclick="@(() => RuleDelete(item.Id))">Delete</button>
                             </td>
                             <td>@item.DataType</td>
                             <td>@item.RuleType</td>
@@ -71,11 +71,13 @@ else
                }
            }
 
-           private async Task DeleteSources(string Name)
+           private async Task RuleDelete(int id)
            {
-               Console.WriteLine(Name);
-               //await dataSources.DeleteSource(Name);
-               //ConnectParameters = await dataSources.GetSources();
+               Console.WriteLine(id);
+               await rules.DeleteRule(singleton.TargetConnector, id);
+               RuleList = await rules.GetRules(singleton.TargetConnector);
+               rulePagination = GetPage((curPage - 1) * pageSize, pageSize);
+               this.StateHasChanged();
            }
 
            private async Task SelectedPage(int page)

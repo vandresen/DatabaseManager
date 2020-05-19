@@ -1,0 +1,46 @@
+﻿<EditForm Model="RuleToEdit" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label>Rule Name:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@RuleToEdit.RuleName" />
+            <ValidationMessage For="@(() => RuleToEdit.RuleName)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Data Attribute:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@RuleToEdit.DataAttribute" />
+            <ValidationMessage For="@(() => RuleToEdit.DataAttribute)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Rule Parameters:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@RuleToEdit.RuleParameters" />
+            <ValidationMessage For="@(() => RuleToEdit.RuleParameters)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Rule Filter:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@RuleToEdit.RuleFilter" />
+            <ValidationMessage For="@(() => RuleToEdit.RuleFilter)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Description:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@RuleToEdit.RuleDescription" />
+            <ValidationMessage For="@(() => RuleToEdit.RuleDescription)" />
+        </div>
+    </div>
+    <button class="btn btn-success" type="submit">Save Changes</button>
+</EditForm>
+
+@code {
+    [Parameter] public RuleModel RuleToEdit { get; set; }
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+
+
+}
