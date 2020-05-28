@@ -41,6 +41,8 @@ namespace DatabaseManager.Server.Helpers
 
         public static void SaveRule(DbUtilities dbConn, RuleModel rule, DataAccessDef ruleAccessDef)
         {
+            rule.ModifiedBy = dbConn.GetUsername();
+            rule.CreatedBy = dbConn.GetUsername();
             string jsonInsert = JsonConvert.SerializeObject(rule, Formatting.Indented);
             string json = GetRuleKey(dbConn, jsonInsert, ruleAccessDef);
             json = Common.SetJsonDataObjectDate(json, "CreatedDate");
@@ -50,8 +52,10 @@ namespace DatabaseManager.Server.Helpers
 
         public static void UpdateRule(DbUtilities dbConn, RuleModel rule)
         {
-            string jsonInsert = JsonConvert.SerializeObject(rule, Formatting.Indented);
-            dbConn.UpdateDataObject(jsonInsert, "Rules");
+            rule.ModifiedBy = dbConn.GetUsername();
+            string json = JsonConvert.SerializeObject(rule, Formatting.Indented);
+            json = Common.SetJsonDataObjectDate(json, "ModifiedDate");
+            dbConn.UpdateDataObject(json, "Rules");
         }
 
         public static string SaveRuleFunction(DbUtilities dbConn, string ruleFunction, string path)

@@ -4,6 +4,18 @@
 
 <h3>Rules</h3>
 
+<div class="dropdown">
+    <button @onclick="ToggleDropdownMenu" class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="@expandedState">
+        New Rule
+    </button>
+    <div class="dropdown-menu collapse @showMenu">
+        @foreach (var rule in RuleTypes)
+        {
+            <a class="dropdown-item" href="createrule/@rule">@rule</a>
+        }
+    </div>
+</div>
+
 @if (RuleList == null)
 {
     <text>Loading...</text>
@@ -46,51 +58,70 @@ else
     </GenericList>
 }
 
-       @code {
-           List<RuleModel> RuleList;
-           List<RuleModel> rulePagination;
+<div class="dropdown">
+    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        New Rule
+    </button>
+    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        <a class="dropdown-item" href="#">Completness</a>
+        <a class="dropdown-item" href="#">Validity</a>
+        <a class="dropdown-item" href="#">Prediction</a>
+    </div>
+</div>
 
-           int totalPages;
-           int totalRecords;
-           int curPage = 1;
-           int pageSize = 10;
+@code {
+    private List<string> RuleTypes = new List<string> { "Entirety", "Completeness", "Predictions", "Validity" };
+    List<RuleModel> RuleList;
+    List<RuleModel> rulePagination;
+    private bool expandedState = false;
+    private string showMenu = null;
 
-           protected override async Task OnInitializedAsync()
-           {
-               try
-               {
-                   RuleList = await rules.GetRules(singleton.TargetConnector);
-                   Console.WriteLine(RuleList.Count());
-                   rulePagination = GetPage((curPage - 1) * pageSize, pageSize);
-                   totalRecords = RuleList.Count();
-                   totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
-               }
-               catch (Exception ex)
-               {
-                   Console.WriteLine($"Errors: {ex}");
-               }
-           }
+    int totalPages;
+    int totalRecords;
+    int curPage = 1;
+    int pageSize = 10;
 
-           private async Task RuleDelete(int id)
-           {
-               Console.WriteLine(id);
-               await rules.DeleteRule(singleton.TargetConnector, id);
-               RuleList = await rules.GetRules(singleton.TargetConnector);
-               rulePagination = GetPage((curPage - 1) * pageSize, pageSize);
-               this.StateHasChanged();
-           }
-
-           private async Task SelectedPage(int page)
-           {
-               curPage = page;
-               rulePagination = GetPage((curPage - 1) * pageSize, pageSize);
-               this.StateHasChanged();
-           }
-
-           private List<RuleModel> GetPage(int page, int size)
-           {
-               List<RuleModel> rl = new List<RuleModel>();
-               rl = RuleList.Skip(page).Take(size).ToList();
-               return rl;
-           }
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            RuleList = await rules.GetRules(singleton.TargetConnector);
+            rulePagination = GetPage((curPage - 1) * pageSize, pageSize);
+            totalRecords = RuleList.Count();
+            totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task RuleDelete(int id)
+    {
+        Console.WriteLine(id);
+        await rules.DeleteRule(singleton.TargetConnector, id);
+        RuleList = await rules.GetRules(singleton.TargetConnector);
+        rulePagination = GetPage((curPage - 1) * pageSize, pageSize);
+        this.StateHasChanged();
+    }
+
+    private async Task SelectedPage(int page)
+    {
+        curPage = page;
+        rulePagination = GetPage((curPage - 1) * pageSize, pageSize);
+        this.StateHasChanged();
+    }
+
+    private List<RuleModel> GetPage(int page, int size)
+    {
+        List<RuleModel> rl = new List<RuleModel>();
+        rl = RuleList.Skip(page).Take(size).ToList();
+        return rl;
+    }
+
+    private void ToggleDropdownMenu()
+    {
+        expandedState = !expandedState;
+        showMenu = expandedState ? "show" : null;
+    }
+}

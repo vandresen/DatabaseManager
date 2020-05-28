@@ -7,28 +7,25 @@
 
 @if (ruleModel != null)
 {
-    <EditRuleForm RuleToEdit="ruleModel" OnValidSubmit="Edit" />
+    <EditRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" OnValidSubmit="Edit" />
 }
 
 @code {
     [Parameter] public int Id { get; set; }
     [Parameter] public string SourceName { get; set; }
     public RuleModel ruleModel;
+    public RuleInfo ruleInfo;
 
     protected override async Task OnInitializedAsync()
     {
+        ruleInfo = await rules.GetRuleInfo(singleton.TargetConnector);
         ruleModel = await rules.GetRule(SourceName, Id);
     }
 
     private async Task Edit()
     {
-        Console.WriteLine("Finished Editing");
         try
         {
-            //string connectStr = Common.GetConnectionString(connectParameters);
-            //Console.WriteLine(connectStr);
-            //connectParameters.ConnectionString = connectStr;
-            //await dataSources.UpdateSource(connectParameters);
             await rules.UpdateRule(ruleModel, singleton.TargetConnector, Id);
             navigationManager.NavigateTo("rules");
         }

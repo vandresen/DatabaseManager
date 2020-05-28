@@ -1,0 +1,41 @@
+﻿@page "/createrule/{RuleType}"
+@inject IRules rules
+@inject IRules rules
+@inject SingletonServices singleton
+@inject NavigationManager navigationManager
+
+<h3>New @RuleType Rule</h3>
+
+@if (ruleInfo != null)
+{
+    <NewRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" Type="@type" OnValidSubmit="Create" />
+}
+
+@code {
+    [Parameter] public string RuleType { get; set; }
+    public RuleModel ruleModel = new RuleModel();
+    public RuleInfo ruleInfo;
+    public string type;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ruleInfo = await rules.GetRuleInfo(singleton.TargetConnector);
+        type = RuleType;
+        Console.WriteLine($"New Rule: {type}");
+    }
+
+    private async Task Create()
+    {
+        Console.WriteLine("Save Rule");
+        try
+        {
+            ruleModel.CreatedBy = Environment.UserName;
+            await rules.InsertRule(ruleModel, singleton.TargetConnector);
+            navigationManager.NavigateTo("rules");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}

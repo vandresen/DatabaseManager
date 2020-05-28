@@ -35,7 +35,6 @@ namespace DatabaseManager.Shared
         [StringLength(16)]
         public string RuleKey { get; set; }
 
-        [Required]
         public int KeyNumber { get; set; }
 
         [StringLength(255)]

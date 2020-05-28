@@ -36,6 +36,25 @@ namespace DatabaseManager.Client.Helpers
             return response.Response;
         }
 
+        public async Task<RuleInfo> GetRuleInfo(string source)
+        {
+            var response = await httpService.Get<RuleInfo>($"{url}/RuleInfo/{source}");
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
+        public async Task InsertRule(RuleModel rule, string source)
+        {
+            var response = await httpService.Post($"{url}/{source}", rule);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
+
         public async Task UpdateRule(RuleModel rule, string source, int id)
         {
             var response = await httpService.Put($"{url}/{source}/{id}", rule);

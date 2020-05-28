@@ -135,6 +135,27 @@ namespace DatabaseManager.Server.Helpers
             return dt;
         }
 
+        public string GetUsername()
+        {
+            string sql = "Select ORIGINAL_LOGIN()";
+            string userName = "UNKNOWN";
+            using (SqlCommand cmd = new SqlCommand(sql, this.sqlCn))
+            {
+                try
+                {
+                    cmd.CommandTimeout = _sqlTimeOut;
+                    userName = (string)cmd.ExecuteScalar();
+                }
+                catch (SqlException ex)
+                {
+                    Exception error = new Exception("Error getting sequence: ", ex);
+                    throw error;
+                }
+
+            }
+            return userName;
+        }
+
         public void InsertDataObject(string jsonData, string dataType)
         {
             string sql = "spInsert" + dataType;
