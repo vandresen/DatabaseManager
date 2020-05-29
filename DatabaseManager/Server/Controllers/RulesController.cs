@@ -9,6 +9,8 @@ using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Storage;
+using Microsoft.Azure.Storage.File;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 
@@ -20,6 +22,7 @@ namespace DatabaseManager.Server.Controllers
     {
         private readonly string connectionString;
         private readonly string container = "sources";
+        private readonly string ruleShare = "rules";
         private readonly IWebHostEnvironment _env;
         List<DataAccessDef> _accessDefs;
         DataAccessDef _ruleAccessDef;
@@ -82,6 +85,65 @@ namespace DatabaseManager.Server.Controllers
             return result;
         }
 
+        [HttpGet("RuleFile")]
+        public async Task<ActionResult<List<string>>> GetPredictions()
+        {
+            List<string> files = new List<string>();
+            try
+            {
+                CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+                CloudFileClient fileClient = account.CreateCloudFileClient();
+                CloudFileShare share = account.CreateCloudFileClient().GetShareReference(ruleShare);
+                IEnumerable<IListFileItem> fileList = share.GetRootDirectoryReference().ListFilesAndDirectories();
+                foreach (IListFileItem listItem in fileList)
+                {
+                    if (listItem.GetType() == typeof(CloudFile))
+                    {
+                        files.Add(listItem.Uri.Segments.Last());
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+            return files;
+        }
+
+        [HttpGet("RuleFile/{rulename}")]
+        public async Task<ActionResult<string>> GetPrediction(string ruleName)
+        {
+            string result = "";
+            try
+            {
+                CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+                CloudFileClient fileClient = account.CreateCloudFileClient();
+                CloudFileShare share = fileClient.GetShareReference(ruleShare);
+                if (share.Exists())
+                {
+                    CloudFileDirectory rootDir = share.GetRootDirectoryReference();
+                    CloudFile file = rootDir.GetFileReference(ruleName);
+                    if (file.Exists())
+                    {
+                        result = file.DownloadTextAsync().Result;
+                    }
+                    else
+                    {
+                        return BadRequest();
+                    }
+                }
+                else
+                {
+                    return BadRequest();
+                }
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+            return result;
+        }
+
         [HttpGet("RuleInfo/{source}")]
         public async Task<ActionResult<RuleInfo>> GetRuleInfo(string source)
         {
@@ -119,6 +181,36 @@ namespace DatabaseManager.Server.Controllers
                 return BadRequest();
             }
             dbConn.CloseConnection();
+            return Ok($"OK");
+        }
+
+        [HttpPost("RuleFile/{rulename}")]
+        public async Task<ActionResult<string>> SaveRuleToFile(string RuleName, List<RuleModel> rules)
+        {
+            if (rules == null) return BadRequest();
+            try
+            {
+                CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+                CloudFileClient fileClient = account.CreateCloudFileClient();
+                CloudFileShare share = fileClient.GetShareReference(ruleShare);
+                if (!share.Exists())
+                {
+                    share.Create();
+                }
+                CloudFileDirectory rootDir = share.GetRootDirectoryReference();
+                string fileName = RuleName + ",json";
+                string json = JsonConvert.SerializeObject(rules, Formatting.Indented);
+                CloudFile file = rootDir.GetFileReference(fileName);
+                if (!file.Exists())
+                {
+                    file.Create(json.Length);
+                }
+                file.UploadText(json);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest();
+            }
             return Ok($"OK");
         }
 
