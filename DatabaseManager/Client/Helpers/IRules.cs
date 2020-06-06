@@ -9,9 +9,12 @@ namespace DatabaseManager.Client.Helpers
     public interface IRules
     {
         Task DeleteRule(string source, int id);
+        Task<List<RuleModel>> GetPrediction(string predictionName);
+        Task<List<PredictionSet>> GetPredictions();
         Task<RuleModel> GetRule(string source, int id);
         Task<RuleInfo> GetRuleInfo(string source);
         Task<List<RuleModel>> GetRules(string source);
+        Task InsertPrediction(List<RuleModel> rule, string predictionName);
         Task InsertRule(RuleModel rule, string source);
         Task UpdateRule(RuleModel rule, string source, int id);
     }

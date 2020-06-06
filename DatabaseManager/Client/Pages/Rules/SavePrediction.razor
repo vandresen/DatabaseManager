@@ -1,0 +1,41 @@
+﻿@page "/rules/saveprediction"
+@inject IRules rules
+@inject SingletonServices singleton
+@inject NavigationManager navigationManager
+
+<h3>Save Prediction</h3>
+
+<div>
+    <label>Prediction Name:</label>
+    <div>
+        <input @bind="predictionName" />
+    </div>
+</div>
+
+<div style="margin-top:20px">
+    <button class="btn btn-primary" @onclick="Save">Save</button>
+</div>
+
+@code {
+    public string predictionName { get; set; }
+    List<RuleModel> RuleList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            RuleList = await rules.GetRules(singleton.TargetConnector);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task Save()
+    {
+        await rules.InsertPrediction(RuleList, predictionName);
+        navigationManager.NavigateTo("rules");
+    }
+
+}

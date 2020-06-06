@@ -1,0 +1,97 @@
+﻿@page "/rules/getpredictions"
+@inject SingletonServices singleton
+@inject IRules rules
+@inject NavigationManager navigationManager
+
+<h3>Predictions</h3>
+
+<GenericList List="predictionSets">
+    <WholeListTemplate>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in psPagination)
+                {
+                    <tr>
+                        <td>
+                            <button class="btn btn-danger" @onclick="@(() => SelectedPrediction(item.Name))">Select</button>
+                        </td>
+                        <td>@item.Name</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <Pagination CurrentPage="@curPage" TotalAmountPages="totalPages"
+                    SelectedPage="SelectedPage" />
+    </WholeListTemplate>
+</GenericList>
+
+@code {
+    List<PredictionSet> predictionSets;
+    List<PredictionSet> psPagination;
+
+    int totalPages;
+    int totalRecords;
+    int curPage = 1;
+    int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            predictionSets = await rules.GetPredictions();
+            psPagination = new List<PredictionSet>();
+            psPagination = predictionSets.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+            totalRecords = predictionSets.Count();
+            totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task SelectedPrediction(string name)
+    {
+        try
+        {
+            List<RuleModel> currentRules = await rules.GetRules(singleton.TargetConnector);
+            foreach (RuleModel currRule in currentRules)
+            {
+                await rules.DeleteRule(singleton.TargetConnector, currRule.Id);
+            }
+            List<RuleModel> ruleSet = await rules.GetPrediction(name);
+            foreach (RuleModel newRule in ruleSet)
+            {
+                newRule.CreatedBy = Environment.UserName;
+                await rules.InsertRule(newRule, singleton.TargetConnector);
+            }
+            navigationManager.NavigateTo("rules");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+
+    }
+
+    private void SelectedPage(int page)
+    {
+        curPage = page;
+        psPagination = new List<PredictionSet>();
+        psPagination = predictionSets.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+        this.StateHasChanged();
+    }
+
+    private List<PredictionSet> GetPage(int page, int size)
+    {
+        List<PredictionSet> ps = new List<PredictionSet>();
+        ps = predictionSets.Skip(page).Take(size).ToList();
+        return ps;
+    }
+}

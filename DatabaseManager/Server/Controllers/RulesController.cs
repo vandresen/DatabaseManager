@@ -86,9 +86,9 @@ namespace DatabaseManager.Server.Controllers
         }
 
         [HttpGet("RuleFile")]
-        public async Task<ActionResult<List<string>>> GetPredictions()
+        public async Task<ActionResult<List<PredictionSet>>> GetPredictions()
         {
-            List<string> files = new List<string>();
+            List<PredictionSet> files = new List<PredictionSet>();
             try
             {
                 CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
@@ -99,7 +99,11 @@ namespace DatabaseManager.Server.Controllers
                 {
                     if (listItem.GetType() == typeof(CloudFile))
                     {
-                        files.Add(listItem.Uri.Segments.Last());
+                        files.Add(new PredictionSet()
+                        {
+                            Name = listItem.Uri.Segments.Last()
+                        });
+                        //files.Add(listItem.Uri.Segments.Last());
                     }
                 }
             }

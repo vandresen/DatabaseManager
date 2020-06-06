@@ -2,9 +2,14 @@
 @inject IRules rules
 @inject SingletonServices singleton
 
-<h3>Rules</h3>
+<h3>Predictions</h3>
 
-<div class="dropdown">
+<div class="form-group">
+    <a class="btn btn-info" href="rules/saveprediction">Save Prediction Set</a>
+    <a class="btn btn-info" href="rules/getpredictions">Get Prediction Set</a>
+</div>
+
+<div class="dropdown" style="margin-top:20px">
     <button @onclick="ToggleDropdownMenu" class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="@expandedState">
         New Rule
     </button>
@@ -15,6 +20,8 @@
         }
     </div>
 </div>
+
+
 
 @if (RuleList == null)
 {
@@ -58,7 +65,7 @@ else
     </GenericList>
 }
 
-<div class="dropdown">
+@*<div class="dropdown">
     <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         New Rule
     </button>
@@ -67,7 +74,7 @@ else
         <a class="dropdown-item" href="#">Validity</a>
         <a class="dropdown-item" href="#">Prediction</a>
     </div>
-</div>
+</div>*@
 
 @code {
     private List<string> RuleTypes = new List<string> { "Entirety", "Completeness", "Predictions", "Validity" };

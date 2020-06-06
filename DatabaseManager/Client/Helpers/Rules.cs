@@ -36,6 +36,26 @@ namespace DatabaseManager.Client.Helpers
             return response.Response;
         }
 
+        public async Task<List<PredictionSet>> GetPredictions()
+        {
+            var response = await httpService.Get<List<PredictionSet>>($"{url}/RuleFile");
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
+        public async Task<List<RuleModel>> GetPrediction(string predictionName)
+        {
+            var response = await httpService.Get<List<RuleModel>>($"{url}/RuleFile/{predictionName}");
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
         public async Task<RuleInfo> GetRuleInfo(string source)
         {
             var response = await httpService.Get<RuleInfo>($"{url}/RuleInfo/{source}");
@@ -49,6 +69,15 @@ namespace DatabaseManager.Client.Helpers
         public async Task InsertRule(RuleModel rule, string source)
         {
             var response = await httpService.Post($"{url}/{source}", rule);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
+
+        public async Task InsertPrediction(List<RuleModel> rule, string predictionName)
+        {
+            var response = await httpService.Post($"{url}/RuleFile/{predictionName}", rule);
             if (!response.Success)
             {
                 throw new ApplicationException(await response.GetBody());
