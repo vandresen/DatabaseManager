@@ -74,6 +74,8 @@
     {
         await dataSources.DeleteSource(Name);
         ConnectParameters = await dataSources.GetSources();
+        cpPagination = ConnectParameters.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+        this.StateHasChanged();
     }
 
     private List<ConnectParameters> GetPage(int page, int size)

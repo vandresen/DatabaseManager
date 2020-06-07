@@ -1,0 +1,34 @@
+﻿@page  "/rules/editfunction/{Id:int}"
+@inject IFunctions rf
+@inject SingletonServices singleton
+@inject NavigationManager navigationManager
+
+<h3>Edit Function</h3>
+
+@if (ruleFunction != null)
+{
+    <FunctionForm RuleFunctions="ruleFunction" OnValidSubmit="Edit" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private RuleFunctions ruleFunction;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ruleFunction = await rf.GetFunction(singleton.TargetConnector, Id);
+    }
+
+    private async Task Edit()
+    {
+        try
+        {
+            await rf.UpdateFunction(ruleFunction, singleton.TargetConnector, Id);
+            navigationManager.NavigateTo("rules");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}

@@ -25,7 +25,8 @@
                 {
                 <tr>
                     <td>
-                        @*<button class="btn btn-danger" @onclick="@(() => SelectedPrediction(item.Name))">Select</button>*@
+                        <a class="btn btn-success" href="/rules/editfunction/@item.Id">Edit</a>
+                        <button class="btn btn-danger" @onclick="@(() => Delete(item.Id))">Delete</button>
                     </td>
                     <td>@item.FunctionName</td>
                     <td>@item.FunctionUrl</td>
@@ -52,7 +53,6 @@
         try
         {
             FunctionList = await rf.GetFunctions(singleton.TargetConnector);
-            Console.WriteLine(FunctionList.Count);
             FuncPagination = FunctionList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
             totalRecords = FunctionList.Count();
             totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
@@ -67,6 +67,14 @@
     {
         curPage = page;
         FuncPagination = new List<RuleFunctions>();
+        FuncPagination = FunctionList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+        this.StateHasChanged();
+    }
+
+    private async Task Delete(int id)
+    {
+        await rf.DeleteFunction(singleton.TargetConnector, id);
+        FunctionList = await rf.GetFunctions(singleton.TargetConnector);
         FuncPagination = FunctionList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
         this.StateHasChanged();
     }

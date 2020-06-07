@@ -26,9 +26,37 @@ namespace DatabaseManager.Client.Helpers
             return response.Response;
         }
 
+        public async Task<RuleFunctions> GetFunction(string source, int id)
+        {
+            var response = await httpService.Get<RuleFunctions>($"{url}/{source}/{id}");
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
         public async Task InsertFunction(RuleFunctions function, string source)
         {
             var response = await httpService.Post($"{url}/{source}", function);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
+
+        public async Task UpdateFunction(RuleFunctions function, string source, int id)
+        {
+            var response = await httpService.Put($"{url}/{source}/{id}", function);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
+
+        public async Task DeleteFunction(string source, int id)
+        {
+            var response = await httpService.Delete($"{url}/{source}/{id}");
             if (!response.Success)
             {
                 throw new ApplicationException(await response.GetBody());
