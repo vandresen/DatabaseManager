@@ -9,6 +9,10 @@
     <a class="btn btn-info" href="rules/getpredictions">Get Prediction Set</a>
 </div>
 
+<div class="form-group">
+    <a class="btn btn-info" href="rules/functions">Manage Rule Functions</a>
+</div>
+
 <div class="dropdown" style="margin-top:20px">
     <button @onclick="ToggleDropdownMenu" class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="@expandedState">
         New Rule
@@ -64,17 +68,6 @@ else
         </WholeListTemplate>
     </GenericList>
 }
-
-@*<div class="dropdown">
-    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        New Rule
-    </button>
-    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" href="#">Completness</a>
-        <a class="dropdown-item" href="#">Validity</a>
-        <a class="dropdown-item" href="#">Prediction</a>
-    </div>
-</div>*@
 
 @code {
     private List<string> RuleTypes = new List<string> { "Entirety", "Completeness", "Predictions", "Validity" };

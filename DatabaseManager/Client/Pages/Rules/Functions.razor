@@ -1,0 +1,73 @@
+﻿@page "/rules/functions"
+@inject IFunctions rf
+@inject SingletonServices singleton
+@using DatabaseManager.Shared
+
+
+<h3>Manage Rule Functions</h3>
+
+<div class="form-group">
+    <a class="btn btn-info" href="rules/newfunction">New Function</a>
+</div>
+
+<GenericList List="FunctionList">
+    <WholeListTemplate>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Function Name</th>
+                    <th>Function URL</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in FuncPagination)
+                {
+                <tr>
+                    <td>
+                        @*<button class="btn btn-danger" @onclick="@(() => SelectedPrediction(item.Name))">Select</button>*@
+                    </td>
+                    <td>@item.FunctionName</td>
+                    <td>@item.FunctionUrl</td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        <Pagination CurrentPage="@curPage" TotalAmountPages="totalPages"
+                    SelectedPage="SelectedPage" />
+    </WholeListTemplate>
+</GenericList>
+
+@code {
+    List<RuleFunctions> FunctionList;
+    List<RuleFunctions> FuncPagination;
+
+    int totalPages;
+    int totalRecords;
+    int curPage = 1;
+    int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            FunctionList = await rf.GetFunctions(singleton.TargetConnector);
+            Console.WriteLine(FunctionList.Count);
+            FuncPagination = FunctionList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+            totalRecords = FunctionList.Count();
+            totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private void SelectedPage(int page)
+    {
+        curPage = page;
+        FuncPagination = new List<RuleFunctions>();
+        FuncPagination = FunctionList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+        this.StateHasChanged();
+    }
+}

@@ -87,11 +87,4 @@
         psPagination = predictionSets.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
         this.StateHasChanged();
     }
-
-    private List<PredictionSet> GetPage(int page, int size)
-    {
-        List<PredictionSet> ps = new List<PredictionSet>();
-        ps = predictionSets.Skip(page).Take(size).ToList();
-        return ps;
-    }
 }

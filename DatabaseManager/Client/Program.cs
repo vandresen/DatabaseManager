@@ -33,6 +33,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IIndexData, IndexData>();
             services.AddScoped<IDataFile, DataFile>();
             services.AddScoped<IRules, Rules>();
+            services.AddScoped<IFunctions, Functions>();
         }
     }
 }

@@ -1,0 +1,25 @@
+﻿<EditForm Model="RuleFunctions" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label>Function Name:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@RuleFunctions.FunctionName" readonly="@ReadOnlyName" />
+            <ValidationMessage For="@(() => RuleFunctions.FunctionName)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Function URL:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@RuleFunctions.FunctionUrl" />
+            <ValidationMessage For="@(() => RuleFunctions.FunctionUrl)" />
+        </div>
+    </div>
+
+    <button class="btn btn-success" type="submit">Save Changes</button>
+</EditForm>
+
+@code {
+    [Parameter] public RuleFunctions RuleFunctions { get; set; }
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+    [Parameter] public bool ReadOnlyName { get; set; }
+}
