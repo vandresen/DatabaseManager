@@ -49,6 +49,10 @@ namespace DatabaseManager.Server.Controllers
                 {
                     CreateDMSModel(connector);
                 }
+                else if (dmParameters.ModelOption == "DMS Rules")
+                {
+                    CreateDSMRules(connector);
+                }
                 else if (dmParameters.ModelOption == "Stored Procedures")
                 {
                     CreateStoredProcedures(connector);
@@ -314,12 +318,27 @@ namespace DatabaseManager.Server.Controllers
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);
                 dbConn.SQLExecute(sql);
-                RuleUtilities.SaveRulesFile(dbConn, _contentRootPath);
                 dbConn.CloseConnection();
             }
             catch (Exception ex)
             {
                 Exception error = new Exception("Create DMS Model Error: ", ex);
+                throw error;
+            }
+        }
+
+        private void CreateDSMRules(ConnectParameters connector)
+        {
+            try
+            {
+                DbUtilities dbConn = new DbUtilities();
+                dbConn.OpenConnection(connector);
+                RuleUtilities.SaveRulesFile(dbConn, _contentRootPath);
+                dbConn.CloseConnection();
+            }
+            catch (Exception ex)
+            {
+                Exception error = new Exception("Load DMS Rule Error: ", ex);
                 throw error;
             }
         }

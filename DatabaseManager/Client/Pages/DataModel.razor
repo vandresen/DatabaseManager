@@ -8,7 +8,7 @@
 <p>Target Database: @singleton.TargetConnector</p>
 
 <p>Select model option: </p>
-@foreach (var item in new string[] { "PPDM Model", "PPDM Modifications", "DMS Model", "Stored Procedures" })
+@foreach (var item in new string[] { "PPDM Model", "PPDM Modifications", "DSM Model" })
 {
 <div class="form-check">
     <label for="@item" class="form-check-label">
@@ -55,10 +55,7 @@
         else if(modelOption == "DMS Model")
         {
             await CreateDMSModel();
-        }
-        else if (modelOption == "Stored Procedures")
-        {
-            await CreateStoredProcedures();
+
         }
         else if (modelOption == "PPDM Modifications")
         {
@@ -67,21 +64,6 @@
         else
         {
             Console.WriteLine("Bad model option");
-        }
-    }
-
-    protected async Task CreateStoredProcedures()
-    {
-        try
-        {
-            progress($"Start Stored Procedures Creation");
-            await dataModelCreate.Create(dmParameters);
-            progress($"Stored procedures creation complete");
-            barValue = 100;
-        }
-        catch (Exception ex)
-        {
-            progress($"Error creating stored procedures: {ex.Message}");
         }
     }
 
@@ -106,7 +88,16 @@
         {
             progress($"Start DMS Model Creation");
             await dataModelCreate.Create(dmParameters);
-            progress($"Model creation complete");
+            barValue = 33;
+            progress($"Start creating stored procedures");
+            dmParameters.ModelOption = "Stored Procedures";
+            await dataModelCreate.Create(dmParameters);
+            barValue = 66;
+            progress($"Start loading DSM rules");
+            dmParameters.ModelOption = "DMS Rules";
+            await dataModelCreate.Create(dmParameters);
+            barValue = 100;
+            progress($"DSM model completed");
         }
         catch (Exception ex)
         {

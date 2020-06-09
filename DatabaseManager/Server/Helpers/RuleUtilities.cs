@@ -17,18 +17,26 @@ namespace DatabaseManager.Server.Helpers
         {
             try
             {
+                List<RuleFunctions> ruleFunctions = new List<RuleFunctions>();
                 string ruleFile = path + @"\DataBase\StandardRules.json";
                 string jsonRule = System.IO.File.ReadAllText(ruleFile);
                 JArray JsonRuleArray = JArray.Parse(jsonRule);
                 foreach (JToken rule in JsonRuleArray)
                 {
                     string function = rule["RuleFunction"].ToString();
-                    string functionName = SaveRuleFunction(dbConn, function, path);
-                    rule["RuleFunction"] = functionName;
+                    RuleFunctions ruleFunction = SaveRuleFunction(dbConn, function, path);
+                    string functionName = ruleFunction.FunctionName;
+                    RuleFunctions result = ruleFunctions.FirstOrDefault(s => s.FunctionName == functionName);
+                    if (result == null) ruleFunctions.Add(ruleFunction);
+
+                    rule["RuleFunction"] = ruleFunction.FunctionName;
                     string jsonDate = DateTime.Now.ToString("yyyy-MM-dd");
                     rule["CreatedDate"] = jsonDate;
                     rule["ModifiedDate"] = jsonDate;
                 }
+                string jsonFunctions = JsonConvert.SerializeObject(ruleFunctions, Formatting.Indented);
+                dbConn.InsertDataObject(jsonFunctions, "Functions");
+
                 string json = JsonRuleArray.ToString();
                 dbConn.InsertDataObject(json, "Rules");
             }
@@ -58,8 +66,10 @@ namespace DatabaseManager.Server.Helpers
             dbConn.UpdateDataObject(json, "Rules");
         }
 
-        public static string SaveRuleFunction(DbUtilities dbConn, string ruleFunction, string path)
+        public static RuleFunctions SaveRuleFunction(DbUtilities dbConn, string ruleFunction, string path)
         {
+            RuleFunctions rf = new RuleFunctions();
+
             int startFunctionName = ruleFunction.IndexOf(@"/api/") + 5;
             int endFunctionName = ruleFunction.IndexOf(@"?");
             string functionKey = "";
@@ -71,28 +81,15 @@ namespace DatabaseManager.Server.Helpers
             {
                 functionKey = ruleFunction.Substring((endFunctionName + 6));
             }
+
             int functionNameLength = endFunctionName - startFunctionName;
             string functionname = ruleFunction.Substring(startFunctionName, functionNameLength);
             string functionUrl = ruleFunction.Substring(0, endFunctionName);
 
-            List<DataAccessDef> dataDefs = new List<DataAccessDef>();
-            string jsonFile = path + @"\DataBase\PPDMDataAccess.json";
-            string json = System.IO.File.ReadAllText(jsonFile);
-            dataDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(json);
-            DataAccessDef dataDef = dataDefs.First(x => x.DataType == "Functions");
-            Dictionary<string, string> function = new Dictionary<string, string>();
-            string[] attributes = Common.GetAttributes(dataDef.Select);
-            foreach (string attribute in attributes)
-            {
-                function.Add(attribute.Trim(), "");
-            }
-            function["FunctionName"] = functionname;
-            function["FunctionUrl"] = functionUrl;
-            function["FunctionKey"] = functionKey;
-            string jsonInsert = JsonConvert.SerializeObject(function, Formatting.Indented);
-            dbConn.InsertDataObject(jsonInsert, "Functions");
-
-            return functionname;
+            rf.FunctionName = functionname;
+            rf.FunctionUrl = functionUrl;
+            rf.FunctionKey = functionKey;
+            return rf;
         }
 
         private static string GetRuleKey(DbUtilities dbConn, string jsonInput, DataAccessDef ruleAccessDef)
