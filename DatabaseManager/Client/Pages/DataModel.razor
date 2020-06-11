@@ -52,8 +52,9 @@
         {
             await CreatePPDMModel();
         }
-        else if(modelOption == "DMS Model")
+        else if(modelOption == "DSM Model")
         {
+            Console.WriteLine("Selected DSM Model");
             await CreateDMSModel();
 
         }
@@ -87,6 +88,7 @@
         try
         {
             progress($"Start DMS Model Creation");
+            dmParameters.ModelOption = "DSM Model";
             await dataModelCreate.Create(dmParameters);
             barValue = 33;
             progress($"Start creating stored procedures");
@@ -94,7 +96,7 @@
             await dataModelCreate.Create(dmParameters);
             barValue = 66;
             progress($"Start loading DSM rules");
-            dmParameters.ModelOption = "DMS Rules";
+            dmParameters.ModelOption = "DSM Rules";
             await dataModelCreate.Create(dmParameters);
             barValue = 100;
             progress($"DSM model completed");

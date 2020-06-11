@@ -14,6 +14,13 @@
             <ValidationMessage For="@(() => RuleFunctions.FunctionUrl)" />
         </div>
     </div>
+    <div class="form-group">
+        <label>Function Key:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@RuleFunctions.FunctionKey" />
+            <ValidationMessage For="@(() => RuleFunctions.FunctionKey)" />
+        </div>
+    </div>
 
     <button class="btn btn-success" type="submit">Save Changes</button>
 </EditForm>

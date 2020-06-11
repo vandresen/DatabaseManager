@@ -1,6 +1,7 @@
 ﻿using DatabaseManager.Server.Entities;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -22,6 +23,7 @@ namespace DatabaseManager.Server.Helpers
         private List<double> _indexValues = new List<double>();
         private List<ReferenceTable> _references = new List<ReferenceTable>();
         private List<DataAccessDef> _dataDef = new List<DataAccessDef>();
+        private string connectionString;
 
         public LASLoader(IWebHostEnvironment env)
         {
@@ -47,6 +49,8 @@ namespace DatabaseManager.Server.Helpers
 
         public void LoadLASFile(ConnectParameters connector, string fileText)
         {
+            connectionString = connector.ConnectionString;
+
             string versionInfo = "";
             string wellInfo = "";
             string curveInfo = "";
@@ -92,6 +96,8 @@ namespace DatabaseManager.Server.Helpers
                 logHeader["MAX_INDEX"] = "99999.0";
                 logHeader["MIN_INDEX"] = "99999.0";
                 logHeader["UWI"] = _uwi;
+                logHeader["ROW_CREATED_BY"] = _dbConn.GetUsername();
+                logHeader["ROW_CHANGED_BY"] = _dbConn.GetUsername();
                 string logName = Common.FixAposInStrings(_logNames[k]);
                 logHeader["CURVE_ID"] = logName;
                 string json = JsonConvert.SerializeObject(logHeader, Formatting.Indented);
@@ -121,6 +127,7 @@ namespace DatabaseManager.Server.Helpers
             {
                 json = Common.SetJsonDataObjectDate(json, "ROW_CREATED_DATE");
                 json = Common.SetJsonDataObjectDate(json, "ROW_CHANGED_DATE");
+                
                 _dbConn.InsertDataObject(json, "Log");
                 LoadLogCurve(pointer, logName);
             }
@@ -128,38 +135,38 @@ namespace DatabaseManager.Server.Helpers
 
         private void LoadLogCurve(int pointer, string logName)
         {
-            string comma = "";
             DataAccessDef dataType = _dataDef.First(x => x.DataType == "LogCurve");
-            int indexCount = _indexValues.Count();
-            int logCount = _logNames.Count();
-            string jsonArray = @"[";
-            for (int i = 0; i < indexCount; i++)
-            {
-                jsonArray = jsonArray + comma;
-                Dictionary<string, string> logCurve = new Dictionary<string, string>();
-                string[] attributes = Common.GetAttributes(dataType.Select);
-                foreach (string attribute in attributes)
-                {
-                    logCurve.Add(attribute.Trim(), "");
-                }
-                logCurve["UWI"] = _uwi;
-                logCurve["CURVE_ID"] = logName;
-                logCurve["SAMPLE_ID"] = i.ToString();
-                logCurve["INDEX_VALUE"] = _indexValues[i].ToString();
-                logCurve["MEASURED_VALUE"] = _curveValues[pointer + (i * logCount)].ToString();
-                string json = JsonConvert.SerializeObject(logCurve, Formatting.Indented);
-                json = Common.SetJsonDataObjectDate(json, "ROW_CREATED_DATE");
-                json = Common.SetJsonDataObjectDate(json, "ROW_CHANGED_DATE");
-                jsonArray = jsonArray + json;
-                comma = ",";
-            }
-            jsonArray = jsonArray + @"]";
             string select = dataType.Select;
             string query = $" where UWI = '{_uwi}' and CURVE_ID = '{logName}'";
             DataTable dt = _dbConn.GetDataTable(select, query);
+
             if (dt.Rows.Count == 0)
             {
-                _dbConn.InsertDataObject(jsonArray, "LogCurve");
+                int indexCount = _indexValues.Count();
+                int logCount = _logNames.Count();
+
+                DataRow newRow;
+                DataTable dtNew = new DataTable();
+                string sqlQuery = dataType.Select + " where 0 = 1";
+                SqlDataAdapter logCurveValueAdapter = new SqlDataAdapter(sqlQuery, connectionString);
+                logCurveValueAdapter.Fill(dtNew);
+
+                for (int i = 0; i < indexCount; i++)
+                {
+                    newRow = dtNew.NewRow();
+                    newRow["UWI"] = _uwi;
+                    newRow["CURVE_ID"] = logName;
+                    newRow["SAMPLE_ID"] = i;
+                    newRow["INDEX_VALUE"] = _indexValues[i];
+                    newRow["MEASURED_VALUE"] = _curveValues[pointer + (i * logCount)];
+                    newRow["ROW_CREATED_BY"] = _dbConn.GetUsername();
+                    newRow["ROW_CHANGED_BY"] = _dbConn.GetUsername();
+                    newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                    newRow["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                    dtNew.Rows.Add(newRow);
+                }
+                new SqlCommandBuilder(logCurveValueAdapter);
+                logCurveValueAdapter.Update(dtNew);
             }
         }
 
@@ -234,15 +241,12 @@ namespace DatabaseManager.Server.Helpers
             {
                 header.Add(attribute.Trim(), "");
             }
-            header["FINAL_TD"] = "99999.0";
-            header["SURFACE_LATITUDE"] = "99999.0";
-            header["SURFACE_LONGITUDE"] = "99999.0";
-            header["DEPTH_DATUM_ELEV"] = "99999.0";
-            header["GROUND_ELEV"] = "99999.0";
             header["ASSIGNED_FIELD"] = "UNKNOWN";
             header["OPERATOR"] = "UNKNOWN";
             header["DEPTH_DATUM"] = "UNKNOWN";
             header["CURRENT_STATUS"] = "UNKNOWN";
+            header["ROW_CREATED_BY"] = _dbConn.GetUsername();
+            header["ROW_CHANGED_BY"] = _dbConn.GetUsername();
             header.Add("API", "");
             StringReader sr = new StringReader(wellInfo);
             while ((input = sr.ReadLine()) != null)
@@ -282,6 +286,16 @@ namespace DatabaseManager.Server.Helpers
             {
                 json = Common.SetJsonDataObjectDate(json, "ROW_CREATED_DATE");
                 json = Common.SetJsonDataObjectDate(json, "ROW_CHANGED_DATE");
+                JObject jo = JObject.Parse(json);
+                foreach (JProperty property in jo.Properties())
+                {
+                    string strValue = property.Value.ToString();
+                    if (string.IsNullOrEmpty(strValue))
+                    {
+                        property.Value = null;
+                    }
+                }
+                json = jo.ToString();
                 _dbConn.InsertDataObject(json, "WellBore");
             }
         }

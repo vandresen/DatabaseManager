@@ -45,11 +45,11 @@ namespace DatabaseManager.Server.Controllers
                 {
                     CreatePPDMModel(dmParameters, connector);
                 }
-                else if (dmParameters.ModelOption == "DMS Model")
+                else if (dmParameters.ModelOption == "DSM Model")
                 {
                     CreateDMSModel(connector);
                 }
-                else if (dmParameters.ModelOption == "DMS Rules")
+                else if (dmParameters.ModelOption == "DSM Rules")
                 {
                     CreateDSMRules(connector);
                 }
