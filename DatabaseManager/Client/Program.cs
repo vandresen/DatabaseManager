@@ -34,6 +34,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IDataFile, DataFile>();
             services.AddScoped<IRules, Rules>();
             services.AddScoped<IFunctions, Functions>();
+            services.AddScoped<IDataQc, DataQc>();
         }
     }
 }

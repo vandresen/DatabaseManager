@@ -1,7 +1,72 @@
 ﻿@page "/dataqc"
+@inject IDataQc qc
+@inject SingletonServices singleton
 
 <h3>Data QC</h3>
 
+<GenericList List="ResultList">
+    <WholeListTemplate>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Data Type</th>
+                    <th>Rule Type</th>
+                    <th>Rule Name</th>
+                    <th>Failures</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in qcPagination)
+                {
+                <tr>
+                    <td>
+                        @*<a class="btn btn-success" href="/rules/editfunction/@item.Id">Edit</a>*@
+                    </td>
+                    <td>@item.DataType</td>
+                    <td>@item.RuleType</td>
+                    <td>@item.RuleName</td>
+                    <td>@item.Failures</td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        <Pagination CurrentPage="@curPage" TotalAmountPages="totalPages"
+                    SelectedPage="SelectedPage" />
+    </WholeListTemplate>
+</GenericList>
+
 @code {
+    List<QcResult> ResultList;
+    List<QcResult> qcPagination;
+
+    int totalPages;
+    int totalRecords;
+    int curPage = 1;
+    int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            ResultList = await qc.GetQcResult(singleton.TargetConnector);
+            Console.WriteLine(ResultList.Count);
+            qcPagination = ResultList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+            totalRecords = ResultList.Count();
+            totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private void SelectedPage(int page)
+    {
+        curPage = page;
+        qcPagination = new List<QcResult>();
+        qcPagination = ResultList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+        this.StateHasChanged();
+    }
 
 }
