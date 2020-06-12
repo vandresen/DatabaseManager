@@ -81,6 +81,7 @@ else
         var jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
+            IgnoreNullValues = true
         };
         curPage = 1;
         pageSize = 10;
@@ -88,17 +89,21 @@ else
         try
         {
             index = await indexData.GetChildren(singleton.TargetConnector, Id);
+            Console.WriteLine($"Index count: {index.Count}");
             wellBores = new List<WellBore>();
             foreach (DmsIndex item in index)
             {
                 string json = item.JsonData;
+                Console.WriteLine($"Json data: {json}");
                 WellBore wellBore = JsonSerializer.Deserialize<WellBore>(json, jsonOptions);
+                Console.WriteLine($"Wellbore: {wellBore.Uwi}");
                 wellBore.ChildrenCount = item.NumberOfDataObjects;
                 wellBore.Id = item.Id;
                 wellBores.Add(wellBore);
             }
 
             wbPagination = GetPage((curPage - 1) * pageSize, pageSize);
+            Console.WriteLine($"Pagination: {wbPagination}");
             totalRecords = wellBores.Count();
             totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
         }
