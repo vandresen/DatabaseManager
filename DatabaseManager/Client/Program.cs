@@ -35,6 +35,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IRules, Rules>();
             services.AddScoped<IFunctions, Functions>();
             services.AddScoped<IDataQc, DataQc>();
+            services.AddScoped<IPrediction, Prediction>();
         }
     }
 }

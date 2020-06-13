@@ -1,7 +1,67 @@
 ﻿@page "/predictions"
+@inject IPrediction pr
+@inject SingletonServices singleton
 
 <h3>Predictions</h3>
 
-@code {
+<GenericList List="ResultList">
+    <WholeListTemplate>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Friction Point</th>
+                    <th>Corrections</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in rPagination)
+                {
+                    <tr>
+                        <td>
+                            @*<a class="btn btn-success" href="/rules/editfunction/@item.Id">Edit</a>*@
+                        </td>
+                        <td>@item.RuleName</td>
+                        <td>@item.NumberOfCorrections</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <Pagination CurrentPage="@curPage" TotalAmountPages="totalPages"
+                    SelectedPage="SelectedPage" />
+    </WholeListTemplate>
+</GenericList>
 
+@code {
+    List<PredictionCorrection> ResultList;
+    List<PredictionCorrection> rPagination;
+
+    int totalPages;
+    int totalRecords;
+    int curPage = 1;
+    int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            ResultList = await pr.GetPredictions(singleton.TargetConnector);
+            Console.WriteLine(ResultList.Count);
+            rPagination = ResultList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+            totalRecords = ResultList.Count();
+            totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private void SelectedPage(int page)
+    {
+        curPage = page;
+        rPagination = new List<PredictionCorrection>();
+        rPagination = ResultList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+        this.StateHasChanged();
+    }
 }
