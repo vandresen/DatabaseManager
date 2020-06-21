@@ -100,7 +100,7 @@ else
 
     private void DataTypes(DmsIndex item)
     {
-        string url = @"/" + item.DataType + @"/" + $"{item.Id}";
+        string url = @"/ChildData/" + $"{item.Id}";
         navigationManager.NavigateTo(url);
     }
 }

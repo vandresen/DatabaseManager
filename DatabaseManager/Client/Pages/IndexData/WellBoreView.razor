@@ -78,11 +78,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var jsonOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            IgnoreNullValues = true
-        };
+        //var jsonOptions = new JsonSerializerSettings
+        //{
+        //    PropertyNameCaseInsensitive = true,
+        //    IgnoreNullValues = true
+        //};
         curPage = 1;
         pageSize = 10;
 
@@ -95,11 +95,11 @@ else
             {
                 string json = item.JsonData;
                 Console.WriteLine($"Json data: {json}");
-                WellBore wellBore = JsonSerializer.Deserialize<WellBore>(json, jsonOptions);
-                Console.WriteLine($"Wellbore: {wellBore.Uwi}");
-                wellBore.ChildrenCount = item.NumberOfDataObjects;
-                wellBore.Id = item.Id;
-                wellBores.Add(wellBore);
+                //WellBore wellBore = JsonSerializer.Deserialize<WellBore>(json, jsonOptions);
+                //Console.WriteLine($"Wellbore: {wellBore.Uwi}");
+                //wellBore.ChildrenCount = item.NumberOfDataObjects;
+                //wellBore.Id = item.Id;
+                //wellBores.Add(wellBore);
             }
 
             wbPagination = GetPage((curPage - 1) * pageSize, pageSize);
