@@ -6,26 +6,6 @@
 
 <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
 
-<style>
-    .sort-th {
-        cursor: pointer;
-    }
-
-    .fa {
-        float: right;
-    }
-
-    .btn-custom {
-        color: black;
-        float: left;
-        padding: 8px 16px;
-        text-decoration: none;
-        transition: background-color .3s;
-        border: 2px solid #000;
-        margin: 0px 5px 0px 5px;
-    }
-</style>
-
 @if (index == null)
 {
     <text>Loading...</text>
@@ -40,9 +20,9 @@ else
                         <th></th>
                         @foreach (var head in headers)
                         {
-                            <th class="sort-th" @onclick="@(() => SortTable(head))">
+                            <th style="cursor: pointer;" @onclick="@(() => SortTable(head))">
                                 @head
-                                <span class="fa @(SetSortIcon(head))"></span>
+                                <span class="fa @(SetSortIcon(head))" style="float: right"></span>
                             </th>
                         }
                     </tr>
@@ -150,6 +130,7 @@ else
         List<ChildTableCollection> table = new List<ChildTableCollection>();
         foreach (DmsIndex item in index)
         {
+            Console.WriteLine($"Original: {item.Id} - {item.NumberOfDataObjects}");
             string json = item.JsonData;
             JObject token = JObject.Parse(json);
             List<ChildTableRow> childTableRows = new List<ChildTableRow>();
@@ -247,6 +228,7 @@ else
                 {
                     childCount = collection.ChildCount;
                     indexId = collection.IndexId;
+                    Console.WriteLine($"Sorted: {indexId} - {childCount}");
                 }
             }
             table.Add(new ChildTableCollection 

@@ -1,0 +1,10 @@
+[
+  {
+    "DataType": "WellBore",
+    "Mappings": "UWI=2; FINAL_TD=22; WELL_NAME=4; SURFACE_LATITUDE=6; SURFACE_LONGITUDE=7; LEASE_NAME=3; DEPTH_DATUM_ELEV=20; DEPTH_DATUM=21; OPERATOR=18; ASSIGNED_FIELD=5; CURRENT_STATUS=37; SPUD_DATE=28; COMPLETION_DATE=29"
+  },
+  {
+    "DataType": "MarkerPick",
+    "Mappings": "UWI=2"
+  }
+]

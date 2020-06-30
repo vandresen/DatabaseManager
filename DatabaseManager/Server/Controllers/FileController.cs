@@ -69,12 +69,18 @@ namespace DatabaseManager.Server.Controllers
                     if (file.Exists())
                     {
                         string fileText = file.DownloadTextAsync().Result;
-                        LASLoader ls = new LASLoader(_env);
-                        ls.LoadLASFile(connector, fileText);
-                        //DbUtilities dbConn = new DbUtilities();
-                        //dbConn.OpenConnection(connector);
-                        //dbConn.SQLExecute(sql);
-                        //dbConn.CloseConnection();
+                        if (fileParams.FileShare == "logs")
+                        {
+                            LASLoader ls = new LASLoader(_env);
+                            ls.LoadLASFile(connector, fileText);
+                        }
+                        else
+                        {
+                            string connectionString = connector.ConnectionString;
+                            string[] fileNameArray = fileParams.FileName.Split('.');
+                            CSVLoader cl = new CSVLoader(_env);
+                            cl.LoadCSVFile(connectionString, fileText, fileNameArray[0]);
+                        }
                     }
                     else
                     {

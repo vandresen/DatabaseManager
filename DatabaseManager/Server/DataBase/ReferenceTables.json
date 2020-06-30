@@ -21,6 +21,7 @@
     "KeyAttribute": "STATUS",
     "ValueAttribute": "LONG_NAME",
     "ReferenceAttribute": "CURRENT_STATUS",
+    "FixedKey": "STATUS_TYPE=STATUS",
     "Insert": false
   },
   {

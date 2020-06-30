@@ -12,6 +12,7 @@ namespace DatabaseManager.Server.Entities
         public string KeyAttribute { get; set; }
         public string ValueAttribute { get; set; }
         public string ReferenceAttribute { get; set; }
+        public string FixedKey { get; set; }
         public bool Insert { get; set; }
     }
 }
