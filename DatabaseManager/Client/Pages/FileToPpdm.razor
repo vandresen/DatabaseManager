@@ -9,7 +9,19 @@
 </div>
 <p>@singleton.TargetConnector</p>
 
-<button class="btn btn-primary" @onclick="StartTransfer">Start Transfer</button>
+<p>Select file type option: </p>
+@foreach (var item in new string[] { "Logs", "WellBores"})
+{
+    <div class="form-check">
+        <label for="@item" class="form-check-label">
+            <input type="radio" class="form-check-input" name="optradio" @onchange="FileSelection"
+                   id="@item" value="@item"
+                   checked=@(selectedAnswer.Equals(item,StringComparison.OrdinalIgnoreCase)) />@item
+            </label>
+        </div>
+    }
+
+<button class="btn btn-primary" style="margin-top:20px" @onclick="StartTransfer">Start Transfer</button>
 
 <div style="margin-top:20px">
     <ProgressBar ValueNow="barValue" />
@@ -24,19 +36,35 @@
     private int failedFiles = 0;
     public int barValue = 0;
     FileParameters fileParameters = new FileParameters();
+    string fileOption = "Logs";
+    string selectedAnswer = "Logs";
+
+    void FileSelection(ChangeEventArgs args)
+    {
+        fileOption = args.Value.ToString();
+    }
 
     protected async Task StartTransfer()
     {
         fileParameters.DataConnector = singleton.TargetConnector;
-        fileParameters.FileShare = "logs";
         barValue = 1;
-        string dataType = "logs";
         progress($"Start Transfer");
         try
         {
-            List<string> files = await dataFile.GetFiles(dataType);
-            await ProcessFiles(files);
-            progress($"Complete, {files.Count - failedFiles} out of {files.Count} transferred");
+            if (fileOption == "Logs")
+            {
+                fileParameters.FileShare = "logs";
+                string dataType = "logs";
+                List<string> files = await dataFile.GetFiles(dataType);
+                await ProcessFiles(files);
+                progress($"Complete, {files.Count - failedFiles} out of {files.Count} transferred");
+            }
+            else
+            {
+                fileParameters.FileShare = "wells";
+                fileParameters.FileName = "WellBore.txt";
+                await dataFile.LoadFile(fileParameters);
+            }
         }
         catch (Exception ex)
         {
