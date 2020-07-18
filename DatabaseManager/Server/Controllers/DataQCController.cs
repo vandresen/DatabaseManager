@@ -148,9 +148,6 @@ namespace DatabaseManager.Server.Controllers
             qcSetup.DatabaseServer = connector.DatabaseServer;
             qcSetup.DatabaseUser = connector.DatabaseUser;
             DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            //string sql = ruleAccessDef.Select;
-            //string query = $" where DATATYPE = '{rule.DataType}'";
-            //DataTable idx = dbConn.GetDataTable(sql, query);
             string ruleFilter = rule.RuleFilter;
             string jsonRules = JsonConvert.SerializeObject(rule);
             qcSetup.RuleObject = jsonRules;

@@ -25,5 +25,14 @@ namespace DatabaseManager.Client.Helpers
             }
             return response.Response;
         }
+
+        public async Task ProcessQCRule(DataQCParameters qcParams)
+        {
+            var response = await httpService.Post(url, qcParams);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
     }
 }

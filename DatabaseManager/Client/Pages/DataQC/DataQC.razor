@@ -4,6 +4,16 @@
 
 <h3>Data QC</h3>
 
+<button class="btn btn-primary" @onclick="StartQC">Start QC Processing</button>
+
+<div>
+    <ProgressBar ValueNow="barValue" />
+</div>
+
+<div>
+    <p>Current status: @statusMessage</p>
+</div>
+
 <GenericList List="ResultList">
     <WholeListTemplate>
         <table class="table table-striped">
@@ -19,15 +29,15 @@
             <tbody>
                 @foreach (var item in qcPagination)
                 {
-                <tr>
-                    <td>
-                        @*<a class="btn btn-success" href="/rules/editfunction/@item.Id">Edit</a>*@
-                    </td>
-                    <td>@item.DataType</td>
-                    <td>@item.RuleType</td>
-                    <td>@item.RuleName</td>
-                    <td>@item.Failures</td>
-                </tr>
+                    <tr>
+                        <td>
+                            @*<a class="btn btn-success" href="/rules/editfunction/@item.Id">Edit</a>*@
+                        </td>
+                        <td>@item.DataType</td>
+                        <td>@item.RuleType</td>
+                        <td>@item.RuleName</td>
+                        <td>@item.Failures</td>
+                    </tr>
                 }
             </tbody>
         </table>
@@ -45,15 +55,14 @@
     int curPage = 1;
     int pageSize = 10;
 
+    private string statusMessage = "Not started";
+    public int barValue = 0;
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            ResultList = await qc.GetQcResult(singleton.TargetConnector);
-            Console.WriteLine(ResultList.Count);
-            qcPagination = ResultList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
-            totalRecords = ResultList.Count();
-            totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
+            await QCResults();
         }
         catch (Exception ex)
         {
@@ -69,4 +78,52 @@
         this.StateHasChanged();
     }
 
+    private async Task QCResults()
+    {
+        ResultList = await qc.GetQcResult(singleton.TargetConnector);
+        qcPagination = ResultList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+        totalRecords = ResultList.Count();
+        totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
+    }
+
+    protected async Task StartQC()
+    {
+        try
+        {
+            DataQCParameters qcParams = new DataQCParameters();
+
+            Console.WriteLine("Start QC Processing");
+            progress("Starting QC processing...");
+
+            int progressInterval = (100 / ResultList.Count) - 1;
+            barValue = 1;
+            qcParams.ClearQCFlags = true;
+
+            foreach (QcResult rule in ResultList)
+            {
+                progress($"Processing rule {rule.RuleName}");
+                qcParams.DataConnector = singleton.TargetConnector;
+                qcParams.RuleId = rule.Id;
+
+                await qc.ProcessQCRule(qcParams);
+
+                barValue = barValue + progressInterval;
+                qcParams.ClearQCFlags = false;
+            }
+            barValue = 100;
+
+            await QCResults();
+            this.StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private void progress(string message)
+    {
+        statusMessage = message;
+        StateHasChanged();
+    }
 }
