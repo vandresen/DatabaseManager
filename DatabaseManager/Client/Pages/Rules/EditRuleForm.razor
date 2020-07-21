@@ -9,8 +9,8 @@
     </div>
     <div class="form-group">
         <label>Data Attribute:</label>
-        <select @bind="@RuleToEdit.DataAttribute">
-            @foreach (var option in DataRef.DataTypeOptions)
+        <select @bind="RuleToEdit.DataAttribute">
+            @foreach (var option in DataAttributeOptions)
             {
                 <option>@option</option>
             }
@@ -37,21 +37,32 @@
             <ValidationMessage For="@(() => RuleToEdit.RuleDescription)" />
         </div>
     </div>
+    <div>
+        <label>Active:</label>
+        <select  @bind="@RuleToEdit.Active">
+            <option value="Y">Y</option>
+            <option value="N">N</option>
+        </select>
+    </div>
     <button class="btn btn-success" type="submit">Save Changes</button>
+
 </EditForm>
 
 @code {
     [Parameter] public RuleModel RuleToEdit { get; set; }
     [Parameter] public RuleInfo DataRef { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
-    private List<string> DataTypeOptions;
+    //private List<string> DataTypeOptions;
+    private List<string> DataAttributeOptions;
 
     protected override void OnInitialized()
     {
-        Console.WriteLine("Init in EditRule Form");
-        //RuleInfo ruleInfo = await rules.GetRuleInfo(singleton.TargetConnector);
-        //DataTypeOptions = DataRef.DataTypeOptions;
-        //Console.WriteLine(DataRef.DataTypeOptions.Count);
-        //DataTypeOptions = new List<string> { "WellBore", "Log", "MarkerPicks" };
+        DataAttributeOptions = GetAttributes(DataRef.DataAttributes[RuleToEdit.DataType]);
+    }
+
+    private List<string> GetAttributes(string attributeList)
+    {
+        List<string> attributes = attributeList.Split(',').ToList();
+        return attributes;
     }
 }
