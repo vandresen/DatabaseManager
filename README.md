@@ -5,7 +5,7 @@ PPDM database. So far this version provides functionality to:
 * Load the PPDM model
 * Manage PPDM data connectors
 * Transfer well data from one PPDM database to another 
-* Load data from LAS files into PPDM
+* Load data from LAS and csv files into PPDM
 * Create a DSM index
 * Manage DSM rules
 * Execute QC rules and view result
