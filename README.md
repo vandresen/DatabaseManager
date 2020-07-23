@@ -8,8 +8,9 @@ PPDM database. So far this version provides functionality to:
 * Load data from LAS files into PPDM
 * Create a DSM index
 * Manage DSM rules
+* Execute QC rules and view result
 
-More functionality wil come later
+More functionality will come later
 
 ## License 
 Database Manager is released under the GPLv3 or higher license.
