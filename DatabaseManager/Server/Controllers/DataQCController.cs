@@ -32,6 +32,7 @@ namespace DatabaseManager.Server.Controllers
         private DataTable indexTable;
         private SqlConnection sqlCn = null;
 
+
         public DataQCController(IConfiguration configuration, IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");

@@ -116,5 +116,28 @@ namespace DatabaseManager.Server.Helpers
             }
             return accessDef;
         }
+
+        public static RuleModel GetRule(DbUtilities dbConn, int id, List<DataAccessDef> accessDefs)
+        {
+            List<RuleModel> rules = new List<RuleModel>();
+            DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
+            string sql = ruleAccessDef.Select;
+            string query = $" where Id = {id}";
+            DataTable dt = dbConn.GetDataTable(sql, query);
+            string jsonString = JsonConvert.SerializeObject(dt);
+            rules = JsonConvert.DeserializeObject<List<RuleModel>>(jsonString);
+            RuleModel rule = rules.First();
+
+            DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
+            sql = functionAccessDef.Select;
+            query = $" where FunctionName = '{rule.RuleFunction}'";
+            dt = dbConn.GetDataTable(sql, query);
+
+            string functionURL = dt.Rows[0]["FunctionUrl"].ToString();
+            string functionKey = dt.Rows[0]["FunctionKey"].ToString();
+            if (!string.IsNullOrEmpty(functionKey)) functionKey = "?code=" + functionKey;
+            rule.RuleFunction = functionURL + functionKey;
+            return rule;
+        }
     }
 }
