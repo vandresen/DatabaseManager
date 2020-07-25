@@ -155,11 +155,14 @@ namespace DatabaseManager.Server.Controllers
             foreach (DataRow idxRow in indexTable.Rows)
             {
                 string jsonData = idxRow["JSONDATAOBJECT"].ToString();
-                qcSetup.IndexId = Convert.ToInt32(idxRow["INDEXID"]);
-                qcSetup.IndexNode = idxRow["Text_IndexNode"].ToString();
-                string qcStr = qcFlags[qcSetup.IndexId];
-                qcSetup.DataObject = jsonData;
-                if (!Filter(jsonData, ruleFilter)) ProcessQcRule(qcSetup, rule);
+                if (!string.IsNullOrEmpty(jsonData))
+                {
+                    qcSetup.IndexId = Convert.ToInt32(idxRow["INDEXID"]);
+                    qcSetup.IndexNode = idxRow["Text_IndexNode"].ToString();
+                    string qcStr = qcFlags[qcSetup.IndexId];
+                    qcSetup.DataObject = jsonData;
+                    if (!Filter(jsonData, ruleFilter)) ProcessQcRule(qcSetup, rule);
+                }
             }
         }
 

@@ -101,11 +101,14 @@ namespace DatabaseManager.Server.Controllers
             foreach (DataRow idxRow in indexTable.Rows)
             {
                 string jsonData = idxRow["JSONDATAOBJECT"].ToString();
-                qcSetup.IndexId = Convert.ToInt32(idxRow["INDEXID"]);
-                qcSetup.IndexNode = idxRow["Text_IndexNode"].ToString();
-                string qcStr = qcFlags[qcSetup.IndexId];
-                qcSetup.DataObject = jsonData;
-                ProcessPrediction(qcSetup, predictionURL, rule, dbConn);
+                if (!string.IsNullOrEmpty(jsonData))
+                {
+                    qcSetup.IndexId = Convert.ToInt32(idxRow["INDEXID"]);
+                    qcSetup.IndexNode = idxRow["Text_IndexNode"].ToString();
+                    string qcStr = qcFlags[qcSetup.IndexId];
+                    qcSetup.DataObject = jsonData;
+                    ProcessPrediction(qcSetup, predictionURL, rule, dbConn);
+                }
             }
         }
 
@@ -125,7 +128,14 @@ namespace DatabaseManager.Server.Controllers
                         string qcStr = qcFlags[result.IndexId];
                         string failRule = rule.FailRule + ";";
                         string pCode = rule.RuleKey + ";";
-                        qcStr = qcStr.Replace(failRule, pCode);
+                        if (result.SaveType == "Delete")
+                        {
+                            qcStr = pCode;
+                        }
+                        else
+                        {
+                            qcStr = qcStr.Replace(failRule, pCode);
+                        }
                         qcFlags[result.IndexId] = qcStr;
                         SavePrediction(result, dbConn, qcStr);
                     }
@@ -153,7 +163,7 @@ namespace DatabaseManager.Server.Controllers
             }
             else if (result.SaveType == "Delete")
             {
-                DeleteAction(result, dbConn);
+                DeleteAction(result, dbConn, qcStr);
             }
             else
             {
@@ -165,7 +175,7 @@ namespace DatabaseManager.Server.Controllers
         {
             DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
             string select = ruleAccessDef.Select;
-            string idxTable = GetTable(select);
+            //string idxTable = GetTable(select);
             string idxQuery = $" where INDEXID = {result.IndexId}";
             DataTable idx = dbConn.GetDataTable(select, idxQuery);
             if (idx.Rows.Count == 1)
@@ -190,7 +200,7 @@ namespace DatabaseManager.Server.Controllers
             }
         }
 
-        private void DeleteAction(PredictionResult result, DbUtilities dbDAL)
+        private void DeleteAction(PredictionResult result, DbUtilities dbDAL, string qcStr)
         {
             DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
             string select = ruleAccessDef.Select;
@@ -199,15 +209,21 @@ namespace DatabaseManager.Server.Controllers
             DataTable idx = dbDAL.GetDataTable(select, idxQuery);
             if (idx.Rows.Count == 1)
             {
+                string condition = $"INDEXID={result.IndexId}";
+                var rows = indexTable.Select(condition);
+                rows[0]["JSONDATAOBJECT"] = "";
+                rows[0]["QC_STRING"] = qcStr;
+                indexTable.AcceptChanges();
+
                 string dataType = idx.Rows[0]["DATATYPE"].ToString();
                 string dataKey = idx.Rows[0]["DATAKEY"].ToString();
                 ruleAccessDef = _accessDefs.First(x => x.DataType == dataType);
                 select = ruleAccessDef.Select;
                 string dataTable = GetTable(select);
                 string dataQuery = "where " + dataKey;
-
                 dbDAL.DBDelete(dataTable, dataQuery);
-                dbDAL.DBDelete(idxTable, idxQuery);
+
+                //dbDAL.DBDelete(idxTable, idxQuery);
             }
             else
             {
@@ -242,7 +258,7 @@ namespace DatabaseManager.Server.Controllers
             List<PredictionCorrection> predictionResult = new List<PredictionCorrection>();
             DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Rules");
             string sql = ruleAccessDef.Select;
-            string query = " where Active = 'Y' and RuleType = 'Predictions'";
+            string query = " where Active = 'Y' and RuleType = 'Predictions' order by PredictionOrder";
             DataTable dt = dbConn.GetDataTable(sql, query);
             string jsonString = JsonConvert.SerializeObject(dt);
             predictionResult = JsonConvert.DeserializeObject<List<PredictionCorrection>>(jsonString);

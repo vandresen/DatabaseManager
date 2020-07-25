@@ -4,6 +4,16 @@
 
 <h3>Predictions</h3>
 
+<button class="btn btn-primary" @onclick="StartPredictions">Start Predictions</button>
+
+<div>
+    <ProgressBar ValueNow="barValue" />
+</div>
+
+<div>
+    <p>Current status: @statusMessage</p>
+</div>
+
 <GenericList List="ResultList">
     <WholeListTemplate>
         <table class="table table-striped">
@@ -41,20 +51,63 @@
     int curPage = 1;
     int pageSize = 10;
 
+    private string statusMessage = "Not started";
+    public int barValue = 0;
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            ResultList = await pr.GetPredictions(singleton.TargetConnector);
-            Console.WriteLine(ResultList.Count);
-            rPagination = ResultList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
-            totalRecords = ResultList.Count();
-            totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
+            await PredictionResults();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Errors: {ex}");
         }
+    }
+
+    protected async Task StartPredictions()
+    {
+        try
+
+        {
+            PredictionParameters predictionParams = new PredictionParameters();
+
+            Console.WriteLine("Start prediction Processing");
+            progress("Starting QC processing...");
+
+            int progressInterval = (100 / ResultList.Count) - 1;
+            barValue = 1;
+
+            foreach (PredictionCorrection correction in ResultList)
+            {
+                progress($"Processing rule {correction.RuleName}");
+                predictionParams.DataConnector = singleton.TargetConnector;
+                predictionParams.PredictionId = correction.Id;
+
+                Console.WriteLine("Start controller");
+                await pr.ProcessPredictions(predictionParams);
+                Console.WriteLine("Finished controller");
+
+                barValue = barValue + progressInterval;
+            }
+            barValue = 100;
+
+            await PredictionResults();
+            this.StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task PredictionResults()
+    {
+        ResultList = await pr.GetPredictions(singleton.TargetConnector);
+        rPagination = ResultList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+        totalRecords = ResultList.Count();
+        totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
     }
 
     private void SelectedPage(int page)
@@ -63,5 +116,11 @@
         rPagination = new List<PredictionCorrection>();
         rPagination = ResultList.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
         this.StateHasChanged();
+    }
+
+    private void progress(string message)
+    {
+        statusMessage = message;
+        StateHasChanged();
     }
 }

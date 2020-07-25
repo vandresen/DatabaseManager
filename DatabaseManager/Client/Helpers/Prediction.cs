@@ -25,5 +25,14 @@ namespace DatabaseManager.Client.Helpers
             }
             return response.Response;
         }
+
+        public async Task ProcessPredictions(PredictionParameters predictionParams)
+        {
+            var response = await httpService.Post(url, predictionParams);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
     }
 }
