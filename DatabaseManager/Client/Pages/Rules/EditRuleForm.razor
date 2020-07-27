@@ -7,15 +7,20 @@
             <ValidationMessage For="@(() => RuleToEdit.RuleName)" />
         </div>
     </div>
-    <div class="form-group">
-        <label>Data Attribute:</label>
-        <select @bind="RuleToEdit.DataAttribute">
-            @foreach (var option in DataAttributeOptions)
-            {
-                <option>@option</option>
-            }
-        </select>
-    </div>
+
+    @if (dataAttributeMenu)
+    {
+        <div class="form-group">
+            <label>Data Attribute:</label>
+            <select @bind="RuleToEdit.DataAttribute">
+                @foreach (var option in DataAttributeOptions)
+                {
+                    <option>@option</option>
+                }
+            </select>
+        </div>
+    }
+
     <div class="form-group">
         <label>Rule Parameters:</label>
         <div>
@@ -39,7 +44,7 @@
     </div>
     <div>
         <label>Active:</label>
-        <select  @bind="@RuleToEdit.Active">
+        <select @bind="@RuleToEdit.Active">
             <option value="Y">Y</option>
             <option value="N">N</option>
         </select>
@@ -54,10 +59,12 @@
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     //private List<string> DataTypeOptions;
     private List<string> DataAttributeOptions;
+    private bool dataAttributeMenu = true;
 
     protected override void OnInitialized()
     {
         DataAttributeOptions = GetAttributes(DataRef.DataAttributes[RuleToEdit.DataType]);
+        if (RuleToEdit.RuleType == "Predictions") dataAttributeMenu = false;
     }
 
     private List<string> GetAttributes(string attributeList)

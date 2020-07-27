@@ -62,6 +62,12 @@ else
     public List<DmsIndex> index;
     private List<string> headers = new List<string>();
     private List<ChildTableCollection> TableCollections;
+    //private string DisplayAttributes = "UWI, FINAL_TD, SPUD_DATE";
+    Dictionary<string, string> DisplayAttributes =
+        new Dictionary<string, string>(){
+            {"WellBore", "UWI, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE,LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS,GROUND_ELEV"},
+            {"MarkerPick", "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH"},
+            {"data", "Pig"} };
 
     private string DataType = "";
 
@@ -106,9 +112,17 @@ else
         DmsIndex idx = index[0];
         string json = idx.JsonData;
         JObject headerToken = JObject.Parse(json);
+
         foreach (JProperty property in headerToken.Properties())
         {
-            headerList.Add(property.Name);
+            bool display = true;
+            if (DisplayAttributes.ContainsKey(DataType) == true)
+            {
+                display = false;
+                String attributeString = DisplayAttributes[DataType];
+                if (attributeString.Contains(property.Name)) display = true;
+            }
+            if (display) headerList.Add(property.Name);
         }
         return headerList;
     }
@@ -119,8 +133,12 @@ else
         foreach (DmsIndex item in index)
         {
             string json = item.JsonData;
-            JObject token = JObject.Parse(json);
-            array.Add(token);
+            Console.WriteLine(json);
+            if (!string.IsNullOrEmpty(json))
+            {
+                JObject token = JObject.Parse(json);
+                array.Add(token);
+            }
         }
         return array;
     }
@@ -132,19 +150,32 @@ else
         {
             Console.WriteLine($"Original: {item.Id} - {item.NumberOfDataObjects}");
             string json = item.JsonData;
-            JObject token = JObject.Parse(json);
-            List<ChildTableRow> childTableRows = new List<ChildTableRow>();
-            foreach (JProperty property in token.Properties())
+            if (!string.IsNullOrEmpty(json))
             {
-                string columnValue = property.Value.ToString();
-                childTableRows.Add(new ChildTableRow { Value = columnValue });
+                JObject token = JObject.Parse(json);
+                List<ChildTableRow> childTableRows = new List<ChildTableRow>();
+                foreach (JProperty property in token.Properties())
+                {
+                    bool display = true;
+                    if (DisplayAttributes.ContainsKey(DataType) == true)
+                    {
+                        display = false;
+                        String attributeString = DisplayAttributes[DataType];
+                        if (attributeString.Contains(property.Name)) display = true;
+                    }
+                    if (display)
+                    {
+                        string columnValue = property.Value.ToString();
+                        childTableRows.Add(new ChildTableRow { Value = columnValue });
+                    }
+                }
+                table.Add(new ChildTableCollection
+                {
+                    Rows = childTableRows,
+                    ChildCount = item.NumberOfDataObjects,
+                    IndexId = item.Id
+                });
             }
-            table.Add(new ChildTableCollection 
-            { 
-                Rows = childTableRows, 
-                ChildCount = item.NumberOfDataObjects,
-                IndexId = item.Id
-            });
         }
         return table;
     }
@@ -231,9 +262,9 @@ else
                     Console.WriteLine($"Sorted: {indexId} - {childCount}");
                 }
             }
-            table.Add(new ChildTableCollection 
-            { 
-                Rows = childTableRows, 
+            table.Add(new ChildTableCollection
+            {
+                Rows = childTableRows,
                 ChildCount = childCount,
                 IndexId = indexId
             });
