@@ -1,6 +1,8 @@
 ﻿@page "/rules"
 @inject IRules rules
 @inject SingletonServices singleton
+@inject IDisplayMessage displayMessage
+@inject NavigationManager navigationManager
 
 <h3>Predictions</h3>
 
@@ -83,6 +85,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        if (string.IsNullOrEmpty(singleton.TargetConnector))
+        {
+            await displayMessage.DisplayErrorMessage("Please select a data connector");
+            navigationManager.NavigateTo("/");
+        }
         try
         {
             RuleList = await rules.GetRules(singleton.TargetConnector);

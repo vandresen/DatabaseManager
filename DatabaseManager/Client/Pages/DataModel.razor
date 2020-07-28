@@ -2,6 +2,8 @@
 @inject SingletonServices singleton
 @inject IDataModelCreate dataModelCreate
 @inject IDatabaseTransfer databaseTransfer
+@inject IDisplayMessage displayMessage
+@inject NavigationManager navigationManager
 
 <h2>Data Model</h2>
 
@@ -10,14 +12,14 @@
 <p>Select model option: </p>
 @foreach (var item in new string[] { "PPDM Model", "PPDM Modifications", "DSM Model" })
 {
-<div class="form-check">
-    <label for="@item" class="form-check-label">
-        <input type="radio" class="form-check-input" name="optradio" @onchange="ModelSelection" 
-               id="@item" value="@item" 
-               checked=@(selectedAnswer.Equals(item,StringComparison.OrdinalIgnoreCase))/>@item
-    </label>
-</div>
-}
+    <div class="form-check">
+        <label for="@item" class="form-check-label">
+            <input type="radio" class="form-check-input" name="optradio" @onchange="ModelSelection"
+                   id="@item" value="@item"
+                   checked=@(selectedAnswer.Equals(item,StringComparison.OrdinalIgnoreCase)) />@item
+            </label>
+        </div>
+    }
 
 <div style="margin-top:20px">
     <button class="btn btn-primary" @onclick="CreateDataModel">Create Data Model</button>
@@ -38,6 +40,15 @@
     public int barValue = 0;
     DataModelParameters dmParameters = new DataModelParameters();
 
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(singleton.TargetConnector))
+        {
+            await displayMessage.DisplayErrorMessage("Please select a data connector");
+            navigationManager.NavigateTo("/");
+        }
+    }
+
     void ModelSelection(ChangeEventArgs args)
     {
         modelOption = args.Value.ToString();
@@ -52,7 +63,7 @@
         {
             await CreatePPDMModel();
         }
-        else if(modelOption == "DSM Model")
+        else if (modelOption == "DSM Model")
         {
             Console.WriteLine("Selected DSM Model");
             await CreateDMSModel();

@@ -1,6 +1,8 @@
 ﻿@page "/dataqc"
 @inject IDataQc qc
 @inject SingletonServices singleton
+@inject IDisplayMessage displayMessage
+@inject NavigationManager navigationManager
 
 <h3>Data QC</h3>
 
@@ -60,6 +62,11 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (string.IsNullOrEmpty(singleton.TargetConnector))
+        {
+            await displayMessage.DisplayErrorMessage("Please select a data connector");
+            navigationManager.NavigateTo("/");
+        }
         try
         {
             await QCResults();

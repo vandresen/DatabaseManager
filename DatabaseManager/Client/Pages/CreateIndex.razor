@@ -1,6 +1,8 @@
 ﻿@page "/createindex"
 @inject ICreateIndex createIndex
 @inject SingletonServices singleton
+@inject IDisplayMessage displayMessage
+@inject NavigationManager navigationManager
 
 <h2>Create Index</h2>
 
@@ -21,6 +23,15 @@
     CreateIndexParameters iParameters = new CreateIndexParameters();
     private string statusMessage = "Not started";
     public int barValue = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(singleton.TargetConnector))
+        {
+            await displayMessage.DisplayErrorMessage("Please select a data connector");
+            navigationManager.NavigateTo("/");
+        }
+    }
 
     protected async Task StartIndex()
     {
