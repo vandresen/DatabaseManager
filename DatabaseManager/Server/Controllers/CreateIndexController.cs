@@ -9,6 +9,8 @@ using DatabaseManager.Shared;
 using DatabaseManager.Server.Helpers;
 using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json.Linq;
+using Microsoft.Azure.Storage;
+using Microsoft.Azure.Storage.File;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -18,23 +20,54 @@ namespace DatabaseManager.Server.Controllers
     {
         private readonly string connectionString;
         private readonly string container = "sources";
+        private readonly string taxonomyShare = "taxonomy";
         private readonly IWebHostEnvironment _env;
+        private CloudFileShare share;
 
         public CreateIndexController(IConfiguration configuration, IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             _env = env;
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            CloudFileClient fileClient = account.CreateCloudFileClient();
+            share = account.CreateCloudFileClient().GetShareReference(taxonomyShare);
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<List<string>>> GetTaxonomies()
+        {
+            List<string> files = new List<string>();
+            try
+            {
+                //CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+                //CloudFileClient fileClient = account.CreateCloudFileClient();
+                //CloudFileShare share = account.CreateCloudFileClient().GetShareReference(taxonomyShare);
+                IEnumerable<IListFileItem> fileList = share.GetRootDirectoryReference().ListFilesAndDirectories();
+                foreach (IListFileItem listItem in fileList)
+                {
+                    if (listItem.GetType() == typeof(CloudFile))
+                    {
+                        files.Add(listItem.Uri.Segments.Last());
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+            return files;
         }
 
         [HttpPost]
         public async Task<ActionResult<List<ParentIndexNodes>>> CreateParentNodes(CreateIndexParameters iParameters)
         {
             if (iParameters == null) return BadRequest();
+            if (string.IsNullOrEmpty(iParameters.TaxonomyFile)) return BadRequest();
             List<ParentIndexNodes> nodes = new List<ParentIndexNodes>();
             try
             {
                 IndexBuilder iBuilder = new IndexBuilder();
-                string json = GetJsonIndexFile();
+                string json = GetJsonIndexFile(iParameters.TaxonomyFile);
                 ConnectParameters connector = Common.GetConnectParameters(connectionString, container, 
                     iParameters.DataConnector);
                 iBuilder.InitializeIndex(connector, json);
@@ -68,11 +101,11 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult> CreateChildren(CreateIndexParameters iParams)
         {
             if (iParams == null) return BadRequest();
-
+            if (string.IsNullOrEmpty(iParams.TaxonomyFile)) return BadRequest();
             try
             {
                 IndexBuilder iBuilder = new IndexBuilder();
-                string json = GetJsonIndexFile();
+                string json = GetJsonIndexFile(iParams.TaxonomyFile);
                 ConnectParameters connector = Common.GetConnectParameters(connectionString, container,
                     iParams.DataConnector);
                 iBuilder.InitializeIndex(connector, json);
@@ -86,14 +119,31 @@ namespace DatabaseManager.Server.Controllers
             return NoContent();
         }
         
-        private string GetJsonIndexFile()
+        private string GetJsonIndexFile(string jsonFile)
         {
             string json = "";
             try
             {
-                string contentRootPath = _env.ContentRootPath;
-                string jsonFile = contentRootPath + @"\DataBase\WellBore.json";
-                json = System.IO.File.ReadAllText(jsonFile);
+                if (share.Exists())
+                {
+                    CloudFileDirectory rootDir = share.GetRootDirectoryReference();
+                    CloudFile file = rootDir.GetFileReference(jsonFile);
+                    if (file.Exists())
+                    {
+                        json = file.DownloadTextAsync().Result;
+                    }
+                    else
+                    {
+                        Exception error = new Exception("File does not exist ");
+                        throw error;
+                    }
+                }
+                else
+                {
+                    Exception error = new Exception("Share does not exist ");
+                    throw error;
+                }
+                    string contentRootPath = _env.ContentRootPath;
             }
             catch (Exception ex)
             {

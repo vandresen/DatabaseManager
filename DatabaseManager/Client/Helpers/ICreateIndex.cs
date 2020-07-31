@@ -10,5 +10,6 @@ namespace DatabaseManager.Client.Helpers
     {
         Task CreateChildIndexes(CreateIndexParameters iParams);
         Task<List<ParentIndexNodes>> CreateParentNodes(CreateIndexParameters iParameters);
+        Task<List<string>> GetTaxonomies();
     }
 }

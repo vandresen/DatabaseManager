@@ -100,6 +100,7 @@
         {
             progress($"Start DMS Model Creation");
             dmParameters.ModelOption = "DSM Model";
+            dmParameters.FileShare = "taxonomy";
             await dataModelCreate.Create(dmParameters);
             barValue = 33;
             progress($"Start creating stored procedures");

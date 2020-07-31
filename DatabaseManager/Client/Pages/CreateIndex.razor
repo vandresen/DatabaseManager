@@ -8,6 +8,15 @@
 
 <p>Target Database: @singleton.TargetConnector</p>
 
+@if (taxonomies == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <GenericSelector Options="taxonomies" Selection="Selected" Label="Choose Taxonomy"/>
+}
+
 <button class="btn btn-primary" @onclick="StartIndex">Start Indexing</button>
 
 <div>
@@ -20,6 +29,8 @@
 
 @code {
     List<ParentIndexNodes> pNodes;
+    List<string> taxonomies;
+    string taxonomySelection;
     CreateIndexParameters iParameters = new CreateIndexParameters();
     private string statusMessage = "Not started";
     public int barValue = 0;
@@ -31,6 +42,13 @@
             await displayMessage.DisplayErrorMessage("Please select a data connector");
             navigationManager.NavigateTo("/");
         }
+        taxonomies = await createIndex.GetTaxonomies();
+    }
+
+    private async Task Selected(string selectedString)
+    {
+
+        iParameters.TaxonomyFile = selectedString;
     }
 
     protected async Task StartIndex()
@@ -42,18 +60,21 @@
         try
         {
             pNodes = await createIndex.CreateParentNodes(iParameters);
-            int nodeInt = 100 / pNodes.Count;
+            double nodeInt = 100 / pNodes.Count;
+            double barInterval = 0.0;
             for (int j = 0; j < pNodes.Count; j++)
             {
                 ParentIndexNodes node = pNodes[j];
                 iParameters.ParentNodeNumber = j;
                 iParameters.ParentNodeId = node.ParentNodeId;
-                int childInt = nodeInt / node.NodeCount;
+                double childInt = nodeInt / node.NodeCount;
                 for (int i = 0; i < node.NodeCount; i++)
                 {
                     iParameters.ParentNumber = i;
                     await createIndex.CreateChildIndexes(iParameters);
-                    barValue = barValue + childInt;
+                    barInterval = barInterval + childInt;
+                    barValue = (int)barInterval;
+                    progress("Indexing...");
                 }
             }
             barValue = 100;

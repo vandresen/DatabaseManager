@@ -47,7 +47,7 @@ namespace DatabaseManager.Server.Controllers
                 }
                 else if (dmParameters.ModelOption == "DSM Model")
                 {
-                    CreateDMSModel(connector);
+                    CreateDMSModel(dmParameters, connector);
                 }
                 else if (dmParameters.ModelOption == "DSM Rules")
                 {
@@ -309,7 +309,7 @@ namespace DatabaseManager.Server.Controllers
             return table;
         }
 
-        private void CreateDMSModel(ConnectParameters connector)
+        private void CreateDMSModel(DataModelParameters dmParameters, ConnectParameters connector)
         {
             try
             {
@@ -319,6 +319,25 @@ namespace DatabaseManager.Server.Controllers
                 dbConn.OpenConnection(connector);
                 dbConn.SQLExecute(sql);
                 dbConn.CloseConnection();
+
+                CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+                CloudFileClient fileClient = account.CreateCloudFileClient();
+                CloudFileShare share = fileClient.GetShareReference(dmParameters.FileShare);
+                if (!share.Exists())
+                {
+                    share.Create();
+                }
+                CloudFileDirectory rootDir = share.GetRootDirectoryReference();
+                string fileName = "WellBore.json";
+                string taxonomyFile = _contentRootPath + @"\DataBase\WellBore.json";
+                string taxonomy = System.IO.File.ReadAllText(taxonomyFile);
+                CloudFile file = rootDir.GetFileReference(fileName);
+                if (!file.Exists())
+                {
+                    file.Create(taxonomy.Length);
+                }
+                
+                file.UploadText(taxonomy);
             }
             catch (Exception ex)
             {

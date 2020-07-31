@@ -7,6 +7,7 @@ namespace DatabaseManager.Shared
     public class CreateIndexParameters
     {
         public string DataConnector { get; set; }
+        public string TaxonomyFile { get; set; }
         public string IndexName { get; set; }
         public string ParentNodeName { get; set; }
         public int ParentNodeId { get; set; }
