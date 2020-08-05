@@ -33,6 +33,7 @@ else
     string taxonomySelection;
     CreateIndexParameters iParameters = new CreateIndexParameters();
     private string statusMessage = "Not started";
+    private string TaxonomyFile = "";
     public int barValue = 0;
 
     protected override async Task OnInitializedAsync()
@@ -47,16 +48,16 @@ else
 
     private async Task Selected(string selectedString)
     {
-
-        iParameters.TaxonomyFile = selectedString;
+        TaxonomyFile = selectedString;
     }
 
     protected async Task StartIndex()
     {
         progress("Starting indexing...");
+        iParameters= await createIndex.GetTaxonomy(TaxonomyFile);
         iParameters.DataConnector = singleton.TargetConnector;
         iParameters.IndexName = "Default";
-
+        Console.WriteLine(iParameters.Taxonomy);
         try
         {
             pNodes = await createIndex.CreateParentNodes(iParameters);

@@ -1,4 +1,7 @@
-﻿using DatabaseManager.Shared;
+﻿using DatabaseManager.Server.Entities;
+using DatabaseManager.Server.Extensions;
+using DatabaseManager.Shared;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -16,6 +19,7 @@ namespace DatabaseManager.Server.Helpers
         private IndexFileData _currentItem;
         private IndexFileData _parentItem;
         private Location _location;
+        private List<DataAccessDef> dataAccessDefs = new List<DataAccessDef>();
 
         public JArray JsonIndexArray { get; set; }
 
@@ -29,10 +33,11 @@ namespace DatabaseManager.Server.Helpers
             _dbConn.CloseConnection();
         }
 
-        public void InitializeIndex(ConnectParameters connectionString, string json)
+        public void InitializeIndex(ConnectParameters connectionString, string jsonTaxonomy, string jsonConnectDef)
         {
             _dbConn.OpenConnection(connectionString);
-            JsonIndexArray = JArray.Parse(json);
+            dataAccessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(jsonConnectDef);
+            JsonIndexArray = JArray.Parse(jsonTaxonomy);
             _idxData = new List<IndexFileData>();
             foreach (JToken level in JsonIndexArray)
             {
@@ -57,19 +62,12 @@ namespace DatabaseManager.Server.Helpers
             _currentItem = _idxData.Find(x => x.DataName == parentName);
             if (string.IsNullOrEmpty(_currentItem.ParentKey))
             {
-                select = _currentItem.Select;
+                select = dataAccessDefs.GetSelectString(_currentItem.DataName);
                 if (!String.IsNullOrEmpty(select))
                 {
                     _currentItem.DataTable = _dbConn.GetDataTable(select, query);
                 }
                 objectCount = _currentItem.DataTable.Rows.Count;
-            }
-            else
-            {
-                //DataRow pr = _parentItem.DataTable.Rows[rowNr];
-                //string query = GetParentKey(pr, _currentItem.ParentKey);
-                //DataRow[] childRows = _currentItem.DataTable.Select(query);
-                //objectCount = childRows.Length;
             }
             return objectCount;
         }
@@ -90,7 +88,8 @@ namespace DatabaseManager.Server.Helpers
         {
             JToken level = JsonIndexArray[topId];
             _currentItem = GetIndexData(level);
-            GetDataForIndexing(_currentItem.Select, "");
+            string select = dataAccessDefs.GetSelectString(_currentItem.DataName);
+            GetDataForIndexing(select, "");
             DataRow dataRow = _currentItem.DataTable.Rows[parentId];
             _location = GetIndexLocation(dataRow);
             int levelId = PopulateIndexItem(dataRow, parentNodeId);
@@ -110,8 +109,6 @@ namespace DatabaseManager.Server.Helpers
                     {
                         int childCount = _currentItem.DataTable.Rows.Count;
                         DataRow pr = _parentItem.DataTable.Rows[parentId];
-                        //string query = GetParentKey(pr, _currentItem.ParentKey);
-                        //    DataRow[] childRows = _currentItem.DataTable.Select(query);
                         for (int i = 0; i < childCount; i++)
                         {
                             _parentItem = GetIndexData(level);
@@ -140,7 +137,8 @@ namespace DatabaseManager.Server.Helpers
             {
                 string query = GetParentKey(pr, childItem.ParentKey);
                 query = " where " + query;
-                GetDataForIndexing(childItem.Select, query);
+                string select = dataAccessDefs.GetSelectString(childItem.DataName);
+                GetDataForIndexing(select, query);
                 if (_currentItem.DataTable.Rows.Count > 0)
                 {
                     childNodeId = _dbConn.InsertIndex(parentNodeId, nodeName, nodeName, "", "", 0.0, 0.0);
@@ -195,10 +193,8 @@ namespace DatabaseManager.Server.Helpers
             IndexFileData idxDataObject = new IndexFileData();
             idxDataObject.DataName = (string)token["DataName"];
             idxDataObject.NameAttribute = token["NameAttribute"]?.ToString();
-            idxDataObject.Select = token["Select"]?.ToString();
             idxDataObject.LatitudeAttribute = token["LatitudeAttribute"]?.ToString();
             idxDataObject.LongitudeAttribute = token["LongitudeAttribute"]?.ToString();
-            idxDataObject.Keys = token["Keys"]?.ToString();
             idxDataObject.ParentKey = token["ParentKey"]?.ToString();
             if (token["UseParentLocation"] != null) idxDataObject.UseParentLocation = (Boolean)token["UseParentLocation"];
             return idxDataObject;
@@ -258,7 +254,8 @@ namespace DatabaseManager.Server.Helpers
             double lon = _location.Longitude;
             string nameAttribute = _currentItem.NameAttribute;
             string name = dataRow[nameAttribute].ToString();
-            string dataKey = GetDataKey(dataRow, _currentItem.Keys);
+            string keys = dataAccessDefs.GetKeysString(_currentItem.DataName);
+            string dataKey = GetDataKey(dataRow, keys);
             string jsonData = Common.ConvertDataRowToJson(dataRow, _currentItem.DataTable);
             int indexId = _dbConn.InsertIndex(parentNodeId, name, _currentItem.DataName, dataKey, jsonData, lat, lon);
             return indexId;

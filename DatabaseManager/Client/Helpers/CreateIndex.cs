@@ -26,6 +26,16 @@ namespace DatabaseManager.Client.Helpers
             return response.Response;
         }
 
+        public async Task<CreateIndexParameters> GetTaxonomy(string Name)
+        {
+            var response = await httpService.Get<CreateIndexParameters>($"{url}/{Name}");
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
         public async Task CreateChildIndexes(CreateIndexParameters iParams)
         {
             var response = await httpService.Post($"{url}/children", iParams);

@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Hosting;
 using DatabaseManager.Server.Entities;
 using System.Data;
 using Newtonsoft.Json;
+using DatabaseManager.Server.Services;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -20,14 +21,18 @@ namespace DatabaseManager.Server.Controllers
     [ApiController]
     public class DataModelController : ControllerBase
     {
+        private readonly IFileStorageService fileStorageService;
         private readonly IWebHostEnvironment _env;
         private readonly string connectionString;
         private readonly string _contentRootPath;
         private readonly string container = "sources";
 
-        public DataModelController(IConfiguration configuration, IWebHostEnvironment env)
+        public DataModelController(IConfiguration configuration,
+            IFileStorageService fileStorageService,
+            IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
+            this.fileStorageService = fileStorageService;
             _env = env;
             _contentRootPath = _env.ContentRootPath;
         }
@@ -309,7 +314,7 @@ namespace DatabaseManager.Server.Controllers
             return table;
         }
 
-        private void CreateDMSModel(DataModelParameters dmParameters, ConnectParameters connector)
+        private async Task CreateDMSModel(DataModelParameters dmParameters, ConnectParameters connector)
         {
             try
             {
@@ -320,24 +325,15 @@ namespace DatabaseManager.Server.Controllers
                 dbConn.SQLExecute(sql);
                 dbConn.CloseConnection();
 
-                CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-                CloudFileClient fileClient = account.CreateCloudFileClient();
-                CloudFileShare share = fileClient.GetShareReference(dmParameters.FileShare);
-                if (!share.Exists())
-                {
-                    share.Create();
-                }
-                CloudFileDirectory rootDir = share.GetRootDirectoryReference();
                 string fileName = "WellBore.json";
                 string taxonomyFile = _contentRootPath + @"\DataBase\WellBore.json";
                 string taxonomy = System.IO.File.ReadAllText(taxonomyFile);
-                CloudFile file = rootDir.GetFileReference(fileName);
-                if (!file.Exists())
-                {
-                    file.Create(taxonomy.Length);
-                }
-                
-                file.UploadText(taxonomy);
+                await fileStorageService.SaveFile(dmParameters.FileShare, fileName, taxonomy);
+
+                fileName = "PPDMDataAccess.json";
+                string defFile = _contentRootPath + @"\DataBase\PPDMDataAccess.json";
+                string definition = System.IO.File.ReadAllText(defFile);
+                await fileStorageService.SaveFile("connectdefinition", fileName, definition);
             }
             catch (Exception ex)
             {

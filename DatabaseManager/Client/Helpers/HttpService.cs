@@ -17,7 +17,7 @@ namespace DatabaseManager.Client.Helpers
         public HttpService(HttpClient httpClient)
         {
             this.httpClient = httpClient;
-            httpClient.Timeout = TimeSpan.FromMinutes(10);
+            httpClient.Timeout = TimeSpan.FromMinutes(15);
         }
 
         public async Task<HttpResponseWrapper<T>> Get<T>(string url)
