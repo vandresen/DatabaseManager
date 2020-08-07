@@ -9,7 +9,7 @@
     <p class="lead">The tool to manage your PPDM databases</p>
 </div>
 
-
+<p>Target Database: @singleton.TargetConnector</p>
 
 @if (options == null)
 {
@@ -17,7 +17,8 @@
 }
 else
 {
-    <ConnectorSelector Options="options" SelectedConnector="Selected"/>
+    @*<ConnectorSelector Options="options" SelectedConnector="Selected"/>*@
+    <GenericSelector Options="options" Selection="Selected" Label="Choose Connector" />
 }
 
 @if (index == null)
@@ -67,6 +68,11 @@ else
             foreach (ConnectParameters conn in ConnectParameters)
             {
                 options.Add(conn.SourceName);
+            }
+            if (!string.IsNullOrEmpty(singleton.TargetConnector))
+            {
+                Console.WriteLine("get Index data");
+                await GetIndexData();
             }
         }
         catch (Exception ex)
