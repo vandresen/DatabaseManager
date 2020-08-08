@@ -152,6 +152,9 @@ namespace DatabaseManager.Server.Controllers
             string ruleFilter = rule.RuleFilter;
             string jsonRules = JsonConvert.SerializeObject(rule);
             qcSetup.RuleObject = jsonRules;
+            bool externalQcMethod = rule.RuleFunction.StartsWith("http");
+            QCMethods internalQC = new QCMethods();
+                
             foreach (DataRow idxRow in indexTable.Rows)
             {
                 string jsonData = idxRow["JSONDATAOBJECT"].ToString();
@@ -161,13 +164,30 @@ namespace DatabaseManager.Server.Controllers
                     qcSetup.IndexNode = idxRow["Text_IndexNode"].ToString();
                     string qcStr = qcFlags[qcSetup.IndexId];
                     qcSetup.DataObject = jsonData;
-                    if (!Filter(jsonData, ruleFilter)) ProcessQcRule(qcSetup, rule);
+                    string result = "Passed";
+                    if (!Filter(jsonData, ruleFilter)) 
+                    {
+                        if (externalQcMethod) 
+                        {
+                            result = ProcessQcRule(qcSetup, rule);
+                        }
+                        else
+                        {
+                            result = internalQC.ProcessMethod(qcSetup);
+                        }
+                        if (result == "Failed")
+                        {
+                            qcStr = qcStr + rule.RuleKey + ";";
+                            qcFlags[qcSetup.IndexId] = qcStr;
+                        }
+                    } 
                 }
             }
         }
 
-        private void ProcessQcRule(QcRuleSetup qcSetup, RuleModel rule)
+        private string ProcessQcRule(QcRuleSetup qcSetup, RuleModel rule)
         {
+            string returnResult = "Passed";
             var jsonString = JsonConvert.SerializeObject(qcSetup);
             var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
             try
@@ -180,13 +200,7 @@ namespace DatabaseManager.Server.Controllers
                         {
                             var tr = respContent.ReadAsStringAsync().Result;
                             var azureResponse = JsonConvert.DeserializeObject(tr);
-                            if (azureResponse.ToString() == "Failed")
-                            {
-                                string qcStr = qcFlags[qcSetup.IndexId];
-                                qcStr = qcStr + rule.RuleKey + ";";
-                                qcFlags[qcSetup.IndexId] = qcStr;
-                            }
-                                
+                            returnResult = azureResponse.ToString();
                         }
                     }
                 }
@@ -196,6 +210,7 @@ namespace DatabaseManager.Server.Controllers
                 Exception error = new Exception("DataQcWithProgressBar: Problems with URL: ", ex);
                 throw error;
             }
+            return returnResult;
         }
 
         private RuleModel GetRule(DbUtilities dbConn, int id)

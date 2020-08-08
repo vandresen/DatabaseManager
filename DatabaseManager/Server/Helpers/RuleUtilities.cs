@@ -70,7 +70,10 @@ namespace DatabaseManager.Server.Helpers
         {
             RuleFunctions rf = new RuleFunctions();
 
-            int startFunctionName = ruleFunction.IndexOf(@"/api/") + 5;
+            int startFunctionName = ruleFunction.IndexOf(@"/api/");
+            if (startFunctionName == -1) startFunctionName = 0;
+            else startFunctionName = startFunctionName + 5;
+
             int endFunctionName = ruleFunction.IndexOf(@"?");
             string functionKey = "";
             if (endFunctionName == -1)

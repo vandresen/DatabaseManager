@@ -7,7 +7,7 @@
     "RuleType": "Completeness",
     "RuleName": "Missing elevation",
     "RuleDescription": "",
-    "RuleFunction": "https://petrodataonlinedataquality.azurewebsites.net/api/Completeness?code=AonsTa4nbuxf6hez5YlezAhbsu19WkjxnrfmLyWwsM2Yi5ZMtv2mug==",
+    "RuleFunction": "Completeness",
     "RuleKey": "C1",
     "KeyNumber": 1,
     "RuleParameters": "",

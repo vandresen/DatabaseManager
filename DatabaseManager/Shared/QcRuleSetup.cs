@@ -13,6 +13,7 @@ namespace DatabaseManager.Shared
         public string DatabaseUser { get; set; }
 
         public string DatabasePassword { get; set; }
+        public string DataConnector { get; set; }
 
         public string DataObject { get; set; }
 

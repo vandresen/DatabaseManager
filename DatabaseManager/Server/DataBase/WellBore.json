@@ -4,7 +4,6 @@
     "NameAttribute": "UWI",
     "LatitudeAttribute": "SURFACE_LATITUDE",
     "LongitudeAttribute": "SURFACE_LONGITUDE",
-    "Keys": "UWI",
     "Select": "Select UWI, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE,LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS,GROUND_ELEV, REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY from WELL",
     "DataObjects": [
       {
@@ -12,7 +11,6 @@
         "NameAttribute": "CURVE_ID",
         "Select": "Select UWI, CURVE_ID, NULL_REPRESENTATION, VALUE_COUNT, MAX_INDEX, MIN_INDEX, ROW_CHANGED_DATE, ROW_CHANGED_BY from well_log_curve",
         "ParentKey": "UWI = [UWI]",
-        "Keys": "UWI, CURVE_ID",
         "UseParentLocation": false
       },
       {
@@ -20,7 +18,6 @@
         "NameAttribute": "STRAT_UNIT_ID",
         "Select": "Select STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH,REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY  from STRAT_WELL_SECTION",
         "ParentKey": "UWI = [UWI]",
-        "Keys": "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI",
         "UseParentLocation": true
       }
     ]
