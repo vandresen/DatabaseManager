@@ -23,7 +23,7 @@ namespace DatabaseManager.Server.Controllers
     {
         private readonly IFileStorageService fileStorageService;
         private readonly IWebHostEnvironment _env;
-        private readonly string connectionString;
+        private string connectionString;
         private readonly string _contentRootPath;
         private readonly string container = "sources";
 
@@ -41,6 +41,9 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> DataModelCreate(DataModelParameters dmParameters)
         {
             if (dmParameters == null) return BadRequest();
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
 
             try
             {

@@ -15,7 +15,7 @@ namespace DatabaseManager.Server.Controllers
     [ApiController]
     public class CopyController : ControllerBase
     {
-        private readonly string connectionString;
+        private string connectionString;
         private readonly string container = "sources";
 
         public CopyController(IConfiguration configuration)
@@ -26,6 +26,10 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost]
         public ActionResult Copy(TransferParameters transferParameters)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+
             string message = "";
             string table = transferParameters.Table;
             try

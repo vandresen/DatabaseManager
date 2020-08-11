@@ -19,12 +19,12 @@ namespace DatabaseManager.Server.Controllers
     [ApiController]
     public class CreateIndexController : ControllerBase
     {
-        private readonly string connectionString;
+        private string connectionString;
         private readonly string container = "sources";
         private readonly string taxonomyShare = "taxonomy";
         private readonly IFileStorageService fileStorageService;
         private readonly IWebHostEnvironment _env;
-        private CloudFileShare share;
+        //private CloudFileShare share;
 
         public CreateIndexController(IConfiguration configuration,
             IFileStorageService fileStorageService,
@@ -33,14 +33,18 @@ namespace DatabaseManager.Server.Controllers
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
             _env = env;
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            CloudFileClient fileClient = account.CreateCloudFileClient();
-            share = account.CreateCloudFileClient().GetShareReference(taxonomyShare);
+            //CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            //CloudFileClient fileClient = account.CreateCloudFileClient();
+            //share = account.CreateCloudFileClient().GetShareReference(taxonomyShare);
         }
 
         [HttpGet]
         public async Task<ActionResult<List<string>>> GetTaxonomies()
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+            CloudFileShare share = GetAzureStorageShare();
             List<string> files = new List<string>();
             try
             {
@@ -63,15 +67,19 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{name}")]
         public async Task<ActionResult<CreateIndexParameters>> Get(string name)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            fileStorageService.SetConnectionString(tmpConnString);
+            //CloudFileShare share = GetAzureStorageShare();
             CreateIndexParameters parms = new CreateIndexParameters();
             try
             {
                 parms.Taxonomy = await fileStorageService.ReadFile("taxonomy", name);
                 parms.ConnectDefinition = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return NotFound();
+                string errorMessage = ex.ToString();
+                return NotFound(errorMessage);
             }
 
             return parms;
@@ -80,6 +88,10 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<List<ParentIndexNodes>>> CreateParentNodes(CreateIndexParameters iParameters)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+            CloudFileShare share = GetAzureStorageShare();
             if (iParameters == null) return BadRequest();
             if (string.IsNullOrEmpty(iParameters.Taxonomy)) return BadRequest();
             if (string.IsNullOrEmpty(iParameters.ConnectDefinition)) return BadRequest();
@@ -121,6 +133,10 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost("children")]
         public async Task<ActionResult> CreateChildren(CreateIndexParameters iParams)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+            CloudFileShare share = GetAzureStorageShare();
             if (iParams == null) return BadRequest();
             if (string.IsNullOrEmpty(iParams.Taxonomy)) return BadRequest();
             if (string.IsNullOrEmpty(iParams.ConnectDefinition)) return BadRequest();
@@ -142,38 +158,12 @@ namespace DatabaseManager.Server.Controllers
             return NoContent();
         }
         
-        //private string GetJsonIndexFile(string jsonFile)
-        //{
-        //    string json = "";
-        //    try
-        //    {
-        //        if (share.Exists())
-        //        {
-        //            CloudFileDirectory rootDir = share.GetRootDirectoryReference();
-        //            CloudFile file = rootDir.GetFileReference(jsonFile);
-        //            if (file.Exists())
-        //            {
-        //                json = file.DownloadTextAsync().Result;
-        //            }
-        //            else
-        //            {
-        //                Exception error = new Exception("File does not exist ");
-        //                throw error;
-        //            }
-        //        }
-        //        else
-        //        {
-        //            Exception error = new Exception("Share does not exist ");
-        //            throw error;
-        //        }
-        //            string contentRootPath = _env.ContentRootPath;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Exception error = new Exception("Read index file error: ", ex);
-        //        throw error;
-        //    }
-        //    return json;
-        //}
+        private CloudFileShare GetAzureStorageShare()
+        {
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            CloudFileClient fileClient = account.CreateCloudFileClient();
+            CloudFileShare share = account.CreateCloudFileClient().GetShareReference(taxonomyShare);
+            return share;
+        }
     }
 }

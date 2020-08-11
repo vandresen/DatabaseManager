@@ -10,7 +10,7 @@ namespace DatabaseManager.Server.Services
 {
     public class AzureFileStorageService: IFileStorageService
     {
-        private readonly string connectionString;
+        private string connectionString;
 
         public AzureFileStorageService(IConfiguration configuration)
         {
@@ -34,6 +34,16 @@ namespace DatabaseManager.Server.Services
             }
 
             await file.UploadTextAsync(fileContent);
+        }
+
+        public void SetConnectionString(string connection)
+        {
+            if (!string.IsNullOrEmpty(connection)) connectionString = connection;
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                Exception error = new Exception($"Connection string is not set");
+                throw error;
+            }
         }
 
         public async Task<string> ReadFile(string fileShare, string fileName)

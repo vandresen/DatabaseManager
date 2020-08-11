@@ -14,7 +14,7 @@ namespace DatabaseManager.Server.Controllers
     [ApiController]
     public class DeleteController : ControllerBase
     {
-        private readonly string connectionString;
+        private string connectionString;
         private readonly string container = "sources";
 
         public DeleteController(IConfiguration configuration)
@@ -25,6 +25,10 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost]
         public ActionResult Delete(TransferParameters transferParameters)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, 
                 transferParameters.TargetName);
             DbUtilities dbConn = new DbUtilities();
