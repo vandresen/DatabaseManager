@@ -1,0 +1,21 @@
+﻿@page "/settings"
+@inject HttpClient client
+@inject NavigationManager navigationManager
+
+<h3>Settings</h3>
+<p>Azure Storage used for this session:</p>
+<p><input @bind="@AzureStorage" size="100" /></p>
+<p><button @onclick="Save">Save</button></p>
+
+@code {
+    string AzureStorage;
+
+    private void Save()
+    {
+        if (!string.IsNullOrEmpty(AzureStorage))
+        {
+            client.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
+        }
+        navigationManager.NavigateTo("/");
+    }
+}

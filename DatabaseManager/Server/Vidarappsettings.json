@@ -1,0 +1,5 @@
+{
+  "ConnectionStrings": {
+    "AzureStorageConnection": "DefaultEndpointsProtocol=https;AccountName=petrodataonlinestorage;AccountKey=5AqpguqLaWYyF0hsDxUX66f8dAyJLnoc6Q4K6Rhngvu9iYn9YubljP4Lc+Hst4hY6MCuuo8ietla5n57b9ScJw==;EndpointSuffix=core.windows.net"
+  }
+}

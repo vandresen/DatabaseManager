@@ -17,7 +17,7 @@ namespace DatabaseManager.Server.Controllers
     [ApiController]
     public class IndexController : ControllerBase
     {
-        private readonly string connectionString;
+        private string connectionString;
         private readonly string container = "sources";
 
         public IndexController(IConfiguration configuration)
@@ -28,6 +28,10 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}")]
         public async Task<ActionResult<List<DmsIndex>>> Get(string source)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
@@ -68,6 +72,10 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}/{id}")]
         public async Task<ActionResult<string>> GetChildren(string source, int id)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();

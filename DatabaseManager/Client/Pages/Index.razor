@@ -3,6 +3,8 @@
 @inject IIndexData indexData
 @inject SingletonServices singleton
 @inject NavigationManager navigationManager
+@inject IDisplayMessage displayMessage
+@inject HttpClient client
 
 <div class="jumbotron">
     <h1>Welcome to Database Manager tool</h1>
@@ -62,6 +64,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        Console.WriteLine("Init data sources");
         try
         {
             ConnectParameters = await dataSources.GetSources();
@@ -77,7 +80,14 @@ else
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Errors: {ex}");
+            if (ex.ToString().Contains("Connection string is not set"))
+            {
+                await displayMessage.DisplayErrorMessage("Azure storage connection string is missing");
+            }
+            else
+            {
+                Console.WriteLine($"Errors: {ex}");
+            }
         }
     }
 

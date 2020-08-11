@@ -27,7 +27,7 @@
             Console.WriteLine(connectStr);
             connectParameters.ConnectionString = connectStr;
             await dataSources.UpdateSource(connectParameters);
-            navigationManager.NavigateTo("rules");
+            navigationManager.NavigateTo("datasources");
         }
         catch (Exception ex)
         {
