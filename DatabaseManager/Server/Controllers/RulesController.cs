@@ -20,7 +20,7 @@ namespace DatabaseManager.Server.Controllers
     [ApiController]
     public class RulesController : ControllerBase
     {
-        private readonly string connectionString;
+        private string connectionString;
         private readonly string container = "sources";
         private readonly string ruleShare = "rules";
         private readonly IWebHostEnvironment _env;
@@ -38,6 +38,10 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}")]
         public async Task<ActionResult<string>> Get(string source)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             string result = "";
@@ -62,6 +66,10 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}/{id:int}")]
         public async Task<ActionResult<string>> GetRule(string source, int id)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             string result = "";
@@ -88,6 +96,10 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("RuleFile")]
         public async Task<ActionResult<List<PredictionSet>>> GetPredictions()
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+
             List<PredictionSet> files = new List<PredictionSet>();
             try
             {
@@ -117,6 +129,9 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("RuleFile/{rulename}")]
         public async Task<ActionResult<string>> GetPrediction(string ruleName)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
             string result = "";
             try
             {
@@ -151,6 +166,9 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("RuleInfo/{source}")]
         public async Task<ActionResult<RuleInfo>> GetRuleInfo(string source)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             RuleInfo ruleInfo = new RuleInfo();
@@ -171,6 +189,9 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost("{source}")]
         public async Task<ActionResult<string>> SaveRule(string source, RuleModel rule)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
             if (rule == null) return BadRequest();
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
@@ -192,6 +213,9 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> SaveRuleToFile(string RuleName, List<RuleModel> rules)
         {
             if (rules == null) return BadRequest();
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
             try
             {
                 CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
@@ -222,6 +246,9 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> UpdateRule(string source, int id, RuleModel rule)
         {
             if (rule == null) return BadRequest();
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
@@ -253,6 +280,9 @@ namespace DatabaseManager.Server.Controllers
         [HttpDelete("{source}/{id}")]
         public async Task<ActionResult> Delete(string source, int id)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();

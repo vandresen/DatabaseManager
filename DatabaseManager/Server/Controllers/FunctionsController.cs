@@ -18,7 +18,7 @@ namespace DatabaseManager.Server.Controllers
     [ApiController]
     public class FunctionsController : ControllerBase
     {
-        private readonly string connectionString;
+        private string connectionString;
         private readonly string container = "sources";
         private readonly IWebHostEnvironment _env;
         List<DataAccessDef> _accessDefs;
@@ -35,6 +35,10 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}")]
         public async Task<ActionResult<string>> Get(string source)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             string result = "";
@@ -59,6 +63,10 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}/{id:int}")]
         public async Task<ActionResult<string>> GetFunction(string source, int id)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             string result = "";
@@ -86,6 +94,10 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> SaveFunction(string source, RuleFunctions function)
         {
             if (function == null) return BadRequest();
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
@@ -114,6 +126,10 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> UpdateFunction(string source, int id, RuleFunctions function)
         {
             if (function == null) return BadRequest();
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
@@ -146,6 +162,9 @@ namespace DatabaseManager.Server.Controllers
         [HttpDelete("{source}/{id}")]
         public async Task<ActionResult> Delete(string source, int id)
         {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();

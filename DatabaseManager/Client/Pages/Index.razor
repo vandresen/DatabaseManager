@@ -82,7 +82,7 @@ else
         {
             if (ex.ToString().Contains("Connection string is not set"))
             {
-                await displayMessage.DisplayErrorMessage("Azure storage connection string is missing");
+                await displayMessage.DisplayErrorMessage("Azure storage connection string is missing. Use Settings to set it temporary for the session");
             }
             else
             {
