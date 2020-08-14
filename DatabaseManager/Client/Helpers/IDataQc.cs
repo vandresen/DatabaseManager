@@ -8,6 +8,7 @@ namespace DatabaseManager.Client.Helpers
 {
     public interface IDataQc
     {
+        Task<List<DmsIndex>> GetQcFailures(string source, int id);
         Task<List<QcResult>> GetQcResult(string source);
         Task ProcessQCRule(DataQCParameters qcParams);
     }

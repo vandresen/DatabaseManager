@@ -67,6 +67,34 @@ namespace DatabaseManager.Server.Controllers
             return qcResults;
         }
 
+        [HttpGet("{source}/{id}")]
+        public async Task<ActionResult<string>> GetFailures(string source, int id)
+        {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+
+            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
+            if (connector == null) return BadRequest();
+            DbUtilities dbConn = new DbUtilities();
+            dbConn.OpenConnection(connector);
+
+            string result = "[]";
+            try
+            {
+                RuleModel rule = GetRule(dbConn, id);
+                result = GetFailedObjects(dbConn, rule.RuleKey);
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+            
+
+            dbConn.CloseConnection();
+            return result;
+        }
+
         [HttpPost]
         public async Task<ActionResult<string>> ExecuteRule(DataQCParameters qcParams)
         {
@@ -282,6 +310,31 @@ namespace DatabaseManager.Server.Controllers
                 }
             }
             return filter;
+        }
+
+        private string GetFailedObjects(DbUtilities dbConn, string ruleKey)
+        {
+            List<DmsIndex> qcIndex = new List<DmsIndex>();
+            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
+            string sql = ruleAccessDef.Select;
+            string query = $" where QC_STRING like '%{ruleKey};%'";
+            DataTable idx = dbConn.GetDataTable(sql, query);
+            foreach (DataRow idxRow in idx.Rows)
+            {
+                string dataType = idxRow["DATATYPE"].ToString();
+                string indexId = idxRow["INDEXID"].ToString();
+                string jsonData = idxRow["JSONDATAOBJECT"].ToString();
+                int intIndexId = Convert.ToInt32(indexId);
+                qcIndex.Add(new DmsIndex()
+                {
+                    Id = intIndexId,
+                    DataType = dataType,
+                    JsonData = jsonData
+                });
+            }
+            string result = JsonConvert.SerializeObject(qcIndex);
+
+            return result;
         }
     }
 }

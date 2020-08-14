@@ -1,0 +1,32 @@
+﻿@page  "/drilldown/{Id:int}"
+@inject IDataQc qc
+@inject IRules rules
+@inject SingletonServices singleton
+
+<h3>@header</h3>
+
+@if (dataIndex == null)
+{
+    <text>Loading Data...</text>
+}
+else
+{
+    <DisplayIndex index="dataIndex" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    public List<DmsIndex> dataIndex;
+    public RuleModel ruleModel;
+    private string header = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"Rule if = {Id}");
+        ruleModel = await rules.GetRule(singleton.TargetConnector, Id);
+        header = ruleModel.RuleName;
+        dataIndex = await qc.GetQcFailures(singleton.TargetConnector, Id);
+        Console.WriteLine($"Number of failures are {dataIndex.Count}");
+
+    }
+}

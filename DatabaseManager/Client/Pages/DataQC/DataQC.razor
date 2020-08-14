@@ -31,15 +31,22 @@
             <tbody>
                 @foreach (var item in qcPagination)
                 {
-                    <tr>
+                <tr>
+                    @if (item.Failures > 0)
+                    {
                         <td>
-                            @*<a class="btn btn-success" href="/rules/editfunction/@item.Id">Edit</a>*@
+                            <a class="btn btn-info" href="/drilldown/@item.Id">...</a>
                         </td>
-                        <td>@item.DataType</td>
-                        <td>@item.RuleType</td>
-                        <td>@item.RuleName</td>
-                        <td>@item.Failures</td>
-                    </tr>
+                    }
+                    else
+                    {
+                        <td></td>
+                    }
+                    <td>@item.DataType</td>
+                    <td>@item.RuleType</td>
+                    <td>@item.RuleName</td>
+                    <td>@item.Failures</td>
+                </tr>
                 }
             </tbody>
         </table>
