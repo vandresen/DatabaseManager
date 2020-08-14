@@ -8,6 +8,7 @@ namespace DatabaseManager.Client.Helpers
 {
     public interface IPrediction
     {
+        Task<List<DmsIndex>> GetPredictedObjects(string source, int id);
         Task<List<PredictionCorrection>> GetPredictions(string source);
         Task ProcessPredictions(PredictionParameters predictionParams);
     }

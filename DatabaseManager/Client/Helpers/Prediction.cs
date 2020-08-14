@@ -26,6 +26,16 @@ namespace DatabaseManager.Client.Helpers
             return response.Response;
         }
 
+        public async Task<List<DmsIndex>> GetPredictedObjects(string source, int id)
+        {
+            var response = await httpService.Get<List<DmsIndex>>($"{url}/{source}/{id}");
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
         public async Task ProcessPredictions(PredictionParameters predictionParams)
         {
             var response = await httpService.Post(url, predictionParams);

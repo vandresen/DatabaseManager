@@ -29,13 +29,20 @@
             <tbody>
                 @foreach (var item in rPagination)
                 {
-                    <tr>
+                <tr>
+                    @if (item.NumberOfCorrections > 0)
+                    {
                         <td>
-                            @*<a class="btn btn-success" href="/rules/editfunction/@item.Id">Edit</a>*@
+                            <a class="btn btn-info" href="/drilldown/@item.Id">...</a>
                         </td>
-                        <td>@item.RuleName</td>
-                        <td>@item.NumberOfCorrections</td>
-                    </tr>
+                    }
+                    else
+                    {
+                        <td></td>
+                    }
+                    <td>@item.RuleName</td>
+                    <td>@item.NumberOfCorrections</td>
+                </tr>
                 }
             </tbody>
         </table>
