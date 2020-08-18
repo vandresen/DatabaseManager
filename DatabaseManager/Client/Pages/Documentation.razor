@@ -1,16 +1,65 @@
-﻿@page "/documentation"
-<h3>About</h3>
+﻿@layout MainLayout
+@page "/documentation"
+@inject HttpClient client
+@using Markdig
 
-<h4>Database Manager is a platform for collaborative solutions to E&amp;P predictions</h4>
-<h5>It is built for the cloud generation as a DataScience Management (DSM) tool</h5>
-<p>It provides an effective tool to make it easier for oil and gas companies to manage their data science projects.</p>
-<p>Predictions and data QC functions are contained in micro services with all the rules, results and models stored in the DSM project.</p> 
-<p>The DSM project is based on the industry standard PPDM data model. The system has functionality to import data from files or from other PPDM databases.</p>
+<style>
+    li:hover {
+        background-color: yellow;
+    }
+</style>
 
-<p>Contact info:</p>
-<p>vidar@petrodataonline.com</p>
+<h3>About Database Manager</h3>
+
+<p>Contact info: vidar@petrodataonline.com</p>
 <p>&nbsp;</p>
 
-@code {
+<div class="row">
+    <div class="col-2">
+        @foreach (var doc in content)
+        {
+            <ul>
+                <li @onclick="(() => GetDoc(doc))">
+                    @doc
+                </li>
+            </ul>
+        }
+    </div>
+    <div class="col-6">
+        @if (Body != null)
+        {
+            @((MarkupString)Body)
+        }
+    </div>
 
+</div>
+
+@code {
+    public string Body { get; set; }
+    private string[] content = {
+        "Introduction", "Home", "Settings", "Data Connectors",
+        "Data Model",  "PPDM to PPDM", "File to PPDM",
+        "Create Index", "Manage Predictions", "Data QC", "Predictions"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetDoc("Introduction");
+    }
+
+    private async Task GetDoc(string docName)
+    {
+        string url = @"api/Documentation/" + docName;
+        Console.WriteLine(docName);
+        string docStr = await client.GetStringAsync(url);
+        if (!string.IsNullOrEmpty(docStr))
+        {
+            Body = Markdown.ToHtml(docStr);
+        }
+        else
+        {
+            Body = null;
+        }
+        Console.WriteLine(docStr);
+    }
 }
