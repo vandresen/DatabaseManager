@@ -95,7 +95,9 @@ else
     {
         indexStatus = "Fetching index";
         StateHasChanged();
+        ConnectParameters connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
         singleton.TargetConnector = selectedString;
+        singleton.DataAccessDefinition = connector.DataAccessDefinition;
         await GetIndexData();
     }
 

@@ -86,6 +86,7 @@
 
         {
             PredictionParameters predictionParams = new PredictionParameters();
+            predictionParams.DataAccessDefinitions = singleton.DataAccessDefinition;
 
             Console.WriteLine("Start prediction Processing");
             progress("Starting QC processing...");

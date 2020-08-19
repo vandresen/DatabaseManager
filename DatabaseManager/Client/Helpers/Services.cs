@@ -8,5 +8,6 @@ namespace DatabaseManager.Client.Helpers
     public class SingletonServices
     {
         public string TargetConnector { get; set; }
+        public string DataAccessDefinition { get; set; }
     }
 }

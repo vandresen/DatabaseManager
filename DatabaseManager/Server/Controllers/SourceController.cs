@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Helpers;
+using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,10 +19,12 @@ namespace DatabaseManager.Server.Controllers
     {
         private string connectionString;
         private readonly string container = "sources";
-         
-        public SourceController(IConfiguration configuration)
+        private readonly IFileStorageService fileStorageService;
+
+        public SourceController(IConfiguration configuration, IFileStorageService fileStorageService)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
+            this.fileStorageService = fileStorageService;
         }
 
         [HttpGet]
@@ -30,10 +33,12 @@ namespace DatabaseManager.Server.Controllers
             string tmpConnString = Request.Headers["AzureStorageConnection"];
             if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
             if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-            
+            fileStorageService.SetConnectionString(tmpConnString);
+
             List<ConnectParameters> connectors = new List<ConnectParameters>();
             try
             {
+                string dataAccessDef =  await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
                 CloudTable table = Common.GetTableConnect(connectionString, container);
                 TableQuery<SourceEntity> tableQuery = new TableQuery<SourceEntity>().
                     Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, "PPDM"));
@@ -46,7 +51,8 @@ namespace DatabaseManager.Server.Controllers
                         DatabaseServer = entity.DatabaseServer,
                         DatabasePassword = entity.Password,
                         ConnectionString = entity.ConnectionString,
-                        DatabaseUser = entity.User
+                        DatabaseUser = entity.User,
+                        DataAccessDefinition = dataAccessDef
                     });
                 }
             }

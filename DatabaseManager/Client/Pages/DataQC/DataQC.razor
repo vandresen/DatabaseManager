@@ -112,6 +112,7 @@
             int progressInterval = (100 / ResultList.Count) - 1;
             barValue = 1;
             qcParams.ClearQCFlags = true;
+            qcParams.DataAccessDefinitions = singleton.DataAccessDefinition;
 
             foreach (QcResult rule in ResultList)
             {

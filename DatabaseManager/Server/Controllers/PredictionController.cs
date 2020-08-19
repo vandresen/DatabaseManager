@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Helpers;
+using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -24,6 +25,7 @@ namespace DatabaseManager.Server.Controllers
     {
         private string connectionString;
         private readonly string container = "sources";
+        private readonly IFileStorageService fileStorageService;
         private readonly IWebHostEnvironment _env;
         List<DataAccessDef> _accessDefs;
         DataAccessDef _indexAccessDef;
@@ -33,12 +35,15 @@ namespace DatabaseManager.Server.Controllers
         private QcFlags qcFlags;
         private static HttpClient Client = new HttpClient();
 
-        public PredictionController(IConfiguration configuration, IWebHostEnvironment env)
+        public PredictionController(IConfiguration configuration,
+            IFileStorageService fileStorageService,
+            IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
+            this.fileStorageService = fileStorageService;
             _env = env;
-            _accessDefs = Common.GetDataAccessDefinition(_env);
-            _indexAccessDef = _accessDefs.First(x => x.DataType == "Index");
+            //_accessDefs = Common.GetDataAccessDefinition(_env);
+            //_indexAccessDef = _accessDefs.First(x => x.DataType == "Index");
             qcFlags = new QcFlags();
         }
 
@@ -55,6 +60,9 @@ namespace DatabaseManager.Server.Controllers
             List<PredictionCorrection> predictionResuls = new List<PredictionCorrection>();
             try
             {
+                fileStorageService.SetConnectionString(tmpConnString);
+                string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
                 dbConn.OpenConnection(connector);
                 predictionResuls = GetPredictionCorrections(dbConn);
             }
@@ -82,6 +90,9 @@ namespace DatabaseManager.Server.Controllers
             string result = "[]";
             try
             {
+                fileStorageService.SetConnectionString(tmpConnString);
+                string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
                 RuleModel rule = RuleUtilities.GetRule(dbConn, id, _accessDefs);
                 result = GetPredictedObjects(dbConn, rule.RuleKey);
             }
@@ -104,6 +115,7 @@ namespace DatabaseManager.Server.Controllers
             try
             {
                 if (predictionParams == null) return BadRequest();
+                _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(predictionParams.DataAccessDefinitions);
                 ConnectParameters connector = Common.GetConnectParameters(connectionString, container, predictionParams.DataConnector);
                 if (connector == null) return BadRequest();
                 DbUtilities dbConn = new DbUtilities();
@@ -289,6 +301,7 @@ namespace DatabaseManager.Server.Controllers
         private List<PredictionCorrection> GetPredictionCorrections(DbUtilities dbConn)
         {
             List<PredictionCorrection> predictionResult = new List<PredictionCorrection>();
+            _indexAccessDef = _accessDefs.First(x => x.DataType == "Index");
             DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Rules");
             string sql = ruleAccessDef.Select;
             string query = " where Active = 'Y' and RuleType = 'Predictions' order by PredictionOrder";
