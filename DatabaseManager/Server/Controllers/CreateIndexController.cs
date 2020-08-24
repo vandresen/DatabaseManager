@@ -33,9 +33,6 @@ namespace DatabaseManager.Server.Controllers
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
             _env = env;
-            //CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            //CloudFileClient fileClient = account.CreateCloudFileClient();
-            //share = account.CreateCloudFileClient().GetShareReference(taxonomyShare);
         }
 
         [HttpGet]
@@ -69,7 +66,6 @@ namespace DatabaseManager.Server.Controllers
         {
             string tmpConnString = Request.Headers["AzureStorageConnection"];
             fileStorageService.SetConnectionString(tmpConnString);
-            //CloudFileShare share = GetAzureStorageShare();
             CreateIndexParameters parms = new CreateIndexParameters();
             try
             {

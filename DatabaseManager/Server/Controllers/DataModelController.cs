@@ -42,8 +42,7 @@ namespace DatabaseManager.Server.Controllers
         {
             if (dmParameters == null) return BadRequest();
             string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+            fileStorageService.SetConnectionString(tmpConnString);
 
             try
             {
@@ -51,11 +50,11 @@ namespace DatabaseManager.Server.Controllers
                 if (connector == null) return BadRequest();
                 if (dmParameters.ModelOption == "PPDM Model")
                 {
-                    CreatePPDMModel(dmParameters, connector);
+                    await CreatePPDMModel(dmParameters, connector);
                 }
                 else if (dmParameters.ModelOption == "DSM Model")
                 {
-                    CreateDMSModel(dmParameters, connector);
+                    await CreateDMSModel(dmParameters, connector);
                 }
                 else if (dmParameters.ModelOption == "DSM Rules")
                 {
@@ -387,25 +386,22 @@ namespace DatabaseManager.Server.Controllers
             }
         }
 
-        private void CreatePPDMModel(DataModelParameters dmParameters, ConnectParameters connector)
+        private async Task CreatePPDMModel(DataModelParameters dmParameters, ConnectParameters connector)
         {
             try
             {
-                CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-                CloudFileClient fileClient = account.CreateCloudFileClient();
-                CloudFileShare share = fileClient.GetShareReference(dmParameters.FileShare);
-                if (share.Exists())
+                string sql = await fileStorageService.ReadFile(dmParameters.FileShare, dmParameters.FileName);
+                if (string.IsNullOrEmpty(sql))
                 {
-                    CloudFileDirectory rootDir = share.GetRootDirectoryReference();
-                    CloudFile file = rootDir.GetFileReference(dmParameters.FileName);
-                    if (file.Exists())
-                    {
-                        string sql = file.DownloadTextAsync().Result;
-                        DbUtilities dbConn = new DbUtilities();
-                        dbConn.OpenConnection(connector);
-                        dbConn.SQLExecute(sql);
-                        dbConn.CloseConnection();
-                    }
+                    Exception error = new Exception($"Empty data from {dmParameters.FileName}");
+                    throw error;
+                }
+                else
+                {
+                    DbUtilities dbConn = new DbUtilities();
+                    dbConn.OpenConnection(connector);
+                    dbConn.SQLExecute(sql);
+                    dbConn.CloseConnection();
                 }
             }
             catch (Exception ex)

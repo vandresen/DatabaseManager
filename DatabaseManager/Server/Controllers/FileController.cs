@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DatabaseManager.Server.Helpers;
+using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -19,37 +20,32 @@ namespace DatabaseManager.Server.Controllers
     {
         private readonly string connectionString;
         private readonly string container = "sources";
+        private readonly IFileStorageService fileStorageService;
         private readonly IWebHostEnvironment _env;
 
-        public FileController(IConfiguration configuration, IWebHostEnvironment env)
+        public FileController(IConfiguration configuration,
+            IFileStorageService fileStorageService,
+            IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
+            this.fileStorageService = fileStorageService;
             _env = env;
         }
 
         [HttpGet("{datatype}")]
         public async Task<ActionResult<List<string>>> Get(string datatype)
         {
-            List<string> files = new List<string>();
             try
             {
-                CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-                CloudFileShare share = account.CreateCloudFileClient().GetShareReference(datatype);
-                IEnumerable<IListFileItem> fileList = share.GetRootDirectoryReference().ListFilesAndDirectories();
-                foreach (IListFileItem listItem in fileList)
-                {
-                    if (listItem.GetType() == typeof(CloudFile))
-                    {
-                        files.Add(listItem.Uri.Segments.Last());
-                    }
-                }
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                fileStorageService.SetConnectionString(tmpConnString);
+                List<string> files = await fileStorageService.ListFiles(datatype);
+                return files;
             }
             catch (Exception)
             {
                 return NotFound();
             }
-
-            return files;
         }
 
         [HttpPost]
@@ -58,38 +54,29 @@ namespace DatabaseManager.Server.Controllers
             if (fileParams == null) return BadRequest();
             try
             {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                fileStorageService.SetConnectionString(tmpConnString);
                 ConnectParameters connector = Common.GetConnectParameters(connectionString, container, fileParams.DataConnector);
-                CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-                CloudFileClient fileClient = account.CreateCloudFileClient();
-                CloudFileShare share = fileClient.GetShareReference(fileParams.FileShare);
-                if (share.Exists())
+                string fileText = await fileStorageService.ReadFile(fileParams.FileShare, fileParams.FileName);
+                if (string.IsNullOrEmpty(fileText))
                 {
-                    CloudFileDirectory rootDir = share.GetRootDirectoryReference();
-                    CloudFile file = rootDir.GetFileReference(fileParams.FileName);
-                    if (file.Exists())
-                    {
-                        string fileText = file.DownloadTextAsync().Result;
-                        if (fileParams.FileShare == "logs")
-                        {
-                            LASLoader ls = new LASLoader(_env);
-                            ls.LoadLASFile(connector, fileText);
-                        }
-                        else
-                        {
-                            string connectionString = connector.ConnectionString;
-                            string[] fileNameArray = fileParams.FileName.Split('.');
-                            CSVLoader cl = new CSVLoader(_env);
-                            cl.LoadCSVFile(connectionString, fileText, fileNameArray[0]);
-                        }
-                    }
-                    else
-                    {
-                        return BadRequest();
-                    }
+                    Exception error = new Exception($"Empty data from {fileParams.FileName}");
+                    throw error;
                 }
                 else
                 {
-                    return BadRequest();
+                    if (fileParams.FileShare == "logs")
+                    {
+                        LASLoader ls = new LASLoader(_env);
+                        ls.LoadLASFile(connector, fileText);
+                    }
+                    else
+                    {
+                        string connectionString = connector.ConnectionString;
+                        string[] fileNameArray = fileParams.FileName.Split('.');
+                        CSVLoader cl = new CSVLoader(_env);
+                        cl.LoadCSVFile(connectionString, fileText, fileNameArray[0]);
+                    }
                 }
             }
             catch (Exception ex)

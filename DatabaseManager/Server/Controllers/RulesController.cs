@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Helpers;
+using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -23,13 +24,17 @@ namespace DatabaseManager.Server.Controllers
         private string connectionString;
         private readonly string container = "sources";
         private readonly string ruleShare = "rules";
+        private readonly IFileStorageService fileStorageService;
         private readonly IWebHostEnvironment _env;
         List<DataAccessDef> _accessDefs;
         DataAccessDef _ruleAccessDef;
 
-        public RulesController(IConfiguration configuration, IWebHostEnvironment env)
+        public RulesController(IConfiguration configuration,
+            IFileStorageService fileStorageService,
+            IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
+            this.fileStorageService = fileStorageService;
             _env = env;
             _accessDefs = Common.GetDataAccessDefinition(_env);
             _ruleAccessDef = _accessDefs.First(x => x.DataType == "Rules");
@@ -96,71 +101,47 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("RuleFile")]
         public async Task<ActionResult<List<PredictionSet>>> GetPredictions()
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
-            List<PredictionSet> files = new List<PredictionSet>();
             try
             {
-                CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-                CloudFileClient fileClient = account.CreateCloudFileClient();
-                CloudFileShare share = account.CreateCloudFileClient().GetShareReference(ruleShare);
-                IEnumerable<IListFileItem> fileList = share.GetRootDirectoryReference().ListFilesAndDirectories();
-                foreach (IListFileItem listItem in fileList)
+                List<PredictionSet> predictionSets = new List<PredictionSet>();
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                fileStorageService.SetConnectionString(tmpConnString);
+                List<string> files = await fileStorageService.ListFiles(ruleShare);
+                foreach(string file in files)
                 {
-                    if (listItem.GetType() == typeof(CloudFile))
+                    predictionSets.Add(new PredictionSet()
                     {
-                        files.Add(new PredictionSet()
-                        {
-                            Name = listItem.Uri.Segments.Last()
-                        });
-                        //files.Add(listItem.Uri.Segments.Last());
-                    }
+                        Name = file
+                    });
                 }
+                return predictionSets;
             }
             catch (Exception)
             {
                 return BadRequest();
             }
-            return files;
         }
 
         [HttpGet("RuleFile/{rulename}")]
         public async Task<ActionResult<string>> GetPrediction(string ruleName)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-            string result = "";
             try
             {
-                CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-                CloudFileClient fileClient = account.CreateCloudFileClient();
-                CloudFileShare share = fileClient.GetShareReference(ruleShare);
-                if (share.Exists())
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                fileStorageService.SetConnectionString(tmpConnString);
+                string result = await fileStorageService.ReadFile(ruleShare, ruleName);
+                if (string.IsNullOrEmpty(result))
                 {
-                    CloudFileDirectory rootDir = share.GetRootDirectoryReference();
-                    CloudFile file = rootDir.GetFileReference(ruleName);
-                    if (file.Exists())
-                    {
-                        result = file.DownloadTextAsync().Result;
-                    }
-                    else
-                    {
-                        return BadRequest();
-                    }
+                    Exception error = new Exception($"Empty data from {ruleName}");
+                    throw error;
                 }
-                else
-                {
-                    return BadRequest();
-                }
+                return result;
             }
             catch (Exception)
             {
                 return BadRequest();
             }
-            return result;
+            
         }
 
         [HttpGet("RuleInfo/{source}")]
@@ -213,27 +194,13 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> SaveRuleToFile(string RuleName, List<RuleModel> rules)
         {
             if (rules == null) return BadRequest();
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
             try
             {
-                CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-                CloudFileClient fileClient = account.CreateCloudFileClient();
-                CloudFileShare share = fileClient.GetShareReference(ruleShare);
-                if (!share.Exists())
-                {
-                    share.Create();
-                }
-                CloudFileDirectory rootDir = share.GetRootDirectoryReference();
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                fileStorageService.SetConnectionString(tmpConnString);
                 string fileName = RuleName + ",json";
                 string json = JsonConvert.SerializeObject(rules, Formatting.Indented);
-                CloudFile file = rootDir.GetFileReference(fileName);
-                if (!file.Exists())
-                {
-                    file.Create(json.Length);
-                }
-                file.UploadText(json);
+                await fileStorageService.SaveFile(ruleShare, fileName, json);
             }
             catch (Exception ex)
             {

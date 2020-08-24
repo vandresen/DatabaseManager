@@ -70,5 +70,27 @@ namespace DatabaseManager.Server.Services
             }
             return json;
         }
+
+        public async Task<List<string>> ListFiles(string fileShare)
+        {
+            List<string> files = new List<string>();
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            CloudFileClient fileClient = account.CreateCloudFileClient();
+            CloudFileShare share = fileClient.GetShareReference(fileShare);
+            if (!share.Exists())
+            {
+                Exception error = new Exception($"Fileshare {fileShare} does not exist ");
+                throw error;
+            }
+            IEnumerable<IListFileItem> fileList = share.GetRootDirectoryReference().ListFilesAndDirectories();
+            foreach (IListFileItem listItem in fileList)
+            {
+                if (listItem.GetType() == typeof(CloudFile))
+                {
+                    files.Add(listItem.Uri.Segments.Last());
+                }
+            }
+            return files;
+        }
     }
 }
