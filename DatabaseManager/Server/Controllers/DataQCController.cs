@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using DatabaseManager.Server.Entities;
+using DatabaseManager.Server.Extensions;
 using DatabaseManager.Server.Helpers;
 using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
@@ -200,6 +201,8 @@ namespace DatabaseManager.Server.Controllers
             qcSetup.RuleObject = jsonRules;
             bool externalQcMethod = rule.RuleFunction.StartsWith("http");
             QCMethods internalQC = new QCMethods();
+
+            if (rule.RuleFunction == "Uniqueness") CalculateKey(rule);
                 
             foreach (DataRow idxRow in indexTable.Rows)
             {
@@ -219,7 +222,7 @@ namespace DatabaseManager.Server.Controllers
                         }
                         else
                         {
-                            result = internalQC.ProcessMethod(qcSetup);
+                            result = internalQC.ProcessMethod(qcSetup, indexTable);
                         }
                         if (result == "Failed")
                         {
@@ -227,6 +230,33 @@ namespace DatabaseManager.Server.Controllers
                             qcFlags[qcSetup.IndexId] = qcStr;
                         }
                     } 
+                }
+            }
+        }
+
+        private void CalculateKey(RuleModel rule)
+        {
+            string[] keyAttributes = rule.RuleParameters.Split(';');
+            if (keyAttributes.Length > 0)
+            {
+                foreach (DataRow idxRow in indexTable.Rows)
+                {
+                    string keyText = "";
+                    string jsonData = idxRow["JSONDATAOBJECT"].ToString();
+                    if (!string.IsNullOrEmpty(jsonData))
+                    {
+                        JObject dataObject = JObject.Parse(jsonData);
+                        foreach (string attribute in keyAttributes)
+                        {
+                            JToken value = dataObject.GetValue(attribute);
+                            keyText = keyText + value;
+                        }
+                        if (!string.IsNullOrEmpty(keyText))
+                        {
+                            string key = keyText.GetSHA256Hash();
+                            idxRow["DATAKEY"] = key;
+                        }
+                    }
                 }
             }
         }

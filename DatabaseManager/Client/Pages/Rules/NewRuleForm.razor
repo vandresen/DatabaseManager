@@ -26,7 +26,7 @@
         </select>
     </div>
 
-    @if (Type != "Entirety")
+    @if (!noDataAttributes)
     {
         <div class="form-group">
             <label>Data Attribute:</label>
@@ -111,6 +111,7 @@
     [Parameter] public string Type { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     private List<string> DataAttributeOptions;
+    private bool noDataAttributes = false;
 
     protected override void OnInitialized()
     {
@@ -121,6 +122,7 @@
         RuleToEdit.Active = "Y";
         RuleToEdit.DataAttribute = DataAttributeOptions[0];
         RuleToEdit.RuleFunction = Type;
+        if (Type == "Entirety" || Type == "Uniqueness") noDataAttributes = true;
     }
 
     private void SelectedDataType(ChangeEventArgs e)

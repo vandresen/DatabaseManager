@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -15,7 +16,7 @@ namespace DatabaseManager.Server.Helpers
 
         }
 
-        public string ProcessMethod(QcRuleSetup qcSetup)
+        public string ProcessMethod(QcRuleSetup qcSetup, DataTable dt)
         {
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
             string returnStatus = "Passed";
@@ -24,6 +25,9 @@ namespace DatabaseManager.Server.Helpers
             {
                 case "Completeness":
                     returnStatus = ProcessCompletenessMethod(qcSetup);
+                    break;
+                case "Uniqueness":
+                    returnStatus = ProcessUniquenessMethod(qcSetup, dt);
                     break;
                 default:
                     break;
@@ -60,6 +64,26 @@ namespace DatabaseManager.Server.Helpers
                     }
                 }
             }
+            return returnStatus;
+        }
+
+        public string ProcessUniquenessMethod(QcRuleSetup qcSetup, DataTable dt)
+        {
+            string returnStatus = "Passed";
+
+            string query = $"INDEXID = '{qcSetup.IndexId}'";
+            DataRow[] idxRows = dt.Select(query);
+            if (idxRows.Length == 1)
+            {
+                string key = idxRows[0]["DATAKEY"].ToString();
+                if (!string.IsNullOrEmpty(key))
+                {
+                    query = $"DATAKEY = '{key}'";
+                    DataRow[] dtRows = dt.Select(query);
+                    if (dtRows.Length > 1) returnStatus = "Failed";
+                }
+            }
+            
             return returnStatus;
         }
     }

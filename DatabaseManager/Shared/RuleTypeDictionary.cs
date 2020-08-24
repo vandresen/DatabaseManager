@@ -11,8 +11,12 @@ namespace DatabaseManager.Shared
         public RuleTypeDictionary()
         {
             _dictionary = new Dictionary<string, string>
-                { {"Entirety", "E" }, {"Completeness", "C" },
-                    { "Predictions", "P" }, {"Validity", "V" }
+                { 
+                {"Entirety", "E" }, 
+                {"Completeness", "C" },
+                {"Predictions", "P" },
+                {"Uniqueness", "U" },
+                {"Validity", "V" }
                 };
         }
 

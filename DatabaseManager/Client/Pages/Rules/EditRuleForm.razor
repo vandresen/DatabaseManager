@@ -64,7 +64,8 @@
     protected override void OnInitialized()
     {
         DataAttributeOptions = GetAttributes(DataRef.DataAttributes[RuleToEdit.DataType]);
-        if (RuleToEdit.RuleType == "Predictions") dataAttributeMenu = false;
+        string type = RuleToEdit.RuleType;
+        if (type == "Predictions" || type == "Entirety" || type == "Uniqueness") dataAttributeMenu = false;
     }
 
     private List<string> GetAttributes(string attributeList)
