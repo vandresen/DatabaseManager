@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Helpers;
 using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Storage;
 using Microsoft.Azure.Storage.File;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -57,6 +59,10 @@ namespace DatabaseManager.Server.Controllers
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 fileStorageService.SetConnectionString(tmpConnString);
                 ConnectParameters connector = Common.GetConnectParameters(connectionString, container, fileParams.DataConnector);
+
+                string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+
                 string fileText = await fileStorageService.ReadFile(fileParams.FileShare, fileParams.FileName);
                 if (string.IsNullOrEmpty(fileText))
                 {
@@ -67,14 +73,14 @@ namespace DatabaseManager.Server.Controllers
                 {
                     if (fileParams.FileShare == "logs")
                     {
-                        LASLoader ls = new LASLoader(_env);
+                        LASLoader ls = new LASLoader(_env, accessDefs);
                         ls.LoadLASFile(connector, fileText);
                     }
                     else
                     {
                         string connectionString = connector.ConnectionString;
                         string[] fileNameArray = fileParams.FileName.Split('.');
-                        CSVLoader cl = new CSVLoader(_env);
+                        CSVLoader cl = new CSVLoader(_env, accessDefs);
                         cl.LoadCSVFile(connectionString, fileText, fileNameArray[0]);
                     }
                 }

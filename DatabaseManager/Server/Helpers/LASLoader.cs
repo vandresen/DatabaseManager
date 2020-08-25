@@ -25,7 +25,7 @@ namespace DatabaseManager.Server.Helpers
         private List<DataAccessDef> _dataDef = new List<DataAccessDef>();
         private string connectionString;
 
-        public LASLoader(IWebHostEnvironment env)
+        public LASLoader(IWebHostEnvironment env, List<DataAccessDef> dataDef)
         {
             _dbConn = new DbUtilities();
             _nullRepresentation = "-999.25";
@@ -36,9 +36,8 @@ namespace DatabaseManager.Server.Helpers
                 string jsonFile = contentRootPath + @"\DataBase\ReferenceTables.json";
                 string json = System.IO.File.ReadAllText(jsonFile);
                 _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(json);
-                jsonFile = contentRootPath + @"\DataBase\PPDMDataAccess.json";
-                json = System.IO.File.ReadAllText(jsonFile);
-                _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(json);
+                
+                _dataDef = dataDef;
             }
             catch (Exception ex)
             {
