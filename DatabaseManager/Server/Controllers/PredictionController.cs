@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.VisualStudio.Web.CodeGeneration.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -145,6 +146,10 @@ namespace DatabaseManager.Server.Controllers
             string jsonRules = JsonConvert.SerializeObject(rule);
             qcSetup.RuleObject = jsonRules;
             string predictionURL = rule.RuleFunction;
+
+            bool externalQcMethod = rule.RuleFunction.StartsWith("http");
+            PredictionMethods internalPrediction = new PredictionMethods();
+
             foreach (DataRow idxRow in indexTable.Rows)
             {
                 string jsonData = idxRow["JSONDATAOBJECT"].ToString();
@@ -154,13 +159,24 @@ namespace DatabaseManager.Server.Controllers
                     qcSetup.IndexNode = idxRow["Text_IndexNode"].ToString();
                     string qcStr = qcFlags[qcSetup.IndexId];
                     qcSetup.DataObject = jsonData;
-                    ProcessPrediction(qcSetup, predictionURL, rule, dbConn);
+                    PredictionResult result = new PredictionResult();
+                    if (externalQcMethod)
+                    {
+                        result = ProcessPrediction(qcSetup, predictionURL, rule, dbConn);
+                    }
+                    else
+                    {
+                        result = internalPrediction.ProcessMethod(qcSetup, indexTable);
+                    }
+                    ProcessResult(result, rule, dbConn);
+                    
                 }
             }
         }
 
-        private void ProcessPrediction(QcRuleSetup qcSetup, string predictionURL, RuleModel rule, DbUtilities dbConn)
+        private PredictionResult ProcessPrediction(QcRuleSetup qcSetup, string predictionURL, RuleModel rule, DbUtilities dbConn)
         {
+            PredictionResult result = new PredictionResult();
             try
             {
                 var jsonString = JsonConvert.SerializeObject(qcSetup);
@@ -169,32 +185,37 @@ namespace DatabaseManager.Server.Controllers
                 using (HttpContent respContent = response.Content)
                 {
                     string tr = respContent.ReadAsStringAsync().Result;
-                    PredictionResult result = JsonConvert.DeserializeObject<PredictionResult>(tr);
-                    if (result.Status == "Passed")
-                    {
-                        string qcStr = qcFlags[result.IndexId];
-                        string failRule = rule.FailRule + ";";
-                        string pCode = rule.RuleKey + ";";
-                        if (result.SaveType == "Delete")
-                        {
-                            qcStr = pCode;
-                        }
-                        else
-                        {
-                            qcStr = qcStr.Replace(failRule, pCode);
-                        }
-                        qcFlags[result.IndexId] = qcStr;
-                        SavePrediction(result, dbConn, qcStr);
-                    }
-                    else
-                    {
-                        //FailedPredictions++;
-                    }
+                    result = JsonConvert.DeserializeObject<PredictionResult>(tr);
                 }
             }
             catch (Exception Ex)
             {
                 //Trace.TraceInformation("ProcessDataObject: Problems with URL");
+            }
+            return result;
+        }
+
+        private void ProcessResult(PredictionResult result, RuleModel rule, DbUtilities dbConn)
+        {
+            if (result.Status == "Passed")
+            {
+                string qcStr = qcFlags[result.IndexId];
+                string failRule = rule.FailRule + ";";
+                string pCode = rule.RuleKey + ";";
+                if (result.SaveType == "Delete")
+                {
+                    qcStr = pCode;
+                }
+                else
+                {
+                    qcStr = qcStr.Replace(failRule, pCode);
+                }
+                qcFlags[result.IndexId] = qcStr;
+                SavePrediction(result, dbConn, qcStr);
+            }
+            else
+            {
+                //FailedPredictions++;
             }
         }
 
