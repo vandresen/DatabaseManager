@@ -10,8 +10,7 @@ PPDM database. So far this version provides functionality to:
 * Manage DSM rules
 * Execute QC rules and view result
 * Execute prediction rules and view result
-
-More functionality will come later
+This tool is built for the cloud generation.
 
 ## License 
 Database Manager is released under the GPLv3 or higher license.
