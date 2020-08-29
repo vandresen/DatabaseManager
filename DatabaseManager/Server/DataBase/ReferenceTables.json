@@ -31,5 +31,22 @@
     "ValueAttribute": "LONG_NAME",
     "ReferenceAttribute": "DEPTH_DATUM",
     "Insert": true
+  },
+  {
+    "DataType": "MarkerPick",
+    "Table": "STRAT_NAME_SET",
+    "KeyAttribute": "STRAT_NAME_SET_ID",
+    "ValueAttribute": "STRAT_NAME_SET_NAME",
+    "ReferenceAttribute": "STRAT_NAME_SET_ID",
+    "Insert": true
+  },
+  {
+    "DataType": "MarkerPick",
+    "Table": "STRAT_UNIT",
+    "KeyAttribute": "STRAT_UNIT_ID",
+    "ValueAttribute": "LONG_NAME",
+    "ReferenceAttribute": "STRAT_UNIT_ID",
+    "FixedKey": "STRAT_NAME_SET_ID=UNKNOWN",
+    "Insert": true
   }
 ]

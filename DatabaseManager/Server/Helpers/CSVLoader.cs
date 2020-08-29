@@ -55,8 +55,9 @@ namespace DatabaseManager.Server.Helpers
             int headerLines = 1;
             int wellCounter = 0;
 
-            CSVAccessDef csvAccess = _csvDef.First(x => x.DataType == "WellBore");
+            CSVAccessDef csvAccess = _csvDef.First(x => x.DataType == dataType);
             Dictionary<string, int> attributes = csvAccess.Mappings.ToDictionary();
+            Dictionary<string, string> constants = csvAccess.Constants.ToStringDictionary();
             Dictionary<string, string> columnTypes = dt.GetColumnTypes();
 
             byte[] byteArray = Encoding.ASCII.GetBytes(csvText);
@@ -91,13 +92,13 @@ namespace DatabaseManager.Server.Helpers
                         DataRow[] rows = dt.Select(key);
                         if (rows.Length == 1)
                         {
-                            rows[0] = InsertCSVRow(rows[0], attributes, fields, columnTypes);
+                            rows[0] = InsertCSVRow(rows[0], attributes, fields, columnTypes, constants);
                             rows[0]["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
                         }
                         else
                         {
                             DataRow newRow = dt.NewRow();
-                            newRow = InsertCSVRow(newRow, attributes, fields, columnTypes);
+                            newRow = InsertCSVRow(newRow, attributes, fields, columnTypes, constants);
                             newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
                             newRow["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
                             dt.Rows.Add(newRow);
@@ -105,14 +106,14 @@ namespace DatabaseManager.Server.Helpers
                     }
                 }
             }
-            InsertReferanceData(dt);
+            InsertReferanceData(dt, dataType);
             new SqlCommandBuilder(dataAdapter);
             dataAdapter.Update(dt);
         }
 
-        private void InsertReferanceData(DataTable dt)
+        private void InsertReferanceData(DataTable dt, string dataType)
         {
-            List<ReferenceTable> dataTypeRefs = _references.Where(x => x.DataType == "WellBore").ToList();
+            List<ReferenceTable> dataTypeRefs = _references.Where(x => x.DataType == dataType).ToList();
             foreach (ReferenceTable referance in dataTypeRefs)
             {
                 string columnName = referance.ReferenceAttribute;
@@ -166,20 +167,32 @@ namespace DatabaseManager.Server.Helpers
             foreach (string key in keys)
             {
                 string attribute = key.Trim();
-                int column = attributes[attribute];
-                if (string.IsNullOrEmpty(fields[column]))
+                string value = "";
+                if (attributes.ContainsKey(attribute)) 
                 {
-                    dataKey = "";
-                    return dataKey;
+                    int column = attributes[attribute];
+                    if (string.IsNullOrEmpty(fields[column]))
+                    {
+                        dataKey = "";
+                        return dataKey;
+                    }
+                    value = fields[column];
                 }
-                string attributeValue = "'" + fields[column] + "'";
+                else
+                {
+                    value = "UNKNOWN";
+                }
+                string attributeValue = "'" + value + "'";
                 dataKey = dataKey + and + attribute + " = " + attributeValue;
                 and = " AND ";
             }
             return dataKey;
         }
-        public static DataRow InsertCSVRow(DataRow row, Dictionary<string, int> attributes,
-            string[] fields, Dictionary<string, string> columnTypes)
+        public static DataRow InsertCSVRow(DataRow row, 
+            Dictionary<string, int> attributes,
+            string[] fields, 
+            Dictionary<string, string> columnTypes,
+            Dictionary<string, string> constants)
         {
             DataRow tmpRow = row;
             foreach (var item in attributes)
@@ -202,6 +215,13 @@ namespace DatabaseManager.Server.Helpers
                         tmpRow[attribute] = attributeValue;
                     }
                 }
+            }
+
+            foreach(var constant in constants)
+            {
+                string attribute = constant.Key;
+                string attributeValue = constant.Value;
+                tmpRow[attribute] = attributeValue;
             }
 
             return tmpRow;

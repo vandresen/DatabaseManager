@@ -10,7 +10,7 @@
 <p>@singleton.TargetConnector</p>
 
 <p>Select file type option: </p>
-@foreach (var item in new string[] { "Logs", "WellBores"})
+@foreach (var item in new string[] { "Logs", "WellBores", "MarkerPicks"})
 {
     <div class="form-check">
         <label for="@item" class="form-check-label">
@@ -62,7 +62,7 @@
             else
             {
                 fileParameters.FileShare = "wells";
-                fileParameters.FileName = "WellBore.txt";
+                fileParameters.FileName = fileOption + ".txt";
                 await dataFile.LoadFile(fileParameters);
             }
         }

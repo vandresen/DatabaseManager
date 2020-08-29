@@ -5,6 +5,7 @@
   },
   {
     "DataType": "MarkerPick",
-    "Mappings": "UWI=2"
+    "Mappings": "UWI=2; STRAT_UNIT_ID=7; PICK_DEPTH=8",
+    "Constants": "STRAT_NAME_SET_ID=UNKNOWN; INTERP_ID=UNKNOWN"
   }
 ]

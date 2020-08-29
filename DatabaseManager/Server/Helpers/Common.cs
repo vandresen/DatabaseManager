@@ -99,24 +99,6 @@ namespace DatabaseManager.Server.Helpers
             return (min < x) && (x < max);
         }
 
-        public static List<DataAccessDef> GetDataAccessDefinition(IWebHostEnvironment env)
-        {
-            List<DataAccessDef> accessDef = new List<DataAccessDef>();
-            try
-            {
-                string contentRootPath = env.ContentRootPath;
-                string jsonFile = contentRootPath + @"\DataBase\PPDMDataAccess.json";
-                string json = System.IO.File.ReadAllText(jsonFile);
-                accessDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(json);
-            }
-            catch (Exception ex)
-            {
-                Exception error = new Exception("Read data access definition table file error: ", ex);
-                throw error;
-            }
-            return accessDef;
-        }
-
         public static RuleModel GetRule(DbUtilities dbConn, int id, List<DataAccessDef> accessDefs)
         {
             List<RuleModel> rules = new List<RuleModel>();

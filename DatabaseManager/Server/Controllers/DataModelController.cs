@@ -62,7 +62,7 @@ namespace DatabaseManager.Server.Controllers
                 }
                 else if (dmParameters.ModelOption == "Stored Procedures")
                 {
-                    CreateStoredProcedures(connector);
+                    await CreateStoredProcedures(connector);
                 }
                 else if (dmParameters.ModelOption == "PPDM Modifications")
                 {
@@ -81,7 +81,7 @@ namespace DatabaseManager.Server.Controllers
             return Ok($"OK");
         }
 
-        private void CreateStoredProcedures(ConnectParameters connector)
+        private async Task CreateStoredProcedures(ConnectParameters connector)
         {
             try
             {
@@ -99,8 +99,8 @@ namespace DatabaseManager.Server.Controllers
                     }
                 }
 
-                CreateInsertStoredProcedure(dbConn);
-                CreateUpdateStoredProcedure(dbConn);
+                await CreateInsertStoredProcedure(dbConn);
+                await CreateUpdateStoredProcedure(dbConn);
                 
                 dbConn.CloseConnection();
             }
@@ -111,12 +111,13 @@ namespace DatabaseManager.Server.Controllers
             }
         }
 
-        private void CreateInsertStoredProcedure(DbUtilities dbConn)
+        private async Task CreateInsertStoredProcedure(DbUtilities dbConn)
         {
             string comma;
             string attributes;
 
-            List<DataAccessDef> accessDefs = Common.GetDataAccessDefinition(_env);
+            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             DbDataTypes dbDataTypes = new DbDataTypes();
             for (int j = 0; j < dbDataTypes.DataTypes.Length; j++)
             {
@@ -181,12 +182,13 @@ namespace DatabaseManager.Server.Controllers
             }
         }
 
-        private void CreateUpdateStoredProcedure(DbUtilities dbConn)
+        private async Task CreateUpdateStoredProcedure(DbUtilities dbConn)
         {
             string comma;
             string attributes;
 
-            List<DataAccessDef> accessDefs = Common.GetDataAccessDefinition(_env);
+            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             DbDataTypes dbDataTypes = new DbDataTypes();
             for (int j = 0; j < dbDataTypes.DataTypes.Length; j++)
             {

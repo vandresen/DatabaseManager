@@ -21,6 +21,22 @@ namespace DatabaseManager.Server.Helpers
             return keyValuePairs;
         }
 
+        public static Dictionary<string, string> ToStringDictionary(this string stringData, char propertyDelimiter = ';', char keyValueDelimiter = '=')
+        {
+            Dictionary<string, string> keyValuePairs = new Dictionary<string, string>();
+            if (!string.IsNullOrEmpty(stringData))
+            {
+                Array.ForEach<string>(stringData.Split(propertyDelimiter), s =>
+                {
+                    string key = s.Split(keyValueDelimiter)[0].Trim();
+                    string value = s.Split(keyValueDelimiter)[1];
+                    keyValuePairs.Add(key, value);
+                });
+            }
+            
+            return keyValuePairs;
+        }
+
         public static Dictionary<string, string> GetColumnTypes(this DataTable dt)
         {
             Dictionary<string, string> keyValuePairs = new Dictionary<string, string>();

@@ -80,8 +80,9 @@ namespace DatabaseManager.Server.Controllers
                     {
                         string connectionString = connector.ConnectionString;
                         string[] fileNameArray = fileParams.FileName.Split('.');
+                        string dataType = fileNameArray[0].Remove(fileNameArray[0].Length - 1, 1);
                         CSVLoader cl = new CSVLoader(_env, accessDefs);
-                        cl.LoadCSVFile(connectionString, fileText, fileNameArray[0]);
+                        cl.LoadCSVFile(connectionString, fileText, dataType);
                     }
                 }
             }

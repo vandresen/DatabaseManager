@@ -26,8 +26,6 @@ namespace DatabaseManager.Server.Controllers
         private readonly string ruleShare = "rules";
         private readonly IFileStorageService fileStorageService;
         private readonly IWebHostEnvironment _env;
-        List<DataAccessDef> _accessDefs;
-        DataAccessDef _ruleAccessDef;
 
         public RulesController(IConfiguration configuration,
             IFileStorageService fileStorageService,
@@ -36,8 +34,6 @@ namespace DatabaseManager.Server.Controllers
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
             _env = env;
-            _accessDefs = Common.GetDataAccessDefinition(_env);
-            _ruleAccessDef = _accessDefs.First(x => x.DataType == "Rules");
         }
 
         [HttpGet("{source}")]
@@ -47,6 +43,10 @@ namespace DatabaseManager.Server.Controllers
             if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
             if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
 
+            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
+
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             string result = "";
@@ -54,7 +54,7 @@ namespace DatabaseManager.Server.Controllers
             try
             {
                 dbConn.OpenConnection(connector);
-                string select = _ruleAccessDef.Select;
+                string select = ruleAccessDef.Select;
                 string query = "";
                 DataTable dt = dbConn.GetDataTable(select, query);
                 result = JsonConvert.SerializeObject(dt, Formatting.Indented);
@@ -75,6 +75,10 @@ namespace DatabaseManager.Server.Controllers
             if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
             if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
 
+            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
+
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             string result = "";
@@ -82,7 +86,7 @@ namespace DatabaseManager.Server.Controllers
             try
             {
                 dbConn.OpenConnection(connector);
-                string select = _ruleAccessDef.Select;
+                string select = ruleAccessDef.Select;
                 string query = $" where Id = {id}";
                 DataTable dt = dbConn.GetDataTable(select, query);
                 result = JsonConvert.SerializeObject(dt, Formatting.Indented);
@@ -173,6 +177,11 @@ namespace DatabaseManager.Server.Controllers
             string tmpConnString = Request.Headers["AzureStorageConnection"];
             if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
             if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
+
+            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
+
             if (rule == null) return BadRequest();
             ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
@@ -180,7 +189,7 @@ namespace DatabaseManager.Server.Controllers
             try
             {
                 dbConn.OpenConnection(connector);
-                RuleUtilities.SaveRule(dbConn, rule, _ruleAccessDef);
+                RuleUtilities.SaveRule(dbConn, rule, ruleAccessDef);
             }
             catch (Exception ex)
             {
