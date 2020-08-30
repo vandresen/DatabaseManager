@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -49,6 +50,17 @@ namespace DatabaseManager.Server.Helpers
                 keyValuePairs.Add(name, type);
             }
             return keyValuePairs;
+        }
+
+        public static long CountLines(this string text)
+        {
+            var lineCounter = 0L;
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (text[i] == '\n') lineCounter++;
+            }
+
+            return lineCounter;
         }
     }
 }

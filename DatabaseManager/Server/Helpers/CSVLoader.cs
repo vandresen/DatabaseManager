@@ -79,6 +79,7 @@ namespace DatabaseManager.Server.Helpers
                     wellCounter++;
                     if ((wellCounter % 1000) == 0)
                     {
+                        var tmp = wellCounter;
                         //Console.WriteLine("Processing line {0}", wellCounter);
                     }
                     string[] fields = csvParser.ReadFields();
@@ -128,7 +129,8 @@ namespace DatabaseManager.Server.Helpers
                 {
                     if (!string.IsNullOrEmpty(id))
                     {
-                        string key = $"{referance.KeyAttribute} = '{id}'";
+                        string tmpId = Common.FixAposInStrings(id);
+                        string key = $"{referance.KeyAttribute} = '{tmpId}'";
                         DataRow[] rows = rt.Select(key);
                         if (rows.Length == 0)
                         {

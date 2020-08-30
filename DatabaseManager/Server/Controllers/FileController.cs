@@ -64,9 +64,15 @@ namespace DatabaseManager.Server.Controllers
                 List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
 
                 string fileText = await fileStorageService.ReadFile(fileParams.FileShare, fileParams.FileName);
-                if (string.IsNullOrEmpty(fileText))
+                var lines = fileText.CountLines();
+                if (lines == 0)
                 {
                     Exception error = new Exception($"Empty data from {fileParams.FileName}");
+                    throw error;
+                }
+                else if (lines > 20000)
+                {
+                    Exception error = new Exception($"{fileParams.FileName} are too large");
                     throw error;
                 }
                 else
