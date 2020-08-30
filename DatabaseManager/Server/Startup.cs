@@ -27,10 +27,7 @@ namespace DatabaseManager.Server
 
             services.AddSwaggerGen(config =>
             {
-                config.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    Version = "v1",
-
+                config.SwaggerDoc("v1", new OpenApiInfo{Version = "v1",
                     Title = "DatabaseManager",
                     Description = "This is a Web API for managing Data Science Management (DSM) projects",
                     Contact = new OpenApiContact()
@@ -49,7 +46,7 @@ namespace DatabaseManager.Server
             app.UseSwagger();
             app.UseSwaggerUI(config =>
             {
-                config.SwaggerEndpoint("/swagger/v1/swagger.json", "Database Manager");
+                config.SwaggerEndpoint("/swagger/v1/swagger.json", "DatabaseManager");
             });
 
             app.UseResponseCompression();
