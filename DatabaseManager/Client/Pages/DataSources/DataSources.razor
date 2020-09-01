@@ -7,35 +7,20 @@
     <a class="btn btn-info" href="datasources/create">New Connector</a>
 </div>
 
-
 <GenericList List="ConnectParameters">
     <WholeListTemplate>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>Name</th>
-                    <th>Database Name</th>
-                    <th>Database Server</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in cpPagination)
-                {
-                    <tr>
-                        <td>
-                            <a class="btn btn-success" href="/datasources/edit/@item.SourceName">Edit</a>
-                            <button class="btn btn-danger" @onclick="@(() => DeleteSources(item.SourceName))">Delete</button>
-                        </td>
-                        <td>@item.SourceName</td>
-                        <td>@item.Database</td>
-                        <td>@item.DatabaseServer</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-        <Pagination CurrentPage="@curPage" TotalAmountPages="totalPages"
-                    SelectedPage="SelectedPage" />
+        <Table TableItem="ConnectParameters" Items="ConnectParameters" PageSize="@pageSize">
+            <Column TableItem="ConnectParameters" Title="Action">
+                <Template>
+                    <a class="btn btn-success" href="/datasources/edit/@context.SourceName">Edit</a>
+                    <button class="btn btn-danger" @onclick="@(() => DeleteSources(context.SourceName))">Delete</button>
+                </Template>
+            </Column>
+            <Column TableItem="ConnectParameters" Title="Name" Field="@(x => x.SourceName)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
+            <Column TableItem="ConnectParameters" Title="Database Name" Field="@(x => x.Database)" Sortable="true" Filterable="true"></Column>
+            <Column TableItem="ConnectParameters" Title="Database Server" Field="@(x => x.DatabaseServer)" Sortable="true" Filterable="true"></Column>
+            <Pager ShowPageNumber="true" ShowTotalCount="true" />
+        </Table>
     </WholeListTemplate>
 </GenericList>
 
@@ -43,9 +28,6 @@
     List<ConnectParameters> ConnectParameters;
     List<ConnectParameters> cpPagination;
 
-    int totalPages;
-    int totalRecords;
-    int curPage = 1;
     int pageSize = 10;
 
     protected override async Task OnInitializedAsync()
@@ -53,9 +35,6 @@
         try
         {
             ConnectParameters = await dataSources.GetSources();
-            cpPagination = GetPage((curPage - 1) * pageSize, pageSize);
-            totalRecords = ConnectParameters.Count();
-            totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
         }
         catch (Exception ex)
         {
@@ -63,25 +42,10 @@
         }
     }
 
-    private async Task SelectedPage(int page)
-    {
-        curPage = page;
-        cpPagination = GetPage((curPage - 1) * pageSize, pageSize);
-        this.StateHasChanged();
-    }
-
     private async Task DeleteSources(string Name)
     {
         await dataSources.DeleteSource(Name);
         ConnectParameters = await dataSources.GetSources();
-        cpPagination = ConnectParameters.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
         this.StateHasChanged();
-    }
-
-    private List<ConnectParameters> GetPage(int page, int size)
-    {
-        List<ConnectParameters> wb = new List<ConnectParameters>();
-        wb = ConnectParameters.Skip(page).Take(size).ToList();
-        return wb;
     }
 }
