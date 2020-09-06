@@ -20,9 +20,9 @@ else
                         <th></th>
                         @foreach (var head in headers)
                         {
-                            <th style="cursor: pointer;" @onclick="@(() => SortTable(head))">
-                                @head
-                                <span class="fa @(SetSortIcon(head))" style="float: right"></span>
+                            <th style="cursor: pointer;" @onclick="@(() => SortTable(head.Name))">
+                                @head.Name
+                                <span class="fa @(SetSortIcon(head.Name))" style="float: right"></span>
                             </th>
                         }
                     </tr>
@@ -59,10 +59,9 @@ else
 
 @code {
     [Parameter] public int Id { get; set; }
-    public List<DmsIndex> index;
-    private List<string> headers = new List<string>();
-    private List<ChildTableCollection> TableCollections;
-    //private string DisplayAttributes = "UWI, FINAL_TD, SPUD_DATE";
+    public List<DmsIndex> index;  // Original data from server
+    private List<Header> headers = new List<Header>();  //Attributes used for headers after filtered for display attributes
+    private List<ChildTableCollection> TableCollections; //Data used for filling the colimns after filtered for display attributes
     Dictionary<string, string> DisplayAttributes =
         new Dictionary<string, string>(){
             {"WellBore", "UWI, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE,LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS,GROUND_ELEV"},
@@ -106,15 +105,16 @@ else
         }
     }
 
-    private List<string> GetHeader()
+    private List<Header> GetHeader()
     {
-        List<string> headerList = new List<string>();
+        List<Header> headerList = new List<Header>();
         DmsIndex idx = index[0];
         string json = idx.JsonData;
         JObject headerToken = JObject.Parse(json);
 
         foreach (JProperty property in headerToken.Properties())
         {
+            string type = property.Value.Type.ToString();
             bool display = true;
             if (DisplayAttributes.ContainsKey(DataType) == true)
             {
@@ -122,7 +122,10 @@ else
                 String attributeString = DisplayAttributes[DataType];
                 if (attributeString.Contains(property.Name)) display = true;
             }
-            if (display) headerList.Add(property.Name);
+            if (display) headerList.Add(
+                new Header()
+                { Name = property.Name, Type = type
+                });
         }
         return headerList;
     }
@@ -206,6 +209,8 @@ else
 
     private void SortTable(string columnName)
     {
+        Header header = headers.First(x => x.Name == columnName);
+        string type = header.Type;
         IOrderedEnumerable<JToken> sorted;
         if (columnName != activeSortColumn)
         {
@@ -217,11 +222,25 @@ else
         {
             if (isSortedAscending)
             {
-                sorted = tableArray.OrderByDescending(obj => (string)obj[columnName]);
+                if (type == "float")
+                {
+                    sorted = tableArray.OrderByDescending(obj => (float)obj[columnName]);
+                }
+                else
+                {
+                    sorted = tableArray.OrderByDescending(obj => (string)obj[columnName]);
+                }
             }
             else
             {
-                sorted = tableArray.OrderBy(obj => (string)obj[columnName]);
+                if (type == "float")
+                {
+                    sorted = tableArray.OrderBy(obj => (float)obj[columnName]);
+                }
+                else
+                {
+                    sorted = tableArray.OrderBy(obj => (string)obj[columnName]);
+                }
             }
 
             isSortedAscending = !isSortedAscending;
@@ -247,9 +266,19 @@ else
             List<ChildTableRow> childTableRows = new List<ChildTableRow>();
             foreach (JProperty property in token.Properties())
             {
-                string columnValue = property.Value.ToString();
-                //if (string.IsNullOrEmpty(columnValue)) columnValue = "Unknown";
-                childTableRows.Add(new ChildTableRow { Value = columnValue });
+                bool display = true;
+                if (DisplayAttributes.ContainsKey(DataType) == true)
+                {
+                    display = false;
+                    String attributeString = DisplayAttributes[DataType];
+                    if (attributeString.Contains(property.Name)) display = true;
+                }
+
+                if (display)
+                {
+                    string columnValue = property.Value.ToString();
+                    childTableRows.Add(new ChildTableRow { Value = columnValue });
+                }
             }
             string rowString = GetRowString(childTableRows);
             foreach (var collection in TableCollections)
@@ -292,6 +321,12 @@ else
         public List<ChildTableRow> Rows { get; set; }
         public int ChildCount { get; set; }
         public int IndexId { get; set; }
+    }
+
+    public class Header
+    {
+        public string Name { get; set; }
+        public string Type { get; set; }
     }
 
 }
