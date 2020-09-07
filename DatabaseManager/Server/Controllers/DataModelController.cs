@@ -338,6 +338,16 @@ namespace DatabaseManager.Server.Controllers
                 string defFile = _contentRootPath + @"\DataBase\PPDMDataAccess.json";
                 string definition = System.IO.File.ReadAllText(defFile);
                 await fileStorageService.SaveFile("connectdefinition", fileName, definition);
+
+                fileName = "CSVDataAccess.json";
+                defFile = _contentRootPath + @"\DataBase\CSVDataAccess.json";
+                definition = System.IO.File.ReadAllText(defFile);
+                await fileStorageService.SaveFile("connectdefinition", fileName, definition);
+
+                fileName = "PPDMReferenceTables.json";
+                defFile = _contentRootPath + @"\DataBase\PPDMReferenceTables.json";
+                definition = System.IO.File.ReadAllText(defFile);
+                await fileStorageService.SaveFile("connectdefinition", fileName, definition);
             }
             catch (Exception ex)
             {

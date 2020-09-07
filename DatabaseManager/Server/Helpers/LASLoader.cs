@@ -25,23 +25,18 @@ namespace DatabaseManager.Server.Helpers
         private List<DataAccessDef> _dataDef = new List<DataAccessDef>();
         private string connectionString;
 
-        public LASLoader(IWebHostEnvironment env, List<DataAccessDef> dataDef)
+        public LASLoader(IWebHostEnvironment env, List<DataAccessDef> dataDef, List<ReferenceTable> references)
         {
-            _dbConn = new DbUtilities();
-            _nullRepresentation = "-999.25";
-
             try
             {
-                string contentRootPath = env.ContentRootPath;
-                string jsonFile = contentRootPath + @"\DataBase\ReferenceTables.json";
-                string json = System.IO.File.ReadAllText(jsonFile);
-                _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(json);
-                
+                _dbConn = new DbUtilities();
+                _nullRepresentation = "-999.25";
+                _references = references;
                 _dataDef = dataDef;
             }
             catch (Exception ex)
             {
-                Exception error = new Exception("Read refernce table file error: ", ex);
+                Exception error = new Exception("Error starting LAS loader: ", ex);
                 throw error;
             }
         }
@@ -273,7 +268,8 @@ namespace DatabaseManager.Server.Helpers
 
         private void LoadHeader(string json)
         {
-            foreach(ReferenceTable reference in _references)
+            List<ReferenceTable> dataTypeRefs = _references.Where(x => x.DataType == "WellBore").ToList();
+            foreach (ReferenceTable reference in dataTypeRefs)
             {
                 json = CheckHeaderForeignKeys(json, reference);
             }
@@ -301,27 +297,34 @@ namespace DatabaseManager.Server.Helpers
 
         private string CheckHeaderForeignKeys(string json, ReferenceTable reference)
         {
-            
-            JObject dataObject = JObject.Parse(json);
-            string field = dataObject[reference.ReferenceAttribute].ToString();
-            field = Common.FixAposInStrings(field);
-            string select = $"Select * from {reference.Table} ";
-            string query = $" where {reference.KeyAttribute} = '{field}'";
-            DataTable dt = _dbConn.GetDataTable(select, query);
-            if (dt.Rows.Count == 0)
+            try
             {
-                if (reference.Insert)
+                JObject dataObject = JObject.Parse(json);
+                string field = dataObject[reference.ReferenceAttribute].ToString();
+                field = Common.FixAposInStrings(field);
+                string select = $"Select * from {reference.Table} ";
+                string query = $" where {reference.KeyAttribute} = '{field}'";
+                DataTable dt = _dbConn.GetDataTable(select, query);
+                if (dt.Rows.Count == 0)
                 {
-                    string strInsert = $"insert into {reference.Table} ";
-                    string strValue = $" ({reference.KeyAttribute}, {reference.ValueAttribute}) values ('{field}', '{field}')";
-                    string strQuery = "";
-                    _dbConn.DBInsert(strInsert, strValue, strQuery);
-                }
-                else
-                {
-                    dataObject[reference.ReferenceAttribute] = "UNKNOWN";
+                    if (reference.Insert)
+                    {
+                        string strInsert = $"insert into {reference.Table} ";
+                        string strValue = $" ({reference.KeyAttribute}, {reference.ValueAttribute}) values ('{field}', '{field}')";
+                        string strQuery = "";
+                        _dbConn.DBInsert(strInsert, strValue, strQuery);
+                    }
+                    else
+                    {
+                        dataObject[reference.ReferenceAttribute] = "UNKNOWN";
+                    }
                 }
             }
+            catch (Exception)
+            {
+                throw new System.Exception("Error handling reference data");
+            }
+            
             string newJson = json;
             return newJson;
         }

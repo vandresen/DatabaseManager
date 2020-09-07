@@ -63,6 +63,9 @@ namespace DatabaseManager.Server.Controllers
                 string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
                 List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
 
+                string referenceJson = await fileStorageService.ReadFile("connectdefinition", "PPDMReferenceTables.json");
+                List<ReferenceTable> referenceDefs = JsonConvert.DeserializeObject<List<ReferenceTable>>(referenceJson);
+
                 string fileText = await fileStorageService.ReadFile(fileParams.FileShare, fileParams.FileName);
                 var lines = fileText.CountLines();
                 if (lines == 0)
@@ -79,7 +82,7 @@ namespace DatabaseManager.Server.Controllers
                 {
                     if (fileParams.FileShare == "logs")
                     {
-                        LASLoader ls = new LASLoader(_env, accessDefs);
+                        LASLoader ls = new LASLoader(_env, accessDefs, referenceDefs);
                         ls.LoadLASFile(connector, fileText);
                     }
                     else
@@ -87,7 +90,7 @@ namespace DatabaseManager.Server.Controllers
                         string connectionString = connector.ConnectionString;
                         string[] fileNameArray = fileParams.FileName.Split('.');
                         string dataType = fileNameArray[0].Remove(fileNameArray[0].Length - 1, 1);
-                        CSVLoader cl = new CSVLoader(_env, accessDefs);
+                        CSVLoader cl = new CSVLoader(_env, accessDefs, referenceDefs);
                         cl.LoadCSVFile(connectionString, fileText, dataType);
                     }
                 }
