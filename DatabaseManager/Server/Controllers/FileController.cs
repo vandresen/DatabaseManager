@@ -87,10 +87,12 @@ namespace DatabaseManager.Server.Controllers
                     }
                     else
                     {
+                        string csvJson = await fileStorageService.ReadFile("connectdefinition", "CSVDataAccess.json");
+                        List<CSVAccessDef> csvDef = JsonConvert.DeserializeObject<List<CSVAccessDef>>(csvJson);
                         string connectionString = connector.ConnectionString;
                         string[] fileNameArray = fileParams.FileName.Split('.');
                         string dataType = fileNameArray[0].Remove(fileNameArray[0].Length - 1, 1);
-                        CSVLoader cl = new CSVLoader(_env, accessDefs, referenceDefs);
+                        CSVLoader cl = new CSVLoader(_env, accessDefs, referenceDefs, csvDef);
                         cl.LoadCSVFile(connectionString, fileText, dataType);
                     }
                 }

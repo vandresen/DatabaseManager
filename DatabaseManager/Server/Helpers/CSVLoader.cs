@@ -23,7 +23,10 @@ namespace DatabaseManager.Server.Helpers
         private DataTable dt;
         SqlDataAdapter dataAdapter;
 
-        public CSVLoader(IWebHostEnvironment env, List<DataAccessDef> dataDef, List<ReferenceTable> references)
+        public CSVLoader(IWebHostEnvironment env, 
+            List<DataAccessDef> dataDef, 
+            List<ReferenceTable> references,
+            List<CSVAccessDef> csvDef)
         {
             try
             {
@@ -31,10 +34,7 @@ namespace DatabaseManager.Server.Helpers
 
                 _references = references;
                 _dataDef = dataDef;
-
-                string jsonFile = contentRootPath + @"\DataBase\CSVDataAccess.json";
-                string json = System.IO.File.ReadAllText(jsonFile);
-                _csvDef = JsonConvert.DeserializeObject<List<CSVAccessDef>>(json);
+                _csvDef = csvDef;
             }
             catch (Exception ex)
             {
