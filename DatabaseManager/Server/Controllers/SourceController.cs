@@ -19,75 +19,50 @@ namespace DatabaseManager.Server.Controllers
     {
         private string connectionString;
         private readonly string container = "sources";
+        private readonly ITableStorageService tableStorageService;
         private readonly IFileStorageService fileStorageService;
 
-        public SourceController(IConfiguration configuration, IFileStorageService fileStorageService)
+        public SourceController(IConfiguration configuration,
+            ITableStorageService tableStorageService,
+            IFileStorageService fileStorageService)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
+            this.tableStorageService = tableStorageService;
             this.fileStorageService = fileStorageService;
         }
 
         [HttpGet]
         public async Task<ActionResult<List<ConnectParameters>>> Get()
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-            fileStorageService.SetConnectionString(tmpConnString);
-
             List<ConnectParameters> connectors = new List<ConnectParameters>();
             try
             {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                tableStorageService.SetConnectionString(tmpConnString);
+                fileStorageService.SetConnectionString(tmpConnString);
                 string dataAccessDef =  await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                CloudTable table = Common.GetTableConnect(connectionString, container);
-                TableQuery<SourceEntity> tableQuery = new TableQuery<SourceEntity>().
-                    Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, "PPDM"));
-                foreach (SourceEntity entity in table.ExecuteQuery(tableQuery))
-                {
-                    connectors.Add(new ConnectParameters()
-                    {
-                        SourceName = entity.RowKey,
-                        Database = entity.DatabaseName,
-                        DatabaseServer = entity.DatabaseServer,
-                        DatabasePassword = entity.Password,
-                        ConnectionString = entity.ConnectionString,
-                        DatabaseUser = entity.User,
-                        DataAccessDefinition = dataAccessDef
-                    });
-                }
+                connectors = await tableStorageService.ListTable(container, dataAccessDef);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return NotFound();
+                return NotFound(ex.ToString());
             }
-            
             return connectors;
         }
 
         [HttpGet("{name}")]
         public async Task<ActionResult<ConnectParameters>> Get(string name)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
             ConnectParameters connector = new ConnectParameters();
             try
             {
-                CloudTable table = Common.GetTableConnect(connectionString, container);
-                TableOperation retrieveOperation = TableOperation.Retrieve<SourceEntity>("PPDM", name);
-                TableResult result = await table.ExecuteAsync(retrieveOperation);
-                SourceEntity entity = result.Result as SourceEntity;
-                if (entity == null) { return NotFound(); }
-                connector.SourceName = name;
-                connector.Database = entity.DatabaseName;
-                connector.DatabaseServer = entity.DatabaseServer;
-                connector.DatabaseUser = entity.User;
-                connector.DatabasePassword = entity.Password;
-                connector.ConnectionString = entity.ConnectionString;
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                tableStorageService.SetConnectionString(tmpConnString);
+                connector = await tableStorageService.GetTable(container, name);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return NotFound();
+                return NotFound(ex.ToString());
             }
             
             return connector;
@@ -96,29 +71,15 @@ namespace DatabaseManager.Server.Controllers
         [HttpPut]
         public async Task<ActionResult<string>> UpdateSource(ConnectParameters connectParameters)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-            if (connectParameters == null) return BadRequest();
             try
             {
-                CloudTable table = Common.GetTableConnect(connectionString, container);
-                string name = connectParameters.SourceName;
-                if (String.IsNullOrEmpty(name)) return BadRequest();
-                SourceEntity sourceEntity = new SourceEntity(name)
-                {
-                    DatabaseName = connectParameters.Database,
-                    DatabaseServer = connectParameters.DatabaseServer,
-                    User = connectParameters.DatabaseUser,
-                    Password = connectParameters.DatabasePassword,
-                    ConnectionString = connectParameters.ConnectionString
-                };
-                TableOperation insertOrMergeOperation = TableOperation.InsertOrMerge(sourceEntity);
-                TableResult result = await table.ExecuteAsync(insertOrMergeOperation);
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                tableStorageService.SetConnectionString(tmpConnString);
+                await tableStorageService.UpdateTable(container, connectParameters);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.ToString());
             }
 
             return Ok($"OK");
@@ -127,31 +88,15 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<string>> SaveSource(ConnectParameters connectParameters)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-            if (connectParameters == null) return BadRequest();
             try
             {
-                CloudTable table = Common.GetTableConnect(connectionString, container);
-                await table.CreateIfNotExistsAsync();
-
-                string name = connectParameters.SourceName;
-                if (String.IsNullOrEmpty(name)) return BadRequest();
-                SourceEntity sourceEntity = new SourceEntity(name)
-                {
-                    DatabaseName = connectParameters.Database,
-                    DatabaseServer = connectParameters.DatabaseServer,
-                    User = connectParameters.DatabaseUser,
-                    Password = connectParameters.DatabasePassword,
-                    ConnectionString = connectParameters.ConnectionString
-                };
-                TableOperation insertOperation = TableOperation.Insert(sourceEntity);
-                await table.ExecuteAsync(insertOperation);
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                tableStorageService.SetConnectionString(tmpConnString);
+                await tableStorageService.SaveTable(container, connectParameters);
             }
             catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.ToString());
             }
             
             return Ok($"OK");
@@ -160,26 +105,15 @@ namespace DatabaseManager.Server.Controllers
         [HttpDelete("{name}")]
         public async Task<ActionResult> Delete(string name)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
             try
             {
-                CloudTable table = Common.GetTableConnect(connectionString, container);
-                TableOperation retrieveOperation = TableOperation.Retrieve<SourceEntity>("PPDM", name);
-                TableResult result = await table.ExecuteAsync(retrieveOperation);
-                SourceEntity entity = result.Result as SourceEntity;
-                if (entity == null)
-                {
-                    return BadRequest();
-                }
-
-                TableOperation deleteOperation = TableOperation.Delete(entity);
-                result = await table.ExecuteAsync(deleteOperation);
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                tableStorageService.SetConnectionString(tmpConnString);
+                await tableStorageService.DeleteTable(container, name);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.ToString());
             }
             
             return NoContent();

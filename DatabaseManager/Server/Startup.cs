@@ -17,6 +17,7 @@ namespace DatabaseManager.Server
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddScoped<IFileStorageService, AzureFileStorageService>();
+            services.AddScoped<ITableStorageService, AzureTableStorageService>();
 
             services.AddMvc();
             services.AddResponseCompression(opts =>
