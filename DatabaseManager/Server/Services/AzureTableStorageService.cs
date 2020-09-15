@@ -71,6 +71,25 @@ namespace DatabaseManager.Server.Services
             return connectors;
         }
 
+        public async Task<List<T>> GetTableRecords<T>(string container) where T : ITableEntity, new()
+        {
+            List<T> data = new List<T>();
+            CloudTable table = GetTableConnect(connectionString, container);
+            TableQuery<T> tableQuery = new TableQuery<T>().
+                Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, "PPDM"));
+            data = table.ExecuteQuery(tableQuery).ToList();
+            return data;
+        }
+
+        public async Task<T> GetTableRecord<T>(string container, string name) where T : ITableEntity, new()
+        {
+            CloudTable table = GetTableConnect(connectionString, container);
+            TableOperation retrieveOperation = TableOperation.Retrieve<T>("PPDM", name);
+            TableResult result = await table.ExecuteAsync(retrieveOperation);
+            T data = (T)result.Result;
+            return data;
+        }
+
         public async Task SaveTable(string container, ConnectParameters connectParameters)
         {
             CloudTable table = GetTableConnect(connectionString, container);
@@ -90,6 +109,19 @@ namespace DatabaseManager.Server.Services
                 ConnectionString = connectParameters.ConnectionString
             };
             TableOperation insertOperation = TableOperation.Insert(sourceEntity);
+            await table.ExecuteAsync(insertOperation);
+        }
+
+        public async Task SaveTableRecord<T>(string container, string name, T data) where T: TableEntity
+        {
+            CloudTable table = GetTableConnect(connectionString, container);
+            await table.CreateIfNotExistsAsync();
+            if (String.IsNullOrEmpty(name))
+            {
+                Exception error = new Exception($"Name is empty");
+                throw error;
+            }
+            TableOperation insertOperation = TableOperation.Insert(data);
             await table.ExecuteAsync(insertOperation);
         }
 

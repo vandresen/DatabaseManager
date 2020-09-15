@@ -24,15 +24,19 @@ namespace DatabaseManager.Server.Controllers
         private string connectionString;
         private readonly string container = "sources";
         private readonly string ruleShare = "rules";
+        private readonly string predictionContainer = "predictions";
         private readonly IFileStorageService fileStorageService;
+        private readonly ITableStorageService tableStorageService;
         private readonly IWebHostEnvironment _env;
 
         public RulesController(IConfiguration configuration,
             IFileStorageService fileStorageService,
+            ITableStorageService tableStorageService,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
+            this.tableStorageService = tableStorageService;
             _env = env;
         }
 
@@ -107,15 +111,14 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
+                List<PredictionEntity> predictionEntities = await tableStorageService.GetTableRecords<PredictionEntity>(predictionContainer);
                 List<PredictionSet> predictionSets = new List<PredictionSet>();
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                fileStorageService.SetConnectionString(tmpConnString);
-                List<string> files = await fileStorageService.ListFiles(ruleShare);
-                foreach(string file in files)
+                foreach (PredictionEntity entity in predictionEntities)
                 {
                     predictionSets.Add(new PredictionSet()
                     {
-                        Name = file
+                        Name = entity.RowKey,
+                        Description = entity.Decsription
                     });
                 }
                 return predictionSets;
@@ -200,16 +203,31 @@ namespace DatabaseManager.Server.Controllers
         }
 
         [HttpPost("RuleFile/{rulename}")]
-        public async Task<ActionResult<string>> SaveRuleToFile(string RuleName, List<RuleModel> rules)
+        public async Task<ActionResult<string>> SaveRuleToFile(string RuleName, PredictionSet predictionSet)
         {
+            List<RuleModel> rules = predictionSet.RuleSet;
             if (rules == null) return BadRequest();
             try
             {
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 fileStorageService.SetConnectionString(tmpConnString);
+                tableStorageService.SetConnectionString(tmpConnString);
+
+                PredictionEntity tmpEntity = await tableStorageService.GetTableRecord<PredictionEntity>(predictionContainer, RuleName);
+                if (tmpEntity != null)
+                {
+                    return BadRequest("Prediction set exist");
+                }
+
                 string fileName = RuleName + ",json";
                 string json = JsonConvert.SerializeObject(rules, Formatting.Indented);
-                await fileStorageService.SaveFile(ruleShare, fileName, json);
+                string url = await fileStorageService.SaveFileUri(ruleShare, fileName, json);
+                PredictionEntity predictionEntity = new PredictionEntity(RuleName)
+                {
+                    RuleUrl = url,
+                    Decsription = predictionSet.Description
+                };
+                await tableStorageService.SaveTableRecord(predictionContainer, RuleName, predictionEntity);
             }
             catch (Exception ex)
             {

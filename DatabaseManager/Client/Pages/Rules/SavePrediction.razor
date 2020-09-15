@@ -2,6 +2,7 @@
 @inject IRules rules
 @inject SingletonServices singleton
 @inject NavigationManager navigationManager
+@inject IDisplayMessage displayMessage
 
 <h3>Save Prediction</h3>
 
@@ -11,6 +12,12 @@
         <input @bind="predictionName" />
     </div>
 </div>
+<div>
+    <label>Description:</label>
+    <div>
+        <input @bind="description" />
+    </div>
+</div>
 
 <div style="margin-top:20px">
     <button class="btn btn-primary" @onclick="Save">Save</button>
@@ -18,6 +25,7 @@
 
 @code {
     public string predictionName { get; set; }
+    private string description;
     List<RuleModel> RuleList;
 
     protected override async Task OnInitializedAsync()
@@ -34,8 +42,29 @@
 
     private async Task Save()
     {
-        await rules.InsertPrediction(RuleList, predictionName);
-        navigationManager.NavigateTo("rules");
+        try
+        {
+            PredictionSet predictionSet = new PredictionSet()
+            {
+                Name = predictionName,
+                Description = description,
+                RuleSet = RuleList
+            };
+            await rules.InsertPrediction(predictionSet, predictionName);
+            navigationManager.NavigateTo("rules");
+        }
+        catch (Exception ex)
+        {
+            if (ex.ToString().Contains("Prediction set exist"))
+            {
+                await displayMessage.DisplayErrorMessage("Prediction set already exist, please use another name");
+            }
+            else
+            {
+                Console.WriteLine($"Errors: {ex}");
+            }
+        }
+
     }
 
 }

@@ -36,6 +36,26 @@ namespace DatabaseManager.Server.Services
             await file.UploadTextAsync(fileContent);
         }
 
+        public async Task<string> SaveFileUri(string fileShare, string fileName, string fileContent)
+        {
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            CloudFileClient fileClient = account.CreateCloudFileClient();
+            CloudFileShare share = fileClient.GetShareReference(fileShare);
+            if (!share.Exists())
+            {
+                share.Create();
+            }
+            CloudFileDirectory rootDir = share.GetRootDirectoryReference();
+            CloudFile file = rootDir.GetFileReference(fileName);
+            if (!file.Exists())
+            {
+                file.Create(fileContent.Length);
+            }
+
+            await file.UploadTextAsync(fileContent);
+            return file.Uri.ToString();
+        }
+
         public void SetConnectionString(string connection)
         {
             if (!string.IsNullOrEmpty(connection)) connectionString = connection;

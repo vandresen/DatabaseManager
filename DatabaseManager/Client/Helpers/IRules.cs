@@ -14,7 +14,7 @@ namespace DatabaseManager.Client.Helpers
         Task<RuleModel> GetRule(string source, int id);
         Task<RuleInfo> GetRuleInfo(string source);
         Task<List<RuleModel>> GetRules(string source);
-        Task InsertPrediction(List<RuleModel> rule, string predictionName);
+        Task InsertPrediction(PredictionSet predictionSet, string predictionName);
         Task InsertRule(RuleModel rule, string source);
         Task UpdateRule(RuleModel rule, string source, int id);
     }

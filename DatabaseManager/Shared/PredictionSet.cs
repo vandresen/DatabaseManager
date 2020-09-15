@@ -7,5 +7,7 @@ namespace DatabaseManager.Shared
     public class PredictionSet
     {
         public string Name { get; set; }
+        public string Description { get; set; }
+        public List<RuleModel> RuleSet { get; set; }
     }
 }

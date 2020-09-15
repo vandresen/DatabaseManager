@@ -12,17 +12,19 @@
                 <tr>
                     <th></th>
                     <th>Name</th>
+                    <th>Description</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var item in psPagination)
                 {
-                    <tr>
-                        <td>
-                            <button class="btn btn-danger" @onclick="@(() => SelectedPrediction(item.Name))">Select</button>
-                        </td>
-                        <td>@item.Name</td>
-                    </tr>
+                <tr>
+                    <td>
+                        <button class="btn btn-danger" @onclick="@(() => SelectedPrediction(item.Name))">Select</button>
+                    </td>
+                    <td>@item.Name</td>
+                    <td>@item.Description</td>
+                </tr>
                 }
             </tbody>
         </table>

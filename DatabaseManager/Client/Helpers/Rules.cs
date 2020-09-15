@@ -75,9 +75,9 @@ namespace DatabaseManager.Client.Helpers
             }
         }
 
-        public async Task InsertPrediction(List<RuleModel> rule, string predictionName)
+        public async Task InsertPrediction(PredictionSet predictionSet, string predictionName)
         {
-            var response = await httpService.Post($"{url}/RuleFile/{predictionName}", rule);
+            var response = await httpService.Post($"{url}/RuleFile/{predictionName}", predictionSet);
             if (!response.Success)
             {
                 throw new ApplicationException(await response.GetBody());
