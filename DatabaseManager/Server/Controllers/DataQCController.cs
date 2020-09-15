@@ -43,7 +43,6 @@ namespace DatabaseManager.Server.Controllers
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
             _env = env;
-            //_accessDefs = Common.GetDataAccessDefinition(_env);
             qcFlags = new QcFlags();
         }
 
@@ -222,7 +221,7 @@ namespace DatabaseManager.Server.Controllers
                         }
                         else
                         {
-                            result = internalQC.ProcessMethod(qcSetup, indexTable);
+                            result = internalQC.ProcessMethod(qcSetup, indexTable, dbConn);
                         }
                         if (result == "Failed")
                         {

@@ -16,7 +16,7 @@ namespace DatabaseManager.Server.Helpers
 
         }
 
-        public string ProcessMethod(QcRuleSetup qcSetup, DataTable dt)
+        public string ProcessMethod(QcRuleSetup qcSetup, DataTable dt, DbUtilities dbConn)
         {
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
             string returnStatus = "Passed";
@@ -29,11 +29,29 @@ namespace DatabaseManager.Server.Helpers
                 case "Uniqueness":
                     returnStatus = ProcessUniquenessMethod(qcSetup, dt);
                     break;
+                case "Entirety":
+                    returnStatus = ProcessEntiretyMethod(qcSetup, dbConn);
+                    break;
                 default:
                     break;
             }
 
             
+            return returnStatus;
+        }
+
+        public string ProcessEntiretyMethod(QcRuleSetup qcSetup, DbUtilities dbConn)
+        {
+            string returnStatus = "Passed";
+
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+            string indexNode = qcSetup.IndexNode;
+            string dataName = rule.RuleParameters;
+            string select = "SELECT DATANAME FROM pdo_qc_index ";
+            string query = $" WHERE IndexNode.IsDescendantOf('{indexNode}') = 1 and DATANAME = '{dataName}'";
+            DataTable children = dbConn.GetDataTable(select, query);
+            if (children.Rows.Count == 0) returnStatus = "Failed";
+
             return returnStatus;
         }
 
