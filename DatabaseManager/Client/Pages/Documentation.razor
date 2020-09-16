@@ -7,6 +7,20 @@
     li:hover {
         background-color: yellow;
     }
+
+    table {
+        border-collapse: collapse;
+        border-spacing: 0;
+        border: 2px solid #000000;
+    }
+
+    th {
+        border: 2px solid #000000;
+    }
+
+    td {
+        border: 1px solid #000000;
+    }
 </style>
 
 <h3>About Database Manager</h3>
@@ -54,7 +68,8 @@
         string docStr = await client.GetStringAsync(url);
         if (!string.IsNullOrEmpty(docStr))
         {
-            Body = Markdown.ToHtml(docStr);
+            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+            Body = Markdown.ToHtml(docStr, pipeline);
         }
         else
         {
