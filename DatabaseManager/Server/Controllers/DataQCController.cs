@@ -30,10 +30,7 @@ namespace DatabaseManager.Server.Controllers
         private readonly IWebHostEnvironment _env;
         private List<DataAccessDef> _accessDefs;
         private DataAccessDef _indexAccessDef;
-        private QcFlags qcFlags;
-        private SqlDataAdapter indexAdapter;
-        private DataTable indexTable;
-        private SqlConnection sqlCn = null;
+        private ManageIndexTable manageQCFlags;
 
 
         public DataQCController(IConfiguration configuration,
@@ -43,7 +40,6 @@ namespace DatabaseManager.Server.Controllers
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
             _env = env;
-            qcFlags = new QcFlags();
         }
 
         [HttpGet("{source}")]
@@ -108,29 +104,29 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<string>> ExecuteRule(DataQCParameters qcParams)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
             try
             {
                 if (qcParams == null) return BadRequest();
                 _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(qcParams.DataAccessDefinitions);
+
                 ConnectParameters connector = Common.GetConnectParameters(connectionString, container, qcParams.DataConnector);
                 if (connector == null) return BadRequest();
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);
 
+                RuleModel rule = GetRule(dbConn, qcParams.RuleId);
+
+                manageQCFlags = new ManageIndexTable(_accessDefs, connector.ConnectionString, rule.DataType);
+
                 if (qcParams.ClearQCFlags)
                 {
-                    GetQCFlags(connector.ConnectionString, qcParams.ClearQCFlags, "");
-                    SaveQCFlags();
+                    manageQCFlags.ClearQCFlags(qcParams.ClearQCFlags);
                 }
 
-                RuleModel rule = GetRule(dbConn, qcParams.RuleId);
-                GetQCFlags(connector.ConnectionString, qcParams.ClearQCFlags, rule.DataType);
+                manageQCFlags.InitQCFlags(qcParams.ClearQCFlags);
                 QualityCheckDataType(dbConn, rule, connector);
                 dbConn.CloseConnection();
-                SaveQCFlags();
+                manageQCFlags.SaveQCFlags();
             }
             catch (Exception ex)
             {
@@ -138,53 +134,6 @@ namespace DatabaseManager.Server.Controllers
             }
 
             return Ok($"OK");
-        }
-
-        private void GetQCFlags(string connectionString, bool clearQcFlags, string dataType)
-        {
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            string select = ruleAccessDef.Select;
-            if (!string.IsNullOrEmpty(dataType))
-            {
-                select = select + $" where DATATYPE = '{dataType}'";
-            }
-            sqlCn = new SqlConnection(connectionString);
-            indexAdapter = new SqlDataAdapter();
-            indexAdapter.SelectCommand = new SqlCommand(select, sqlCn);
-            indexTable = new DataTable();
-            indexAdapter.Fill(indexTable);
-
-            foreach (DataRow row in indexTable.Rows)
-            {
-                int idx = Convert.ToInt32(row["INDEXID"]);
-                if (clearQcFlags)
-                {
-                    qcFlags[idx] = "";
-                }
-                else
-                {
-                    qcFlags[idx] = row["QC_STRING"].ToString();
-                }
-                
-            }
-        }
-
-        private void SaveQCFlags()
-        {
-            foreach (DataRow row in indexTable.Rows)
-            {
-                int indexID = Convert.ToInt32(row["INDEXID"]);
-                row["QC_STRING"] = qcFlags[indexID];
-            }
-
-            string upd = @"update pdo_qc_index set QC_STRING = @qc_string where INDEXID = @id";
-            SqlCommand cmd = new SqlCommand(upd, sqlCn);
-            cmd.Parameters.Add("@qc_string", SqlDbType.NVarChar, 400, "QC_STRING");
-            SqlParameter parm = cmd.Parameters.Add("@id", SqlDbType.Int, 4, "INDEXID");
-            parm.SourceVersion = DataRowVersion.Original;
-
-            indexAdapter.UpdateCommand = cmd;
-            indexAdapter.Update(indexTable);
         }
 
         private void QualityCheckDataType(DbUtilities dbConn, RuleModel rule, ConnectParameters connector)
@@ -202,7 +151,8 @@ namespace DatabaseManager.Server.Controllers
             QCMethods internalQC = new QCMethods();
 
             if (rule.RuleFunction == "Uniqueness") CalculateKey(rule);
-                
+
+            DataTable indexTable = manageQCFlags.GetIndexTable();
             foreach (DataRow idxRow in indexTable.Rows)
             {
                 string jsonData = idxRow["JSONDATAOBJECT"].ToString();
@@ -210,7 +160,7 @@ namespace DatabaseManager.Server.Controllers
                 {
                     qcSetup.IndexId = Convert.ToInt32(idxRow["INDEXID"]);
                     qcSetup.IndexNode = idxRow["Text_IndexNode"].ToString();
-                    string qcStr = qcFlags[qcSetup.IndexId];
+                    string qcStr = manageQCFlags.GetQCFlag(qcSetup.IndexId);
                     qcSetup.DataObject = jsonData;
                     string result = "Passed";
                     if (!Filter(jsonData, ruleFilter)) 
@@ -226,7 +176,7 @@ namespace DatabaseManager.Server.Controllers
                         if (result == "Failed")
                         {
                             qcStr = qcStr + rule.RuleKey + ";";
-                            qcFlags[qcSetup.IndexId] = qcStr;
+                            manageQCFlags.SetQCFlag(qcSetup.IndexId, qcStr);
                         }
                     } 
                 }
@@ -238,6 +188,7 @@ namespace DatabaseManager.Server.Controllers
             string[] keyAttributes = rule.RuleParameters.Split(';');
             if (keyAttributes.Length > 0)
             {
+                DataTable indexTable = manageQCFlags.GetIndexTable();
                 foreach (DataRow idxRow in indexTable.Rows)
                 {
                     string keyText = "";

@@ -30,11 +30,9 @@ namespace DatabaseManager.Server.Controllers
         private readonly IWebHostEnvironment _env;
         List<DataAccessDef> _accessDefs;
         DataAccessDef _indexAccessDef;
-        private SqlConnection sqlCn = null;
-        private SqlDataAdapter indexAdapter;
-        private DataTable indexTable;
-        private QcFlags qcFlags;
         private static HttpClient Client = new HttpClient();
+        private ManageIndexTable manageIndexTable;
+        private DataTable indexTable;
 
         public PredictionController(IConfiguration configuration,
             IFileStorageService fileStorageService,
@@ -43,9 +41,6 @@ namespace DatabaseManager.Server.Controllers
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
             _env = env;
-            //_accessDefs = Common.GetDataAccessDefinition(_env);
-            //_indexAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            qcFlags = new QcFlags();
         }
 
         [HttpGet("{source}")]
@@ -110,23 +105,23 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<string>> ExecutePrediction(PredictionParameters predictionParams)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
             try
             {
                 if (predictionParams == null) return BadRequest();
                 _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(predictionParams.DataAccessDefinitions);
+
                 ConnectParameters connector = Common.GetConnectParameters(connectionString, container, predictionParams.DataConnector);
                 if (connector == null) return BadRequest();
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);
 
                 RuleModel rule = Common.GetRule(dbConn, predictionParams.PredictionId, _accessDefs);
-                GetQCFlags(connector.ConnectionString, rule.DataType, rule.FailRule);
+
+                manageIndexTable = new ManageIndexTable(_accessDefs, connector.ConnectionString, rule.DataType, rule.FailRule);
+                manageIndexTable.InitQCFlags(false);
                 MakePredictions(rule, connector, dbConn);
                 dbConn.CloseConnection();
-                SaveQCFlags();
+                manageIndexTable.SaveQCFlags();
             }
             catch (Exception ex)
             {
@@ -150,6 +145,7 @@ namespace DatabaseManager.Server.Controllers
             bool externalQcMethod = rule.RuleFunction.StartsWith("http");
             PredictionMethods internalPrediction = new PredictionMethods();
 
+            indexTable = manageIndexTable.GetIndexTable();
             foreach (DataRow idxRow in indexTable.Rows)
             {
                 string jsonData = idxRow["JSONDATAOBJECT"].ToString();
@@ -157,9 +153,8 @@ namespace DatabaseManager.Server.Controllers
                 {
                     qcSetup.IndexId = Convert.ToInt32(idxRow["INDEXID"]);
                     qcSetup.IndexNode = idxRow["Text_IndexNode"].ToString();
-                    string qcStr = qcFlags[qcSetup.IndexId];
                     qcSetup.DataObject = jsonData;
-                    PredictionResult result = new PredictionResult();
+                    PredictionResult result;
                     if (externalQcMethod)
                     {
                         result = ProcessPrediction(qcSetup, predictionURL, rule, dbConn);
@@ -199,7 +194,7 @@ namespace DatabaseManager.Server.Controllers
         {
             if (result.Status == "Passed")
             {
-                string qcStr = qcFlags[result.IndexId];
+                string qcStr = manageIndexTable.GetQCFlag(result.IndexId);
                 string failRule = rule.FailRule + ";";
                 string pCode = rule.RuleKey + ";";
                 if (result.SaveType == "Delete")
@@ -210,7 +205,7 @@ namespace DatabaseManager.Server.Controllers
                 {
                     qcStr = qcStr.Replace(failRule, pCode);
                 }
-                qcFlags[result.IndexId] = qcStr;
+                manageIndexTable.SetQCFlag(result.IndexId, qcStr);
                 SavePrediction(result, dbConn, qcStr);
             }
             else
@@ -243,7 +238,6 @@ namespace DatabaseManager.Server.Controllers
         {
             DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
             string select = ruleAccessDef.Select;
-            //string idxTable = GetTable(select);
             string idxQuery = $" where INDEXID = {result.IndexId}";
             DataTable idx = dbConn.GetDataTable(select, idxQuery);
             if (idx.Rows.Count == 1)
@@ -298,27 +292,6 @@ namespace DatabaseManager.Server.Controllers
 
         }
 
-        private void GetQCFlags(string connectionString, string dataType, string qcRule)
-        {
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            string select = ruleAccessDef.Select;
-            if (!string.IsNullOrEmpty(dataType))
-            {
-                select = select + $" where DATATYPE = '{dataType}' and QC_STRING like '%{qcRule}%'";
-            }
-            sqlCn = new SqlConnection(connectionString);
-            indexAdapter = new SqlDataAdapter();
-            indexAdapter.SelectCommand = new SqlCommand(select, sqlCn);
-            indexTable = new DataTable();
-            indexAdapter.Fill(indexTable);
-
-            foreach (DataRow row in indexTable.Rows)
-            {
-                int idx = Convert.ToInt32(row["INDEXID"]);
-                qcFlags[idx] = row["QC_STRING"].ToString();
-            }
-        }
-
         private List<PredictionCorrection> GetPredictionCorrections(DbUtilities dbConn)
         {
             List<PredictionCorrection> predictionResult = new List<PredictionCorrection>();
@@ -339,25 +312,6 @@ namespace DatabaseManager.Server.Controllers
             }
 
             return predictionResult;
-        }
-
-        private void SaveQCFlags()
-        {
-            foreach (DataRow row in indexTable.Rows)
-            {
-                int indexID = Convert.ToInt32(row["INDEXID"]);
-                row["QC_STRING"] = qcFlags[indexID];
-            }
-
-            string upd = @"update pdo_qc_index set QC_STRING = @qc_string, JSONDATAOBJECT = @jsondataobject where INDEXID = @id";
-            SqlCommand cmd = new SqlCommand(upd, sqlCn);
-            cmd.Parameters.Add("@qc_string", SqlDbType.NVarChar, 400, "QC_STRING");
-            cmd.Parameters.Add("@jsondataobject", SqlDbType.NVarChar, -1, "JSONDATAOBJECT");
-            SqlParameter parm = cmd.Parameters.Add("@id", SqlDbType.Int, 4, "INDEXID");
-            parm.SourceVersion = DataRowVersion.Original;
-
-            indexAdapter.UpdateCommand = cmd;
-            indexAdapter.Update(indexTable);
         }
 
         private string GetTable(string select)

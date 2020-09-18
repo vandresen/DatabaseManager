@@ -3,13 +3,18 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <LangVersion>7.3</LangVersion>
+    <UserSecretsId>aafbc8e0-3175-4fc0-a75a-182e7746c8f9</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.3.0" />
+    <PackageReference Include="Azure.Storage.Files.Shares" Version="12.1.0" />
+    <PackageReference Include="Azure.Storage.Queues" Version="12.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="3.2.0" />
     <PackageReference Include="Microsoft.Azure.Cosmos.Table" Version="2.0.0-preview" />
     <PackageReference Include="Microsoft.Azure.Storage.File" Version="11.1.3" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="2.0.0-preview1.20021.1" />
+    <PackageReference Include="Microsoft.Extensions.Azure" Version="1.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="3.1.1" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.2" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
