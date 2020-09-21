@@ -42,6 +42,14 @@
   },
   {
     "DataType": "MarkerPick",
+    "Table": "WELL",
+    "KeyAttribute": "UWI",
+    "ValueAttribute": "UWI",
+    "ReferenceAttribute": "UWI",
+    "Insert": true
+  },
+  {
+    "DataType": "MarkerPick",
     "Table": "STRAT_UNIT",
     "KeyAttribute": "STRAT_UNIT_ID",
     "ValueAttribute": "LONG_NAME",
