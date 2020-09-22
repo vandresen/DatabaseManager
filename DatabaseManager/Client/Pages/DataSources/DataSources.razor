@@ -7,26 +7,21 @@
     <a class="btn btn-info" href="datasources/create">New Connector</a>
 </div>
 
-<GenericList List="ConnectParameters">
-    <WholeListTemplate>
-        <Table TableItem="ConnectParameters" Items="ConnectParameters" PageSize="@pageSize">
-            <Column TableItem="ConnectParameters" Title="Action">
-                <Template>
-                    <a class="btn btn-success" href="/datasources/edit/@context.SourceName">Edit</a>
-                    <button class="btn btn-danger" @onclick="@(() => DeleteSources(context.SourceName))">Delete</button>
-                </Template>
-            </Column>
-            <Column TableItem="ConnectParameters" Title="Name" Field="@(x => x.SourceName)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
-            <Column TableItem="ConnectParameters" Title="Database Name" Field="@(x => x.Database)" Sortable="true" Filterable="true"></Column>
-            <Column TableItem="ConnectParameters" Title="Database Server" Field="@(x => x.DatabaseServer)" Sortable="true" Filterable="true"></Column>
-            <Pager ShowPageNumber="true" ShowTotalCount="true" />
-        </Table>
-    </WholeListTemplate>
-</GenericList>
+<Table TableItem="ConnectParameters" Items="ConnectParameters" PageSize="@pageSize">
+    <Column TableItem="ConnectParameters" Title="Action" Sortable="false">
+        <Template>
+            <a class="btn btn-success" href="/datasources/edit/@context.SourceName">Edit</a>
+            <button class="btn btn-danger" @onclick="@(() => DeleteSources(context.SourceName))">Delete</button>
+        </Template>
+    </Column>
+    <Column TableItem="ConnectParameters" Title="Name" Field="@(x => x.SourceName)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
+    <Column TableItem="ConnectParameters" Title="Database Name" Field="@(x => x.Database)" Sortable="true" Filterable="true"></Column>
+    <Column TableItem="ConnectParameters" Title="Database Server" Field="@(x => x.DatabaseServer)" Sortable="true" Filterable="true"></Column>
+    <Pager ShowPageNumber="true" ShowTotalCount="true" />
+</Table>
 
 @code {
     List<ConnectParameters> ConnectParameters;
-    List<ConnectParameters> cpPagination;
 
     int pageSize = 10;
 
