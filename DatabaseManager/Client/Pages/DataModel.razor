@@ -137,7 +137,14 @@
         }
         catch (Exception ex)
         {
-            progress($"Error creating data model: {ex.Message}");
+            if (ex.Message.Contains("There is already an object"))
+            {
+                await displayMessage.DisplayErrorMessage("PPDM model aready exist");
+            }
+            else
+            {
+                progress($"Error creating data model: {ex.Message}");
+            }
         }
         barValue = 100;
     }

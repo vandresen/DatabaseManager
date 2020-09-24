@@ -155,22 +155,32 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<RuleInfo>> GetRuleInfo(string source)
         {
             string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
+            fileStorageService.SetConnectionString(tmpConnString);
+            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             RuleInfo ruleInfo = new RuleInfo();
-            ruleInfo.DataTypeOptions = new List<string> { "WellBore", "Log", "MarkerPick" };
-            ruleInfo.DataAttributes = new Dictionary<string, string> {
-            { "WellBore", "UWI, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE," +
-            "LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS," +
-            "GROUND_ELEV, REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY" +
-            " from WELL" },
-            { "MarkerPick", "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH," +
-            "REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY " +
-            " from STRAT_WELL_SECTION" },
-            { "Log", "UWI, CURVE_ID, NULL_REPRESENTATION, VALUE_COUNT, MAX_INDEX, MIN_INDEX, ROW_CHANGED_DATE, ROW_CHANGED_BY from well_log_curve"}
-        };
+            ruleInfo.DataTypeOptions = new List<string>();
+            ruleInfo.DataAttributes = new Dictionary<string, string>();
+            foreach (DataAccessDef accessDef in accessDefs)
+            {
+                ruleInfo.DataTypeOptions.Add(accessDef.DataType);
+                string[] attributeArray = Common.GetAttributes(accessDef.Select);
+                string attributes = String.Join(",", attributeArray);
+                ruleInfo.DataAttributes.Add(accessDef.DataType, attributes);
+            }
+
+            
+            //ruleInfo.DataTypeOptions = new List<string> { "WellBore", "Log", "MarkerPick" };
+            //ruleInfo.DataAttributes = new Dictionary<string, string> {
+            //{ "WellBore", "UWI, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE," +
+            //"LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS," +
+            //"GROUND_ELEV, REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY" +
+            //" from WELL" },
+            //{ "MarkerPick", "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH," +
+            //"REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY " +
+            //" from STRAT_WELL_SECTION" },
+            //{ "Log", "UWI, CURVE_ID, NULL_REPRESENTATION, VALUE_COUNT, MAX_INDEX, MIN_INDEX, ROW_CHANGED_DATE, ROW_CHANGED_BY from well_log_curve"}
+        //};
             return ruleInfo;
         }
 
