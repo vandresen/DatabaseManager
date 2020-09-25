@@ -14,6 +14,7 @@ using DatabaseManager.Server.Entities;
 using System.Data;
 using Newtonsoft.Json;
 using DatabaseManager.Server.Services;
+using Microsoft.Extensions.Logging;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -22,6 +23,7 @@ namespace DatabaseManager.Server.Controllers
     public class DataModelController : ControllerBase
     {
         private readonly IFileStorageService fileStorageService;
+        private readonly ILogger<DataModelController> logger;
         private readonly IWebHostEnvironment _env;
         private string connectionString;
         private readonly string _contentRootPath;
@@ -29,10 +31,12 @@ namespace DatabaseManager.Server.Controllers
 
         public DataModelController(IConfiguration configuration,
             IFileStorageService fileStorageService,
+            ILogger<DataModelController> logger,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
+            this.logger = logger;
             _env = env;
             _contentRootPath = _env.ContentRootPath;
         }
@@ -40,6 +44,7 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<string>> DataModelCreate(DataModelParameters dmParameters)
         {
+            logger.LogInformation("Starting data model create");
             if (dmParameters == null) return BadRequest();
             string tmpConnString = Request.Headers["AzureStorageConnection"];
             fileStorageService.SetConnectionString(tmpConnString);

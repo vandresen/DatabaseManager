@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -17,10 +18,12 @@ namespace DatabaseManager.Server.Controllers
     {
         private string connectionString;
         private readonly string container = "sources";
+        private readonly ILogger<CopyController> logger;
 
-        public CopyController(IConfiguration configuration)
+        public CopyController(IConfiguration configuration, ILogger<CopyController> logger)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
+            this.logger = logger;
         }
 
         [HttpPost]
