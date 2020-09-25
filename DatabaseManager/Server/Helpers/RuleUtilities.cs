@@ -13,11 +13,16 @@ namespace DatabaseManager.Server.Helpers
 {
     public class RuleUtilities
     {
-        public static void SaveRulesFile(DbUtilities dbConn, string path)
+        public static void SaveRulesFile(DbUtilities dbConn, string path, List<DataAccessDef> accessDefs)
         {
             try
             {
                 List<RuleFunctions> ruleFunctions = new List<RuleFunctions>();
+                DataAccessDef accessDef = accessDefs.First(x => x.DataType == "Functions");
+                string sql = accessDef.Select;
+                string query = "";
+                DataTable ft = dbConn.GetDataTable(sql, query);
+
                 string ruleFile = path + @"\DataBase\StandardRules.json";
                 string jsonRule = System.IO.File.ReadAllText(ruleFile);
                 JArray JsonRuleArray = JArray.Parse(jsonRule);
@@ -26,9 +31,14 @@ namespace DatabaseManager.Server.Helpers
                     string function = rule["RuleFunction"].ToString();
                     RuleFunctions ruleFunction = SaveRuleFunction(dbConn, function, path);
                     string functionName = ruleFunction.FunctionName;
-                    RuleFunctions result = ruleFunctions.FirstOrDefault(s => s.FunctionName == functionName);
-                    if (result == null) ruleFunctions.Add(ruleFunction);
-
+                    string functionQuery = $"FunctionName = '{functionName}'";
+                    DataRow[] rows = ft.Select(functionQuery);
+                    if (rows.Length == 0)
+                    {
+                        RuleFunctions result = ruleFunctions.FirstOrDefault(s => s.FunctionName == functionName);
+                        if (result == null) ruleFunctions.Add(ruleFunction);
+                    }
+                    
                     rule["RuleFunction"] = ruleFunction.FunctionName;
                     string jsonDate = DateTime.Now.ToString("yyyy-MM-dd");
                     rule["CreatedDate"] = jsonDate;

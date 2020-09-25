@@ -63,7 +63,7 @@ namespace DatabaseManager.Server.Controllers
                 }
                 else if (dmParameters.ModelOption == "DSM Rules")
                 {
-                    CreateDSMRules(connector);
+                    await CreateDSMRules(connector);
                 }
                 else if (dmParameters.ModelOption == "Stored Procedures")
                 {
@@ -121,8 +121,9 @@ namespace DatabaseManager.Server.Controllers
             string comma;
             string attributes;
 
-            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            //string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            //List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
             DbDataTypes dbDataTypes = new DbDataTypes();
             for (int j = 0; j < dbDataTypes.DataTypes.Length; j++)
             {
@@ -192,8 +193,7 @@ namespace DatabaseManager.Server.Controllers
             string comma;
             string attributes;
 
-            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
             DbDataTypes dbDataTypes = new DbDataTypes();
             for (int j = 0; j < dbDataTypes.DataTypes.Length; j++)
             {
@@ -329,9 +329,12 @@ namespace DatabaseManager.Server.Controllers
             {
                 string sqlFile = _contentRootPath + @"\DataBase\DataScienceManagement.sql";
                 string sql = System.IO.File.ReadAllText(sqlFile);
+                sqlFile = _contentRootPath + @"\DataBase\InternalRuleFunctions.sql";
+                string sqlFunctions = System.IO.File.ReadAllText(sqlFile);
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);
                 dbConn.SQLExecute(sql);
+                dbConn.SQLExecute(sqlFunctions);
                 dbConn.CloseConnection();
 
                 string fileName = "WellBore.json";
@@ -361,13 +364,14 @@ namespace DatabaseManager.Server.Controllers
             }
         }
 
-        private void CreateDSMRules(ConnectParameters connector)
+        private async Task CreateDSMRules(ConnectParameters connector)
         {
             try
             {
+                List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);
-                RuleUtilities.SaveRulesFile(dbConn, _contentRootPath);
+                RuleUtilities.SaveRulesFile(dbConn, _contentRootPath, accessDefs);
                 dbConn.CloseConnection();
             }
             catch (Exception ex)
@@ -426,6 +430,13 @@ namespace DatabaseManager.Server.Controllers
                 Exception error = new Exception("Create PPDM Model Error: ", ex);
                 throw error;
             }
+        }
+
+        private async Task<List<DataAccessDef>> GetDataAccessDefinitions()
+        {
+            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            return accessDefs;
         }
     }
 }
