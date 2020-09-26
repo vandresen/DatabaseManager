@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using DatabaseManager.Server.Entities;
@@ -148,7 +149,7 @@ namespace DatabaseManager.Server.Controllers
             string jsonRules = JsonConvert.SerializeObject(rule);
             qcSetup.RuleObject = jsonRules;
             bool externalQcMethod = rule.RuleFunction.StartsWith("http");
-            QCMethods internalQC = new QCMethods();
+            //QCMethods internalQC = new QCMethods();
 
             if (rule.RuleFunction == "Uniqueness") CalculateKey(rule);
 
@@ -171,7 +172,11 @@ namespace DatabaseManager.Server.Controllers
                         }
                         else
                         {
-                            result = internalQC.ProcessMethod(qcSetup, indexTable, dbConn);
+                            //result = internalQC.ProcessMethod(qcSetup, indexTable, dbConn);
+                            Type type = typeof(QCMethods);
+                            MethodInfo info = type.GetMethod(rule.RuleFunction);
+
+                            result = (string)info.Invoke(null, new object[] { qcSetup, dbConn, indexTable });
                         }
                         if (result == "Failed")
                         {

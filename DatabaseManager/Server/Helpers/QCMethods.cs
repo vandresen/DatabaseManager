@@ -9,38 +9,10 @@ using System.Threading.Tasks;
 
 namespace DatabaseManager.Server.Helpers
 {
-    public class QCMethods
+    static class QCMethods
     {
-        public QCMethods()
-        {
 
-        }
-
-        public string ProcessMethod(QcRuleSetup qcSetup, DataTable dt, DbUtilities dbConn)
-        {
-            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
-            string returnStatus = "Passed";
-
-            switch (rule.RuleType)
-            {
-                case "Completeness":
-                    returnStatus = ProcessCompletenessMethod(qcSetup);
-                    break;
-                case "Uniqueness":
-                    returnStatus = ProcessUniquenessMethod(qcSetup, dt);
-                    break;
-                case "Entirety":
-                    returnStatus = ProcessEntiretyMethod(qcSetup, dbConn);
-                    break;
-                default:
-                    break;
-            }
-
-            
-            return returnStatus;
-        }
-
-        public string ProcessEntiretyMethod(QcRuleSetup qcSetup, DbUtilities dbConn)
+        public static string Entirety(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt)
         {
             string returnStatus = "Passed";
 
@@ -51,11 +23,10 @@ namespace DatabaseManager.Server.Helpers
             string query = $" WHERE IndexNode.IsDescendantOf('{indexNode}') = 1 and DATANAME = '{dataName}'";
             DataTable children = dbConn.GetDataTable(select, query);
             if (children.Rows.Count == 0) returnStatus = "Failed";
-
             return returnStatus;
         }
 
-        public string ProcessCompletenessMethod(QcRuleSetup qcSetup)
+        public static string Completeness(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt)
         {
             string returnStatus = "Passed";
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
@@ -85,7 +56,7 @@ namespace DatabaseManager.Server.Helpers
             return returnStatus;
         }
 
-        public string ProcessUniquenessMethod(QcRuleSetup qcSetup, DataTable dt)
+        public static string Uniqueness(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt)
         {
             string returnStatus = "Passed";
 
