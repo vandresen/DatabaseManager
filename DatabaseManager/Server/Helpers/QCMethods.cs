@@ -75,5 +75,39 @@ namespace DatabaseManager.Server.Helpers
             
             return returnStatus;
         }
+
+        public static string ValidityRange(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt)
+        {
+            string returnStatus = "Passed";
+
+            bool canConvert;
+            double minRange;
+            double maxRange;
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+            JObject parameterObject = JObject.Parse(rule.RuleParameters);
+            JToken jMinRangeValue = parameterObject.GetValue("MinRange");
+            canConvert = double.TryParse(jMinRangeValue.ToString(), out minRange);
+            if (!canConvert) minRange = -99999.0;
+            JToken jMaxRangeValue = parameterObject.GetValue("MaxRange");
+            canConvert = double.TryParse(jMaxRangeValue.ToString(), out maxRange);
+            if (!canConvert) maxRange = 99999.0;
+
+            JObject dataObject = JObject.Parse(qcSetup.DataObject);
+            JToken value = dataObject.GetValue(rule.DataAttribute);
+            double? number = value.GetNumberFromJToken();
+            if (number != null)
+            {
+                if (number >= minRange & number <= maxRange)
+                {
+                    returnStatus = "Passed";
+                }
+                else
+                {
+                    returnStatus = "Failed";
+                }
+            }
+
+            return returnStatus;
+        }
     }
 }

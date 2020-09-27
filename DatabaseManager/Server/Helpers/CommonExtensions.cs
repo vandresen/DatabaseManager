@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -61,6 +62,21 @@ namespace DatabaseManager.Server.Helpers
             }
 
             return lineCounter;
+        }
+
+        public static double? GetNumberFromJToken(this JToken token)
+        {
+            double? number = null;
+            if (token != null)
+            {
+                string strNumber = token.ToString();
+                if (!string.IsNullOrWhiteSpace(strNumber))
+                {
+                    double value;
+                    if (double.TryParse(strNumber, out value)) number = value;
+                }
+            }
+            return number;
         }
     }
 }
