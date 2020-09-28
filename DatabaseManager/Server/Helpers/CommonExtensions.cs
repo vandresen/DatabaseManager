@@ -78,5 +78,15 @@ namespace DatabaseManager.Server.Helpers
             }
             return number;
         }
+
+        public static string NormalizeString(this string str)
+        {
+            var charsToRemove = new string[] { "_", "-", "#", "*", ".", "@", "~" };
+            foreach (var c in charsToRemove)
+            {
+                str = str.Replace(c, string.Empty);
+            }
+            return str;
+        }
     }
 }

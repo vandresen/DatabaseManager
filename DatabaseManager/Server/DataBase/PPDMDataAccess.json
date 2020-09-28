@@ -7,7 +7,7 @@
   {
     "DataType": "Index",
     "Keys": "INDEXID",
-    "Select": "Select INDEXID, IndexNode.ToString() AS Text_IndexNode, INDEXLEVEL,DATANAME, DATATYPE, DATAKEY, QC_STRING, JSONDATAOBJECT from pdo_qc_index"
+    "Select": "Select INDEXID, IndexNode.ToString() AS Text_IndexNode, INDEXLEVEL,DATANAME, DATATYPE, DATAKEY, QC_STRING, UNIQKEY, JSONDATAOBJECT from pdo_qc_index"
   },
   {
     "DataType": "Functions",

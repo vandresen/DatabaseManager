@@ -64,10 +64,10 @@ namespace DatabaseManager.Server.Helpers
             DataRow[] idxRows = dt.Select(query);
             if (idxRows.Length == 1)
             {
-                string key = idxRows[0]["DATAKEY"].ToString();
+                string key = idxRows[0]["UNIQKEY"].ToString();
                 if (!string.IsNullOrEmpty(key))
                 {
-                    query = $"DATAKEY = '{key}'";
+                    query = $"UNIQKEY = '{key}'";
                     DataRow[] dtRows = dt.Select(query);
                     if (dtRows.Length > 1) returnStatus = "Failed";
                 }

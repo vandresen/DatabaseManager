@@ -149,11 +149,9 @@ namespace DatabaseManager.Server.Controllers
             string jsonRules = JsonConvert.SerializeObject(rule);
             qcSetup.RuleObject = jsonRules;
             bool externalQcMethod = rule.RuleFunction.StartsWith("http");
-            //QCMethods internalQC = new QCMethods();
-
-            if (rule.RuleFunction == "Uniqueness") CalculateKey(rule);
 
             DataTable indexTable = manageQCFlags.GetIndexTable();
+            if (rule.RuleFunction == "Uniqueness") CalculateKey(rule, indexTable);
             foreach (DataRow idxRow in indexTable.Rows)
             {
                 string jsonData = idxRow["JSONDATAOBJECT"].ToString();
@@ -172,7 +170,6 @@ namespace DatabaseManager.Server.Controllers
                         }
                         else
                         {
-                            //result = internalQC.ProcessMethod(qcSetup, indexTable, dbConn);
                             Type type = typeof(QCMethods);
                             MethodInfo info = type.GetMethod(rule.RuleFunction);
 
@@ -188,12 +185,12 @@ namespace DatabaseManager.Server.Controllers
             }
         }
 
-        private void CalculateKey(RuleModel rule)
+        private void CalculateKey(RuleModel rule, DataTable indexTable)
         {
             string[] keyAttributes = rule.RuleParameters.Split(';');
+            string function = "";
             if (keyAttributes.Length > 0)
             {
-                DataTable indexTable = manageQCFlags.GetIndexTable();
                 foreach (DataRow idxRow in indexTable.Rows)
                 {
                     string keyText = "";
@@ -201,15 +198,25 @@ namespace DatabaseManager.Server.Controllers
                     if (!string.IsNullOrEmpty(jsonData))
                     {
                         JObject dataObject = JObject.Parse(jsonData);
-                        foreach (string attribute in keyAttributes)
+                        foreach (string key in keyAttributes)
                         {
-                            JToken value = dataObject.GetValue(attribute);
+                            string attribute = key.Trim();
+                            if (attribute.Substring(0, 1) == "*")
+                            {
+                                //attribute = attribute.Split('(', ')')[1];
+                                int start = attribute.IndexOf("(") + 1;
+                                int end = attribute.IndexOf(")", start);
+                                function = attribute.Substring(0, start - 1);
+                                attribute = attribute.Substring(start, end - start);
+                            }
+                            string value = dataObject.GetValue(attribute).ToString();
+                            if (function == "*NORMALIZE")  value = value.NormalizeString();
                             keyText = keyText + value;
                         }
                         if (!string.IsNullOrEmpty(keyText))
                         {
                             string key = keyText.GetSHA256Hash();
-                            idxRow["DATAKEY"] = key;
+                            idxRow["UNIQKEY"] = key;
                         }
                     }
                 }

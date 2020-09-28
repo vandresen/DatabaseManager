@@ -168,19 +168,6 @@ namespace DatabaseManager.Server.Controllers
                 string attributes = String.Join(",", attributeArray);
                 ruleInfo.DataAttributes.Add(accessDef.DataType, attributes);
             }
-
-            
-            //ruleInfo.DataTypeOptions = new List<string> { "WellBore", "Log", "MarkerPick" };
-            //ruleInfo.DataAttributes = new Dictionary<string, string> {
-            //{ "WellBore", "UWI, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE," +
-            //"LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS," +
-            //"GROUND_ELEV, REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY" +
-            //" from WELL" },
-            //{ "MarkerPick", "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH," +
-            //"REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY " +
-            //" from STRAT_WELL_SECTION" },
-            //{ "Log", "UWI, CURVE_ID, NULL_REPRESENTATION, VALUE_COUNT, MAX_INDEX, MIN_INDEX, ROW_CHANGED_DATE, ROW_CHANGED_BY from well_log_curve"}
-        //};
             return ruleInfo;
         }
 
