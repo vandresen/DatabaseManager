@@ -20,7 +20,8 @@
                 {
                 <tr>
                     <td>
-                        <button class="btn btn-danger" @onclick="@(() => SelectedPrediction(item.Name))">Select</button>
+                        <button class="btn btn-success" @onclick="@(() => SelectedPrediction(item.Name))">Select</button>
+                        <button class="btn btn-danger" @onclick="@(() => Delete(item.Name))">Delete</button>
                     </td>
                     <td>@item.Name</td>
                     <td>@item.Description</td>
@@ -80,6 +81,19 @@
             Console.WriteLine($"Errors: {ex}");
         }
 
+    }
+
+    private async Task Delete(string name)
+    {
+        try
+        {
+            await rules.DeletePrediction(name);
+            navigationManager.NavigateTo("rules");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
     }
 
     private void SelectedPage(int page)

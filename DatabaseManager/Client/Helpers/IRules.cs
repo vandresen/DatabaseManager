@@ -8,6 +8,7 @@ namespace DatabaseManager.Client.Helpers
 {
     public interface IRules
     {
+        Task DeletePrediction(string predictionName);
         Task DeleteRule(string source, int id);
         Task<List<RuleModel>> GetPrediction(string predictionName);
         Task<List<PredictionSet>> GetPredictions();

@@ -101,5 +101,14 @@ namespace DatabaseManager.Client.Helpers
                 throw new ApplicationException(await response.GetBody());
             }
         }
+
+        public async Task DeletePrediction(string predictionName)
+        {
+            var response = await httpService.Delete($"{url}/RuleFile/{predictionName}");
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
     }
 }
