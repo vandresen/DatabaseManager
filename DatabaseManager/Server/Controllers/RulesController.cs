@@ -301,5 +301,30 @@ namespace DatabaseManager.Server.Controllers
 
             return NoContent();
         }
+
+        /// <summary>
+        /// Delete a prediction set. Will delete the entry in prediction set table and the actual json rule file
+        /// </summary>
+        /// <param name="RuleName"></param>
+        /// <returns></returns>
+        [HttpDelete("RuleFile/{rulename}")]
+        public async Task<ActionResult> DeleteTable(string RuleName)
+        {
+            try
+            {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                fileStorageService.SetConnectionString(tmpConnString);
+                tableStorageService.SetConnectionString(tmpConnString);
+                await tableStorageService.DeleteTable(predictionContainer, RuleName);
+                string ruleFile = RuleName + ".json";
+                await fileStorageService.DeleteFile(ruleShare, ruleFile);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest();
+            }
+            
+            return NoContent();
+        }
     }
 }

@@ -112,5 +112,29 @@ namespace DatabaseManager.Server.Services
             }
             return files;
         }
+
+        public async Task DeleteFile(string fileShare, string fileName)
+        {
+            List<string> files = new List<string>();
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            CloudFileClient fileClient = account.CreateCloudFileClient();
+            CloudFileShare share = fileClient.GetShareReference(fileShare);
+            if (!share.Exists())
+            {
+                Exception error = new Exception($"Fileshare {fileShare} does not exist ");
+                throw error;
+            }
+            CloudFileDirectory rootDir = share.GetRootDirectoryReference();
+            CloudFile file = rootDir.GetFileReference(fileName);
+            if (file.Exists())
+            {
+                file.Delete();
+            }
+            else
+            {
+                Exception error = new Exception($"File {fileName} does not exist in Azure storage ");
+                throw error;
+            }
+        }
     }
 }
