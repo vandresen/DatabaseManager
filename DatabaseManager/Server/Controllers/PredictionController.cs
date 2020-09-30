@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using DatabaseManager.Server.Entities;
@@ -14,6 +15,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Web.CodeGeneration.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -27,6 +29,7 @@ namespace DatabaseManager.Server.Controllers
         private string connectionString;
         private readonly string container = "sources";
         private readonly IFileStorageService fileStorageService;
+        private readonly ILogger<PredictionController> logger;
         private readonly IWebHostEnvironment _env;
         List<DataAccessDef> _accessDefs;
         DataAccessDef _indexAccessDef;
@@ -36,10 +39,12 @@ namespace DatabaseManager.Server.Controllers
 
         public PredictionController(IConfiguration configuration,
             IFileStorageService fileStorageService,
+            ILogger<PredictionController> logger,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
+            this.logger = logger;
             _env = env;
         }
 
@@ -143,7 +148,6 @@ namespace DatabaseManager.Server.Controllers
             string predictionURL = rule.RuleFunction;
 
             bool externalQcMethod = rule.RuleFunction.StartsWith("http");
-            PredictionMethods internalPrediction = new PredictionMethods();
 
             indexTable = manageIndexTable.GetIndexTable();
             foreach (DataRow idxRow in indexTable.Rows)
@@ -161,10 +165,11 @@ namespace DatabaseManager.Server.Controllers
                     }
                     else
                     {
-                        result = internalPrediction.ProcessMethod(qcSetup, indexTable);
+                        Type type = typeof(PredictionMethods);
+                        MethodInfo info = type.GetMethod(rule.RuleFunction);
+                        result = (PredictionResult)info.Invoke(null, new object[] { qcSetup });
                     }
                     ProcessResult(result, rule, dbConn);
-                    
                 }
             }
         }
@@ -185,7 +190,7 @@ namespace DatabaseManager.Server.Controllers
             }
             catch (Exception Ex)
             {
-                //Trace.TraceInformation("ProcessDataObject: Problems with URL");
+                logger.LogWarning("ProcessDataObject: Problems with URL");
             }
             return result;
         }
@@ -230,7 +235,7 @@ namespace DatabaseManager.Server.Controllers
             }
             else
             {
-                //Trace.TraceWarning($"Save type {result.SaveType} is not supported");
+                logger.LogWarning($"Save type {result.SaveType} is not supported");
             }
         }
 
@@ -258,7 +263,7 @@ namespace DatabaseManager.Server.Controllers
             }
             else
             {
-                //Trace.TraceWarning("Cannot find data key during update");
+                logger.LogWarning("Cannot find data key during update");
             }
         }
 
@@ -287,7 +292,7 @@ namespace DatabaseManager.Server.Controllers
             }
             else
             {
-                //Trace.TraceWarning("Cannot find data key during update");
+                logger.LogWarning("Cannot find data key during update");
             }
 
         }

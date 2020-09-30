@@ -8,30 +8,9 @@ using System.Threading.Tasks;
 
 namespace DatabaseManager.Server.Helpers
 {
-    public class PredictionMethods
+    static class PredictionMethods
     {
-        public PredictionMethods()
-        {
-                
-        }
-
-        public PredictionResult ProcessMethod(QcRuleSetup qcSetup, DataTable dt)
-        {
-            PredictionResult result = new PredictionResult();
-            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
-
-            switch (rule.RuleFunction)
-            {
-                case "DeleteDataObject":
-                    result = ProcessDeleteDataObjectMethod(qcSetup);
-                    break;
-                default:
-                    break;
-            }
-            return result;
-        }
-
-        private PredictionResult ProcessDeleteDataObjectMethod(QcRuleSetup qcSetup)
+        public static PredictionResult DeleteDataObject(QcRuleSetup qcSetup)
         {
             PredictionResult result = new PredictionResult();
 
