@@ -136,6 +136,7 @@ namespace DatabaseManager.Server.Controllers
             {
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 fileStorageService.SetConnectionString(tmpConnString);
+                ruleName = ruleName + ".json";
                 string result = await fileStorageService.ReadFile(ruleShare, ruleName);
                 if (string.IsNullOrEmpty(result))
                 {
@@ -216,7 +217,7 @@ namespace DatabaseManager.Server.Controllers
                     return BadRequest("Prediction set exist");
                 }
 
-                string fileName = RuleName + ",json";
+                string fileName = RuleName + ".json";
                 string json = JsonConvert.SerializeObject(rules, Formatting.Indented);
                 string url = await fileStorageService.SaveFileUri(ruleShare, fileName, json);
                 PredictionEntity predictionEntity = new PredictionEntity(RuleName)
