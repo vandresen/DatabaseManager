@@ -167,7 +167,7 @@ namespace DatabaseManager.Server.Controllers
                     {
                         Type type = typeof(PredictionMethods);
                         MethodInfo info = type.GetMethod(rule.RuleFunction);
-                        result = (PredictionResult)info.Invoke(null, new object[] { qcSetup });
+                        result = (PredictionResult)info.Invoke(null, new object[] { qcSetup, dbConn });
                     }
                     ProcessResult(result, rule, dbConn);
                 }

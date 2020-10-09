@@ -99,6 +99,21 @@ namespace DatabaseManager.Server.Helpers
             return (min < x) && (x < max);
         }
 
+        public static double GetDataRowNumber(DataRow dr, string attribute)
+        {
+            double number = -99999.0;
+            if (!string.IsNullOrEmpty(attribute))
+            {
+                string strNumber = dr[attribute].ToString();
+                if (!string.IsNullOrEmpty(strNumber))
+                {
+                    Boolean isNumber = double.TryParse(strNumber, out number);
+                    if (!isNumber) number = -99999.0;
+                }
+            }
+            return number;
+        }
+
         public static RuleModel GetRule(DbUtilities dbConn, int id, List<DataAccessDef> accessDefs)
         {
             List<RuleModel> rules = new List<RuleModel>();
