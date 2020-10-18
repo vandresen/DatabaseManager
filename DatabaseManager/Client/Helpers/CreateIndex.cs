@@ -36,24 +36,22 @@ namespace DatabaseManager.Client.Helpers
             return response.Response;
         }
 
-        public async Task CreateChildIndexes(CreateIndexParameters iParams)
+        //public async Task CreateChildIndexes(CreateIndexParameters iParams)
+        //{
+        //    var response = await httpService.Post($"{url}/children", iParams);
+        //    if (!response.Success)
+        //    {
+        //        throw new ApplicationException(await response.GetBody());
+        //    }
+        //}
+
+        public async Task Create(CreateIndexParameters iParameters)
         {
-            var response = await httpService.Post($"{url}/children", iParams);
+            var response = await httpService.Post(url, iParameters);
             if (!response.Success)
             {
                 throw new ApplicationException(await response.GetBody());
             }
-        }
-
-        public async Task<List<ParentIndexNodes>> CreateParentNodes(CreateIndexParameters iParameters)
-        {
-            var response = await httpService.Post<CreateIndexParameters, List<ParentIndexNodes>>(url, iParameters);
-            if (!response.Success)
-            {
-                throw new ApplicationException(await response.GetBody());
-            }
-
-            return response.Response;
         }
     }
 }

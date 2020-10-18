@@ -142,3 +142,28 @@ BEGIN
 		ISJSON(JSONDATAOBJECT) > 0
 	ORDER By DISTANCE
 END
+GO
+
+DROP PROCEDURE IF EXISTS spInsertIndex;
+DROP TYPE IF EXISTS UDIndexTable;
+GO
+CREATE TYPE UDIndexTable AS TABLE
+(
+      DataName NVARCHAR(40) NOT NULL,
+      IndexNode NVARCHAR(255) NOT NULL,
+      QcLocation NVARCHAR(255),
+      DataType NVARCHAR(40) NULL,
+	  DataKey NVARCHAR(400) NULL,
+	  Latitude NUMERIC(14,9),
+      Longitude NUMERIC(14,9),
+	  JsonDataObject NVARCHAR(max)
+)
+GO
+
+CREATE PROC spInsertIndex
+(@TempTable AS UDIndexTable READONLY)
+AS
+BEGIN
+      INSERT INTO pdo_qc_index(IndexNode, DataName, DataType, DataKey, JsonDataObject, Latitude, Longitude, QC_LOCATION)
+      SELECT INDEXNODE, DATANAME, DATATYPE, DataKey, JsonDataObject, Latitude, Longitude, geography::STGeomFromText(QCLOCATION, 4326) FROM @TempTable
+END

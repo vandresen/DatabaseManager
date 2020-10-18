@@ -1,4 +1,5 @@
-﻿using DatabaseManager.Shared;
+﻿using DatabaseManager.Server.Entities;
+using DatabaseManager.Shared;
 using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
@@ -197,6 +198,26 @@ namespace DatabaseManager.Server.Helpers
                     throw error;
                 }
 
+            }
+        }
+
+        public void InsertUserDefinedTable(IndexDataCollection myIndex)
+        {
+            string sql = "spInsertIndex";
+            using (SqlCommand cmd = new SqlCommand(sql, this.sqlCn))
+            {
+                try
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    SqlParameter sqlParam = cmd.Parameters.AddWithValue("@TempTable", myIndex);
+                    sqlParam.SqlDbType = SqlDbType.Structured;
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    Exception error = new Exception($"Sorry! Error inserting index", ex);
+                    throw error;
+                }
             }
         }
 

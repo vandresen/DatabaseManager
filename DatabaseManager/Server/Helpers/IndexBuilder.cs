@@ -13,29 +13,24 @@ namespace DatabaseManager.Server.Helpers
 {
     public class IndexBuilder
     {
-        private DbUtilities _dbConn;
-        private int _rootSeqNo;
-        private static List<IndexFileData> _idxData;
-        private IndexFileData _currentItem;
-        private IndexFileData _parentItem;
-        private Location _location;
+        private DbUtilities dbConn;
         private List<DataAccessDef> dataAccessDefs = new List<DataAccessDef>();
-
+        private static List<IndexFileData> _idxData;
+        private IndexDataCollection myIndex;
+        private IndexFileData _currentItem;
+        private Location _location;
+        private IndexFileData _parentItem;
         public JArray JsonIndexArray { get; set; }
 
         public IndexBuilder()
         {
-            _dbConn = new DbUtilities();
-        }
-
-        public void CloseIndex()
-        {
-            _dbConn.CloseConnection();
+            dbConn = new DbUtilities();
         }
 
         public void InitializeIndex(ConnectParameters connectionString, string jsonTaxonomy, string jsonConnectDef)
         {
-            _dbConn.OpenConnection(connectionString);
+            myIndex = new IndexDataCollection();
+            dbConn.OpenConnection(connectionString);
             dataAccessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(jsonConnectDef);
             JsonIndexArray = JArray.Parse(jsonTaxonomy);
             _idxData = new List<IndexFileData>();
@@ -49,8 +44,9 @@ namespace DatabaseManager.Server.Helpers
         public void CreateRoot()
         {
             string table = "pdo_qc_index";
-            _dbConn.DBDelete(table);
-            _rootSeqNo = _dbConn.InsertIndex(-1, "", "", "", "", 0, 0);
+            dbConn.DBDelete(table);
+            //_rootSeqNo = _dbConn.InsertIndex(-1, "", "", "", "", 0, 0);
+            myIndex.Add(new IndexData { DataName = "QCPROJECT", DataType = "QCPROJECT", IndexNode = "/", QcLocation = null });
         }
 
         public int GetObjectCount(JToken token, int rowNr)
@@ -65,26 +61,24 @@ namespace DatabaseManager.Server.Helpers
                 select = dataAccessDefs.GetSelectString(_currentItem.DataName);
                 if (!String.IsNullOrEmpty(select))
                 {
-                    _currentItem.DataTable = _dbConn.GetDataTable(select, query);
+                    _currentItem.DataTable = dbConn.GetDataTable(select, query);
                 }
                 objectCount = _currentItem.DataTable.Rows.Count;
             }
             return objectCount;
         }
 
-        public int CreateParentNodeIndex()
+        public void CreateParentNodeIndex(string nodeId)
         {
-            int parentNodeId = 0;
             string parentNodeName = _currentItem.DataName + "s";
             int parentCount = _currentItem.DataTable.Rows.Count;
             if (parentCount > 0)
             {
-                parentNodeId = _dbConn.InsertIndex(_rootSeqNo, parentNodeName, parentNodeName, "", "", 0.0, 0.0);
+                myIndex.Add(new IndexData { DataName = parentNodeName, DataType = parentNodeName, IndexNode = nodeId, QcLocation = null });
             }
-            return parentNodeId;
         }
 
-        public void PopulateIndex(int topId, int parentId, int parentNodeId)
+        public void PopulateIndex(int topId, int parentId, string parentNodeId)
         {
             JToken level = JsonIndexArray[topId];
             _currentItem = GetIndexData(level);
@@ -92,88 +86,15 @@ namespace DatabaseManager.Server.Helpers
             GetDataForIndexing(select, "");
             DataRow dataRow = _currentItem.DataTable.Rows[parentId];
             _location = GetIndexLocation(dataRow);
-            int levelId = PopulateIndexItem(dataRow, parentNodeId);
-            PopulateChildIndex(level, parentId, levelId);
+            parentNodeId = parentNodeId + $"{parentId + 1}/";
+            PopulateIndexItem(dataRow, parentNodeId);
+            PopulateChildIndex(level, parentId, parentNodeId);
         }
 
-        private void PopulateChildIndex(JToken level, int parentId, int parentNodeId)
+        public void CloseIndex()
         {
-            if (level["DataObjects"] != null)
-            {
-                foreach (JToken subLevel in level["DataObjects"])
-                {
-                    _parentItem = GetIndexData(level);
-                    _currentItem = GetIndexData(subLevel);
-                    int nodeId = CreateChildNodeIndex(subLevel, parentId, parentNodeId);
-                    if (nodeId > 0)
-                    {
-                        int childCount = _currentItem.DataTable.Rows.Count;
-                        DataRow pr = _parentItem.DataTable.Rows[parentId];
-                        for (int i = 0; i < childCount; i++)
-                        {
-                            _parentItem = GetIndexData(level);
-                            _currentItem = GetIndexData(subLevel);
-                            _location = GetIndexLocation(pr);
-                            int levelId = PopulateIndexItem(_currentItem.DataTable.Rows[i], nodeId);
-                            PopulateChildIndex(subLevel, i, levelId);
-                        }
-
-                    }
-                }
-            }
-        }
-
-        private int CreateChildNodeIndex(JToken token, int parentId, int parentNodeId)
-        {
-            int childNodeId = 0;
-            DataRow pr = _parentItem.DataTable.Rows[parentId];
-            string dataName = (string)token["DataName"];
-            IndexFileData childItem = _idxData.Find(x => x.DataName == dataName);
-            string nodeName = dataName + "s";
-            if (string.IsNullOrEmpty(childItem.ParentKey))
-            {
-            }
-            else
-            {
-                string query = GetParentKey(pr, childItem.ParentKey);
-                query = " where " + query;
-                string select = dataAccessDefs.GetSelectString(childItem.DataName);
-                GetDataForIndexing(select, query);
-                if (_currentItem.DataTable.Rows.Count > 0)
-                {
-                    childNodeId = _dbConn.InsertIndex(parentNodeId, nodeName, nodeName, "", "", 0.0, 0.0);
-                }
-            }
-            return childNodeId;
-        }
-
-        private string GetParentKey(DataRow dr, string parentKeyTemplate)
-        {
-            string parentKey = "";
-            string and = "";
-            string[] keys = parentKeyTemplate.Split(',');
-            foreach (string key in keys)
-            {
-                int start = key.IndexOf("[") + 1;
-                int to = key.IndexOf("]");
-                if (start < 0 || to < 0) return "";
-                string attribute = key.Substring(start, (to - start));
-                string query = key.Substring(0, (start - 1));
-                attribute = attribute.Trim();
-                string attributeValue = dr[attribute].ToString();
-                attributeValue = Common.FixAposInStrings(attributeValue);
-                attributeValue = "'" + attributeValue + "'";
-                parentKey = parentKey + and + query.Trim() + attributeValue;
-                and = " AND ";
-            }
-            return parentKey;
-        }
-
-        private IndexFileData GetIndexData(JToken token)
-        {
-            string dataName = (string)token["DataName"];
-            IndexFileData indexObject = _idxData.Find(x => x.DataName == dataName);
-            return indexObject;
+            dbConn.InsertUserDefinedTable(myIndex);
+            dbConn.CloseConnection();
         }
 
         static void ProcessIndexArray(JArray JsonIndexArray, JToken parent)
@@ -200,11 +121,18 @@ namespace DatabaseManager.Server.Helpers
             return idxDataObject;
         }
 
+        private IndexFileData GetIndexData(JToken token)
+        {
+            string dataName = (string)token["DataName"];
+            IndexFileData indexObject = _idxData.Find(x => x.DataName == dataName);
+            return indexObject;
+        }
+
         private void GetDataForIndexing(string select, string query)
         {
             if (!String.IsNullOrEmpty(select))
             {
-                _currentItem.DataTable = _dbConn.GetDataTable(select, query);
+                _currentItem.DataTable = dbConn.GetDataTable(select, query);
             }
         }
 
@@ -220,18 +148,44 @@ namespace DatabaseManager.Server.Helpers
 
             }
             location.Latitude = GetLocation(dr, latitudeAttribute);
-            if (location.Latitude != -99999.0)
+            location.Longitude = GetLocation(dr, longitudeAttribute);
+            if (location.Latitude == -99999.0) location.Latitude = null;
+            if (location.Longitude == -99999.0) location.Longitude = null;
+            if (location.Latitude != null)
             {
-                if (!Common.Between(location.Latitude, -90.0, 90.0))
+                double loc = (double)location.Latitude;
+                if (!Common.Between(loc, -90.0, 90.0))
                 {
-                    location.Latitude = -99999.0;
+                    location.Latitude = null;
                 }
             }
-            location.Longitude = GetLocation(dr, longitudeAttribute);
-
+            if (location.Latitude == null) location.Longitude = null;
+            if (location.Longitude == null) location.Latitude = null;
             return location;
         }
 
+        private void PopulateIndexItem(DataRow dataRow, string parentNodeId)
+        {
+            double? lat = _location.Latitude;
+            double? lon = _location.Longitude;
+            string nameAttribute = _currentItem.NameAttribute;
+            string name = dataRow[nameAttribute].ToString();
+            string keys = dataAccessDefs.GetKeysString(_currentItem.DataName);
+            string dataKey = GetDataKey(dataRow, keys);
+            string jsonData = Common.ConvertDataRowToJson(dataRow, _currentItem.DataTable);
+            string qcLocation = GetQcLocation();
+            myIndex.Add(new IndexData
+            {
+                DataName = name,
+                DataType = _currentItem.DataName,
+                DataKey = dataKey,
+                JsonDataObject = jsonData,
+                IndexNode = parentNodeId,
+                QcLocation = qcLocation,
+                Latitude = lat,
+                Longitude = lon
+            });
+        }
 
         private double GetLocation(DataRow dr, string attribute)
         {
@@ -248,19 +202,6 @@ namespace DatabaseManager.Server.Helpers
             return location;
         }
 
-        private int PopulateIndexItem(DataRow dataRow, int parentNodeId)
-        {
-            double lat = _location.Latitude;
-            double lon = _location.Longitude;
-            string nameAttribute = _currentItem.NameAttribute;
-            string name = dataRow[nameAttribute].ToString();
-            string keys = dataAccessDefs.GetKeysString(_currentItem.DataName);
-            string dataKey = GetDataKey(dataRow, keys);
-            string jsonData = Common.ConvertDataRowToJson(dataRow, _currentItem.DataTable);
-            int indexId = _dbConn.InsertIndex(parentNodeId, name, _currentItem.DataName, dataKey, jsonData, lat, lon);
-            return indexId;
-        }
-
         private string GetDataKey(DataRow childRow, string dbKeys)
         {
             string dataKey = "";
@@ -274,6 +215,96 @@ namespace DatabaseManager.Server.Helpers
                 and = " AND ";
             }
             return dataKey;
+        }
+
+        private void PopulateChildIndex(JToken level, int parentId, string parentNodeId)
+        {
+            if (level["DataObjects"] != null)
+            {
+                int nodeId = 1;
+                foreach (JToken subLevel in level["DataObjects"])
+                {
+                    _parentItem = GetIndexData(level);
+                    _currentItem = GetIndexData(subLevel);
+                    string childNodeId = parentNodeId + $"{nodeId}/";
+                    if (CreateChildNodeIndex(subLevel, parentId, childNodeId))
+                    {
+                        nodeId++;
+                        int childCount = _currentItem.DataTable.Rows.Count;
+                        DataRow pr = _parentItem.DataTable.Rows[parentId];
+                        for (int i = 0; i < childCount; i++)
+                        {
+                            _parentItem = GetIndexData(level);
+                            _currentItem = GetIndexData(subLevel);
+                            _location = GetIndexLocation(pr);
+                            string indexNode = childNodeId + $"{i + 1}/";
+                            PopulateIndexItem(_currentItem.DataTable.Rows[i], indexNode);
+                            PopulateChildIndex(subLevel, i, indexNode);
+                        }
+                    }
+                }
+            }
+        }
+
+        private bool CreateChildNodeIndex(JToken token, int parentId, string parentNodeId)
+        {
+            bool childNode = false;
+            DataRow pr = _parentItem.DataTable.Rows[parentId];
+            string dataName = (string)token["DataName"];
+            IndexFileData childItem = _idxData.Find(x => x.DataName == dataName);
+            string nodeName = dataName + "s";
+            if (string.IsNullOrEmpty(childItem.ParentKey))
+            {
+            }
+            else
+            {
+                string query = GetParentKey(pr, childItem.ParentKey);
+                query = " where " + query;
+                string select = dataAccessDefs.GetSelectString(childItem.DataName);
+                GetDataForIndexing(select, query);
+                if (_currentItem.DataTable.Rows.Count > 0)
+                {
+                    childNode = true;
+                    myIndex.Add(new IndexData { DataName = nodeName, DataType = nodeName, IndexNode = parentNodeId, QcLocation = null });
+                }
+            }
+            return childNode;
+        }
+
+        private string GetParentKey(DataRow dr, string parentKeyTemplate)
+        {
+            string parentKey = "";
+            string and = "";
+            string[] keys = parentKeyTemplate.Split(',');
+            foreach (string key in keys)
+            {
+                int start = key.IndexOf("[") + 1;
+                int to = key.IndexOf("]");
+                if (start < 0 || to < 0) return "";
+                string attribute = key.Substring(start, (to - start));
+                string query = key.Substring(0, (start - 1));
+                attribute = attribute.Trim();
+                string attributeValue = dr[attribute].ToString();
+                attributeValue = Common.FixAposInStrings(attributeValue);
+                attributeValue = "'" + attributeValue + "'";
+                parentKey = parentKey + and + query.Trim() + attributeValue;
+                and = " AND ";
+            }
+            return parentKey;
+        }
+
+        private string GetQcLocation()
+        {
+            string qcLocation;
+            if (_location.Latitude == null || _location.Longitude == null)
+            {
+                qcLocation = null;
+            }
+            else
+            {
+                qcLocation = $"POINT ({_location.Longitude} {_location.Latitude})";
+            }
+            return qcLocation;
         }
     }
 }

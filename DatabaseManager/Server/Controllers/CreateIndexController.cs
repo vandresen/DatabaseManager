@@ -82,12 +82,12 @@ namespace DatabaseManager.Server.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<List<ParentIndexNodes>>> CreateParentNodes(CreateIndexParameters iParameters)
+        public async Task<ActionResult> Create(CreateIndexParameters iParameters)
         {
             string tmpConnString = Request.Headers["AzureStorageConnection"];
             if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
             if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-            CloudFileShare share = GetAzureStorageShare();
+            //CloudFileShare share = GetAzureStorageShare();
             if (iParameters == null) return BadRequest();
             if (string.IsNullOrEmpty(iParameters.Taxonomy)) return BadRequest();
             if (string.IsNullOrEmpty(iParameters.ConnectDefinition)) return BadRequest();
@@ -102,28 +102,42 @@ namespace DatabaseManager.Server.Controllers
                 iBuilder.InitializeIndex(connector, jsonTaxonomy, jsonConnectDef);
                 iBuilder.CreateRoot();
                 int parentNodes = iBuilder.JsonIndexArray.Count;
+                int nodeId = 0;
                 for (int k = 0; k < parentNodes; k++)
                 {
                     JToken token = iBuilder.JsonIndexArray[k];
                     int parentCount = iBuilder.GetObjectCount(token, k);
                     if (parentCount > 0)
                     {
-                        int parentNodeId = iBuilder.CreateParentNodeIndex();
+                        nodeId++;
+                        string strNodeId = $"/{nodeId}/";
+                        iBuilder.CreateParentNodeIndex(strNodeId);
                         nodes.Add(new ParentIndexNodes()
                         {
                             NodeCount = parentCount,
-                            ParentNodeId = parentNodeId,
+                            ParentNodeId = strNodeId,
                             Name = (string)token["DataName"]
                         });
                     }
                 }
+
+                for (int j = 0; j < nodes.Count; j++)
+                {
+                    ParentIndexNodes node = nodes[j];
+                    for (int i = 0; i < node.NodeCount; i++)
+                    {
+                        iBuilder.PopulateIndex(j, i, node.ParentNodeId);
+                    }
+                }
+
                 iBuilder.CloseIndex();
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.ToString());
             }
-            return nodes;
+
+            return NoContent();
         }
 
         [HttpPost("children")]
@@ -144,7 +158,7 @@ namespace DatabaseManager.Server.Controllers
                 ConnectParameters connector = Common.GetConnectParameters(connectionString, container,
                     iParams.DataConnector);
                 iBuilder.InitializeIndex(connector, jsonTaxonomy, jsonConnectDef);
-                iBuilder.PopulateIndex(iParams.ParentNodeNumber, iParams.ParentNumber, iParams.ParentNodeId);
+                //iBuilder.PopulateIndex(iParams.ParentNodeNumber, iParams.ParentNumber, iParams.ParentNodeId);
             }
             catch (Exception ex)
             {

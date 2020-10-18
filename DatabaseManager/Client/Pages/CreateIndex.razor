@@ -60,24 +60,28 @@ else
         Console.WriteLine(iParameters.Taxonomy);
         try
         {
-            pNodes = await createIndex.CreateParentNodes(iParameters);
-            double nodeInt = 100 / pNodes.Count;
-            double barInterval = 0.0;
-            for (int j = 0; j < pNodes.Count; j++)
-            {
-                ParentIndexNodes node = pNodes[j];
-                iParameters.ParentNodeNumber = j;
-                iParameters.ParentNodeId = node.ParentNodeId;
-                double childInt = nodeInt / node.NodeCount;
-                for (int i = 0; i < node.NodeCount; i++)
-                {
-                    iParameters.ParentNumber = i;
-                    await createIndex.CreateChildIndexes(iParameters);
-                    barInterval = barInterval + childInt;
-                    barValue = (int)barInterval;
-                    progress("Indexing...");
-                }
-            }
+            DateTime timeStart = DateTime.Now;
+            await createIndex.Create(iParameters);
+            //double nodeInt = 100 / pNodes.Count;
+            //double barInterval = 0.0;
+            //for (int j = 0; j < pNodes.Count; j++)
+            //{
+            //    ParentIndexNodes node = pNodes[j];
+            //    iParameters.ParentNodeNumber = j;
+            //    iParameters.ParentNodeId = node.ParentNodeId;
+            //    double childInt = nodeInt / node.NodeCount;
+            //    for (int i = 0; i < node.NodeCount; i++)
+            //    {
+            //        iParameters.ParentNumber = i;
+            //        await createIndex.CreateChildIndexes(iParameters);
+            //        barInterval = barInterval + childInt;
+            //        barValue = (int)barInterval;
+            //        progress("Indexing...");
+            //    }
+            //}
+            DateTime timeEnd = DateTime.Now;
+            TimeSpan diff = timeEnd - timeStart;
+            Console.WriteLine($"Time span: {diff}");
             barValue = 100;
             progress("Indexing complete");
         }

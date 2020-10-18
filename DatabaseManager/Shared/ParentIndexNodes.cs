@@ -8,6 +8,6 @@ namespace DatabaseManager.Shared
     {
         public string Name { get; set; }
         public int NodeCount { get; set; }
-        public int ParentNodeId { get; set; }
+        public string ParentNodeId { get; set; }
     }
 }
