@@ -121,8 +121,6 @@ namespace DatabaseManager.Server.Controllers
             string comma;
             string attributes;
 
-            //string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            //List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
             DbDataTypes dbDataTypes = new DbDataTypes();
             for (int j = 0; j < dbDataTypes.DataTypes.Length; j++)

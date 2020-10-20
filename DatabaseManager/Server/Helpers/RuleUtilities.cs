@@ -29,7 +29,10 @@ namespace DatabaseManager.Server.Helpers
                 foreach (JToken rule in JsonRuleArray)
                 {
                     string function = rule["RuleFunction"].ToString();
-                    RuleFunctions ruleFunction = SaveRuleFunction(dbConn, function, path);
+                    string functionType = "";
+                    if (rule["RuleType"].ToString() == "Validity") functionType = "V";
+                    if (rule["RuleType"].ToString() == "Predictions") functionType = "P";
+                    RuleFunctions ruleFunction = SaveRuleFunction(dbConn, function, path, functionType);
                     string functionName = ruleFunction.FunctionName;
                     string functionQuery = $"FunctionName = '{functionName}'";
                     DataRow[] rows = ft.Select(functionQuery);
@@ -76,7 +79,7 @@ namespace DatabaseManager.Server.Helpers
             dbConn.UpdateDataObject(json, "Rules");
         }
 
-        public static RuleFunctions SaveRuleFunction(DbUtilities dbConn, string ruleFunction, string path)
+        public static RuleFunctions SaveRuleFunction(DbUtilities dbConn, string ruleFunction, string path, string functionType)
         {
             RuleFunctions rf = new RuleFunctions();
 
@@ -102,6 +105,7 @@ namespace DatabaseManager.Server.Helpers
             rf.FunctionName = functionname;
             rf.FunctionUrl = functionUrl;
             rf.FunctionKey = functionKey;
+            rf.FunctionType = functionType;
             return rf;
         }
 

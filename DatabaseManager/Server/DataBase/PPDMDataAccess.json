@@ -12,7 +12,7 @@
   {
     "DataType": "Functions",
     "Keys": "Id",
-    "Select": "Select Id, FunctionName, FunctionUrl, FunctionKey from pdo_rule_functions"
+    "Select": "Select Id, FunctionName, FunctionUrl, FunctionKey, FunctionType from pdo_rule_functions"
   },
   {
     "DataType": "WellBore",

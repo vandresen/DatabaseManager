@@ -88,7 +88,12 @@
         <div class="form-group">
             <label>Rule Function:</label>
             <div>
-                <InputText class="form-control" @bind-Value="RuleToEdit.RuleFunction" />
+                <select @bind="RuleToEdit.RuleFunction">
+                    @foreach (var func in FunctionMethods)
+                    {
+                        <option>@func</option>
+                    }
+                </select>
                 <ValidationMessage For="@(() => RuleToEdit.RuleFunction)" />
             </div>
         </div>
@@ -110,6 +115,7 @@
     [Parameter] public RuleInfo DataRef { get; set; }
     [Parameter] public string Type { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
+    [Parameter] public List<string> FunctionMethods { get; set; }
     private List<string> DataAttributeOptions;
     private bool noDataAttributes = false;
 

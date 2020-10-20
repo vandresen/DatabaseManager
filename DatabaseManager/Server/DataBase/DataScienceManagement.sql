@@ -41,6 +41,7 @@ CREATE TABLE pdo_rule_functions (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     FunctionName NVARCHAR(255) NOT NULL,
     FunctionUrl NVARCHAR(255) NOT NULL,
+	FunctionType NVARCHAR(1),
     FunctionKey NVARCHAR(255)
 );
 DROP TABLE IF EXISTS pdo_rule_models;

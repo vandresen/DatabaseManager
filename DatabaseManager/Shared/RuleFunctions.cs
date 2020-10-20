@@ -19,5 +19,8 @@ namespace DatabaseManager.Shared
 
         [StringLength(255)]
         public string FunctionKey { get; set; }
+
+        [StringLength(1)]
+        public string FunctionType { get; set; }
     }
 }

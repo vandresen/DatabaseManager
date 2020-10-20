@@ -1,6 +1,6 @@
 ﻿@page "/createrule/{RuleType}"
 @inject IRules rules
-@inject IRules rules
+@inject IFunctions rf
 @inject SingletonServices singleton
 @inject NavigationManager navigationManager
 
@@ -8,7 +8,7 @@
 
 @if (ruleInfo != null)
 {
-    <NewRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" Type="@type" OnValidSubmit="Create" />
+    <NewRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" Type="@type" OnValidSubmit="Create" FunctionMethods="functionMethods"/>
 }
 
 @code {
@@ -16,12 +16,18 @@
     public RuleModel ruleModel = new RuleModel();
     public RuleInfo ruleInfo;
     public string type;
-
+    public List<string> functionMethods;
+    List<RuleFunctions> FunctionList;
     protected override async Task OnInitializedAsync()
     {
         ruleInfo = await rules.GetRuleInfo(singleton.TargetConnector);
+        FunctionList = await rf.GetFunctions(singleton.TargetConnector);
         type = RuleType;
         Console.WriteLine($"New Rule: {type}");
+        string shortType = "";
+        if (type == "Validity") shortType = "V";
+        if (type == "Predictions") shortType = "P";
+        functionMethods = FunctionList.Where(s => s.FunctionType == shortType).Select(s => s.FunctionName).ToList();
     }
 
     private async Task Create()
