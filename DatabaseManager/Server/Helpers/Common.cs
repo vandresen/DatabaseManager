@@ -85,6 +85,14 @@ namespace DatabaseManager.Server.Helpers
             return words;
         }
 
+        public static string GetTable(string select)
+        {
+            select = select.ToUpper();
+            int from = select.IndexOf(" FROM ") + 6;
+            string table = select.Substring(from);
+            return table;
+        }
+
         public static string SetJsonDataObjectDate(string jsonText, string attribute)
         {
             string jsonDate = DateTime.Now.ToString("yyyy-MM-dd");
@@ -136,5 +144,6 @@ namespace DatabaseManager.Server.Helpers
             rule.RuleFunction = functionURL + functionKey;
             return rule;
         }
+
     }
 }

@@ -208,6 +208,7 @@ namespace DatabaseManager.Server.Helpers
             {
                 try
                 {
+                    cmd.CommandTimeout = _sqlTimeOut;
                     cmd.CommandType = CommandType.StoredProcedure;
                     SqlParameter sqlParam = cmd.Parameters.AddWithValue("@TempTable", myIndex);
                     sqlParam.SqlDbType = SqlDbType.Structured;

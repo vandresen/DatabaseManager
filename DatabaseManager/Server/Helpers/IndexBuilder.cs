@@ -45,7 +45,6 @@ namespace DatabaseManager.Server.Helpers
         {
             string table = "pdo_qc_index";
             dbConn.DBDelete(table);
-            //_rootSeqNo = _dbConn.InsertIndex(-1, "", "", "", "", 0, 0);
             myIndex.Add(new IndexData { DataName = "QCPROJECT", DataType = "QCPROJECT", IndexNode = "/", QcLocation = null });
         }
 
