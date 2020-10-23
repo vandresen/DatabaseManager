@@ -2,25 +2,40 @@
 @inject IDataSources dataSources
 
     <EditForm Model="TransferParameters" OnValidSubmit="OnValidSubmit">
-        <div>
-            <h3>Target Database</h3>
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 form-group">
+                    <label>Filter:</label>
+                    <input @bind="@TransferParameters.TransferQuery" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-8">
+                    <h3>Source Database</h3>
+                </div>
+                <div class="col-sm-4">
+                    <h3>Target Database</h3>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    @if (options == null)
+                    {
+                        <text>Loading...</text>
+                    }
+                    else
+                    {
+                        <ConnectorSelector Options="options" SelectedConnector="Selected" />
+                    }
+                </div>
+                <div class="col">
+                    <button class="btn btn-success" type="submit">>>></button>
+                </div>
+                <div class="col">
+                    <p>Target Database: @singleton.TargetConnector</p>
+                </div>
+            </div>
         </div>
-        <p>Target Database: @singleton.TargetConnector</p>
-
-        <div>
-            <h3>Source Database</h3>
-        </div>
-
-        @if (options == null)
-        {
-            <text>Loading...</text>
-        }
-        else
-        {
-            <ConnectorSelector Options="options" SelectedConnector="Selected" />
-        }
-
-        <button class="btn btn-success" type="submit">Start Transfer</button>
     </EditForm>
 
 @code {
@@ -28,6 +43,7 @@
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     private List<string> options { get; set; } = new List<string>();
     List<ConnectParameters> ConnectParameters;
+    string queryString;
 
     protected override async Task OnInitializedAsync()
     {

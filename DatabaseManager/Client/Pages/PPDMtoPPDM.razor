@@ -3,6 +3,7 @@
 @inject SingletonServices singleton
 
 <h2>PPDM to PPDM Data Transfer</h2>
+<br />
 
 <TransferParametersForm TransferParameters="transferParameters" OnValidSubmit="StartDatabaseTransfer" />
 
@@ -23,6 +24,7 @@
 
     protected async Task StartDatabaseTransfer()
     {
+        barValue = 0;
         Console.WriteLine("Start database transfer");
         int barInt = 50 / DatabaseTables.Names.Count;
         foreach (string tableName in DatabaseTables.Names)
@@ -42,14 +44,18 @@
             }
         }
 
-        barInt = 50 / CopyTables.Names.Count;
-        foreach (string tableName in CopyTables.Names)
+        barInt = 50 / CopyTables.dictionary.Count;
+        foreach (var table in CopyTables.dictionary)
         {
+            string tableName = table.Key;
             transferParameters.Table = tableName;
-            progress($"Copying table {tableName}");
             try
             {
+                string tmpQuery = transferParameters.TransferQuery;
+                if (table.Value == "REFERENCE") transferParameters.TransferQuery = "";
+                progress($"Copying table {tableName}");
                 await databaseTransfer.Copy(transferParameters);
+                transferParameters.TransferQuery = tmpQuery;
                 barValue = barValue + barInt;
             }
             catch (Exception ex)

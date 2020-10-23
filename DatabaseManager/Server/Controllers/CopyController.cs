@@ -65,7 +65,7 @@ namespace DatabaseManager.Server.Controllers
             {   
                 sourceConn.Open();
                 destinationConn.Open();
-                BulkCopy(sourceConn, destinationConn, table);
+                BulkCopy(sourceConn, destinationConn, transferParameters);
                 
             }
             catch (Exception ex)
@@ -80,9 +80,22 @@ namespace DatabaseManager.Server.Controllers
             }
         }
 
-        private void BulkCopy(SqlConnection source, SqlConnection destination, string table)
+        private void BulkCopy(SqlConnection source, SqlConnection destination, TransferParameters transferParameters)
         {
-            string sql = $"select * from {table}";
+            string sql = "";
+            string table = transferParameters.Table;
+            string query = transferParameters.TransferQuery;
+            if (string.IsNullOrEmpty(query))
+            {
+                sql = $"select * from {table}";
+            }
+            else
+            {
+                CreateTempTable(source);
+                InsertQueryData(source, transferParameters);
+                sql = $"select * from {table} where UWI in (select UWI from #PDOList)";
+            }
+            
             using (SqlCommand cmd = new SqlCommand(sql, source))
             {
                 try
@@ -102,5 +115,57 @@ namespace DatabaseManager.Server.Controllers
                 }
             }
         }
+
+        private void CreateTempTable(SqlConnection source)
+        {
+            string sql = "create table #PDOList (UWI NVARCHAR(40))";
+            using (SqlCommand cmd = new SqlCommand(sql, source))
+            {
+                try
+                {
+                    cmd.CommandTimeout = 3000;
+                    cmd.ExecuteNonQuery();
+                }
+                catch (SqlException ex)
+                {
+                    Exception error = new Exception("Error inserting into table: ", ex);
+                    throw error;
+                }
+
+            }
+        }
+
+        private void InsertQueryData(SqlConnection source, TransferParameters transferParameters)
+        {
+            string query = transferParameters.TransferQuery;
+            string queryType = transferParameters.QueryType;
+            string sql;
+            if (queryType == "File")
+            {
+                sql = $"DECLARE @Array NVARCHAR(MAX) = '{query}' " +
+                    "INSERT INTO #PDOList ( UWI ) " +
+                    "SELECT * FROM STRING_SPLIT(@Array, ',')";
+            }
+            else
+            {
+                sql = $"INSERT INTO #PDOList (UWI) SELECT UWI FROM WELL {query} ";
+            }
+
+            using (SqlCommand cmd = new SqlCommand(sql, source))
+            {
+                try
+                {
+                    cmd.CommandTimeout = 3000;
+                    cmd.ExecuteNonQuery();
+                }
+                catch (SqlException ex)
+                {
+                    Exception error = new Exception("Error inserting into table: ", ex);
+                    throw error;
+                }
+
+            }
+        }
+
     }
 }

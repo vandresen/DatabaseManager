@@ -6,18 +6,18 @@ namespace DatabaseManager.Shared
 {
     public class CopyTables
     {
-        public static readonly IList<string> Names = new string[]
+        public static readonly Dictionary<string, string> dictionary = new Dictionary<string, string>
         {
-            "WELL",
-            "BUSINESS_ASSOCIATE",
-            "FIELD",
-            "R_WELL_DATUM_TYPE",
-            "R_WELL_STATUS",
-            "STRAT_NAME_SET",
-            "STRAT_UNIT",
-            "STRAT_WELL_SECTION",
-            "WELL_LOG_CURVE",
-            "WELL_LOG_CURVE_VALUE"
+            { "WELL", "TABLE" },
+            { "BUSINESS_ASSOCIATE", "REFERENCE" },
+            { "FIELD", "REFERENCE" },
+            { "R_WELL_DATUM_TYPE", "REFERENCE" },
+            { "R_WELL_STATUS", "REFERENCE" },
+            { "STRAT_NAME_SET", "REFERENCE" },
+            { "STRAT_UNIT", "REFERENCE"},
+            { "STRAT_WELL_SECTION", "TABLE"},
+            { "WELL_LOG_CURVE", "TABLE"},
+            { "WELL_LOG_CURVE_VALUE", "TABLE"}
         };
     }
 }
