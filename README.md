@@ -33,4 +33,4 @@ files. It is recommended that you use MS SQL Server 2019.
 Database Manager requires an azure storage account. You define this with the key word AzureStorageConnection in your configuration. This is where the system access data connectors, data models, rules, data access definitions and data files for loading such as LAS and csv files.
 
 ## API
-The user interface is based on Blazor. An option for you is to build your own user interface but use our Web API. Here is a link to the web api [GitHub](http://github.com)
+The user interface is based on Blazor. An option for you is to build your own user interface but use our Web API. Here is a [Swagger Link](https://petrodataonline.azurewebsites.net/swagger) to the web api 
