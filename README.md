@@ -27,7 +27,10 @@ Visual Studio 2019.6 or newer for building this. From Visual Studio you can publ
 ## Datamodel
 The system does not ship with a data model. You must create a folder in your Azure File Storage called PPDM39. This is where yo put the PPDM dll files that
 you can download from the PPDM web site. In theory you can put any kind of ddl files here, but then you also need to update some of the other configuration
-files
+files. It is recommended that you use MS SQL Server 2019.
 
 ## Azure Storage Account Required
 Database Manager requires an azure storage account. You define this with the key word AzureStorageConnection in your configuration. This is where the system access data connectors, data models, rules, data access definitions and data files for loading such as LAS and csv files.
+
+## API
+The user interface is based on Blazor. An option for you is to build your own user interface but use our Web API. Here is a link to the web api [GitHub](http://github.com)
