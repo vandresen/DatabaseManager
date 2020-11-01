@@ -22,5 +22,6 @@ namespace DatabaseManager.Shared
         public int IndexId { get; set; }
 
         public string IndexNode { get; set; }
+        public string ConsistencyConnectorString { get; set; }
     }
 }

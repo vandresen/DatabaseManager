@@ -72,8 +72,9 @@ else
 }
 
 @code {
-    private List<string> RuleTypes = new List<string> 
-    { "Entirety", "Completeness", "Uniqueness ", "Validity", "Predictions" };
+    //private List<string> RuleTypes = new List<string>
+    //{ "Entirety", "Completeness", "Uniqueness ", "Validity", "Predictions" };
+    private List<string> RuleTypes;
     List<RuleModel> RuleList;
     List<RuleModel> rulePagination;
     private bool expandedState = false;
@@ -93,6 +94,12 @@ else
         }
         try
         {
+            RuleTypeDictionary rt = new RuleTypeDictionary();
+            RuleTypes = new List<string>();
+            foreach (var item in rt._dictionary)
+            {
+                RuleTypes.Add(item.Key);
+            }
             RuleList = await rules.GetRules(singleton.TargetConnector);
             rulePagination = GetPage((curPage - 1) * pageSize, pageSize);
             totalRecords = RuleList.Count();

@@ -1,4 +1,5 @@
-﻿using DatabaseManager.Shared;
+﻿using DatabaseManager.Server.Entities;
+using DatabaseManager.Shared;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -12,7 +13,7 @@ namespace DatabaseManager.Server.Helpers
     static class QCMethods
     {
 
-        public static string Entirety(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt)
+        public static string Entirety(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
         {
             string returnStatus = "Passed";
 
@@ -26,7 +27,7 @@ namespace DatabaseManager.Server.Helpers
             return returnStatus;
         }
 
-        public static string Completeness(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt)
+        public static string Completeness(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
         {
             string returnStatus = "Passed";
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
@@ -56,7 +57,7 @@ namespace DatabaseManager.Server.Helpers
             return returnStatus;
         }
 
-        public static string Uniqueness(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt)
+        public static string Uniqueness(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
         {
             string returnStatus = "Passed";
 
@@ -76,7 +77,43 @@ namespace DatabaseManager.Server.Helpers
             return returnStatus;
         }
 
-        public static string ValidityRange(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt)
+        public static string Consistency(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
+        {
+            string returnStatus = "Passed";
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+            JObject dataObject = JObject.Parse(qcSetup.DataObject);
+            JToken value = dataObject.GetValue(rule.DataAttribute);
+            string strValue = value.ToString();
+            if (Common.CompletenessCheck(strValue) == "Passed")
+            {
+                string dataType = rule.DataType;
+                string select = "SELECT DATAKEY FROM pdo_qc_index ";
+                string query = $" WHERE INDEXID = {qcSetup.IndexId}";
+                DataTable index = dbConn.GetDataTable(select, query);
+                if (index.Rows.Count > 0)
+                {
+                    query = " where " + index.Rows[0]["DATAKEY"].ToString();
+                    DataAccessDef dataAccessDef = accessDefs.First(x => x.DataType == dataType);
+                    select = dataAccessDef.Select;
+                    DbUtilities consistencyConn = new DbUtilities();
+                    consistencyConn.OpenWithConnectionString(qcSetup.ConsistencyConnectorString);
+                    DataTable ct = consistencyConn.GetDataTable(select, query);
+                    if (ct.Rows.Count > 0)
+                    {
+                        string strRefValue = ct.Rows[0][rule.DataAttribute].ToString();
+                        if (Common.CompletenessCheck(strRefValue) == "Passed")
+                        {
+                            returnStatus = RuleMethodUtilities.ConsistencyCheck(strValue, strRefValue);
+                        }
+                    }
+                    consistencyConn.CloseConnection();
+                }
+            }
+
+            return returnStatus;
+        }
+
+        public static string ValidityRange(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
         {
             string returnStatus = "Passed";
 

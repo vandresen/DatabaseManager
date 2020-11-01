@@ -27,6 +27,13 @@ namespace DatabaseManager.Server.Helpers
             sqlCn.Open();
         }
 
+        public void OpenWithConnectionString(string connectionString)
+        {
+            sqlCn = new SqlConnection();
+            sqlCn.ConnectionString = connectionString;
+            sqlCn.Open();
+        }
+
         public void CloseConnection()
         {
             sqlCn.Close();

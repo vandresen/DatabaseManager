@@ -100,5 +100,12 @@ namespace DatabaseManager.Server.Helpers
 
             return depth;
         }
+
+        public static string ConsistencyCheck(string strValue, string strRefValue)
+        {
+            string status = "Passed";
+            if (strValue != strRefValue) status = "Failed";
+            return status;
+        }
     }
 }

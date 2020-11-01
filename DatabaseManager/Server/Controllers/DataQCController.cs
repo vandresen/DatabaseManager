@@ -28,6 +28,7 @@ namespace DatabaseManager.Server.Controllers
         private string connectionString;
         private readonly string container = "sources";
         private readonly IFileStorageService fileStorageService;
+        private readonly ITableStorageService tableStorageService;
         private readonly IWebHostEnvironment _env;
         private List<DataAccessDef> _accessDefs;
         private DataAccessDef _indexAccessDef;
@@ -36,10 +37,12 @@ namespace DatabaseManager.Server.Controllers
 
         public DataQCController(IConfiguration configuration,
             IFileStorageService fileStorageService,
+            ITableStorageService tableStorageService,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
+            this.tableStorageService = tableStorageService;
             _env = env;
         }
 
@@ -110,10 +113,14 @@ namespace DatabaseManager.Server.Controllers
                 if (qcParams == null) return BadRequest();
                 _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(qcParams.DataAccessDefinitions);
 
-                ConnectParameters connector = Common.GetConnectParameters(connectionString, container, qcParams.DataConnector);
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                fileStorageService.SetConnectionString(tmpConnString);
+                tableStorageService.SetConnectionString(tmpConnString);
+                SourceEntity connector = new SourceEntity();
+                connector = await tableStorageService.GetTableRecord<SourceEntity>(container, qcParams.DataConnector);
                 if (connector == null) return BadRequest();
                 DbUtilities dbConn = new DbUtilities();
-                dbConn.OpenConnection(connector);
+                dbConn.OpenWithConnectionString(connector.ConnectionString);
 
                 RuleModel rule = GetRule(dbConn, qcParams.RuleId);
 
@@ -125,7 +132,7 @@ namespace DatabaseManager.Server.Controllers
                 }
 
                 manageQCFlags.InitQCFlags(qcParams.ClearQCFlags);
-                QualityCheckDataType(dbConn, rule, connector);
+                await QualityCheckDataType(dbConn, rule, connector);
                 dbConn.CloseConnection();
                 manageQCFlags.SaveQCFlags();
             }
@@ -137,13 +144,13 @@ namespace DatabaseManager.Server.Controllers
             return Ok($"OK");
         }
 
-        private void QualityCheckDataType(DbUtilities dbConn, RuleModel rule, ConnectParameters connector)
+        private async Task QualityCheckDataType(DbUtilities dbConn, RuleModel rule, SourceEntity connector)
         {
             QcRuleSetup qcSetup = new QcRuleSetup();
-            qcSetup.Database = connector.Database;
-            qcSetup.DatabasePassword = connector.DatabasePassword;
+            qcSetup.Database = connector.DatabaseName;
+            qcSetup.DatabasePassword = connector.Password;
             qcSetup.DatabaseServer = connector.DatabaseServer;
-            qcSetup.DatabaseUser = connector.DatabaseUser;
+            qcSetup.DatabaseUser = connector.User;
             DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
             string ruleFilter = rule.RuleFilter;
             string jsonRules = JsonConvert.SerializeObject(rule);
@@ -152,6 +159,7 @@ namespace DatabaseManager.Server.Controllers
 
             DataTable indexTable = manageQCFlags.GetIndexTable();
             if (rule.RuleFunction == "Uniqueness") CalculateKey(rule, indexTable);
+            if (rule.RuleFunction == "Consistency") qcSetup.ConsistencyConnectorString = await GetConsistencySource(rule.RuleParameters);
             foreach (DataRow idxRow in indexTable.Rows)
             {
                 string jsonData = idxRow["JSONDATAOBJECT"].ToString();
@@ -173,7 +181,7 @@ namespace DatabaseManager.Server.Controllers
                             Type type = typeof(QCMethods);
                             MethodInfo info = type.GetMethod(rule.RuleFunction);
 
-                            result = (string)info.Invoke(null, new object[] { qcSetup, dbConn, indexTable });
+                            result = (string)info.Invoke(null, new object[] { qcSetup, dbConn, indexTable, _accessDefs });
                         }
                         if (result == "Failed")
                         {
@@ -221,6 +229,14 @@ namespace DatabaseManager.Server.Controllers
                     }
                 }
             }
+        }
+
+        private async Task<string> GetConsistencySource(string RuleParameters)
+        {
+            SourceEntity connector = new SourceEntity();
+            connector = await tableStorageService.GetTableRecord<SourceEntity>(container, RuleParameters);
+            string source = connector.ConnectionString;
+            return source;
         }
 
         private string ProcessQcRule(QcRuleSetup qcSetup, RuleModel rule)

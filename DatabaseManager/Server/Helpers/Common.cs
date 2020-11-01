@@ -122,6 +122,25 @@ namespace DatabaseManager.Server.Helpers
             return number;
         }
 
+        public static string CompletenessCheck(string strValue)
+        {
+            string status = "Passed";
+            if (string.IsNullOrWhiteSpace(strValue))
+            {
+                status = "Failed";
+            }
+            else
+            {
+                double number;
+                bool canConvert = double.TryParse(strValue, out number);
+                if (canConvert)
+                {
+                    if (number == -99999) status = "Failed";
+                }
+            }
+            return status;
+        }
+
         public static RuleModel GetRule(DbUtilities dbConn, int id, List<DataAccessDef> accessDefs)
         {
             List<RuleModel> rules = new List<RuleModel>();
