@@ -23,6 +23,7 @@ namespace DatabaseManager.Server.Controllers
     public class DataModelController : ControllerBase
     {
         private readonly IFileStorageService fileStorageService;
+        private readonly ITableStorageService tableStorageService;
         private readonly ILogger<DataModelController> logger;
         private readonly IWebHostEnvironment _env;
         private string connectionString;
@@ -31,11 +32,13 @@ namespace DatabaseManager.Server.Controllers
 
         public DataModelController(IConfiguration configuration,
             IFileStorageService fileStorageService,
+            ITableStorageService tableStorageService,
             ILogger<DataModelController> logger,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
+            this.tableStorageService = tableStorageService;
             this.logger = logger;
             _env = env;
             _contentRootPath = _env.ContentRootPath;
@@ -47,31 +50,32 @@ namespace DatabaseManager.Server.Controllers
             logger.LogInformation("Starting data model create");
             if (dmParameters == null) return BadRequest();
             string tmpConnString = Request.Headers["AzureStorageConnection"];
-            fileStorageService.SetConnectionString(tmpConnString);
-
             try
             {
-                ConnectParameters connector = Common.GetConnectParameters(connectionString, container, dmParameters.DataConnector);
+                fileStorageService.SetConnectionString(tmpConnString);
+                tableStorageService.SetConnectionString(tmpConnString);
+                SourceEntity connector = new SourceEntity();
+                connector = await tableStorageService.GetTableRecord<SourceEntity>(container, dmParameters.DataConnector);
                 if (connector == null) return BadRequest();
                 if (dmParameters.ModelOption == "PPDM Model")
                 {
-                    await CreatePPDMModel(dmParameters, connector);
+                    await CreatePPDMModel(dmParameters, connector.ConnectionString);
                 }
                 else if (dmParameters.ModelOption == "DSM Model")
                 {
-                    await CreateDMSModel(dmParameters, connector);
+                    await CreateDMSModel(dmParameters, connector.ConnectionString);
                 }
                 else if (dmParameters.ModelOption == "DSM Rules")
                 {
-                    await CreateDSMRules(connector);
+                    await CreateDSMRules(connector.ConnectionString);
                 }
                 else if (dmParameters.ModelOption == "Stored Procedures")
                 {
-                    await CreateStoredProcedures(connector);
+                    await CreateStoredProcedures(connector.ConnectionString);
                 }
                 else if (dmParameters.ModelOption == "PPDM Modifications")
                 {
-                    CreatePpdmModifications(connector);
+                    CreatePpdmModifications(connector.ConnectionString);
                 }
                 else
                 {
@@ -86,7 +90,7 @@ namespace DatabaseManager.Server.Controllers
             return Ok($"OK");
         }
 
-        private async Task CreateStoredProcedures(ConnectParameters connector)
+        private async Task CreateStoredProcedures(string connector)
         {
             try
             {
@@ -95,7 +99,7 @@ namespace DatabaseManager.Server.Controllers
                 string sql = System.IO.File.ReadAllText(sqlFile);
                 string[] commandText = sql.Split(new string[] { String.Format("{0}GO{0}", Environment.NewLine) }, StringSplitOptions.RemoveEmptyEntries);
                 DbUtilities dbConn = new DbUtilities();
-                dbConn.OpenConnection(connector);
+                dbConn.OpenWithConnectionString(connector);
                 for (int x = 0; x < commandText.Length; x++)
                 {
                     if (commandText[x].Trim().Length > 0)
@@ -321,7 +325,7 @@ namespace DatabaseManager.Server.Controllers
             return table;
         }
 
-        private async Task CreateDMSModel(DataModelParameters dmParameters, ConnectParameters connector)
+        private async Task CreateDMSModel(DataModelParameters dmParameters, string connector)
         {
             try
             {
@@ -330,7 +334,7 @@ namespace DatabaseManager.Server.Controllers
                 sqlFile = _contentRootPath + @"\DataBase\InternalRuleFunctions.sql";
                 string sqlFunctions = System.IO.File.ReadAllText(sqlFile);
                 DbUtilities dbConn = new DbUtilities();
-                dbConn.OpenConnection(connector);
+                dbConn.OpenWithConnectionString(connector);
                 dbConn.SQLExecute(sql);
                 dbConn.SQLExecute(sqlFunctions);
                 dbConn.CloseConnection();
@@ -362,13 +366,13 @@ namespace DatabaseManager.Server.Controllers
             }
         }
 
-        private async Task CreateDSMRules(ConnectParameters connector)
+        private async Task CreateDSMRules(string connector)
         {
             try
             {
                 List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
                 DbUtilities dbConn = new DbUtilities();
-                dbConn.OpenConnection(connector);
+                dbConn.OpenWithConnectionString(connector);
                 RuleUtilities.SaveRulesFile(dbConn, _contentRootPath, accessDefs);
                 dbConn.CloseConnection();
             }
@@ -379,7 +383,7 @@ namespace DatabaseManager.Server.Controllers
             }
         }
 
-        private void CreatePpdmModifications(ConnectParameters connector)
+        private void CreatePpdmModifications(string connector)
         {
             try
             {
@@ -388,7 +392,7 @@ namespace DatabaseManager.Server.Controllers
                 string sql = System.IO.File.ReadAllText(sqlFile);
                 string[] commandText = sql.Split(new string[] { String.Format("{0}GO{0}", Environment.NewLine) }, StringSplitOptions.RemoveEmptyEntries);
                 DbUtilities dbConn = new DbUtilities();
-                dbConn.OpenConnection(connector);
+                dbConn.OpenWithConnectionString(connector);
                 for (int x = 0; x < commandText.Length; x++)
                 {
                     if (commandText[x].Trim().Length > 0)
@@ -405,7 +409,7 @@ namespace DatabaseManager.Server.Controllers
             }
         }
 
-        private async Task CreatePPDMModel(DataModelParameters dmParameters, ConnectParameters connector)
+        private async Task CreatePPDMModel(DataModelParameters dmParameters, string connector)
         {
             try
             {
@@ -418,7 +422,7 @@ namespace DatabaseManager.Server.Controllers
                 else
                 {
                     DbUtilities dbConn = new DbUtilities();
-                    dbConn.OpenConnection(connector);
+                    dbConn.OpenWithConnectionString(connector);
                     dbConn.SQLExecute(sql);
                     dbConn.CloseConnection();
                 }
