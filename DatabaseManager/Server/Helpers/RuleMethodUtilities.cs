@@ -101,10 +101,27 @@ namespace DatabaseManager.Server.Helpers
             return depth;
         }
 
-        public static string ConsistencyCheck(string strValue, string strRefValue)
+        public static string ConsistencyCheck(string strValue, string strRefValue, string valueType)
         {
             string status = "Passed";
-            if (strValue != strRefValue) status = "Failed";
+            if (valueType == "System.Decimal")
+            {
+                double number;
+                double refNumber;
+                Boolean isNumber = double.TryParse(strValue, out number);
+                if (isNumber)
+                {
+                    isNumber = double.TryParse(strRefValue, out refNumber);
+                    if (isNumber)
+                    {
+                        if (Math.Abs(refNumber - number) > 0.0000001) status = "Failed";
+                    }
+                }
+            }
+            else
+            {
+                if (strValue != strRefValue) status = "Failed";
+            } 
             return status;
         }
     }

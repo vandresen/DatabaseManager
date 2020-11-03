@@ -144,6 +144,26 @@ BEGIN
 END
 GO
 
+DROP PROCEDURE IF EXISTS spFastDelete;
+GO
+CREATE PROCEDURE spFastDelete
+@TableName NVARCHAR(128) 
+AS 
+BEGIN 
+  SET NOCOUNT ON;
+  DECLARE @Sql NVARCHAR(MAX);
+
+  SET @sql = N' WHILE (1=1) '
+           + N' BEGIN '
+           + N' DELETE TOP(1000) FROM ' + QUOTENAME(@TableName)
+           + N' IF @@ROWCOUNT < 1 BREAK '
+           + N' END'
+
+  EXECUTE sp_executesql @Sql
+
+END
+GO
+
 DROP PROCEDURE IF EXISTS spInsertIndex;
 DROP TYPE IF EXISTS UDIndexTable;
 GO

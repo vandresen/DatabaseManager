@@ -98,12 +98,14 @@ namespace DatabaseManager.Server.Helpers
                     DbUtilities consistencyConn = new DbUtilities();
                     consistencyConn.OpenWithConnectionString(qcSetup.ConsistencyConnectorString);
                     DataTable ct = consistencyConn.GetDataTable(select, query);
+                    Dictionary<string, string> columnTypes = ct.GetColumnTypes();
                     if (ct.Rows.Count > 0)
                     {
                         string strRefValue = ct.Rows[0][rule.DataAttribute].ToString();
+                        string valueType = columnTypes[rule.DataAttribute];
                         if (Common.CompletenessCheck(strRefValue) == "Passed")
                         {
-                            returnStatus = RuleMethodUtilities.ConsistencyCheck(strValue, strRefValue);
+                            returnStatus = RuleMethodUtilities.ConsistencyCheck(strValue, strRefValue, valueType);
                         }
                     }
                     consistencyConn.CloseConnection();
