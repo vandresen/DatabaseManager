@@ -1,6 +1,7 @@
 ﻿@page "/settings"
 @inject HttpClient client
 @inject NavigationManager navigationManager
+@inject ICookies cookies
 
 <h3>Settings</h3>
 <p>Azure Storage used for this session:</p>
@@ -9,11 +10,15 @@
 
 @code {
     string AzureStorage;
+    CookieParameters cookieParams = new CookieParameters();
 
-    private void Save()
+    private async Task Save()
     {
         if (!string.IsNullOrEmpty(AzureStorage))
         {
+            await cookies.DeleteCookie();
+            cookieParams.Value = AzureStorage;
+            await cookies.CreateCookie(cookieParams);
             client.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
         }
         navigationManager.NavigateTo("/");

@@ -5,6 +5,7 @@
 @inject NavigationManager navigationManager
 @inject IDisplayMessage displayMessage
 @inject HttpClient client
+@inject ICookies cookies
 
 <div class="jumbotron">
     <h1>Welcome to Database Manager tool</h1>
@@ -64,9 +65,13 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine("Init data sources");
         try
         {
+            CookieParameters cookieParams = await cookies.GetCookie();
+            if (!string.IsNullOrEmpty(cookieParams.Value))
+            {
+                client.DefaultRequestHeaders.Add("AzureStorageConnection", cookieParams.Value);
+            }
             ConnectParameters = await dataSources.GetSources();
             foreach (ConnectParameters conn in ConnectParameters)
             {
@@ -74,7 +79,6 @@ else
             }
             if (!string.IsNullOrEmpty(singleton.TargetConnector))
             {
-                Console.WriteLine("get Index data");
                 await GetIndexData();
             }
         }
@@ -87,6 +91,7 @@ else
             else
             {
                 Console.WriteLine($"Errors: {ex}");
+                await displayMessage.DisplayErrorMessage(" There is a problem with the Azure storage connection string.");
             }
         }
     }
