@@ -29,6 +29,7 @@ namespace DatabaseManager.Server.Controllers
         private string connectionString;
         private readonly string container = "sources";
         private readonly IFileStorageService fileStorageService;
+        private readonly ITableStorageService tableStorageService;
         private readonly ILogger<PredictionController> logger;
         private readonly IWebHostEnvironment _env;
         List<DataAccessDef> _accessDefs;
@@ -39,11 +40,13 @@ namespace DatabaseManager.Server.Controllers
 
         public PredictionController(IConfiguration configuration,
             IFileStorageService fileStorageService,
+            ITableStorageService tableStorageService,
             ILogger<PredictionController> logger,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
+            this.tableStorageService = tableStorageService;
             this.logger = logger;
             _env = env;
         }
@@ -115,10 +118,14 @@ namespace DatabaseManager.Server.Controllers
                 if (predictionParams == null) return BadRequest();
                 _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(predictionParams.DataAccessDefinitions);
 
-                ConnectParameters connector = Common.GetConnectParameters(connectionString, container, predictionParams.DataConnector);
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                fileStorageService.SetConnectionString(tmpConnString);
+                tableStorageService.SetConnectionString(tmpConnString);
+                SourceEntity connector = new SourceEntity();
+                connector = await tableStorageService.GetTableRecord<SourceEntity>(container, predictionParams.DataConnector);
                 if (connector == null) return BadRequest();
                 DbUtilities dbConn = new DbUtilities();
-                dbConn.OpenConnection(connector);
+                dbConn.OpenWithConnectionString(connector.ConnectionString);
 
                 RuleModel rule = Common.GetRule(dbConn, predictionParams.PredictionId, _accessDefs);
 
@@ -136,13 +143,13 @@ namespace DatabaseManager.Server.Controllers
             return Ok($"OK");
         }
 
-        private void MakePredictions(RuleModel rule, ConnectParameters connector, DbUtilities dbConn)
+        private void MakePredictions(RuleModel rule, SourceEntity connector, DbUtilities dbConn)
         {
             QcRuleSetup qcSetup = new QcRuleSetup();
-            qcSetup.Database = connector.Database;
-            qcSetup.DatabasePassword = connector.DatabasePassword;
+            qcSetup.Database = connector.DatabaseName;
+            qcSetup.DatabasePassword = connector.Password;
             qcSetup.DatabaseServer = connector.DatabaseServer;
-            qcSetup.DatabaseUser = connector.DatabaseUser;
+            qcSetup.DatabaseUser = connector.User;
             string jsonRules = JsonConvert.SerializeObject(rule);
             qcSetup.RuleObject = jsonRules;
             string predictionURL = rule.RuleFunction;
