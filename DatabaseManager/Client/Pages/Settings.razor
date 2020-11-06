@@ -12,6 +12,12 @@
     string AzureStorage;
     CookieParameters cookieParams = new CookieParameters();
 
+    protected override async Task OnInitializedAsync()
+    {
+        CookieParameters cookieParams = await cookies.GetCookie();
+        AzureStorage = cookieParams.Value;
+    }
+
     private async Task Save()
     {
         if (!string.IsNullOrEmpty(AzureStorage))
@@ -19,7 +25,14 @@
             await cookies.DeleteCookie();
             cookieParams.Value = AzureStorage;
             await cookies.CreateCookie(cookieParams);
-            client.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
+            if (client.DefaultRequestHeaders.Remove("AzureStorageConnection"))
+            {
+                client.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
+            }
+            else
+            {
+                Console.WriteLine("Problems removing old azure storage connection value");
+            }
         }
         navigationManager.NavigateTo("/");
     }

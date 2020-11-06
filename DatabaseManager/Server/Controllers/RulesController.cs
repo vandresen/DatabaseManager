@@ -43,21 +43,20 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}")]
         public async Task<ActionResult<string>> Get(string source)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
+            SetStorageAccount();
             string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
             List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
 
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
+            SourceEntity connector = new SourceEntity();
+            connector = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+            //ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             string result = "";
             DbUtilities dbConn = new DbUtilities();
             try
             {
-                dbConn.OpenConnection(connector);
+                dbConn.OpenWithConnectionString(connector.ConnectionString);
                 string select = ruleAccessDef.Select;
                 string query = "";
                 DataTable dt = dbConn.GetDataTable(select, query);
@@ -75,21 +74,20 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}/{id:int}")]
         public async Task<ActionResult<string>> GetRule(string source, int id)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
+            SetStorageAccount();
             string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
             List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
 
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
+            SourceEntity connector = new SourceEntity();
+            connector = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+            //ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
             if (connector == null) return BadRequest();
             string result = "";
             DbUtilities dbConn = new DbUtilities();
             try
             {
-                dbConn.OpenConnection(connector);
+                dbConn.OpenWithConnectionString(connector.ConnectionString);
                 string select = ruleAccessDef.Select;
                 string query = $" where Id = {id}";
                 DataTable dt = dbConn.GetDataTable(select, query);
@@ -111,6 +109,7 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
+                SetStorageAccount();
                 List<PredictionEntity> predictionEntities = await tableStorageService.GetTableRecords<PredictionEntity>(predictionContainer);
                 List<PredictionSet> predictionSets = new List<PredictionSet>();
                 foreach (PredictionEntity entity in predictionEntities)
@@ -134,8 +133,7 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                fileStorageService.SetConnectionString(tmpConnString);
+                SetStorageAccount();
                 ruleName = ruleName + ".json";
                 string result = await fileStorageService.ReadFile(ruleShare, ruleName);
                 if (string.IsNullOrEmpty(result))
@@ -155,8 +153,7 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("RuleInfo/{source}")]
         public async Task<ActionResult<RuleInfo>> GetRuleInfo(string source)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            fileStorageService.SetConnectionString(tmpConnString);
+            SetStorageAccount();
             string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
             List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             RuleInfo ruleInfo = new RuleInfo();
@@ -175,21 +172,19 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost("{source}")]
         public async Task<ActionResult<string>> SaveRule(string source, RuleModel rule)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
+            SetStorageAccount();
             string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
             List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
 
             if (rule == null) return BadRequest();
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
+            SourceEntity connector = new SourceEntity();
+            connector = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
             if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
             try
             {
-                dbConn.OpenConnection(connector);
+                dbConn.OpenWithConnectionString(connector.ConnectionString);
                 RuleUtilities.SaveRule(dbConn, rule, ruleAccessDef);
             }
             catch (Exception ex)
@@ -207,10 +202,7 @@ namespace DatabaseManager.Server.Controllers
             if (rules == null) return BadRequest();
             try
             {
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                fileStorageService.SetConnectionString(tmpConnString);
-                tableStorageService.SetConnectionString(tmpConnString);
-
+                SetStorageAccount();
                 PredictionEntity tmpEntity = await tableStorageService.GetTableRecord<PredictionEntity>(predictionContainer, RuleName);
                 if (tmpEntity != null)
                 {
@@ -238,15 +230,14 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> UpdateRule(string source, int id, RuleModel rule)
         {
             if (rule == null) return BadRequest();
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
+            SetStorageAccount();
+            SourceEntity connector = new SourceEntity();
+            connector = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
             if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
             try
             {
-                dbConn.OpenConnection(connector);
+                dbConn.OpenWithConnectionString(connector.ConnectionString);
                 string select = "Select * from pdo_qc_rules ";
                 string query = $"where Id = {id}";
                 DataTable dt = dbConn.GetDataTable(select, query);
@@ -272,15 +263,14 @@ namespace DatabaseManager.Server.Controllers
         [HttpDelete("{source}/{id}")]
         public async Task<ActionResult> Delete(string source, int id)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
+            SetStorageAccount();
+            SourceEntity connector = new SourceEntity();
+            connector = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
             if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
             try
             {
-                dbConn.OpenConnection(connector);
+                dbConn.OpenWithConnectionString(connector.ConnectionString);
                 string select = "Select * from pdo_qc_rules ";
                 string query = $"where Id = {id}";
                 DataTable dt = dbConn.GetDataTable(select, query);
@@ -312,9 +302,7 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                fileStorageService.SetConnectionString(tmpConnString);
-                tableStorageService.SetConnectionString(tmpConnString);
+                SetStorageAccount();
                 await tableStorageService.DeleteTable(predictionContainer, RuleName);
                 string ruleFile = RuleName + ".json";
                 await fileStorageService.DeleteFile(ruleShare, ruleFile);
@@ -325,6 +313,13 @@ namespace DatabaseManager.Server.Controllers
             }
             
             return NoContent();
+        }
+
+        private void SetStorageAccount()
+        {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            fileStorageService.SetConnectionString(tmpConnString);
+            tableStorageService.SetConnectionString(tmpConnString);
         }
     }
 }

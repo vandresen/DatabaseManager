@@ -67,10 +67,20 @@ else
     {
         try
         {
+            string currentHeader = "";
+            if (client.DefaultRequestHeaders.Contains("AzureStorageConnection"))
+            {
+                currentHeader = client.DefaultRequestHeaders.GetValues("AzureStorageConnection").FirstOrDefault();
+            }
+            Console.WriteLine(currentHeader);
             CookieParameters cookieParams = await cookies.GetCookie();
+            Console.WriteLine(cookieParams.Value);
             if (!string.IsNullOrEmpty(cookieParams.Value))
             {
-                client.DefaultRequestHeaders.Add("AzureStorageConnection", cookieParams.Value);
+                if (cookieParams.Value != currentHeader)
+                {
+                    client.DefaultRequestHeaders.Add("AzureStorageConnection", cookieParams.Value);
+                }
             }
             ConnectParameters = await dataSources.GetSources();
             foreach (ConnectParameters conn in ConnectParameters)
