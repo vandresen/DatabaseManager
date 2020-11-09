@@ -35,6 +35,23 @@
             <ValidationMessage For="@(() => RuleToEdit.RuleFilter)" />
         </div>
     </div>
+    @if (type == "Predictions")
+    {
+        <div class="form-group">
+            <label>Fail Rule:</label>
+            <div>
+                <InputText class="form-control" @bind-Value="RuleToEdit.FailRule" />
+                <ValidationMessage For="@(() => RuleToEdit.FailRule)" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Prediction Order:</label>
+            <div>
+                <InputNumber class="form-control" @bind-Value="RuleToEdit.PredictionOrder" />
+                <ValidationMessage For="@(() => RuleToEdit.PredictionOrder)" />
+            </div>
+        </div>
+    }
     <div class="form-group">
         <label>Description:</label>
         <div>
@@ -57,14 +74,14 @@
     [Parameter] public RuleModel RuleToEdit { get; set; }
     [Parameter] public RuleInfo DataRef { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
-    //private List<string> DataTypeOptions;
     private List<string> DataAttributeOptions;
     private bool dataAttributeMenu = true;
+    private string type;
 
     protected override void OnInitialized()
     {
         DataAttributeOptions = GetAttributes(DataRef.DataAttributes[RuleToEdit.DataType]);
-        string type = RuleToEdit.RuleType;
+        type = RuleToEdit.RuleType;
         if (type == "Predictions" || type == "Entirety" || type == "Uniqueness") dataAttributeMenu = false;
     }
 
