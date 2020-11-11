@@ -42,6 +42,7 @@ namespace DatabaseManager.Shared
 
         public string RuleFilter { get; set; }
 
+        [ValidateFailRule]
         public string FailRule { get; set; }
 
         public int PredictionOrder { get; set; }
