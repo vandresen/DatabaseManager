@@ -28,49 +28,6 @@ namespace DatabaseManager.Server.Services
             }
         }
 
-        public async Task<ConnectParameters> GetTable(string container, string name)
-        {
-            ConnectParameters connector = new ConnectParameters();
-            CloudTable table = GetTableConnect(connectionString, container);
-            TableOperation retrieveOperation = TableOperation.Retrieve<SourceEntity>("PPDM", name);
-            TableResult result = await table.ExecuteAsync(retrieveOperation);
-            SourceEntity entity = result.Result as SourceEntity;
-            if (entity == null) 
-            {
-                Exception error = new Exception($"Source name is empty");
-                throw error;
-            }
-            connector.SourceName = name;
-            connector.Database = entity.DatabaseName;
-            connector.DatabaseServer = entity.DatabaseServer;
-            connector.DatabaseUser = entity.User;
-            connector.DatabasePassword = entity.Password;
-            connector.ConnectionString = entity.ConnectionString;
-            return connector;
-        }
-
-        public async Task<List<ConnectParameters>> ListTable(string container, string dataAccessDef)
-        {
-            List<ConnectParameters> connectors = new List<ConnectParameters>();
-            CloudTable table = GetTableConnect(connectionString, container);
-            TableQuery<SourceEntity> tableQuery = new TableQuery<SourceEntity>().
-                Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, "PPDM"));
-            foreach (SourceEntity entity in table.ExecuteQuery(tableQuery))
-            {
-                connectors.Add(new ConnectParameters()
-                {
-                    SourceName = entity.RowKey,
-                    Database = entity.DatabaseName,
-                    DatabaseServer = entity.DatabaseServer,
-                    DatabasePassword = entity.Password,
-                    ConnectionString = entity.ConnectionString,
-                    DatabaseUser = entity.User,
-                    DataAccessDefinition = dataAccessDef
-                });
-            }
-            return connectors;
-        }
-
         public async Task<List<T>> GetTableRecords<T>(string container) where T : ITableEntity, new()
         {
             List<T> data = new List<T>();
@@ -90,27 +47,27 @@ namespace DatabaseManager.Server.Services
             return data;
         }
 
-        public async Task SaveTable(string container, ConnectParameters connectParameters)
-        {
-            CloudTable table = GetTableConnect(connectionString, container);
-            await table.CreateIfNotExistsAsync();
-            string name = connectParameters.SourceName;
-            if (String.IsNullOrEmpty(name))
-            {
-                Exception error = new Exception($"Source name is empty");
-                throw error;
-            }
-            SourceEntity sourceEntity = new SourceEntity(name)
-            {
-                DatabaseName = connectParameters.Database,
-                DatabaseServer = connectParameters.DatabaseServer,
-                User = connectParameters.DatabaseUser,
-                Password = connectParameters.DatabasePassword,
-                ConnectionString = connectParameters.ConnectionString
-            };
-            TableOperation insertOperation = TableOperation.Insert(sourceEntity);
-            await table.ExecuteAsync(insertOperation);
-        }
+        //public async Task SaveTable(string container, ConnectParameters connectParameters)
+        //{
+        //    CloudTable table = GetTableConnect(connectionString, container);
+        //    await table.CreateIfNotExistsAsync();
+        //    string name = connectParameters.SourceName;
+        //    if (String.IsNullOrEmpty(name))
+        //    {
+        //        Exception error = new Exception($"Source name is empty");
+        //        throw error;
+        //    }
+        //    SourceEntity sourceEntity = new SourceEntity(name)
+        //    {
+        //        DatabaseName = connectParameters.Database,
+        //        DatabaseServer = connectParameters.DatabaseServer,
+        //        User = connectParameters.DatabaseUser,
+        //        Password = connectParameters.DatabasePassword,
+        //        ConnectionString = connectParameters.ConnectionString
+        //    };
+        //    TableOperation insertOperation = TableOperation.Insert(sourceEntity);
+        //    await table.ExecuteAsync(insertOperation);
+        //}
 
         public async Task SaveTableRecord<T>(string container, string name, T data) where T: TableEntity
         {

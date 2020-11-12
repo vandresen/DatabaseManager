@@ -9,6 +9,7 @@ namespace DatabaseManager.Shared
     {
         [Required]
         public string SourceName { get; set; }
+        public string SourceType { get; set; }
         [Required]
         public string Database { get; set; }
         [Required]
@@ -16,6 +17,9 @@ namespace DatabaseManager.Shared
         public string DatabaseUser { get; set; }
         public string DatabasePassword { get; set; }
         public string ConnectionString { get; set; }
+        public string DataType { get; set; }
+        public string FileShare { get; set; }
+        public string FileName { get; set; }
         public string DataAccessDefinition { get; set; }
     }
 }
