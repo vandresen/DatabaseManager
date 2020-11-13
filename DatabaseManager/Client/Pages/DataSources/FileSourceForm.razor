@@ -1,0 +1,52 @@
+﻿<EditForm Model="ConnectParameters" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label>Name:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@ConnectParameters.SourceName" readonly="@ReadOnlySourceName" />
+            <ValidationMessage For="@(() => ConnectParameters.SourceName)" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Datatype:</label>
+        <select @bind="ConnectParameters.DataType">
+            @foreach (var option in DataTypeOptions)
+            {
+                <option>@option</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Fileshare:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@ConnectParameters.FileShare" />
+            <ValidationMessage For="@(() => ConnectParameters.FileShare)" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>File name:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@ConnectParameters.FileName" />
+            <ValidationMessage For="@(() => ConnectParameters.FileName)" />
+        </div>
+    </div>
+
+    <button class="btn btn-success" type="submit">Save Changes</button>
+</EditForm>
+
+@code {
+    [Parameter] public ConnectParameters ConnectParameters { get; set; }
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+    [Parameter] public bool ReadOnlySourceName { get; set; }
+    [Parameter] public string Type { get; set; }
+
+    private List<string> DataTypeOptions = new List<string> { "Logs", "WellBores", "MarkerPicks" };
+
+    protected override void OnInitialized()
+    {
+        ConnectParameters.SourceType = Type;
+    }
+}

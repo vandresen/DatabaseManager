@@ -97,7 +97,11 @@ namespace DatabaseManager.Server.Services
                 DatabaseServer = connectParameters.DatabaseServer,
                 User = connectParameters.DatabaseUser,
                 Password = connectParameters.DatabasePassword,
-                ConnectionString = connectParameters.ConnectionString
+                ConnectionString = connectParameters.ConnectionString,
+                SourceType = connectParameters.SourceType,
+                FileName = connectParameters.FileName,
+                FileShare = connectParameters.FileShare,
+                DataType = connectParameters.DataType
             };
             TableOperation insertOrMergeOperation = TableOperation.InsertOrMerge(sourceEntity);
             TableResult result = await table.ExecuteAsync(insertOrMergeOperation);

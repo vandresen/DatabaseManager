@@ -1,20 +1,26 @@
-﻿@page "/datasources/create"
+﻿@page "/datasources/create/{SourceType}"
 @inject IDataSources dataSources
 @inject NavigationManager navigationManager
 
 <h3>Create Data Connector</h3>
+@if (SourceType == "File")
+{
+    <FileSourceForm ConnectParameters="connectParameters" Type="@SourceType" OnValidSubmit="Create" />
+}
+else
+{
+    <DataSourceForm ConnectParameters="connectParameters" Type="@SourceType" OnValidSubmit="Create" />
+}
 
-<DataSourceForm ConnectParameters="connectParameters" OnValidSubmit="Create" />
 
 @code {
+    [Parameter] public string SourceType { get; set; }
     private ConnectParameters connectParameters = new ConnectParameters();
 
     private async Task Create()
     {
         string connectStr = Common.GetConnectionString(connectParameters);
         connectParameters.ConnectionString = connectStr;
-        Console.WriteLine("Create connector");
-        Console.WriteLine(connectStr);
         try
         {
             await dataSources.CreateSource(connectParameters);

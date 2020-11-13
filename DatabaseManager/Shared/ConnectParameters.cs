@@ -10,9 +10,9 @@ namespace DatabaseManager.Shared
         [Required]
         public string SourceName { get; set; }
         public string SourceType { get; set; }
-        [Required]
+        [ValidateDatabase]
         public string Database { get; set; }
-        [Required]
+        [ValidateDatabase]
         public string DatabaseServer { get; set; }
         public string DatabaseUser { get; set; }
         public string DatabasePassword { get; set; }

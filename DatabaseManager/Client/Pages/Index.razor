@@ -20,7 +20,6 @@
 }
 else
 {
-    @*<ConnectorSelector Options="options" SelectedConnector="Selected"/>*@
     <GenericSelector Options="options" Selection="Selected" Label="Choose Connector" />
 }
 
@@ -85,7 +84,7 @@ else
             ConnectParameters = await dataSources.GetSources();
             foreach (ConnectParameters conn in ConnectParameters)
             {
-                options.Add(conn.SourceName);
+                if (conn.SourceType != "File") options.Add(conn.SourceName);
             }
             if (!string.IsNullOrEmpty(singleton.TargetConnector))
             {

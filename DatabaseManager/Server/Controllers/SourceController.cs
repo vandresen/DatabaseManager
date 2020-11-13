@@ -53,7 +53,8 @@ namespace DatabaseManager.Server.Controllers
                         DatabasePassword = entity.Password,
                         ConnectionString = entity.ConnectionString,
                         DatabaseUser = entity.User,
-                        DataAccessDefinition = dataAccessDef
+                        DataAccessDefinition = dataAccessDef,
+                        SourceType = entity.SourceType
                     });
                 }
             }
@@ -83,6 +84,10 @@ namespace DatabaseManager.Server.Controllers
                 connector.ConnectionString = entity.ConnectionString;
                 connector.DatabaseUser = entity.User;
                 connector.DataAccessDefinition = dataAccessDef;
+                connector.SourceType = entity.SourceType;
+                connector.DataType = entity.DataType;
+                connector.FileShare = entity.FileShare;
+                connector.FileName = entity.FileName;
             }
             catch (Exception ex)
             {
@@ -120,7 +125,11 @@ namespace DatabaseManager.Server.Controllers
                     DatabaseServer = connectParameters.DatabaseServer,
                     User = connectParameters.DatabaseUser,
                     Password = connectParameters.DatabasePassword,
-                    ConnectionString = connectParameters.ConnectionString
+                    ConnectionString = connectParameters.ConnectionString,
+                    SourceType = connectParameters.SourceType,
+                    FileShare = connectParameters.FileShare,
+                    DataType = connectParameters.DataType,
+                    FileName = connectParameters.FileName
                 };
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 tableStorageService.SetConnectionString(tmpConnString);

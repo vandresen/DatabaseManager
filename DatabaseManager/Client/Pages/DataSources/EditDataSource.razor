@@ -6,7 +6,14 @@
 
 @if (connectParameters != null)
 {
-    <DataSourceForm ConnectParameters="connectParameters" OnValidSubmit="Edit" ReadOnlySourceName="true"/>
+    if (connectParameters.SourceType == "File")
+    {
+        <FileSourceForm ConnectParameters="connectParameters" OnValidSubmit="Edit" ReadOnlySourceName="true" />
+    }
+    else
+    {
+        <DataSourceForm ConnectParameters="connectParameters" OnValidSubmit="Edit" ReadOnlySourceName="true" />
+    }
 }
 
 @code {
