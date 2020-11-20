@@ -12,6 +12,7 @@ using Microsoft.Extensions.Azure;
 using Azure.Storage.Queues;
 using Azure.Storage.Blobs;
 using Azure.Core.Extensions;
+using AutoMapper;
 
 namespace DatabaseManager.Server
 {
@@ -26,6 +27,7 @@ namespace DatabaseManager.Server
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddAutoMapper(typeof(Startup));
             services.AddScoped<IFileStorageService, AzureFileStorageService>();
             services.AddScoped<ITableStorageService, AzureTableStorageService>();
 

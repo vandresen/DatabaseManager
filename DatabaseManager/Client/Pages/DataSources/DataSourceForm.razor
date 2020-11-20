@@ -3,15 +3,15 @@
     <div class="form-group">
         <label>Name:</label>
         <div>
-            <InputText class="form-control" @bind-Value="@ConnectParameters.SourceName" readonly="@ReadOnlySourceName"/>
+            <InputText class="form-control" @bind-Value="@ConnectParameters.SourceName" readonly="@ReadOnlySourceName" />
             <ValidationMessage For="@(() => ConnectParameters.SourceName)" />
         </div>
     </div>
     <div class="form-group">
         <label>Database Name:</label>
         <div>
-            <InputText class="form-control" @bind-Value="@ConnectParameters.Database" />
-            <ValidationMessage For="@(() => ConnectParameters.Database)" />
+            <InputText class="form-control" @bind-Value="@ConnectParameters.Catalog" />
+            <ValidationMessage For="@(() => ConnectParameters.Catalog)" />
         </div>
     </div>
     <div class="form-group">
@@ -24,18 +24,25 @@
     <div class="form-group">
         <label>User Name:</label>
         <div>
-            <InputText class="form-control" @bind-Value="@ConnectParameters.DatabaseUser" />
-            <ValidationMessage For="@(() => ConnectParameters.DatabaseUser)" />
+            <InputText class="form-control" @bind-Value="@ConnectParameters.User" />
+            <ValidationMessage For="@(() => ConnectParameters.User)" />
         </div>
     </div>
     <div class="form-group">
         <label>Password:</label>
         <div>
-            <InputText class="form-control" @bind-Value="@ConnectParameters.DatabasePassword" />
-            <ValidationMessage For="@(() => ConnectParameters.DatabasePassword)" />
+            <InputText class="form-control" @bind-Value="@ConnectParameters.Password" />
+            <ValidationMessage For="@(() => ConnectParameters.Password)" />
         </div>
     </div>
-    
+    <div class="form-group">
+        <label>Command timeout:</label>
+        <div>
+            <InputNumber class="form-control" @bind-Value="ConnectParameters.CommandTimeOut" />
+            <ValidationMessage For="@(() => ConnectParameters.CommandTimeOut)" />
+        </div>
+    </div>
+
     <button class="btn btn-success" type="submit">Save Changes</button>
 </EditForm>
 

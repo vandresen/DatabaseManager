@@ -12,6 +12,7 @@ using DatabaseManager.Server.Entities;
 using System.Data;
 using Newtonsoft.Json;
 using DatabaseManager.Server.Services;
+using AutoMapper;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -22,14 +23,20 @@ namespace DatabaseManager.Server.Controllers
         private string connectionString;
         private readonly string container = "sources";
         private readonly IFileStorageService fileStorageService;
+        private readonly ITableStorageService tableStorageService;
+        private readonly IMapper mapper;
         private readonly IWebHostEnvironment _env;
 
         public FunctionsController(IConfiguration configuration,
             IFileStorageService fileStorageService,
+            ITableStorageService tableStorageService,
+            IMapper mapper,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
+            this.tableStorageService = tableStorageService;
+            this.mapper = mapper;
             _env = env;
         }
 
@@ -37,17 +44,13 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> Get(string source)
         {
             string tmpConnString = Request.Headers["AzureStorageConnection"];
-
+            tableStorageService.SetConnectionString(tmpConnString);
             fileStorageService.SetConnectionString(tmpConnString);
             string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
             List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
-
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
+            SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+            ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
             string result = "";
             DbUtilities dbConn = new DbUtilities();
             try
@@ -70,22 +73,18 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}/{id:int}")]
         public async Task<ActionResult<string>> GetFunction(string source, int id)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-
-            fileStorageService.SetConnectionString(tmpConnString);
-            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
-
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
             string result = "";
             DbUtilities dbConn = new DbUtilities();
             try
             {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                tableStorageService.SetConnectionString(tmpConnString);
+                fileStorageService.SetConnectionString(tmpConnString);
+                string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+                DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 dbConn.OpenConnection(connector);
                 string select = functionAccessDef.Select;
                 string query = $" where Id = {id}";
@@ -107,21 +106,17 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> SaveFunction(string source, RuleFunctions function)
         {
             if (function == null) return BadRequest();
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-
-            fileStorageService.SetConnectionString(tmpConnString);
-            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
-
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
             try
             {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                tableStorageService.SetConnectionString(tmpConnString);
+                fileStorageService.SetConnectionString(tmpConnString);
+                string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+                DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 dbConn.OpenConnection(connector);
                 string select = functionAccessDef.Select;
                 string query = $" where FunctionName = '{function.FunctionName}'";
@@ -145,21 +140,17 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> UpdateFunction(string source, int id, RuleFunctions function)
         {
             if (function == null) return BadRequest();
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-
-            fileStorageService.SetConnectionString(tmpConnString);
-            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
-
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
             try
             {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                tableStorageService.SetConnectionString(tmpConnString);
+                fileStorageService.SetConnectionString(tmpConnString);
+                string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+                DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 dbConn.OpenConnection(connector);
                 string select = functionAccessDef.Select;
                 string query = $" where Id = {id}";
@@ -187,20 +178,17 @@ namespace DatabaseManager.Server.Controllers
         [HttpDelete("{source}/{id}")]
         public async Task<ActionResult> Delete(string source, int id)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-
-            fileStorageService.SetConnectionString(tmpConnString);
-            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
-
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
             try
             {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                tableStorageService.SetConnectionString(tmpConnString);
+                fileStorageService.SetConnectionString(tmpConnString);
+                string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+                DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 dbConn.OpenConnection(connector);
                 string select = functionAccessDef.Select;
                 string query = $" where Id = {id}";

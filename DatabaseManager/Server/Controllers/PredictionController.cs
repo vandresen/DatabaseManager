@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using AutoMapper;
 using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Helpers;
 using DatabaseManager.Server.Services;
@@ -30,6 +31,7 @@ namespace DatabaseManager.Server.Controllers
         private readonly string container = "sources";
         private readonly IFileStorageService fileStorageService;
         private readonly ITableStorageService tableStorageService;
+        private readonly IMapper mapper;
         private readonly ILogger<PredictionController> logger;
         private readonly IWebHostEnvironment _env;
         List<DataAccessDef> _accessDefs;
@@ -41,12 +43,14 @@ namespace DatabaseManager.Server.Controllers
         public PredictionController(IConfiguration configuration,
             IFileStorageService fileStorageService,
             ITableStorageService tableStorageService,
+            IMapper mapper,
             ILogger<PredictionController> logger,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
             this.tableStorageService = tableStorageService;
+            this.mapper = mapper;
             this.logger = logger;
             _env = env;
         }
@@ -54,16 +58,14 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}")]
         public async Task<ActionResult<List<PredictionCorrection>>> Get(string source)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
             List<PredictionCorrection> predictionResuls = new List<PredictionCorrection>();
             try
             {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                tableStorageService.SetConnectionString(tmpConnString);
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 fileStorageService.SetConnectionString(tmpConnString);
                 string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
                 _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
@@ -82,18 +84,15 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}/{id}")]
         public async Task<ActionResult<string>> GetPredictions(string source, int id)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
-            dbConn.OpenConnection(connector);
-
             string result = "[]";
             try
             {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                tableStorageService.SetConnectionString(tmpConnString);
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
+                dbConn.OpenConnection(connector);
                 fileStorageService.SetConnectionString(tmpConnString);
                 string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
                 _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
@@ -121,11 +120,10 @@ namespace DatabaseManager.Server.Controllers
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 fileStorageService.SetConnectionString(tmpConnString);
                 tableStorageService.SetConnectionString(tmpConnString);
-                SourceEntity connector = new SourceEntity();
-                connector = await tableStorageService.GetTableRecord<SourceEntity>(container, predictionParams.DataConnector);
-                if (connector == null) return BadRequest();
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, predictionParams.DataConnector);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 DbUtilities dbConn = new DbUtilities();
-                dbConn.OpenWithConnectionString(connector.ConnectionString);
+                dbConn.OpenConnection(connector);
 
                 RuleModel rule = Common.GetRule(dbConn, predictionParams.PredictionId, _accessDefs);
 
@@ -143,10 +141,10 @@ namespace DatabaseManager.Server.Controllers
             return Ok($"OK");
         }
 
-        private void MakePredictions(RuleModel rule, SourceEntity connector, DbUtilities dbConn)
+        private void MakePredictions(RuleModel rule, ConnectParameters connector, DbUtilities dbConn)
         {
             QcRuleSetup qcSetup = new QcRuleSetup();
-            qcSetup.Database = connector.DatabaseName;
+            qcSetup.Database = connector.Catalog;
             qcSetup.DatabasePassword = connector.Password;
             qcSetup.DatabaseServer = connector.DatabaseServer;
             qcSetup.DatabaseUser = connector.User;

@@ -81,7 +81,6 @@ namespace DatabaseManager.Server.Helpers
                     if ((wellCounter % 1000) == 0)
                     {
                         var tmp = wellCounter;
-                        //Console.WriteLine("Processing line {0}", wellCounter);
                     }
                     string[] fields = csvParser.ReadFields();
                     string key = GetDataKey(fields, attributes);
@@ -92,9 +91,6 @@ namespace DatabaseManager.Server.Helpers
                     }
                     else
                     {
-                        //DataRow[] rows = dt.Select(key);
-
-                        //if (rows.Length == 1)
                         if (duplicates.ContainsKey(duplicateKey))
                         {
                             DataRow[] rows = dt.Select(key);

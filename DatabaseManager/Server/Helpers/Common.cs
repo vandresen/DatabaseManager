@@ -36,10 +36,10 @@ namespace DatabaseManager.Server.Helpers
             else
             {
                 connector.SourceName = name;
-                connector.Database = entity.DatabaseName;
+                connector.Catalog = entity.Catalog;
                 connector.DatabaseServer = entity.DatabaseServer;
-                connector.DatabaseUser = entity.User;
-                connector.DatabasePassword = entity.Password;
+                connector.User = entity.User;
+                connector.Password = entity.Password;
                 connector.ConnectionString = entity.ConnectionString;
             }
             return connector;

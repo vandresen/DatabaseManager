@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Helpers;
 using DatabaseManager.Server.Services;
@@ -27,16 +28,19 @@ namespace DatabaseManager.Server.Controllers
         private readonly string predictionContainer = "predictions";
         private readonly IFileStorageService fileStorageService;
         private readonly ITableStorageService tableStorageService;
+        private readonly IMapper mapper;
         private readonly IWebHostEnvironment _env;
 
         public RulesController(IConfiguration configuration,
             IFileStorageService fileStorageService,
             ITableStorageService tableStorageService,
+            IMapper mapper,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
             this.tableStorageService = tableStorageService;
+            this.mapper = mapper;
             _env = env;
         }
 
@@ -47,16 +51,14 @@ namespace DatabaseManager.Server.Controllers
             string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
             List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
-
-            SourceEntity connector = new SourceEntity();
-            connector = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-            //ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
             string result = "";
             DbUtilities dbConn = new DbUtilities();
             try
             {
-                dbConn.OpenWithConnectionString(connector.ConnectionString);
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
+                if (connector == null) return BadRequest();
+                dbConn.OpenConnection(connector);
                 string select = ruleAccessDef.Select;
                 string query = "";
                 DataTable dt = dbConn.GetDataTable(select, query);
@@ -78,16 +80,14 @@ namespace DatabaseManager.Server.Controllers
             string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
             List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
-
-            SourceEntity connector = new SourceEntity();
-            connector = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-            //ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
             string result = "";
             DbUtilities dbConn = new DbUtilities();
             try
             {
-                dbConn.OpenWithConnectionString(connector.ConnectionString);
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
+                if (connector == null) return BadRequest();
+                dbConn.OpenConnection(connector);
                 string select = ruleAccessDef.Select;
                 string query = $" where Id = {id}";
                 DataTable dt = dbConn.GetDataTable(select, query);
@@ -176,15 +176,14 @@ namespace DatabaseManager.Server.Controllers
             string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
             List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
-
             if (rule == null) return BadRequest();
-            SourceEntity connector = new SourceEntity();
-            connector = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-            if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
             try
             {
-                dbConn.OpenWithConnectionString(connector.ConnectionString);
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
+                if (connector == null) return BadRequest();
+                dbConn.OpenConnection(connector);
                 RuleUtilities.SaveRule(dbConn, rule, ruleAccessDef);
             }
             catch (Exception ex)
@@ -230,14 +229,14 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> UpdateRule(string source, int id, RuleModel rule)
         {
             if (rule == null) return BadRequest();
-            SetStorageAccount();
-            SourceEntity connector = new SourceEntity();
-            connector = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-            if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
             try
             {
-                dbConn.OpenWithConnectionString(connector.ConnectionString);
+                SetStorageAccount();
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
+                if (connector == null) return BadRequest();
+                dbConn.OpenConnection(connector);
                 string select = "Select * from pdo_qc_rules ";
                 string query = $"where Id = {id}";
                 DataTable dt = dbConn.GetDataTable(select, query);
@@ -263,14 +262,14 @@ namespace DatabaseManager.Server.Controllers
         [HttpDelete("{source}/{id}")]
         public async Task<ActionResult> Delete(string source, int id)
         {
-            SetStorageAccount();
-            SourceEntity connector = new SourceEntity();
-            connector = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-            if (connector == null) return BadRequest();
-            DbUtilities dbConn = new DbUtilities();
             try
             {
-                dbConn.OpenWithConnectionString(connector.ConnectionString);
+                SetStorageAccount();
+                DbUtilities dbConn = new DbUtilities();
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
+                if (connector == null) return BadRequest();
+                dbConn.OpenConnection(connector);
                 string select = "Select * from pdo_qc_rules ";
                 string query = $"where Id = {id}";
                 DataTable dt = dbConn.GetDataTable(select, query);
@@ -283,6 +282,7 @@ namespace DatabaseManager.Server.Controllers
                 {
                     return BadRequest();
                 }
+                dbConn.CloseConnection();
             }
             catch (Exception)
             {

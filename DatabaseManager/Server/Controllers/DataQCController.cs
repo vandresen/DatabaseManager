@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using AutoMapper;
 using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Extensions;
 using DatabaseManager.Server.Helpers;
@@ -29,6 +30,7 @@ namespace DatabaseManager.Server.Controllers
         private readonly string container = "sources";
         private readonly IFileStorageService fileStorageService;
         private readonly ITableStorageService tableStorageService;
+        private readonly IMapper mapper;
         private readonly IWebHostEnvironment _env;
         private List<DataAccessDef> _accessDefs;
         private DataAccessDef _indexAccessDef;
@@ -38,28 +40,28 @@ namespace DatabaseManager.Server.Controllers
         public DataQCController(IConfiguration configuration,
             IFileStorageService fileStorageService,
             ITableStorageService tableStorageService,
+            IMapper mapper,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
             this.tableStorageService = tableStorageService;
+            this.mapper = mapper;
             _env = env;
         }
 
         [HttpGet("{source}")]
         public async Task<ActionResult<List<QcResult>>> Get(string source)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
             List<QcResult> qcResults = new List<QcResult>();
             try
             {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
                 fileStorageService.SetConnectionString(tmpConnString);
+                tableStorageService.SetConnectionString(tmpConnString);
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
                 _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
                 dbConn.OpenConnection(connector);
@@ -77,19 +79,16 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}/{id}")]
         public async Task<ActionResult<string>> GetFailures(string source, int id)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
-            dbConn.OpenConnection(connector);
-
             string result = "[]";
             try
             {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
                 fileStorageService.SetConnectionString(tmpConnString);
+                tableStorageService.SetConnectionString(tmpConnString);
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
+                dbConn.OpenConnection(connector);
                 string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
                 _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
                 RuleModel rule = GetRule(dbConn, id);
@@ -99,8 +98,7 @@ namespace DatabaseManager.Server.Controllers
             {
                 return BadRequest();
             }
-            
-
+       
             dbConn.CloseConnection();
             return result;
         }
@@ -116,11 +114,10 @@ namespace DatabaseManager.Server.Controllers
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 fileStorageService.SetConnectionString(tmpConnString);
                 tableStorageService.SetConnectionString(tmpConnString);
-                SourceEntity connector = new SourceEntity();
-                connector = await tableStorageService.GetTableRecord<SourceEntity>(container, qcParams.DataConnector);
-                if (connector == null) return BadRequest();
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, qcParams.DataConnector);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 DbUtilities dbConn = new DbUtilities();
-                dbConn.OpenWithConnectionString(connector.ConnectionString);
+                dbConn.OpenConnection(connector);
 
                 RuleModel rule = GetRule(dbConn, qcParams.RuleId);
 
@@ -144,10 +141,10 @@ namespace DatabaseManager.Server.Controllers
             return Ok($"OK");
         }
 
-        private async Task QualityCheckDataType(DbUtilities dbConn, RuleModel rule, SourceEntity connector)
+        private async Task QualityCheckDataType(DbUtilities dbConn, RuleModel rule, ConnectParameters connector)
         {
             QcRuleSetup qcSetup = new QcRuleSetup();
-            qcSetup.Database = connector.DatabaseName;
+            qcSetup.Database = connector.Catalog;
             qcSetup.DatabasePassword = connector.Password;
             qcSetup.DatabaseServer = connector.DatabaseServer;
             qcSetup.DatabaseUser = connector.User;

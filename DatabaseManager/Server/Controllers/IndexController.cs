@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Helpers;
+using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,25 +21,30 @@ namespace DatabaseManager.Server.Controllers
     {
         private string connectionString;
         private readonly string container = "sources";
+        private readonly ITableStorageService tableStorageService;
+        private readonly IMapper mapper;
 
-        public IndexController(IConfiguration configuration)
+        public IndexController(IConfiguration configuration,
+            ITableStorageService tableStorageService,
+            IMapper mapper
+            )
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
+            this.tableStorageService = tableStorageService;
+            this.mapper = mapper;
         }
 
         [HttpGet("{source}")]
         public async Task<ActionResult<List<DmsIndex>>> Get(string source)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
             DbUtilities dbConn = new DbUtilities();
             List<DmsIndex> index = new List<DmsIndex>();
             try
             {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                tableStorageService.SetConnectionString(tmpConnString);
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 dbConn.OpenConnection(connector);
                 DbQueries dbq = new DbQueries();
                 string select = dbq["Index"];
@@ -73,11 +80,9 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> GetChildren(string source, int id)
         {
             string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
-            ConnectParameters connector = Common.GetConnectParameters(connectionString, container, source);
-            if (connector == null) return BadRequest();
+            tableStorageService.SetConnectionString(tmpConnString);
+            SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+            ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
             DbUtilities dbConn = new DbUtilities();
             dbConn.OpenConnection(connector);
             DbQueries dbq = new DbQueries();

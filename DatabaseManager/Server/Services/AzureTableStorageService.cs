@@ -47,28 +47,6 @@ namespace DatabaseManager.Server.Services
             return data;
         }
 
-        //public async Task SaveTable(string container, ConnectParameters connectParameters)
-        //{
-        //    CloudTable table = GetTableConnect(connectionString, container);
-        //    await table.CreateIfNotExistsAsync();
-        //    string name = connectParameters.SourceName;
-        //    if (String.IsNullOrEmpty(name))
-        //    {
-        //        Exception error = new Exception($"Source name is empty");
-        //        throw error;
-        //    }
-        //    SourceEntity sourceEntity = new SourceEntity(name)
-        //    {
-        //        DatabaseName = connectParameters.Database,
-        //        DatabaseServer = connectParameters.DatabaseServer,
-        //        User = connectParameters.DatabaseUser,
-        //        Password = connectParameters.DatabasePassword,
-        //        ConnectionString = connectParameters.ConnectionString
-        //    };
-        //    TableOperation insertOperation = TableOperation.Insert(sourceEntity);
-        //    await table.ExecuteAsync(insertOperation);
-        //}
-
         public async Task SaveTableRecord<T>(string container, string name, T data) where T: TableEntity
         {
             CloudTable table = GetTableConnect(connectionString, container);
@@ -82,27 +60,27 @@ namespace DatabaseManager.Server.Services
             await table.ExecuteAsync(insertOperation);
         }
 
-        public async Task UpdateTable(string container, ConnectParameters connectParameters)
+        public async Task UpdateTable(string container, SourceEntity sourceEntity)
         {
             CloudTable table = GetTableConnect(connectionString, container);
-            string name = connectParameters.SourceName;
-            if (String.IsNullOrEmpty(name))
-            {
-                Exception error = new Exception($"Source name is empty");
-                throw error;
-            }
-            SourceEntity sourceEntity = new SourceEntity(name)
-            {
-                DatabaseName = connectParameters.Database,
-                DatabaseServer = connectParameters.DatabaseServer,
-                User = connectParameters.DatabaseUser,
-                Password = connectParameters.DatabasePassword,
-                ConnectionString = connectParameters.ConnectionString,
-                SourceType = connectParameters.SourceType,
-                FileName = connectParameters.FileName,
-                FileShare = connectParameters.FileShare,
-                DataType = connectParameters.DataType
-            };
+            //string name = connectParameters.RowKey;
+            //if (String.IsNullOrEmpty(name))
+            //{
+            //    Exception error = new Exception($"Source name is empty");
+            //    throw error;
+            //}
+            //SourceEntity sourceEntity = new SourceEntity(name)
+            //{
+            //    DatabaseName = connectParameters.Database,
+            //    DatabaseServer = connectParameters.DatabaseServer,
+            //    User = connectParameters.DatabaseUser,
+            //    Password = connectParameters.DatabasePassword,
+            //    ConnectionString = connectParameters.ConnectionString,
+            //    SourceType = connectParameters.SourceType,
+            //    FileName = connectParameters.FileName,
+            //    FileShare = connectParameters.FileShare,
+            //    DataType = connectParameters.DataType
+            //};
             TableOperation insertOrMergeOperation = TableOperation.InsertOrMerge(sourceEntity);
             TableResult result = await table.ExecuteAsync(insertOrMergeOperation);
         }

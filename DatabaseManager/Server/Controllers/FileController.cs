@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Helpers;
 using DatabaseManager.Server.Services;
@@ -23,14 +24,20 @@ namespace DatabaseManager.Server.Controllers
         private readonly string connectionString;
         private readonly string container = "sources";
         private readonly IFileStorageService fileStorageService;
+        private readonly ITableStorageService tableStorageService;
+        private readonly IMapper mapper;
         private readonly IWebHostEnvironment _env;
 
         public FileController(IConfiguration configuration,
             IFileStorageService fileStorageService,
+            ITableStorageService tableStorageService,
+            IMapper mapper,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
+            this.tableStorageService = tableStorageService;
+            this.mapper = mapper;
             _env = env;
         }
 
@@ -58,7 +65,9 @@ namespace DatabaseManager.Server.Controllers
             {
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 fileStorageService.SetConnectionString(tmpConnString);
-                ConnectParameters connector = Common.GetConnectParameters(connectionString, container, fileParams.DataConnector);
+                tableStorageService.SetConnectionString(tmpConnString);
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, fileParams.DataConnector);
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
 
                 string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
                 List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
