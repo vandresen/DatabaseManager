@@ -1,5 +1,5 @@
-﻿@page "/ppdmtoppdm"
-@inject IDatabaseTransfer databaseTransfer
+﻿@page "/transferdata"
+@inject IDataTransfer dataTransfer
 @inject SingletonServices singleton
 
 <h2>PPDM to PPDM Data Transfer</h2>
@@ -8,7 +8,7 @@
 <TransferParametersForm TransferParameters="transferParameters" OnValidSubmit="StartDatabaseTransfer" />
 
 <div style="margin-top:20px">
-    <ProgressBar ValueNow="barValue"/>
+    <ProgressBar ValueNow="barValue" />
 </div>
 
 <div>
@@ -19,6 +19,7 @@
 @code {
     private string statusMessage = "Not started";
     private string jsonString = "";
+    private List<string> dataObjects;
     TransferParameters transferParameters = new TransferParameters();
     public int barValue = 0;
 
@@ -26,35 +27,43 @@
     {
         barValue = 0;
         Console.WriteLine("Start database transfer");
-        int barInt = 50 / DatabaseTables.Names.Count;
-        foreach (string tableName in DatabaseTables.Names)
+        string source = transferParameters.SourceName;
+        transferParameters.TargetName = singleton.TargetConnector;
+        dataObjects = await dataTransfer.GetDataObjects(source);
+        int barInt = 50 / dataObjects.Count;
+        if (transferParameters.SourceType == "DataBase")
         {
-            transferParameters.Table = tableName;
-            transferParameters.TargetName = singleton.TargetConnector;
-            progress($"Deleting from {tableName}");
-            try
+            foreach (string tableName in dataObjects)
             {
-                await databaseTransfer.Delete(transferParameters);
-                barValue = barValue + barInt;
+                transferParameters.Table = tableName;
+
+                progress($"Deleting from {tableName}");
+                try
+                {
+                    await dataTransfer.DeleteTable(source, tableName);
+                    barValue = barValue + barInt;
+                }
+                catch (Exception ex)
+                {
+                    progress($"Error Deleting from {tableName}: {ex.Message}");
+                    return;
+                }
             }
-            catch (Exception ex)
-            {
-                progress($"Error Deleting from {tableName}: {ex.Message}");
-                return;
-            }
+            barInt = 50 / dataObjects.Count;
+        }
+        else
+        {
+            barInt = 100 / dataObjects.Count;
         }
 
-        barInt = 50 / CopyTables.dictionary.Count;
-        foreach (var table in CopyTables.dictionary)
+        foreach (string tableName in dataObjects)
         {
-            string tableName = table.Key;
             transferParameters.Table = tableName;
             try
             {
                 string tmpQuery = transferParameters.TransferQuery;
-                if (table.Value == "REFERENCE") transferParameters.TransferQuery = "";
                 progress($"Copying table {tableName}");
-                await databaseTransfer.Copy(transferParameters);
+                await dataTransfer.Copy(transferParameters);
                 transferParameters.TransferQuery = tmpQuery;
                 barValue = barValue + barInt;
             }

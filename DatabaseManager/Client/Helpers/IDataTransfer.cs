@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 
 namespace DatabaseManager.Client.Helpers
 {
-    public interface IDatabaseTransfer
+    public interface IDataTransfer
     {
         Task Copy(TransferParameters transferParameters);
-        Task Delete(TransferParameters transferParameters);
+        Task DeleteTable(string source, string table);
+        Task<List<string>> GetDataObjects(string source);
     }
 }

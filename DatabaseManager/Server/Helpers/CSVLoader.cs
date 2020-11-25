@@ -1,5 +1,7 @@
 ﻿using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Extensions;
+using DatabaseManager.Server.Services;
+using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.SqlClient;
 using Microsoft.VisualBasic.FileIO;
@@ -25,31 +27,24 @@ namespace DatabaseManager.Server.Helpers
         private string connectionString;
         private DataTable dt;
         SqlDataAdapter dataAdapter;
+        private readonly IFileStorageService fileStorageService;
 
-        public CSVLoader(IWebHostEnvironment env, 
-            List<DataAccessDef> dataDef, 
-            List<ReferenceTable> references,
-            List<CSVAccessDef> csvDef)
+        public CSVLoader(IFileStorageService fileStorageService)
         {
-            try
-            {
-                string contentRootPath = env.ContentRootPath;
-
-                _references = references;
-                _dataDef = dataDef;
-                _csvDef = csvDef;
-            }
-            catch (Exception ex)
-            {
-                Exception error = new Exception("Read refernce table file error: ", ex);
-                throw error;
-            }
-
+            this.fileStorageService = fileStorageService;
         }
 
-        public void LoadCSVFile(string conn, string csvText, string dataType)
+        public async Task LoadCSVFile(ConnectParameters source, ConnectParameters target, string fileName)
         {
-            connectionString = conn;
+            connectionString = target.ConnectionString;
+            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            string referenceJson = await fileStorageService.ReadFile("connectdefinition", "PPDMReferenceTables.json");
+            _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(referenceJson);
+            string csvJson = await fileStorageService.ReadFile("connectdefinition", "CSVDataAccess.json");
+            _csvDef = JsonConvert.DeserializeObject<List<CSVAccessDef>>(csvJson);
+            string csvText = await fileStorageService.ReadFile(source.Catalog, fileName);
+            string dataType = source.DataType.Remove(source.DataType.Length-1, 1);
             dataAccess = _dataDef.First(x => x.DataType == dataType);
             InitDataTable(dataType);
 

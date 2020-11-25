@@ -1,4 +1,5 @@
 ﻿using DatabaseManager.Server.Entities;
+using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.SqlClient;
@@ -24,32 +25,32 @@ namespace DatabaseManager.Server.Helpers
         private List<ReferenceTable> _references = new List<ReferenceTable>();
         private List<DataAccessDef> _dataDef = new List<DataAccessDef>();
         private string connectionString;
+        private readonly IFileStorageService fileStorageService;
+        private readonly ITableStorageService tableStorageService;
 
-        public LASLoader(IWebHostEnvironment env, List<DataAccessDef> dataDef, List<ReferenceTable> references)
+        public LASLoader(IFileStorageService fileStorageService,
+            ITableStorageService tableStorageService)
         {
-            try
-            {
-                _dbConn = new DbUtilities();
-                _nullRepresentation = "-999.25";
-                _references = references;
-                _dataDef = dataDef;
-            }
-            catch (Exception ex)
-            {
-                Exception error = new Exception("Error starting LAS loader: ", ex);
-                throw error;
-            }
+            _dbConn = new DbUtilities();
+            _nullRepresentation = "-999.25";
+            this.fileStorageService = fileStorageService;
+            this.tableStorageService = tableStorageService;
         }
 
-        public void LoadLASFile(ConnectParameters connector, string fileText)
+        public async Task LoadLASFile(ConnectParameters source, ConnectParameters target, string fileName)
         {
-            connectionString = connector.ConnectionString;
+            connectionString = target.ConnectionString;
+            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            string referenceJson = await fileStorageService.ReadFile("connectdefinition", "PPDMReferenceTables.json");
+            _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(referenceJson);
 
             string versionInfo = "";
             string wellInfo = "";
             string curveInfo = "";
             string parameterInfo = "";
             string dataInfo = "";
+            string fileText = await fileStorageService.ReadFile(source.Catalog, fileName);
             string[] sections = fileText.Split("~", StringSplitOptions.RemoveEmptyEntries);
             foreach (string section in sections)
             {
@@ -61,7 +62,7 @@ namespace DatabaseManager.Server.Helpers
                 if (flag == "A") dataInfo = section;
             }
 
-            _dbConn.OpenConnection(connector);
+            _dbConn.OpenConnection(target);
 
             GetVersionInfo(versionInfo);
             GetHeaderInfo(wellInfo);

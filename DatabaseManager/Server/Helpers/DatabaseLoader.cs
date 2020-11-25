@@ -1,72 +1,30 @@
-﻿using System;
+﻿using DatabaseManager.Shared;
+using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
-using DatabaseManager.Server.Helpers;
-using DatabaseManager.Shared;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
-namespace DatabaseManager.Server.Controllers
+namespace DatabaseManager.Server.Helpers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CopyController : ControllerBase
+    public class DatabaseLoader
     {
-        private string connectionString;
-        private readonly string container = "sources";
-        private readonly ILogger<CopyController> logger;
-
-        public CopyController(IConfiguration configuration, ILogger<CopyController> logger)
+        public DatabaseLoader()
         {
-            connectionString = configuration.GetConnectionString("AzureStorageConnection");
-            this.logger = logger;
+
         }
 
-        [HttpPost]
-        public ActionResult Copy(TransferParameters transferParameters)
+        public void CopyTable(TransferParameters transferParameters, string sourceCnStr, string destCnStr)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
-            if (string.IsNullOrEmpty(connectionString)) return NotFound("Connection string is not set");
-
-            string message = "";
-            string table = transferParameters.Table;
-            try
-            {
-                CopyTable(transferParameters);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.ToString());
-            }
-
-            message = $"{table} has been copied";
-            return Ok(message);
-        }
-
-        private void CopyTable(TransferParameters transferParameters)
-        {
-            ConnectParameters destination = Common.GetConnectParameters(connectionString, container,
-                transferParameters.TargetName);
-            string destCnStr = destination.ConnectionString;
-
-            ConnectParameters source = Common.GetConnectParameters(connectionString, container,
-                transferParameters.SourceName);
-            string sourceCnStr = source.ConnectionString;
-
             string table = transferParameters.Table;
             SqlConnection sourceConn = new SqlConnection(sourceCnStr);
             SqlConnection destinationConn = new SqlConnection(destCnStr);
             try
-            {   
+            {
                 sourceConn.Open();
                 destinationConn.Open();
                 BulkCopy(sourceConn, destinationConn, transferParameters);
-                
+
             }
             catch (Exception ex)
             {
@@ -84,7 +42,8 @@ namespace DatabaseManager.Server.Controllers
         {
             string sql = "";
             string table = transferParameters.Table;
-            string query = transferParameters.TransferQuery;
+            string query = "";
+            if (CopyTables.dictionary[table] == "TABLE") query = transferParameters.TransferQuery;
             if (string.IsNullOrEmpty(query))
             {
                 sql = $"select * from {table}";
@@ -95,7 +54,7 @@ namespace DatabaseManager.Server.Controllers
                 InsertQueryData(source, transferParameters);
                 sql = $"select * from {table} where UWI in (select UWI from #PDOList)";
             }
-            
+
             using (SqlCommand cmd = new SqlCommand(sql, source))
             {
                 try
@@ -166,6 +125,5 @@ namespace DatabaseManager.Server.Controllers
 
             }
         }
-
     }
 }

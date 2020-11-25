@@ -64,5 +64,7 @@
     private void Selected(string selectedString)
     {
         TransferParameters.SourceName = selectedString;
+        ConnectParameters connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
+        TransferParameters.SourceType = connector.SourceType;
     }
 }

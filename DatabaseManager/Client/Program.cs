@@ -26,7 +26,6 @@ namespace DatabaseManager.Client
             services.AddOptions();
             services.AddSingleton<SingletonServices>();
             services.AddScoped<IHttpService, HttpService>();
-            services.AddScoped<IDatabaseTransfer, DatabaseTransfer>();
             services.AddScoped<IDataSources, DataSources>();
             services.AddScoped<IDataModelCreate, DataModelCreate>();
             services.AddScoped<ICreateIndex, CreateIndex>();
@@ -37,6 +36,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IDataQc, DataQc>();
             services.AddScoped<IPrediction, Prediction>();
             services.AddScoped<ICookies, Cookies>();
+            services.AddScoped<IDataTransfer, DataTransfer>();
             services.AddScoped<IDisplayMessage, DisplayMessage>();
         }
     }
