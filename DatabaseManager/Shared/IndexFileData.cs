@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
@@ -16,6 +17,8 @@ namespace DatabaseManager.Shared
         public string LatitudeAttribute { get; set; }
 
         public string LongitudeAttribute { get; set; }
+
+        public JToken Arrays { get; set; }
 
         public Boolean UseParentLocation { get; set; }
 

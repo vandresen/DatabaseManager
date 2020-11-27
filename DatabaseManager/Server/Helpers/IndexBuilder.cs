@@ -117,6 +117,10 @@ namespace DatabaseManager.Server.Helpers
             idxDataObject.LongitudeAttribute = token["LongitudeAttribute"]?.ToString();
             idxDataObject.ParentKey = token["ParentKey"]?.ToString();
             if (token["UseParentLocation"] != null) idxDataObject.UseParentLocation = (Boolean)token["UseParentLocation"];
+            if (token["Arrays"] != null)
+            {
+                idxDataObject.Arrays = token["Arrays"];
+            }
             return idxDataObject;
         }
 
@@ -173,6 +177,7 @@ namespace DatabaseManager.Server.Helpers
             string dataKey = GetDataKey(dataRow, keys);
             string jsonData = Common.ConvertDataRowToJson(dataRow, _currentItem.DataTable);
             string qcLocation = GetQcLocation();
+            if (_currentItem.Arrays != null) jsonData = GetArrays(dataRow, jsonData);
             myIndex.Add(new IndexData
             {
                 DataName = name,
@@ -184,6 +189,28 @@ namespace DatabaseManager.Server.Helpers
                 Latitude = lat,
                 Longitude = lon
             });
+        }
+
+        private string GetArrays(DataRow dataRow, string inJson)
+        {
+            string outJson = inJson;
+            foreach (JToken array in _currentItem.Arrays)
+            {
+                string attribute = array["Attribute"].ToString();
+                string select = array["Select"].ToString();
+                string parentKeys = array["ParentKey"].ToString();
+                string query = GetParentKey(dataRow, parentKeys);
+                query = " where " + query;
+                DataTable dt = dbConn.GetDataTable(select, query);
+                if (dt.Rows.Count == 1)
+                {
+                    string result = dt.Rows[0]["ARRAY"].ToString();
+                    JObject dataObject = JObject.Parse(outJson);
+                    dataObject[attribute] = result;
+                    outJson = dataObject.ToString();
+                }
+            }
+            return outJson;
         }
 
         private double GetLocation(DataRow dr, string attribute)
