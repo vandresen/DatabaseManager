@@ -87,9 +87,9 @@ namespace DatabaseManager.Server.Helpers
                     logHeader.Add(attribute.Trim(), "");
                 }
                 logHeader["NULL_REPRESENTATION"] = _nullRepresentation;
-                logHeader["VALUE_COUNT"] = "99999.0";
-                logHeader["MAX_INDEX"] = "99999.0";
-                logHeader["MIN_INDEX"] = "99999.0";
+                logHeader["VALUE_COUNT"] = "-99999.0";
+                logHeader["MAX_INDEX"] = "-99999.0";
+                logHeader["MIN_INDEX"] = "-99999.0";
                 logHeader["UWI"] = _uwi;
                 logHeader["ROW_CREATED_BY"] = _dbConn.GetUsername();
                 logHeader["ROW_CHANGED_BY"] = _dbConn.GetUsername();
