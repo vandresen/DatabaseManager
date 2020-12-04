@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using static DatabaseManager.Server.Helpers.RuleMethodUtilities;
 
 namespace DatabaseManager.Server.Helpers
 {
@@ -145,6 +146,54 @@ namespace DatabaseManager.Server.Helpers
                     returnStatus = "Failed";
                 }
             }
+
+            return returnStatus;
+        }
+
+        public static string CurveSpikes(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
+        {
+            string returnStatus = "Passed";
+            string error = "";
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+            JObject dataObject = JObject.Parse(qcSetup.DataObject);
+            double nullValue = Common.GetLogNullValue(dataObject.ToString());
+            CurveSpikeParameters spikeParams = new CurveSpikeParameters() 
+            {
+                WindowSize = 5,
+                SeveritySize = 4
+            };
+            if (!string.IsNullOrEmpty(rule.RuleParameters))
+            {
+                try
+                {
+                    spikeParams = JsonConvert.DeserializeObject<CurveSpikeParameters>(rule.RuleParameters);
+                    if (spikeParams.WindowSize == 0) spikeParams.WindowSize = 5;
+                    if (spikeParams.SeveritySize == 0) spikeParams.SeveritySize = 4;
+                }
+                catch (Exception ex)
+                {
+                    error = $"Bad Json, {ex}";
+                }
+                
+            } 
+            spikeParams.NullValue = nullValue;
+            List<double> measuredValues = new List<double>();
+            try
+            {
+                JToken value = dataObject.GetValue("MEASURED_VALUE");
+                string strValue = value.ToString();
+                if (!string.IsNullOrEmpty(strValue))
+                {
+                    measuredValues = strValue.Split(',').Select(double.Parse).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                error = $"Problems with the log arrays, {ex}";
+            }
+            
+            bool spike = RuleMethodUtilities.CurveHasSpikes(measuredValues, spikeParams);
+            if (spike) returnStatus = "Failed";
 
             return returnStatus;
         }

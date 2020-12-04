@@ -122,6 +122,30 @@ namespace DatabaseManager.Server.Helpers
             return number;
         }
 
+        public static double GetLogNullValue(string jsonData)
+        {
+            double nullValue = -999.2500;
+            JObject json = JObject.Parse(jsonData);
+            JToken jsonToken = json["NULL_REPRESENTATION"];
+            if (jsonToken is null)
+            {
+                Console.WriteLine("Error: NULL value is null");
+            }
+            else
+            {
+                if (double.TryParse(jsonToken.ToString(), out double value))
+                {
+                    nullValue = value;
+                }
+                else
+                {
+                    Console.WriteLine("Error: Not a proper null number");
+                }
+
+            }
+            return nullValue;
+        }
+
         public static string CompletenessCheck(string strValue)
         {
             string status = "Passed";
@@ -139,6 +163,18 @@ namespace DatabaseManager.Server.Helpers
                 }
             }
             return status;
+        }
+
+        public static double CalculateStdDev(List<double> values)
+        {
+            double stdDev = 0;
+            if (values.Count > 2)
+            {
+                double average = values.Average();
+                double sum = values.Sum(d => Math.Pow(d - average, 2));
+                stdDev = Math.Sqrt((sum) / (values.Count() - 1));
+            }
+            return stdDev;
         }
 
         public static RuleModel GetRule(DbUtilities dbConn, int id, List<DataAccessDef> accessDefs)

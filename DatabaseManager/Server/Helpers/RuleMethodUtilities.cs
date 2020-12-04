@@ -17,6 +17,13 @@ namespace DatabaseManager.Server.Helpers
             public double Depth { get; set; }
         }
 
+        public class CurveSpikeParameters
+        {
+            public int WindowSize { get; set; }
+            public int SeveritySize { get; set; }
+            public double NullValue { get; set; }
+        }
+
         public static DataTable GetNeighbors(DbUtilities dbConn, QcRuleSetup qcSetup)
         {
             int indexId = qcSetup.IndexId;
@@ -123,6 +130,60 @@ namespace DatabaseManager.Server.Helpers
                 if (strValue != strRefValue) status = "Failed";
             } 
             return status;
+        }
+
+        public static bool CurveHasSpikes(List<double> curveValues, CurveSpikeParameters spikeParams)
+        {
+            Boolean spike = false;
+            if (curveValues.Count() > 0)
+            {
+                for (int i = 0; i < curveValues.Count(); i++)
+                {
+                    if (curveValues[i] != spikeParams.NullValue)
+                    {
+                        List<double> windowLogValues = GetWindowLogValues(curveValues, i, spikeParams);
+                        if (windowLogValues.Count > 2)
+                        {
+
+                            spike = GetSpikes(curveValues[i], windowLogValues, spikeParams);
+                            if (spike)
+                            {
+                               break;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                //Console.WriteLine("Error: no log values");
+            }
+            return spike;
+        }
+
+        private static List<double> GetWindowLogValues(List<double> value, int idx, CurveSpikeParameters spikeParams)
+        {
+            List<double> logValues = new List<double>();
+            int start = idx - spikeParams.WindowSize;
+            if (start < 0) start = 0;
+            int end = idx + spikeParams.WindowSize + 1;
+            if (end > value.Count()) end = value.Count();
+            for (int i = start; i < end; i++)
+            {
+                if (value[i] != spikeParams.NullValue) logValues.Add(value[i]);
+            }
+            return logValues;
+        }
+
+        private static Boolean GetSpikes(double value, List<double> windowValues, CurveSpikeParameters spikeParams)
+        {
+            Boolean spike = false;
+            double deviation = Common.CalculateStdDev(windowValues);
+            double average = windowValues.Average();
+            double spikeFactor = deviation * spikeParams.SeveritySize;
+            if (value < average - spikeFactor) spike = true;
+            if (value > average + spikeFactor) spike = true;
+            return spike;
         }
     }
 }
