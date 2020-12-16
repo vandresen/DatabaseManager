@@ -8,5 +8,6 @@ namespace DatabaseManager.Shared
     {
         public string Key { get; set; }
         public string Value { get; set; }
+        public int ExpirationDays { get; set; }
     }
 }

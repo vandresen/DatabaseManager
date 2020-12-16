@@ -54,7 +54,8 @@ else
     protected async Task StartIndex()
     {
         progress("Starting indexing...");
-        iParameters= await createIndex.GetTaxonomy(TaxonomyFile);
+        iParameters = new CreateIndexParameters();
+        iParameters.Taxonomy = TaxonomyFile;
         iParameters.DataConnector = singleton.TargetConnector;
         iParameters.IndexName = "Default";
         barValue = 1;

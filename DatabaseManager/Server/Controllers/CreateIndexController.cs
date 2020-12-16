@@ -67,7 +67,7 @@ namespace DatabaseManager.Server.Controllers
             try
             {
                 parms.Taxonomy = await fileStorageService.ReadFile("taxonomy", name);
-                parms.ConnectDefinition = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                //parms.ConnectDefinition = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
             }
             catch (Exception ex)
             {
@@ -84,15 +84,14 @@ namespace DatabaseManager.Server.Controllers
             string tmpConnString = Request.Headers["AzureStorageConnection"];
             if (iParameters == null) return BadRequest();
             if (string.IsNullOrEmpty(iParameters.Taxonomy)) return BadRequest();
-            if (string.IsNullOrEmpty(iParameters.ConnectDefinition)) return BadRequest();
             List<ParentIndexNodes> nodes = new List<ParentIndexNodes>();
             try
             {
                 fileStorageService.SetConnectionString(tmpConnString);
                 tableStorageService.SetConnectionString(tmpConnString);
                 IndexBuilder iBuilder = new IndexBuilder();
-                string jsonTaxonomy = iParameters.Taxonomy;
-                string jsonConnectDef = iParameters.ConnectDefinition;
+                string jsonTaxonomy = await fileStorageService.ReadFile("taxonomy", iParameters.Taxonomy);
+                string jsonConnectDef = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
                 SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, iParameters.DataConnector);
                 ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 iBuilder.InitializeIndex(connector, jsonTaxonomy, jsonConnectDef);

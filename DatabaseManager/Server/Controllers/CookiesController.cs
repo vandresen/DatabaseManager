@@ -34,10 +34,10 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                //string key = "MyCookie";
-                //string value = "Test";
+                int expires = cookieParams.ExpirationDays;
+                if (expires < 1) expires = 1;
                 CookieOptions cookieOptions = new CookieOptions();
-                cookieOptions.Expires = DateTime.Now.AddDays(7);
+                cookieOptions.Expires = DateTime.Now.AddDays(expires);
                 Response.Cookies.Append(key, cookieParams.Value, cookieOptions);
             }
             catch (Exception ex)
