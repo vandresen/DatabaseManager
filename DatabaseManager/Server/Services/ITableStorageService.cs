@@ -15,6 +15,6 @@ namespace DatabaseManager.Server.Services
         Task<List<T>> GetTableRecords<T>(string container) where T : ITableEntity, new();
         Task SaveTableRecord<T>(string container, string name, T data) where T : TableEntity;
         void SetConnectionString(string connection);
-        Task UpdateTable(string container, SourceEntity sourceEntity);
+        Task UpdateTable<T>(string container, T data) where T : TableEntity;
     }
 }

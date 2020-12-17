@@ -60,28 +60,10 @@ namespace DatabaseManager.Server.Services
             await table.ExecuteAsync(insertOperation);
         }
 
-        public async Task UpdateTable(string container, SourceEntity sourceEntity)
+        public async Task UpdateTable<T>(string container, T data) where T: TableEntity
         {
             CloudTable table = GetTableConnect(connectionString, container);
-            //string name = connectParameters.RowKey;
-            //if (String.IsNullOrEmpty(name))
-            //{
-            //    Exception error = new Exception($"Source name is empty");
-            //    throw error;
-            //}
-            //SourceEntity sourceEntity = new SourceEntity(name)
-            //{
-            //    DatabaseName = connectParameters.Database,
-            //    DatabaseServer = connectParameters.DatabaseServer,
-            //    User = connectParameters.DatabaseUser,
-            //    Password = connectParameters.DatabasePassword,
-            //    ConnectionString = connectParameters.ConnectionString,
-            //    SourceType = connectParameters.SourceType,
-            //    FileName = connectParameters.FileName,
-            //    FileShare = connectParameters.FileShare,
-            //    DataType = connectParameters.DataType
-            //};
-            TableOperation insertOrMergeOperation = TableOperation.InsertOrMerge(sourceEntity);
+            TableOperation insertOrMergeOperation = TableOperation.InsertOrMerge(data);
             TableResult result = await table.ExecuteAsync(insertOrMergeOperation);
         }
 

@@ -29,14 +29,8 @@
             cookieParams.Value = AzureStorage;
             cookieParams.ExpirationDays = ExpirationDays;
             await cookies.CreateCookie(cookieParams);
-            if (client.DefaultRequestHeaders.Remove("AzureStorageConnection"))
-            {
-                client.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
-            }
-            else
-            {
-                Console.WriteLine("Problems removing old azure storage connection value");
-            }
+            client.DefaultRequestHeaders.Remove("AzureStorageConnection");
+            client.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
         }
         navigationManager.NavigateTo("/");
     }
