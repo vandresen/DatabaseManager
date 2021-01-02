@@ -109,11 +109,11 @@ namespace DatabaseManager.Server.Controllers
             try
             {
                 if (qcParams == null) return BadRequest();
-                _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(qcParams.DataAccessDefinitions);
-
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 fileStorageService.SetConnectionString(tmpConnString);
                 tableStorageService.SetConnectionString(tmpConnString);
+                string jsonConnectDef = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(jsonConnectDef);
                 SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, qcParams.DataConnector);
                 ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 DbUtilities dbConn = new DbUtilities();
