@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using DatabaseManager.Client.Helpers;
 using System.Net.Http;
+using BlazorTable;
 
 namespace DatabaseManager.Client
 {
@@ -38,6 +39,7 @@ namespace DatabaseManager.Client
             services.AddScoped<ICookies, Cookies>();
             services.AddScoped<IDataTransfer, DataTransfer>();
             services.AddScoped<IDisplayMessage, DisplayMessage>();
+            services.AddBlazorTable();
         }
     }
 }
