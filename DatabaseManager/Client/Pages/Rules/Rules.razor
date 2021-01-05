@@ -27,62 +27,27 @@
     </div>
 </div>
 
-
-
-@if (RuleList == null)
-{
-    <text>Loading...</text>
-}
-else
-{
-    <GenericList List="RuleList">
-        <WholeListTemplate>
-            <table class="table table-striped table-bordered">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>Data Type</th>
-                        <th>Category</th>
-                        <th>Rule Name</th>
-                        <th>Active</th>
-                        <th>Rule Key</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in rulePagination)
-                    {
-                        <tr>
-                            <td>
-                                <a class="btn btn-success" href="/rules/edit/@singleton.TargetConnector/@item.Id">Edit</a>
-                                <button class="btn btn-danger" @onclick="@(() => RuleDelete(item.Id))">Delete</button>
-                            </td>
-                            <td>@item.DataType</td>
-                            <td>@item.RuleType</td>
-                            <td>@item.RuleName</td>
-                            <td>@item.Active</td>
-                            <td>@item.RuleKey</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-            <Pagination CurrentPage="@curPage" TotalAmountPages="totalPages"
-                        SelectedPage="SelectedPage" />
-        </WholeListTemplate>
-    </GenericList>
-}
+    
+<Table TableItem="RuleModel" Items="RuleList" PageSize="@pageSize" ColumnReorder="true">
+    <Column TableItem="RuleModel" Title="Action" Sortable="false">
+        <Template>
+            <a class="btn btn-success" href="/rules/edit/@singleton.TargetConnector/@context.Id">Edit</a>
+            <button class="btn btn-danger" @onclick="@(() => RuleDelete(context.Id))">Delete</button>
+        </Template>
+    </Column>
+    <Column TableItem="RuleModel" Title="Data Type" Field="@(x => x.DataType)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
+    <Column TableItem="RuleModel" Title="Category" Field="@(x => x.RuleType)" Sortable="true" Filterable="true"></Column>
+    <Column TableItem="RuleModel" Title="Rule Name" Field="@(x => x.RuleName)" Sortable="true" Filterable="true"></Column>
+    <Column TableItem="RuleModel" Title="Active" Field="@(x => x.Active)" Sortable="true" Filterable="true"></Column>
+    <Column TableItem="RuleModel" Title="Rule Key" Field="@(x => x.RuleKey)" Sortable="true" Filterable="true"></Column>
+    <Pager ShowPageNumber="true" ShowTotalCount="true" />
+</Table>
 
 @code {
-    //private List<string> RuleTypes = new List<string>
-    //{ "Entirety", "Completeness", "Uniqueness ", "Validity", "Predictions" };
     private List<string> RuleTypes;
     List<RuleModel> RuleList;
-    List<RuleModel> rulePagination;
     private bool expandedState = false;
     private string showMenu = null;
-
-    int totalPages;
-    int totalRecords;
-    int curPage = 1;
     int pageSize = 10;
 
     protected override async Task OnInitializedAsync()
@@ -101,9 +66,7 @@ else
                 RuleTypes.Add(item.Key);
             }
             RuleList = await rules.GetRules(singleton.TargetConnector);
-            rulePagination = GetPage((curPage - 1) * pageSize, pageSize);
-            totalRecords = RuleList.Count();
-            totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
+            Console.WriteLine(RuleList.Count);
         }
         catch (Exception ex)
         {
@@ -113,25 +76,9 @@ else
 
     private async Task RuleDelete(int id)
     {
-        Console.WriteLine(id);
         await rules.DeleteRule(singleton.TargetConnector, id);
         RuleList = await rules.GetRules(singleton.TargetConnector);
-        rulePagination = GetPage((curPage - 1) * pageSize, pageSize);
         this.StateHasChanged();
-    }
-
-    private async Task SelectedPage(int page)
-    {
-        curPage = page;
-        rulePagination = GetPage((curPage - 1) * pageSize, pageSize);
-        this.StateHasChanged();
-    }
-
-    private List<RuleModel> GetPage(int page, int size)
-    {
-        List<RuleModel> rl = new List<RuleModel>();
-        rl = RuleList.Skip(page).Take(size).ToList();
-        return rl;
     }
 
     private void ToggleDropdownMenu()
