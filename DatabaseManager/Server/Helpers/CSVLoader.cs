@@ -77,30 +77,38 @@ namespace DatabaseManager.Server.Helpers
                     {
                         var tmp = wellCounter;
                     }
-                    string[] fields = csvParser.ReadFields();
-                    string key = GetDataKey(fields, attributes);
-                    string duplicateKey = GetDuplicateKey(fields, attributes);
-                    if (string.IsNullOrEmpty(key))
+
+                    try
                     {
-                        //Console.WriteLine($"Well {wellCounter} has an empty key");
-                    }
-                    else
-                    {
-                        if (duplicates.ContainsKey(duplicateKey))
+                        string[] fields = csvParser.ReadFields();
+                        string key = GetDataKey(fields, attributes);
+                        string duplicateKey = GetDuplicateKey(fields, attributes);
+                        if (string.IsNullOrEmpty(key))
                         {
-                            DataRow[] rows = dt.Select(key);
-                            rows[0] = InsertCSVRow(rows[0], attributes, fields, columnTypes, constants);
-                            rows[0]["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                            //Console.WriteLine($"Well {wellCounter} has an empty key");
                         }
                         else
                         {
-                            DataRow newRow = dt.NewRow();
-                            newRow = InsertCSVRow(newRow, attributes, fields, columnTypes, constants);
-                            newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
-                            newRow["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
-                            dt.Rows.Add(newRow);
-                            duplicates.Add(duplicateKey, "");
+                            if (duplicates.ContainsKey(duplicateKey))
+                            {
+                                DataRow[] rows = dt.Select(key);
+                                rows[0] = InsertCSVRow(rows[0], attributes, fields, columnTypes, constants);
+                                rows[0]["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                            }
+                            else
+                            {
+                                DataRow newRow = dt.NewRow();
+                                newRow = InsertCSVRow(newRow, attributes, fields, columnTypes, constants);
+                                newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                                newRow["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                                dt.Rows.Add(newRow);
+                                duplicates.Add(duplicateKey, "");
+                            }
                         }
+                    }
+                    catch (Exception)
+                    {
+
                     }
                 }
             }
@@ -128,6 +136,7 @@ namespace DatabaseManager.Server.Helpers
                     if (!string.IsNullOrEmpty(id))
                     {
                         string newId = id;
+                        string tmpId = "";
                         if (newId.Length > keyAttributeLength)
                         {
                             newId = newId.Substring(0, keyAttributeLength);
@@ -135,12 +144,12 @@ namespace DatabaseManager.Server.Helpers
                             {
                                 newId = newId.Substring(0, keyAttributeLength-1);
                             }
-
-                            DataRow[] sl = dt.Select($"{columnName} = '{id}'");
+                            tmpId = Common.FixAposInStrings(id);
+                            DataRow[] sl = dt.Select($"{columnName} = '{tmpId}'");
                             foreach (DataRow r in sl)
                                 r[columnName] = newId;
                         }
-                        string tmpId = Common.FixAposInStrings(newId);
+                        tmpId = Common.FixAposInStrings(newId);
                         string key = $"{referance.KeyAttribute} = '{tmpId}'";
                         DataRow[] rows = rt.Select(key);
                         if (rows.Length == 0)
@@ -174,7 +183,7 @@ namespace DatabaseManager.Server.Helpers
         private void InitDuplicateKeys(string dataType)
         {
             dataAccess = _dataDef.First(x => x.DataType == dataType);
-            string[] keys = dataAccess.Keys.Split(',');
+            string[] keys = dataAccess.Keys.Split(',').Select(key => key.Trim()).ToArray();
             foreach (DataRow row in dt.Rows)
             {
                 string duplicateKey = "";
