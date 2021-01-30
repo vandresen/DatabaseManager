@@ -146,7 +146,8 @@ namespace DatabaseManager.Server.Helpers
 
         public string GetUsername()
         {
-            string sql = "Select ORIGINAL_LOGIN()";
+            //string sql = "Select ORIGINAL_LOGIN()";
+            string sql = @"select stuff(suser_sname(), 1, charindex('\', suser_sname()), '')";
             string userName = "UNKNOWN";
             using (SqlCommand cmd = new SqlCommand(sql, this.sqlCn))
             {

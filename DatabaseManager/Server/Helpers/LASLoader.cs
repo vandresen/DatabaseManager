@@ -116,7 +116,8 @@ namespace DatabaseManager.Server.Helpers
         {
             DataAccessDef dataType = _dataDef.First(x => x.DataType == "Log");
             string select = dataType.Select;
-            string query = $" where UWI = '{_uwi}' and CURVE_ID = '{logName}'";
+            string tmpUwi = Common.FixAposInStrings(_uwi);
+            string query = $" where UWI = '{tmpUwi}' and CURVE_ID = '{logName}'";
             DataTable dt = _dbConn.GetDataTable(select, query);
             if (dt.Rows.Count == 0)
             {
@@ -132,7 +133,8 @@ namespace DatabaseManager.Server.Helpers
         {
             DataAccessDef dataType = _dataDef.First(x => x.DataType == "LogCurve");
             string select = dataType.Select;
-            string query = $" where UWI = '{_uwi}' and CURVE_ID = '{logName}'";
+            string tmpUwi = Common.FixAposInStrings(_uwi);
+            string query = $" where UWI = '{tmpUwi}' and CURVE_ID = '{logName}'";
             DataTable dt = _dbConn.GetDataTable(select, query);
 
             if (dt.Rows.Count == 0)
@@ -153,7 +155,12 @@ namespace DatabaseManager.Server.Helpers
                     newRow["CURVE_ID"] = logName;
                     newRow["SAMPLE_ID"] = i;
                     newRow["INDEX_VALUE"] = _indexValues[i];
-                    newRow["MEASURED_VALUE"] = _curveValues[pointer + (i * logCount)];
+                    double measuredValue = _curveValues[pointer + (i * logCount)];
+                    if (measuredValue < -999999999999999.0 || measuredValue > 999999999999999.0)
+                    {
+                        measuredValue = Convert.ToDouble(_nullRepresentation);
+                    }
+                    newRow["MEASURED_VALUE"] = measuredValue;
                     newRow["ROW_CREATED_BY"] = _dbConn.GetUsername();
                     newRow["ROW_CHANGED_BY"] = _dbConn.GetUsername();
                     newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
@@ -275,8 +282,9 @@ namespace DatabaseManager.Server.Helpers
                 json = CheckHeaderForeignKeys(json, reference);
             }
             DataAccessDef dataType = _dataDef.First(x => x.DataType == "WellBore");
+            string tmpUwi = Common.FixAposInStrings(_uwi);
             string select = dataType.Select;
-            string query = $" where UWI = '{_uwi}'";
+            string query = $" where UWI = '{tmpUwi}'";
             DataTable dt = _dbConn.GetDataTable(select, query);
             if (dt.Rows.Count == 0)
             {
