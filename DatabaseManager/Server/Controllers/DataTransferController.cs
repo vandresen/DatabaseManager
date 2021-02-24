@@ -116,15 +116,15 @@ namespace DatabaseManager.Server.Controllers
             return Ok(message);
         }
 
-        [HttpDelete("{source}/{table}")]
-        public async Task<ActionResult> DeleteTable(string source, string table)
+        [HttpDelete("{target}/{table}")]
+        public async Task<ActionResult> DeleteTable(string target, string table)
         {
             string message = "";
             try
             {
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 tableStorageService.SetConnectionString(tmpConnString);
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, target);
                 ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);

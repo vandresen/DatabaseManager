@@ -28,7 +28,9 @@
         barValue = 0;
         Console.WriteLine("Start database transfer");
         string source = transferParameters.SourceName;
-        transferParameters.TargetName = singleton.TargetConnector;
+        string target = singleton.TargetConnector;
+        transferParameters.TargetName = target;
+        Console.WriteLine($"Target source = {target}");
         dataObjects = await dataTransfer.GetDataObjects(source);
         int barInt = 50 / dataObjects.Count;
         if (transferParameters.SourceType == "DataBase")
@@ -40,7 +42,7 @@
                 progress($"Deleting from {tableName}");
                 try
                 {
-                    await dataTransfer.DeleteTable(source, tableName);
+                    await dataTransfer.DeleteTable(target, tableName);
                     barValue = barValue + barInt;
                 }
                 catch (Exception ex)
