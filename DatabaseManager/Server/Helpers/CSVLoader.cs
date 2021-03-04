@@ -418,6 +418,7 @@ namespace DatabaseManager.Server.Helpers
 
             SqlBulkCopy bulkCopy = new SqlBulkCopy(conn);
             bulkCopy.DestinationTableName = tempTable + "1";
+            bulkCopy.BulkCopyTimeout = 300;
             bulkCopy.WriteToServer(dt);
             DateTime timeEnd = DateTime.Now;
             TimeSpan diff = timeEnd - timeStart;

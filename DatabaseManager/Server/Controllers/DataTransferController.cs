@@ -134,7 +134,8 @@ namespace DatabaseManager.Server.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest();
+                message = ex.Message;
+                return BadRequest(message);
             }
 
             return Ok(message);

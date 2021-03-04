@@ -1,6 +1,7 @@
 ﻿@page "/transferdata"
 @inject IDataTransfer dataTransfer
 @inject SingletonServices singleton
+@inject IDisplayMessage displayMessage
 
 <h2>PPDM to PPDM Data Transfer</h2>
 <br />
@@ -48,6 +49,10 @@
                 catch (Exception ex)
                 {
                     progress($"Error Deleting from {tableName}: {ex.Message}");
+                    if (ex.Message.Contains("Invalid object name"))
+                    {
+                        await displayMessage.DisplayErrorMessage("Table does not exist, have you created the data model?");
+                    }
                     return;
                 }
             }
@@ -71,6 +76,10 @@
             }
             catch (Exception ex)
             {
+                if (ex.Message.Contains("Table does not exist"))
+                {
+                    await displayMessage.DisplayErrorMessage("Table does not exist, have you created the data model?");
+                }
                 progress($"Error copying from {tableName}: {ex.Message}");
                 return;
             }

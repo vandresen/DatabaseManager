@@ -17,6 +17,10 @@ namespace DatabaseManager.Server.Helpers
             string select = $"Select * from INFORMATION_SCHEMA.COLUMNS ";
             string query = $" where TABLE_NAME = '{table}'";
             DataTable dt = dbConn.GetDataTable(select, query);
+            if (dt.Rows.Count == 0)
+            { 
+                throw new ArgumentException("Table does not exist"); 
+            }
 
             string[] sqlAttributes = Common.GetAttributes(sql);
             dt.CaseSensitive = false;
