@@ -77,6 +77,7 @@ namespace DatabaseManager.Server.Controllers
                 else if (dmParameters.ModelOption == "Stored Procedures")
                 {
                     await CreateStoredProcedures(connector);
+                    CreateFunctions(connector);
                 }
                 else if (dmParameters.ModelOption == "PPDM Modifications")
                 {
@@ -122,6 +123,23 @@ namespace DatabaseManager.Server.Controllers
             {
                 Exception error = new Exception("Create DMS Model Error: ", ex);
                 throw error;
+            }
+        }
+
+        private void CreateFunctions(ConnectParameters connector)
+        {
+            string contentRootPath = _env.ContentRootPath;
+            string sqlFile = contentRootPath + @"\DataBase\Functions.sql";
+            string sql = System.IO.File.ReadAllText(sqlFile);
+            string[] commandText = sql.Split(new string[] { String.Format("{0}GO{0}", Environment.NewLine) }, StringSplitOptions.RemoveEmptyEntries);
+            DbUtilities dbConn = new DbUtilities();
+            dbConn.OpenConnection(connector);
+            for (int x = 0; x < commandText.Length; x++)
+            {
+                if (commandText[x].Trim().Length > 0)
+                {
+                    dbConn.SQLExecute(commandText[x]);
+                }
             }
         }
 

@@ -37,43 +37,27 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}")]
         public async Task<ActionResult<List<DmsIndex>>> Get(string source)
         {
-            DbUtilities dbConn = new DbUtilities();
-            List<DmsIndex> index = new List<DmsIndex>();
+            
             try
             {
+                DbUtilities dbConn = new DbUtilities();
+                //List<DmsIndex> index = new List<DmsIndex>();
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 tableStorageService.SetConnectionString(tmpConnString);
                 SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
                 ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 dbConn.OpenConnection(connector);
-                DbQueries dbq = new DbQueries();
-                string select = dbq["Index"];
-                string query = " where INDEXLEVEL = 1";
-                DataTable dt = dbConn.GetDataTable(select, query);
-                foreach (DataRow qcRow in dt.Rows)
-                {
-                    string dataType = qcRow["Dataname"].ToString();
-                    string indexNode = qcRow["Text_IndexNode"].ToString();
-                    int indexId = Convert.ToInt32(qcRow["INDEXID"]);
-                    string strProcedure = $"EXEC spGetDescendants '{indexNode}'";
-                    query = "";
-                    DataTable qc = dbConn.GetDataTable(strProcedure, query);
-                    int nrOfObjects = qc.Rows.Count - 1;
-                    index.Add(new DmsIndex()
-                    {
-                        Id = indexId,
-                        DataType = dataType,
-                        NumberOfDataObjects = nrOfObjects
-                    });
-                }
+                string strProcedure = $"EXEC spGetNumberOfDescendants '/', 1";
+                string query = "";
+                DataTable qc = dbConn.GetDataTable(strProcedure, query);
+                List<DmsIndex>  index = ProcessAllChildren(qc);
+                dbConn.CloseConnection();
+                return index;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return BadRequest();
             }
-
-            dbConn.CloseConnection();
-            return index;
         }
 
         [HttpGet("{source}/{id}")]
@@ -85,29 +69,29 @@ namespace DatabaseManager.Server.Controllers
             ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
             DbUtilities dbConn = new DbUtilities();
             dbConn.OpenConnection(connector);
+
             DbQueries dbq = new DbQueries();
             string select = dbq["Index"];
             string query = $" where INDEXID = {id}";
             DataTable dt = dbConn.GetDataTable(select, query);
             if (dt.Rows.Count == 0)
                 return NotFound();
-            string dataType = dt.Rows[0]["DATATYPE"].ToString();
             string indexNode = dt.Rows[0]["Text_IndexNode"].ToString();
             int indexLevel = Convert.ToInt32(dt.Rows[0]["INDEXLEVEL"]) + 1;
-            query = $" WHERE IndexNode.IsDescendantOf('{indexNode}') = 1 and INDEXLEVEL = {indexLevel}";
-            DataTable idx = dbConn.GetDataTable(select, query);
 
             string result = "[]";
-            if (idx.Rows.Count > 0)
-            {
-                result = ProcessAllChildren(dbConn, idx);
-            }
-
+            
+            string strProcedure = $"EXEC spGetNumberOfDescendants '{indexNode}', {indexLevel}";
+            query = "";
+            DataTable idx = dbConn.GetDataTable(strProcedure, query);
+            List<DmsIndex> qcIndex = ProcessAllChildren(idx);
+ 
             dbConn.CloseConnection();
+            result = JsonConvert.SerializeObject(qcIndex);
             return result;
         }
 
-        private string ProcessAllChildren(DbUtilities dbConn, DataTable idx)
+        private List<DmsIndex> ProcessAllChildren(DataTable idx)
         {
             List<DmsIndex> qcIndex = new List<DmsIndex>();
 
@@ -117,11 +101,7 @@ namespace DatabaseManager.Server.Controllers
                 string indexId = idxRow["INDEXID"].ToString();
                 string jsonData = idxRow["JSONDATAOBJECT"].ToString();
                 int intIndexId = Convert.ToInt32(indexId);
-                string indexNode = idxRow["Text_IndexNode"].ToString();
-                string strProcedure = $"EXEC spGetDescendants '{indexNode}'";
-                string query = "";
-                DataTable qc = dbConn.GetDataTable(strProcedure, query);
-                int nrOfObjects = qc.Rows.Count - 1;
+                int nrOfObjects = Convert.ToInt32(idxRow["NumberOfDataObjects"]);
                 qcIndex.Add(new DmsIndex()
                 {
                     Id = intIndexId,
@@ -130,9 +110,8 @@ namespace DatabaseManager.Server.Controllers
                     JsonData = jsonData
                 });
             }
-            string jsonString = JsonConvert.SerializeObject(qcIndex);
 
-            return jsonString;
+            return qcIndex;
         }
     }
 }

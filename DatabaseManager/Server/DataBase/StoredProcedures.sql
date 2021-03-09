@@ -72,6 +72,25 @@ BEGIN
 END
 GO
 
+DROP PROCEDURE IF EXISTS spGetNumberOfDescendants;
+GO
+CREATE PROCEDURE spGetNumberOfDescendants(@indexnode varchar(400), @level int)
+AS
+BEGIN
+
+DROP TABLE If EXISTS #MyTemp
+
+SELECT INDEXID, DATATYPE, JSONDATAOBJECT, INDEXNODE
+INTO #MyTemp
+FROM pdo_qc_index 
+WHERE IndexNode.IsDescendantOf(@indexnode) = 1 and INDEXLEVEL = @level
+
+SELECT A.INDEXID, A.DATATYPE, A.JSONDATAOBJECT, ((select count(1) from pdo_qc_index B where B.IndexNode.IsDescendantOf(A.IndexNode) = 1)-1) AS NumberOfDataObjects 
+FROM #MyTemp A
+
+END
+GO
+
 DROP PROCEDURE IF EXISTS spGetNeighborsNoFailures;
 GO
 CREATE PROC spGetNeighborsNoFailures(@indexId int, @failRule nvarchar(255))
@@ -155,7 +174,7 @@ BEGIN
 
   SET @sql = N' WHILE (1=1) '
            + N' BEGIN '
-           + N' DELETE TOP(1000) FROM ' + QUOTENAME(@TableName)
+           + N' DELETE TOP(2000) FROM ' + QUOTENAME(@TableName)
            + N' IF @@ROWCOUNT < 1 BREAK '
            + N' END'
 
