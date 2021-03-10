@@ -507,6 +507,12 @@ namespace DatabaseManager.Server.Helpers
                         insertColumns = insertColumns + ", " + fixedKey[0];
                         selectColumns = selectColumns + ", '" + fixedKey[1] + "'";
                     }
+                    insertColumns = insertColumns +
+                        ", ROW_CREATED_DATE, ROW_CREATED_BY" +
+                        ", ROW_CHANGED_DATE, ROW_CHANGED_BY";
+                    selectColumns = selectColumns +
+                        ", CAST(GETDATE() AS DATE), @user" +
+                        ", CAST(GETDATE() AS DATE), @user";
                     insertSql = insertSql + $"INSERT INTO {refTable.Table} ({insertColumns})" +
                         $" SELECT distinct {selectColumns} from {tempTable}2" +
                         $" EXCEPT SELECT {insertColumns} from {refTable.Table};";
@@ -529,6 +535,9 @@ namespace DatabaseManager.Server.Helpers
             cmd = new SqlCommand(sql, conn);
             cmd.ExecuteNonQuery();
 
+            insertSql = "DECLARE @user varchar(30);" +
+                @"SET @user = stuff(suser_sname(), 1, charindex('\', suser_sname()), '');" +
+                insertSql;
             cmd = new SqlCommand(insertSql, conn);
             cmd.ExecuteNonQuery();
         }
