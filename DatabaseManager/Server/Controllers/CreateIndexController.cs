@@ -89,19 +89,51 @@ namespace DatabaseManager.Server.Controllers
             {
                 fileStorageService.SetConnectionString(tmpConnString);
                 tableStorageService.SetConnectionString(tmpConnString);
-                IndexBuilder iBuilder = new IndexBuilder();
+                //IndexBuilder iBuilder = new IndexBuilder();
+                
                 string jsonTaxonomy = await fileStorageService.ReadFile("taxonomy", iParameters.Taxonomy);
                 string jsonConnectDef = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, iParameters.DataConnector);
-                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                iBuilder.InitializeIndex(connector, jsonTaxonomy, jsonConnectDef);
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, iParameters.TargetName);
+                ConnectParameters target = mapper.Map<ConnectParameters>(entity);
+                ConnectParameters source = new ConnectParameters();
+                if (iParameters.TargetName == iParameters.SourceName)
+                {
+                    source = target;
+                }
+                else
+                {
+                    entity = await tableStorageService.GetTableRecord<SourceEntity>(container, iParameters.SourceName);
+                    source = mapper.Map<ConnectParameters>(entity);
+                }
+
+                IndexBuilder iBuilder = new IndexBuilder();
+                if (source.SourceType == "DataBase")
+                {
+                    iBuilder = new IndexBuilder(new DBDataAccess());
+                }
+                else
+                {
+                    source.ConnectionString = tmpConnString;
+                    if (source.DataType == "Logs")
+                    {
+                        iBuilder = new IndexBuilder(new LASDataAccess(fileStorageService));
+                    }
+                    else
+                    {
+                        iBuilder = new IndexBuilder(new CSVDataAccess(fileStorageService));
+                    }
+                    
+                }
+                
+                target.DataAccessDefinition = jsonConnectDef;
+                iBuilder.InitializeIndex(target, source, jsonTaxonomy);
                 iBuilder.CreateRoot();
                 int parentNodes = iBuilder.JsonIndexArray.Count;
                 int nodeId = 0;
                 for (int k = 0; k < parentNodes; k++)
                 {
                     JToken token = iBuilder.JsonIndexArray[k];
-                    int parentCount = iBuilder.GetObjectCount(token, k);
+                    int parentCount = await iBuilder.GetObjectCount(token, k);
                     if (parentCount > 0)
                     {
                         nodeId++;
@@ -121,7 +153,7 @@ namespace DatabaseManager.Server.Controllers
                     ParentIndexNodes node = nodes[j];
                     for (int i = 0; i < node.NodeCount; i++)
                     {
-                        iBuilder.PopulateIndex(j, i, node.ParentNodeId);
+                        await iBuilder.PopulateIndex(j, i, node.ParentNodeId);
                     }
                 }
 

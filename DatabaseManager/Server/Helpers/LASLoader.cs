@@ -25,16 +25,144 @@ namespace DatabaseManager.Server.Helpers
         private List<ReferenceTable> _references = new List<ReferenceTable>();
         private List<DataAccessDef> _dataDef = new List<DataAccessDef>();
         private string connectionString;
+        private List<string> LASFiles = new List<string>();
         private readonly IFileStorageService fileStorageService;
-        private readonly ITableStorageService tableStorageService;
 
-        public LASLoader(IFileStorageService fileStorageService,
-            ITableStorageService tableStorageService)
+        public LASLoader(IFileStorageService fileStorageService)
         {
             _dbConn = new DbUtilities();
             _nullRepresentation = "-999.25";
             this.fileStorageService = fileStorageService;
-            this.tableStorageService = tableStorageService;
+        }
+
+        public async Task<List<string>> GetLASFileNames(string catalog)
+        {
+            List<string> files = new List<string>();
+            files = await fileStorageService.ListFiles(catalog);
+            return files;
+        }
+
+        public async Task<DataTable> GetLASWellHeaders(ConnectParameters source, ConnectParameters target)
+        {
+            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            List<string> files = new List<string>();
+            files = await GetLASFileNames(source.Catalog);
+            DataAccessDef dataType = _dataDef.First(x => x.DataType == "WellBore");
+            string select = dataType.Select;
+            string query = $" where 0 = 1";
+            _dbConn.OpenConnection(target);
+            DataTable dt = _dbConn.GetDataTable(select, query);
+            foreach (string file in files)
+            {
+                string versionInfo = "";
+                string wellInfo = "";
+                string curveInfo = "";
+                string parameterInfo = "";
+                string dataInfo = "";
+                string fileText = await fileStorageService.ReadFile(source.Catalog, file);
+                string[] sections = fileText.Split("~", StringSplitOptions.RemoveEmptyEntries);
+                foreach (string section in sections)
+                {
+                    string flag = section.Substring(0, 1);
+                    if (flag == "V") versionInfo = section;
+                    if (flag == "W") wellInfo = section;
+                    if (flag == "C") curveInfo = section;
+                    if (flag == "P") parameterInfo = section;
+                    if (flag == "A") dataInfo = section;
+                }
+
+                GetVersionInfo(versionInfo);
+                //GetCurveInfo(curveInfo);
+                string json = GetHeaderInfo(wellInfo);
+                DataRow row = dt.NewRow();
+                JObject jo = JObject.Parse(json);
+                foreach (JProperty property in jo.Properties())
+                {
+                    string strValue = property.Value.ToString();
+                    if (!string.IsNullOrEmpty(strValue))
+                    {
+                        if (row.Table.Columns.Contains(property.Name))
+                        {
+                            row[property.Name] = property.Value;
+                        }
+                    }
+                }
+                dt.Rows.Add(row);
+            }
+            return dt;
+        }
+
+        public async Task<DataTable> GetLASLogHeaders(ConnectParameters source, ConnectParameters target)
+        {
+            DataAccessDef dataType = _dataDef.First(x => x.DataType == "Log");
+            string select = dataType.Select;
+            string query = $" where 0 = 1";
+            _dbConn.OpenConnection(target);
+            DataTable dt = _dbConn.GetDataTable(select, query);
+            List<string> files = new List<string>();
+            files = await GetLASFileNames(source.Catalog);
+            foreach (string file in files)
+            {
+                string versionInfo = "";
+                string wellInfo = "";
+                string curveInfo = "";
+                string parameterInfo = "";
+                string dataInfo = "";
+                string fileText = await fileStorageService.ReadFile(source.Catalog, file);
+                string[] sections = fileText.Split("~", StringSplitOptions.RemoveEmptyEntries);
+                foreach (string section in sections)
+                {
+                    string flag = section.Substring(0, 1);
+                    if (flag == "V") versionInfo = section;
+                    if (flag == "W") wellInfo = section;
+                    if (flag == "C") curveInfo = section;
+                    if (flag == "P") parameterInfo = section;
+                    if (flag == "A") dataInfo = section;
+                }
+
+                GetVersionInfo(versionInfo);
+                string json = GetHeaderInfo(wellInfo);
+                _logNames = new List<string>();
+                GetCurveInfo(curveInfo);
+                int logCount = _logNames.Count();
+                GetIndexValues();
+                for (int k = 1; k < logCount; k++)
+                {
+                    Dictionary<string, string> logHeader = new Dictionary<string, string>();
+                    string[] attributes = Common.GetAttributes(dataType.Select);
+                    foreach (string attribute in attributes)
+                    {
+                        logHeader.Add(attribute.Trim(), "");
+                    }
+                    logHeader["NULL_REPRESENTATION"] = _nullRepresentation;
+                    logHeader["VALUE_COUNT"] = "-99999.0";
+                    logHeader["MAX_INDEX"] = "-99999.0";
+                    logHeader["MIN_INDEX"] = "-99999.0";
+                    logHeader["UWI"] = _uwi;
+                    logHeader["ROW_CREATED_BY"] = _dbConn.GetUsername();
+                    logHeader["ROW_CHANGED_BY"] = _dbConn.GetUsername();
+                    string logName = Common.FixAposInStrings(_logNames[k]);
+                    logHeader["CURVE_ID"] = logName;
+                    json = JsonConvert.SerializeObject(logHeader, Formatting.Indented);
+                    DataRow row = dt.NewRow();
+                    JObject jo = JObject.Parse(json);
+                    foreach (JProperty property in jo.Properties())
+                    {
+                        string strValue = property.Value.ToString();
+                        if (!string.IsNullOrEmpty(strValue))
+                        {
+                            if (row.Table.Columns.Contains(property.Name))
+                            {
+                                row[property.Name] = property.Value;
+                            }
+                        }
+                    }
+                    dt.Rows.Add(row);
+                }
+            }
+
+            return dt;
         }
 
         public async Task LoadLASFile(ConnectParameters source, ConnectParameters target, string fileName)
@@ -65,7 +193,8 @@ namespace DatabaseManager.Server.Helpers
             _dbConn.OpenConnection(target);
 
             GetVersionInfo(versionInfo);
-            GetHeaderInfo(wellInfo);
+            string json = GetHeaderInfo(wellInfo);
+            LoadHeader(json);
             GetCurveInfo(curveInfo);
             GetDataInfo(dataInfo);
             LoadLogs();
@@ -232,7 +361,7 @@ namespace DatabaseManager.Server.Helpers
         }
 
         
-        private void GetHeaderInfo(string wellInfo)
+        private string GetHeaderInfo(string wellInfo)
         {
             LASHeaderMappings headMap = new LASHeaderMappings();
             DataAccessDef dataType = _dataDef.First(x => x.DataType == "WellBore");
@@ -247,8 +376,8 @@ namespace DatabaseManager.Server.Helpers
             header["OPERATOR"] = "UNKNOWN";
             header["DEPTH_DATUM"] = "UNKNOWN";
             header["CURRENT_STATUS"] = "UNKNOWN";
-            header["ROW_CREATED_BY"] = _dbConn.GetUsername();
-            header["ROW_CHANGED_BY"] = _dbConn.GetUsername();
+            //header["ROW_CREATED_BY"] = _dbConn.GetUsername();
+            //header["ROW_CHANGED_BY"] = _dbConn.GetUsername();
             header.Add("API", "");
             StringReader sr = new StringReader(wellInfo);
             while ((input = sr.ReadLine()) != null)
@@ -271,7 +400,7 @@ namespace DatabaseManager.Server.Helpers
             if (string.IsNullOrEmpty(header["UWI"])) header["UWI"] = header["LEASE_NAME"] + "-" + header["WELL_NAME"];
             string json = JsonConvert.SerializeObject(header, Formatting.Indented);
             _uwi = header["UWI"];
-            LoadHeader(json);
+            return json;
         }
 
         private void LoadHeader(string json)

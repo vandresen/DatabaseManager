@@ -93,7 +93,7 @@ namespace DatabaseManager.Server.Controllers
                 {
                     if (sourceConnector.DataType == "Logs")
                     {
-                        LASLoader ls = new LASLoader(fileStorageService, tableStorageService);
+                        LASLoader ls = new LASLoader(fileStorageService);
                         await ls.LoadLASFile(sourceConnector, targetConnector, transferParameters.Table);
                     }
                     else

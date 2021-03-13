@@ -28,9 +28,7 @@ else
 </div>
 
 @code {
-    List<ParentIndexNodes> pNodes;
     List<string> taxonomies;
-    string taxonomySelection;
     CreateIndexParameters iParameters = new CreateIndexParameters();
     private string statusMessage = "Not started";
     private string TaxonomyFile = "";
@@ -56,7 +54,8 @@ else
         progress("Starting indexing...");
         iParameters = new CreateIndexParameters();
         iParameters.Taxonomy = TaxonomyFile;
-        iParameters.DataConnector = singleton.TargetConnector;
+        iParameters.TargetName = singleton.TargetConnector;
+        iParameters.SourceName = singleton.TargetConnector;
         barValue = 1;
         progress("Starting indexing...");
         try

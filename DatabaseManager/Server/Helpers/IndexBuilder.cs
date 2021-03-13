@@ -1,5 +1,6 @@
 ﻿using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Extensions;
+using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -14,24 +15,34 @@ namespace DatabaseManager.Server.Helpers
     public class IndexBuilder
     {
         private DbUtilities dbConn;
+        private LASLoader lasConn;
         private List<DataAccessDef> dataAccessDefs = new List<DataAccessDef>();
         private static List<IndexFileData> _idxData;
         private IndexDataCollection myIndex;
         private IndexFileData _currentItem;
         private Location _location;
         private IndexFileData _parentItem;
+        private readonly IDataAccess sourceAccess;
+
         public JArray JsonIndexArray { get; set; }
 
         public IndexBuilder()
         {
-            dbConn = new DbUtilities();
+
         }
 
-        public void InitializeIndex(ConnectParameters connectionString, string jsonTaxonomy, string jsonConnectDef)
+        public IndexBuilder(IDataAccess sourceAccess)
+        {
+            dbConn = new DbUtilities();
+            this.sourceAccess = sourceAccess;
+        }
+
+        public void InitializeIndex(ConnectParameters connectionString, ConnectParameters source, string jsonTaxonomy)
         {
             myIndex = new IndexDataCollection();
             dbConn.OpenConnection(connectionString);
-            dataAccessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(jsonConnectDef);
+            sourceAccess.OpenConnection(source, connectionString);
+            dataAccessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(connectionString.DataAccessDefinition);
             JsonIndexArray = JArray.Parse(jsonTaxonomy);
             _idxData = new List<IndexFileData>();
             foreach (JToken level in JsonIndexArray)
@@ -48,7 +59,7 @@ namespace DatabaseManager.Server.Helpers
             myIndex.Add(new IndexData { DataName = "QCPROJECT", DataType = "QCPROJECT", IndexNode = "/", QcLocation = null });
         }
 
-        public int GetObjectCount(JToken token, int rowNr)
+        public async Task<int> GetObjectCount(JToken token, int rowNr)
         {
             string select = "";
             string query = "";
@@ -60,7 +71,7 @@ namespace DatabaseManager.Server.Helpers
                 select = dataAccessDefs.GetSelectString(_currentItem.DataName);
                 if (!String.IsNullOrEmpty(select))
                 {
-                    _currentItem.DataTable = dbConn.GetDataTable(select, query);
+                    _currentItem.DataTable = await sourceAccess.GetDataTable(select, query, _currentItem.DataName);
                 }
                 objectCount = _currentItem.DataTable.Rows.Count;
             }
@@ -77,23 +88,24 @@ namespace DatabaseManager.Server.Helpers
             }
         }
 
-        public void PopulateIndex(int topId, int parentId, string parentNodeId)
+        public async Task PopulateIndex(int topId, int parentId, string parentNodeId)
         {
             JToken level = JsonIndexArray[topId];
             _currentItem = GetIndexData(level);
             string select = dataAccessDefs.GetSelectString(_currentItem.DataName);
-            GetDataForIndexing(select, "");
+            await GetDataForIndexing(select, "", _currentItem.DataName);
             DataRow dataRow = _currentItem.DataTable.Rows[parentId];
             _location = GetIndexLocation(dataRow);
             parentNodeId = parentNodeId + $"{parentId + 1}/";
             PopulateIndexItem(dataRow, parentNodeId);
-            PopulateChildIndex(level, parentId, parentNodeId);
+            await PopulateChildIndex(level, parentId, parentNodeId);
         }
 
         public void CloseIndex()
         {
             dbConn.InsertUserDefinedTable(myIndex);
             dbConn.CloseConnection();
+            sourceAccess.CloseConnection();
         }
 
         static void ProcessIndexArray(JArray JsonIndexArray, JToken parent)
@@ -131,11 +143,22 @@ namespace DatabaseManager.Server.Helpers
             return indexObject;
         }
 
-        private void GetDataForIndexing(string select, string query)
+        private async Task GetDataForIndexing(string select, string query, string dataType)
         {
             if (!String.IsNullOrEmpty(select))
             {
-                _currentItem.DataTable = dbConn.GetDataTable(select, query);
+                if (String.IsNullOrEmpty(query))
+                {
+                    if (_currentItem.DataTable == null)
+                    {
+                        _currentItem.DataTable = await sourceAccess.GetDataTable(select, query, _currentItem.DataName);
+                    }
+                }
+                else
+                {
+                    _currentItem.DataTable = await sourceAccess.GetDataTable(select, query, _currentItem.DataName);
+                }
+                //_currentItem.DataTable = dbConn.GetDataTable(select, query); 
             }
         }
 
@@ -243,7 +266,7 @@ namespace DatabaseManager.Server.Helpers
             return dataKey;
         }
 
-        private void PopulateChildIndex(JToken level, int parentId, string parentNodeId)
+        private async Task PopulateChildIndex(JToken level, int parentId, string parentNodeId)
         {
             if (level["DataObjects"] != null)
             {
@@ -253,7 +276,7 @@ namespace DatabaseManager.Server.Helpers
                     _parentItem = GetIndexData(level);
                     _currentItem = GetIndexData(subLevel);
                     string childNodeId = parentNodeId + $"{nodeId}/";
-                    if (CreateChildNodeIndex(subLevel, parentId, childNodeId))
+                    if (await CreateChildNodeIndex(subLevel, parentId, childNodeId))
                     {
                         nodeId++;
                         int childCount = _currentItem.DataTable.Rows.Count;
@@ -265,14 +288,14 @@ namespace DatabaseManager.Server.Helpers
                             _location = GetIndexLocation(pr);
                             string indexNode = childNodeId + $"{i + 1}/";
                             PopulateIndexItem(_currentItem.DataTable.Rows[i], indexNode);
-                            PopulateChildIndex(subLevel, i, indexNode);
+                            await PopulateChildIndex(subLevel, i, indexNode);
                         }
                     }
                 }
             }
         }
 
-        private bool CreateChildNodeIndex(JToken token, int parentId, string parentNodeId)
+        private async Task<bool> CreateChildNodeIndex(JToken token, int parentId, string parentNodeId)
         {
             bool childNode = false;
             DataRow pr = _parentItem.DataTable.Rows[parentId];
@@ -287,7 +310,7 @@ namespace DatabaseManager.Server.Helpers
                 string query = GetParentKey(pr, childItem.ParentKey);
                 query = " where " + query;
                 string select = dataAccessDefs.GetSelectString(childItem.DataName);
-                GetDataForIndexing(select, query);
+                await GetDataForIndexing(select, query, childItem.DataName);
                 if (_currentItem.DataTable.Rows.Count > 0)
                 {
                     childNode = true;
