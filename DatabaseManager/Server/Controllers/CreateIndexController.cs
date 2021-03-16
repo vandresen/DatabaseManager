@@ -83,7 +83,7 @@ namespace DatabaseManager.Server.Controllers
         {
             string tmpConnString = Request.Headers["AzureStorageConnection"];
             if (iParameters == null) return BadRequest();
-            if (string.IsNullOrEmpty(iParameters.Taxonomy)) return BadRequest();
+            if (string.IsNullOrEmpty(iParameters.Taxonomy)) return BadRequest("Taxonomy not selected");
             List<ParentIndexNodes> nodes = new List<ParentIndexNodes>();
             try
             {

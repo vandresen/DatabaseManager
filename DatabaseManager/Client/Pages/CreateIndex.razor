@@ -3,10 +3,9 @@
 @inject SingletonServices singleton
 @inject IDisplayMessage displayMessage
 @inject NavigationManager navigationManager
+@inject IDataSources dataSources
 
 <h2>Create Index</h2>
-
-<p>Target Database: @singleton.TargetConnector</p>
 
 @if (taxonomies == null)
 {
@@ -14,10 +13,39 @@
 }
 else
 {
-    <GenericSelector Options="taxonomies" Selection="Selected" Label="Choose Taxonomy"/>
+    <GenericSelector Options="taxonomies" Selection="Selected" Label="Choose Taxonomy" />
 }
 
-<button class="btn btn-primary" @onclick="StartIndex">Start Indexing</button>
+<div class="row">
+    <div class="col">
+        <h3>Source Database</h3>
+    </div>
+    <div class="col">
+        <h3></h3>
+    </div>
+    <div class="col">
+        <h3>Target Database</h3>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        @if (options == null)
+        {
+            <text>Loading...</text>
+        }
+        else
+        {
+            <ConnectorSelectorWithDefault Options="options" DefaultSource="@source" SelectedConnector="SelectedSource" />
+        }
+    </div>
+    <div class="col">
+        <button class="btn btn-success" @onclick="StartIndex">Start Indexing >>></button>
+    </div>
+    <div class="col">
+        <p>Target Database: @singleton.TargetConnector</p>
+    </div>
+</div>
 
 <div>
     <ProgressBar ValueNow="barValue" />
@@ -28,11 +56,14 @@ else
 </div>
 
 @code {
+    private List<string> options { get; set; } = new List<string>();
+    private string source { get; set; } = "Choose Connector";
     List<string> taxonomies;
     CreateIndexParameters iParameters = new CreateIndexParameters();
     private string statusMessage = "Not started";
     private string TaxonomyFile = "";
     public int barValue = 0;
+    List<ConnectParameters> connectParameters;
 
     protected override async Task OnInitializedAsync()
     {
@@ -42,9 +73,19 @@ else
             navigationManager.NavigateTo("/");
         }
         taxonomies = await createIndex.GetTaxonomies();
+
+        source = singleton.TargetConnector;
+
+        connectParameters = await dataSources.GetSources();
+        foreach (ConnectParameters conn in connectParameters)
+        {
+            options.Add(conn.SourceName);
+        }
+
+
     }
 
-    private async Task Selected(string selectedString)
+    private void Selected(string selectedString)
     {
         TaxonomyFile = selectedString;
     }
@@ -55,7 +96,8 @@ else
         iParameters = new CreateIndexParameters();
         iParameters.Taxonomy = TaxonomyFile;
         iParameters.TargetName = singleton.TargetConnector;
-        iParameters.SourceName = singleton.TargetConnector;
+        iParameters.SourceName = source;
+
         barValue = 1;
         progress("Starting indexing...");
         try
@@ -74,6 +116,11 @@ else
             return;
         }
 
+    }
+
+    private void SelectedSource(string selectedString)
+    {
+        source = selectedString;
     }
 
     private void progress(string message)
