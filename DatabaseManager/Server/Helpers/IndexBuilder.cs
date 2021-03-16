@@ -52,11 +52,12 @@ namespace DatabaseManager.Server.Helpers
             }
         }
 
-        public void CreateRoot()
+        public void CreateRoot(ConnectParameters source)
         {
+            string json = JsonConvert.SerializeObject(source);
             string table = "pdo_qc_index";
             dbConn.DBDelete(table);
-            myIndex.Add(new IndexData { DataName = "QCPROJECT", DataType = "QCPROJECT", IndexNode = "/", QcLocation = null });
+            myIndex.Add(new IndexData { DataName = "QCPROJECT", DataType = "QCPROJECT", IndexNode = "/", QcLocation = null, JsonDataObject = json });
         }
 
         public async Task<int> GetObjectCount(JToken token, int rowNr)

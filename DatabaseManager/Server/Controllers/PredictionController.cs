@@ -104,7 +104,6 @@ namespace DatabaseManager.Server.Controllers
                 return BadRequest();
             }
 
-
             dbConn.CloseConnection();
             return result;
         }

@@ -127,7 +127,7 @@ namespace DatabaseManager.Server.Controllers
                 
                 target.DataAccessDefinition = jsonConnectDef;
                 iBuilder.InitializeIndex(target, source, jsonTaxonomy);
-                iBuilder.CreateRoot();
+                iBuilder.CreateRoot(source);
                 int parentNodes = iBuilder.JsonIndexArray.Count;
                 int nodeId = 0;
                 for (int k = 0; k < parentNodes; k++)
