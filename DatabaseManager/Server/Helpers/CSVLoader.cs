@@ -494,12 +494,12 @@ namespace DatabaseManager.Server.Helpers
                     if (valueAttribute == refTable.KeyAttribute)
                     {
                         insertColumns = $"{refTable.KeyAttribute}";
-                        selectColumns = $"{column}";
+                        selectColumns = $"B.{column}";
                     }
                     else
                     {
                         insertColumns = $"{refTable.KeyAttribute}, {valueAttribute}";
-                        selectColumns = $"{column}, {column}";
+                        selectColumns = $"B.{column}, B.{column}";
                     }
                     if (!string.IsNullOrEmpty(refTable.FixedKey))
                     {
@@ -514,8 +514,9 @@ namespace DatabaseManager.Server.Helpers
                         ", CAST(GETDATE() AS DATE), @user" +
                         ", CAST(GETDATE() AS DATE), @user";
                     insertSql = insertSql + $"INSERT INTO {refTable.Table} ({insertColumns})" +
-                        $" SELECT distinct {selectColumns} from {tempTable}2" +
-                        $" EXCEPT SELECT {insertColumns} from {refTable.Table};";
+                        $" SELECT distinct {selectColumns} from {tempTable}2 B" +
+                        $" LEFT JOIN {refTable.Table} A ON A.{refTable.KeyAttribute} = B.{column} WHERE A.{refTable.KeyAttribute} is null;";
+                    //$" EXCEPT SELECT {insertColumns} from {refTable.Table};";
                     comma = ",";
                 }
             }
