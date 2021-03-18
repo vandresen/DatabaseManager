@@ -39,6 +39,7 @@ namespace DatabaseManager.Server.Controllers
         private static HttpClient Client = new HttpClient();
         private ManageIndexTable manageIndexTable;
         private DataTable indexTable;
+        private bool syncPredictions;
 
         public PredictionController(IConfiguration configuration,
             IFileStorageService fileStorageService,
@@ -123,6 +124,10 @@ namespace DatabaseManager.Server.Controllers
                 ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);
+
+                string sourceConnector = GetSource(dbConn);
+                if (predictionParams.DataConnector == sourceConnector) syncPredictions = true;
+                else syncPredictions = false;
 
                 RuleModel rule = Common.GetRule(dbConn, predictionParams.PredictionId, _accessDefs);
 
@@ -257,13 +262,16 @@ namespace DatabaseManager.Server.Controllers
                 rows[0]["QC_STRING"] = qcStr;
                 indexTable.AcceptChanges();
 
-                string jsonDataObject = result.DataObject;
-                JObject dataObject = JObject.Parse(jsonDataObject);
-                dataObject["ROW_CHANGED_BY"] = Environment.UserName;
-                jsonDataObject = dataObject.ToString();
-                jsonDataObject = Common.SetJsonDataObjectDate(jsonDataObject, "ROW_CHANGED_DATE");
-                string dataType = idx.Rows[0]["DATATYPE"].ToString();
-                dbConn.UpdateDataObject(jsonDataObject, dataType);
+                if (syncPredictions)
+                {
+                    string jsonDataObject = result.DataObject;
+                    JObject dataObject = JObject.Parse(jsonDataObject);
+                    dataObject["ROW_CHANGED_BY"] = Environment.UserName;
+                    jsonDataObject = dataObject.ToString();
+                    jsonDataObject = Common.SetJsonDataObjectDate(jsonDataObject, "ROW_CHANGED_DATE");
+                    string dataType = idx.Rows[0]["DATATYPE"].ToString();
+                    dbConn.UpdateDataObject(jsonDataObject, dataType);
+                }
             }
             else
             {
@@ -286,13 +294,16 @@ namespace DatabaseManager.Server.Controllers
                 rows[0]["QC_STRING"] = qcStr;
                 indexTable.AcceptChanges();
 
-                string dataType = idx.Rows[0]["DATATYPE"].ToString();
-                string dataKey = idx.Rows[0]["DATAKEY"].ToString();
-                ruleAccessDef = _accessDefs.First(x => x.DataType == dataType);
-                select = ruleAccessDef.Select;
-                string dataTable = GetTable(select);
-                string dataQuery = "where " + dataKey;
-                dbDAL.DBDelete(dataTable, dataQuery);
+                if (syncPredictions)
+                {
+                    string dataType = idx.Rows[0]["DATATYPE"].ToString();
+                    string dataKey = idx.Rows[0]["DATAKEY"].ToString();
+                    ruleAccessDef = _accessDefs.First(x => x.DataType == dataType);
+                    select = ruleAccessDef.Select;
+                    string dataTable = GetTable(select);
+                    string dataQuery = "where " + dataKey;
+                    dbDAL.DBDelete(dataTable, dataQuery);
+                }
             }
             else
             {
@@ -354,6 +365,27 @@ namespace DatabaseManager.Server.Controllers
             string result = JsonConvert.SerializeObject(qcIndex);
 
             return result;
+        }
+
+        private string GetSource(DbUtilities dbConn)
+        {
+            string source = "";
+            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
+            string select = ruleAccessDef.Select;
+            string idxQuery = $" where INDEXNODE = '/'";
+            DataTable idx = dbConn.GetDataTable(select, idxQuery);
+            if (idx.Rows.Count == 1)
+            {
+                string jsonData = idx.Rows[0]["JSONDATAOBJECT"].ToString();
+                ConnectParameters sourceConn = JsonConvert.DeserializeObject<ConnectParameters>(jsonData);
+                source = sourceConn.SourceName;
+            }
+            else
+            {
+                logger.LogWarning("Cannot get the source in root  index");
+            }
+            
+            return source;
         }
     }
 }
