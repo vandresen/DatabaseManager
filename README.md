@@ -1,12 +1,12 @@
 # DatabaseManager
 
 Database Manager is a free, open source web based tool to manage 
-PPDM database. So far this version provides functionality to:
+PPDM database and Data Science projects. So far this version provides functionality to:
 * Load the PPDM model
-* Manage PPDM data connectors
+* Manage PPDM, CSV and LAS data connectors
 * Transfer well data from one PPDM database, LAS or csv files to a PPDM database 
-* Create a DSM index
-* Manage DSM rules
+* Create a index
+* Manage data QC and prediction rules
 * Execute QC rules and view result
 * Execute prediction rules and view result
 This tool is built for the cloud generation.
