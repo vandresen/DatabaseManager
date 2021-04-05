@@ -9,6 +9,7 @@ PPDM database and Data Science projects. So far this version provides functional
 * Manage data QC and prediction rules
 * Execute QC rules and view result
 * Execute prediction rules and view result
+
 This tool is built for the cloud generation.
 
 ## License 
