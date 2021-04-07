@@ -1,14 +1,15 @@
 # DatabaseManager
 
 Database Manager is a free, open source web based tool to manage 
-PPDM database. So far this version provides functionality to:
+PPDM database and Data Science projects. So far this version provides functionality to:
 * Load the PPDM model
-* Manage PPDM data connectors
+* Manage PPDM, CSV and LAS data connectors
 * Transfer well data from one PPDM database, LAS or csv files to a PPDM database 
-* Create a DSM index
-* Manage DSM rules
+* Create a index
+* Manage data QC and prediction rules
 * Execute QC rules and view result
 * Execute prediction rules and view result
+
 This tool is built for the cloud generation.
 
 ## License 
@@ -20,8 +21,8 @@ bug fixes or enhancements to the Database Manager source code following the
 usual Github Fork-Pull Request process.
 
 ## Building the software
-The software is based on ASP.NET Core 3.2 Blazor using webassembly. You should use
-Visual Studio 2019.6 or newer for building this. From Visual Studio you can publish this to Azure or to a local web server.
+The software is based on .NET 5 using Blazor using webassembly. You should use
+Visual Studio 2019.8 or newer for building this. From Visual Studio you can publish this to Azure or to a local web server.
 
 ## Datamodel
 The system does not ship with a data model. You must create a folder in your Azure File Storage called PPDM39. This is where yo put the PPDM dll files that
