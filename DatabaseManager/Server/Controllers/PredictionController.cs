@@ -270,7 +270,17 @@ namespace DatabaseManager.Server.Controllers
                     jsonDataObject = dataObject.ToString();
                     jsonDataObject = Common.SetJsonDataObjectDate(jsonDataObject, "ROW_CHANGED_DATE");
                     string dataType = idx.Rows[0]["DATATYPE"].ToString();
-                    dbConn.UpdateDataObject(jsonDataObject, dataType);
+                    try
+                    {
+                        dbConn.UpdateDataObject(jsonDataObject, dataType);
+                    }
+                    catch (Exception ex)
+                    {
+                        string error = ex.ToString();
+                        logger.LogWarning($"Error updating data object");
+                        throw;
+                    }
+                    
                 }
             }
             else

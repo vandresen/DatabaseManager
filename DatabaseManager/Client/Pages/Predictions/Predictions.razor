@@ -114,6 +114,8 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Errors: {ex}");
+            string message = ex.ToString().Substring(0, 300);
+            await displayMessage.DisplayErrorMessage($"Error message from prediction server: {message}");
         }
     }
 

@@ -185,5 +185,69 @@ namespace DatabaseManager.Server.Helpers
             if (value > average + spikeFactor) spike = true;
             return spike;
         }
+
+        public static DataTable GetSortedLogCurve(DataTable lg, string uwi)
+        {
+            DataTable sortedCurve = new DataTable();
+
+            string query = "UWI = '" + uwi + "'";
+            DataRow[] curveRows = lg.Select(query);
+
+            if (curveRows.Length > 0) sortedCurve = curveRows.OrderBy(curve => curve["INDEX_VALUE"]).CopyToDataTable();
+
+            return sortedCurve;
+        }
+
+        public static int GetRowNumberForPickDepth(DataTable sortedCurve, double pickDepth)
+        {
+            int rowNumber = -1;
+
+            for (int j = 0; j < sortedCurve.Rows.Count; j++)
+            {
+                double value = Convert.ToDouble(sortedCurve.Rows[j]["INDEX_VALUE"]);
+                double? nextValue = null;
+                if (j < (sortedCurve.Rows.Count - 1))
+                    nextValue = Convert.ToDouble(sortedCurve.Rows[j + 1]["INDEX_VALUE"]);
+                if (pickDepth >= value && pickDepth < nextValue)
+                {
+                    rowNumber = j;
+                }
+            }
+
+            return rowNumber;
+        }
+
+        public static double? GetSmoothLogValue(DataTable sortedCurve, double logNullValue, int rowNumber)
+        {
+            int wndwSize = 25;
+            double stdWight = 2.0;
+            double? smoothValue = null;
+
+            if (sortedCurve.Rows.Count > 0)
+            {
+                try
+                {
+                    double?[] XPointMember = new double?[sortedCurve.Rows.Count];
+
+                    for (int j = 0; j < sortedCurve.Rows.Count; j++)
+                    {
+                        double measuredValue = Convert.ToDouble(sortedCurve.Rows[j]["MEASURED_VALUE"]);
+                        XPointMember[j] = measuredValue;
+                        if (measuredValue == logNullValue) XPointMember[j] = null;
+                    }
+
+                    HatFunction hatfunction = new HatFunction(XPointMember, wndwSize);
+                    double?[] SmoothedValues = hatfunction.SmoothFunction(XPointMember, stdWight);
+                    if (rowNumber > -1) smoothValue = SmoothedValues[rowNumber].GetValueOrDefault();
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Error in getting smoothed curve value");
+
+                }
+            }
+
+            return smoothValue;
+        }
     }
 }
