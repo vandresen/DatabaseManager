@@ -165,13 +165,12 @@ namespace DatabaseManager.Server.Helpers
             return dt;
         }
 
-        public async Task LoadLASFile(ConnectParameters source, ConnectParameters target, string fileName)
+        public async Task LoadLASFile(ConnectParameters source, ConnectParameters target, 
+            string fileName, string ReferenceTableDefJson)
         {
             connectionString = target.ConnectionString;
-            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            string referenceJson = await fileStorageService.ReadFile("connectdefinition", "PPDMReferenceTables.json");
-            _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(referenceJson);
+            _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(target.DataAccessDefinition);
+            _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(ReferenceTableDefJson);
 
             string versionInfo = "";
             string wellInfo = "";
@@ -273,7 +272,8 @@ namespace DatabaseManager.Server.Helpers
 
                 DataRow newRow;
                 DataTable dtNew = new DataTable();
-                string sqlQuery = dataType.Select + " where 0 = 1";
+                string table = Common.GetTable(select);
+                string sqlQuery = $"select * from {table} where 0 = 1";
                 SqlDataAdapter logCurveValueAdapter = new SqlDataAdapter(sqlQuery, connectionString);
                 logCurveValueAdapter.Fill(dtNew);
 
@@ -296,8 +296,19 @@ namespace DatabaseManager.Server.Helpers
                     newRow["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
                     dtNew.Rows.Add(newRow);
                 }
-                new SqlCommandBuilder(logCurveValueAdapter);
-                logCurveValueAdapter.Update(dtNew);
+                using (SqlConnection destinationConnection =
+                    new SqlConnection(connectionString))
+                {
+                    destinationConnection.Open();
+
+                    using (SqlBulkCopy bulkCopy =
+                    new SqlBulkCopy(destinationConnection.ConnectionString))
+                    {
+                        bulkCopy.BatchSize = 500;
+                        bulkCopy.DestinationTableName = table;
+                        bulkCopy.WriteToServer(dtNew);
+                    }
+                }
             }
         }
 

@@ -79,10 +79,13 @@ namespace DatabaseManager.Server.Controllers
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 fileStorageService.SetConnectionString(tmpConnString);
                 tableStorageService.SetConnectionString(tmpConnString);
+                string referenceJson = await fileStorageService.ReadFile("connectdefinition", "PPDMReferenceTables.json");
+                string dataAccessDefinition = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
                 SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, transferParameters.SourceName);
                 ConnectParameters sourceConnector = mapper.Map<ConnectParameters>(entity);
                 entity = await tableStorageService.GetTableRecord<SourceEntity>(container, transferParameters.TargetName);
                 ConnectParameters targetConnector = mapper.Map<ConnectParameters>(entity);
+                targetConnector.DataAccessDefinition = dataAccessDefinition;
 
                 if (sourceConnector.SourceType == "DataBase")
                 {
@@ -94,7 +97,7 @@ namespace DatabaseManager.Server.Controllers
                     if (sourceConnector.DataType == "Logs")
                     {
                         LASLoader ls = new LASLoader(fileStorageService);
-                        await ls.LoadLASFile(sourceConnector, targetConnector, transferParameters.Table);
+                        await ls.LoadLASFile(sourceConnector, targetConnector, transferParameters.Table, referenceJson);
                     }
                     else
                     {
