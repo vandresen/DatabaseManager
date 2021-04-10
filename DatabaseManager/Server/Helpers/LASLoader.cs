@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ namespace DatabaseManager.Server.Helpers
         private DbUtilities _dbConn;
         private string _uwi;
         private string _nullRepresentation;
+        private List<string> _logCurveList;
         private List<string> _logNames = new List<string>();
         private List<double> _curveValues = new List<double>();
         private List<double> _indexValues = new List<double>();
@@ -61,7 +63,8 @@ namespace DatabaseManager.Server.Helpers
                 string parameterInfo = "";
                 string dataInfo = "";
                 string fileText = await fileStorageService.ReadFile(source.Catalog, file);
-                string[] sections = fileText.Split("~", StringSplitOptions.RemoveEmptyEntries);
+                char[] charSeparators = new char[] { '~' };
+                string[] sections = fileText.Split(charSeparators, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string section in sections)
                 {
                     string flag = section.Substring(0, 1);
@@ -110,7 +113,8 @@ namespace DatabaseManager.Server.Helpers
                 string parameterInfo = "";
                 string dataInfo = "";
                 string fileText = await fileStorageService.ReadFile(source.Catalog, file);
-                string[] sections = fileText.Split("~", StringSplitOptions.RemoveEmptyEntries);
+                char[] charSeparators = new char[] { '~' };
+                string[] sections = fileText.Split(charSeparators, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string section in sections)
                 {
                     string flag = section.Substring(0, 1);
@@ -165,7 +169,7 @@ namespace DatabaseManager.Server.Helpers
             return dt;
         }
 
-        public async Task LoadLASFile(ConnectParameters source, ConnectParameters target, 
+        public async Task LoadLASFile(ConnectParameters source, ConnectParameters target,
             string fileName, string ReferenceTableDefJson)
         {
             connectionString = target.ConnectionString;
@@ -178,7 +182,8 @@ namespace DatabaseManager.Server.Helpers
             string parameterInfo = "";
             string dataInfo = "";
             string fileText = await fileStorageService.ReadFile(source.Catalog, fileName);
-            string[] sections = fileText.Split("~", StringSplitOptions.RemoveEmptyEntries);
+            char[] charSeparators = new char[] { '~' };
+            string[] sections = fileText.Split(charSeparators, StringSplitOptions.RemoveEmptyEntries);
             foreach (string section in sections)
             {
                 string flag = section.Substring(0, 1);
@@ -203,7 +208,16 @@ namespace DatabaseManager.Server.Helpers
 
         private void LoadLogs()
         {
-            DataAccessDef dataType = _dataDef.First(x => x.DataType == "Log");
+            DataTable dtNew = new DataTable();
+            DataAccessDef dataType = _dataDef.First(x => x.DataType == "LogCurve");
+            string select = dataType.Select;
+            string table = Common.GetTable(select);
+            string sqlQuery = $"select * from {table} where 0 = 1";
+            SqlDataAdapter logCurveValueAdapter = new SqlDataAdapter(sqlQuery, connectionString);
+            logCurveValueAdapter.Fill(dtNew);
+            _logCurveList = GetLogCurveList();
+
+            dataType = _dataDef.First(x => x.DataType == "Log");
             int logCount = _logNames.Count();
             GetIndexValues();
             for (int k = 1; k < logCount; k++)
@@ -224,8 +238,36 @@ namespace DatabaseManager.Server.Helpers
                 string logName = Common.FixAposInStrings(_logNames[k]);
                 logHeader["CURVE_ID"] = logName;
                 string json = JsonConvert.SerializeObject(logHeader, Formatting.Indented);
-                LoadLogHeader(json, logName, k);
+                dtNew = LoadLogHeader(json, logName, k, dtNew);
+                
             }
+
+            using (SqlConnection destinationConnection =
+                new SqlConnection(connectionString))
+            {
+                destinationConnection.Open();
+
+                using (SqlBulkCopy bulkCopy =
+                new SqlBulkCopy(destinationConnection.ConnectionString))
+                {
+                    bulkCopy.BatchSize = 500;
+                    bulkCopy.DestinationTableName = table;
+                    bulkCopy.WriteToServer(dtNew);
+                }
+            }
+        }
+
+        private List<string> GetLogCurveList()
+        {
+            List<string> curves = new List<string>();
+
+            DataAccessDef dataType = _dataDef.First(x => x.DataType == "LogCurve");
+            string select = dataType.Select;
+            string query = $" where UWI = '{_uwi}'";
+            DataTable dt = _dbConn.GetDataTable(select, query);
+            curves = dt.AsEnumerable().Select(p => p.Field<string>("CURVE_ID")).Distinct().ToList();
+
+            return curves;
         }
 
         private void GetIndexValues()
@@ -240,8 +282,9 @@ namespace DatabaseManager.Server.Helpers
             }
         }
 
-        private void LoadLogHeader(string json, string logName, int pointer)
+        private DataTable LoadLogHeader(string json, string logName, int pointer, DataTable logCurve)
         {
+            DataTable newTable = logCurve;
             DataAccessDef dataType = _dataDef.First(x => x.DataType == "Log");
             string select = dataType.Select;
             string tmpUwi = Common.FixAposInStrings(_uwi);
@@ -251,65 +294,45 @@ namespace DatabaseManager.Server.Helpers
             {
                 json = Common.SetJsonDataObjectDate(json, "ROW_CREATED_DATE");
                 json = Common.SetJsonDataObjectDate(json, "ROW_CHANGED_DATE");
-                
+
                 _dbConn.InsertDataObject(json, "Log");
-                LoadLogCurve(pointer, logName);
+                if (!_logCurveList.Contains(logName))
+                {
+                    newTable = GetNewLogCurve(logCurve, pointer, logName);
+                    _logCurveList.Add(logName);
+                }
             }
+            return newTable;
         }
 
-        private void LoadLogCurve(int pointer, string logName)
+        private DataTable GetNewLogCurve(DataTable dtNew, int pointer, string logName)
         {
-            DataAccessDef dataType = _dataDef.First(x => x.DataType == "LogCurve");
-            string select = dataType.Select;
-            string tmpUwi = Common.FixAposInStrings(_uwi);
-            string query = $" where UWI = '{tmpUwi}' and CURVE_ID = '{logName}'";
-            DataTable dt = _dbConn.GetDataTable(select, query);
+            DataTable newTable = dtNew;
+            int indexCount = _indexValues.Count();
+            int logCount = _logNames.Count();
+            DataRow newRow;
 
-            if (dt.Rows.Count == 0)
+            for (int i = 0; i < indexCount; i++)
             {
-                int indexCount = _indexValues.Count();
-                int logCount = _logNames.Count();
-
-                DataRow newRow;
-                DataTable dtNew = new DataTable();
-                string table = Common.GetTable(select);
-                string sqlQuery = $"select * from {table} where 0 = 1";
-                SqlDataAdapter logCurveValueAdapter = new SqlDataAdapter(sqlQuery, connectionString);
-                logCurveValueAdapter.Fill(dtNew);
-
-                for (int i = 0; i < indexCount; i++)
+                newRow = dtNew.NewRow();
+                newRow["UWI"] = _uwi;
+                newRow["CURVE_ID"] = logName;
+                newRow["SAMPLE_ID"] = i;
+                newRow["INDEX_VALUE"] = _indexValues[i];
+                double measuredValue = _curveValues[pointer + (i * logCount)];
+                if (measuredValue < -999999999999999.0 || measuredValue > 999999999999999.0)
                 {
-                    newRow = dtNew.NewRow();
-                    newRow["UWI"] = _uwi;
-                    newRow["CURVE_ID"] = logName;
-                    newRow["SAMPLE_ID"] = i;
-                    newRow["INDEX_VALUE"] = _indexValues[i];
-                    double measuredValue = _curveValues[pointer + (i * logCount)];
-                    if (measuredValue < -999999999999999.0 || measuredValue > 999999999999999.0)
-                    {
-                        measuredValue = Convert.ToDouble(_nullRepresentation);
-                    }
-                    newRow["MEASURED_VALUE"] = measuredValue;
-                    newRow["ROW_CREATED_BY"] = _dbConn.GetUsername();
-                    newRow["ROW_CHANGED_BY"] = _dbConn.GetUsername();
-                    newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
-                    newRow["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
-                    dtNew.Rows.Add(newRow);
+                    measuredValue = Convert.ToDouble(_nullRepresentation);
                 }
-                using (SqlConnection destinationConnection =
-                    new SqlConnection(connectionString))
-                {
-                    destinationConnection.Open();
-
-                    using (SqlBulkCopy bulkCopy =
-                    new SqlBulkCopy(destinationConnection.ConnectionString))
-                    {
-                        bulkCopy.BatchSize = 500;
-                        bulkCopy.DestinationTableName = table;
-                        bulkCopy.WriteToServer(dtNew);
-                    }
-                }
+                newRow["MEASURED_VALUE"] = measuredValue;
+                newRow["ROW_CREATED_BY"] = _dbConn.GetUsername();
+                newRow["ROW_CHANGED_BY"] = _dbConn.GetUsername();
+                newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                newRow["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                dtNew.Rows.Add(newRow);
             }
+
+            return newTable;
         }
 
 
@@ -371,7 +394,7 @@ namespace DatabaseManager.Server.Helpers
             }
         }
 
-        
+
         private string GetHeaderInfo(string wellInfo)
         {
             LASHeaderMappings headMap = new LASHeaderMappings();
@@ -473,7 +496,7 @@ namespace DatabaseManager.Server.Helpers
             {
                 throw new System.Exception("Error handling reference data");
             }
-            
+
             string newJson = json;
             return newJson;
         }
@@ -489,7 +512,7 @@ namespace DatabaseManager.Server.Helpers
                 LASLine line = DecodeLASLine(input);
                 if (line.Mnem == "VERS")
                 {
-                    if (line.Data.Substring(0,3) != "2.0")
+                    if (line.Data.Substring(0, 3) != "2.0")
                     {
                         throw new System.Exception("LAS file version not supported");
                     }
