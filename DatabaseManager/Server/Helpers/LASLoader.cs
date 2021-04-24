@@ -21,6 +21,7 @@ namespace DatabaseManager.Server.Helpers
         private string _uwi;
         private string _nullRepresentation;
         private List<string> _logCurveList;
+        private List<string> _logList;
         private List<string> _logNames = new List<string>();
         private List<double> _curveValues = new List<double>();
         private List<double> _indexValues = new List<double>();
@@ -208,38 +209,43 @@ namespace DatabaseManager.Server.Helpers
 
         private void LoadLogs()
         {
+            DataRow newRow;
             DataTable dtNew = new DataTable();
             DataAccessDef dataType = _dataDef.First(x => x.DataType == "LogCurve");
             string select = dataType.Select;
-            string table = Common.GetTable(select);
-            string sqlQuery = $"select * from {table} where 0 = 1";
+            string logCurvetable = Common.GetTable(select);
+            string sqlQuery = $"select * from {logCurvetable} where 0 = 1";
             SqlDataAdapter logCurveValueAdapter = new SqlDataAdapter(sqlQuery, connectionString);
             logCurveValueAdapter.Fill(dtNew);
-            _logCurveList = GetLogCurveList();
 
+            _logCurveList = GetLogCurveList();
+            _logList = GetLogList();
+
+            DataTable lgNew = new DataTable();
             dataType = _dataDef.First(x => x.DataType == "Log");
+            select = dataType.Select;
+            string logTable = Common.GetTable(select);
+            sqlQuery = $"select * from {logTable} where 0 = 1";
+            SqlDataAdapter logValueAdapter = new SqlDataAdapter(sqlQuery, connectionString);
+            logValueAdapter.Fill(lgNew);
             int logCount = _logNames.Count();
             GetIndexValues();
             for (int k = 1; k < logCount; k++)
             {
-                Dictionary<string, string> logHeader = new Dictionary<string, string>();
-                string[] attributes = Common.GetAttributes(dataType.Select);
-                foreach (string attribute in attributes)
-                {
-                    logHeader.Add(attribute.Trim(), "");
-                }
-                logHeader["NULL_REPRESENTATION"] = _nullRepresentation;
-                logHeader["VALUE_COUNT"] = "-99999.0";
-                logHeader["MAX_INDEX"] = "-99999.0";
-                logHeader["MIN_INDEX"] = "-99999.0";
-                logHeader["UWI"] = _uwi;
-                logHeader["ROW_CREATED_BY"] = _dbConn.GetUsername();
-                logHeader["ROW_CHANGED_BY"] = _dbConn.GetUsername();
                 string logName = Common.FixAposInStrings(_logNames[k]);
-                logHeader["CURVE_ID"] = logName;
-                string json = JsonConvert.SerializeObject(logHeader, Formatting.Indented);
-                dtNew = LoadLogHeader(json, logName, k, dtNew);
-                
+                dtNew = LoadLogCurve(logName, k, dtNew);
+                newRow = lgNew.NewRow();
+                newRow["UWI"] = _uwi;
+                newRow["CURVE_ID"] = logName;
+                newRow["NULL_REPRESENTATION"] = _nullRepresentation;
+                newRow["VALUE_COUNT"] = "-99999.0";
+                newRow["MAX_INDEX"] = "-99999.0";
+                newRow["MIN_INDEX"] = "-99999.0";
+                newRow["ROW_CREATED_BY"] = _dbConn.GetUsername();
+                newRow["ROW_CHANGED_BY"] = _dbConn.GetUsername();
+                newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                newRow["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                lgNew.Rows.Add(newRow);
             }
 
             using (SqlConnection destinationConnection =
@@ -251,7 +257,9 @@ namespace DatabaseManager.Server.Helpers
                 new SqlBulkCopy(destinationConnection.ConnectionString))
                 {
                     bulkCopy.BatchSize = 500;
-                    bulkCopy.DestinationTableName = table;
+                    bulkCopy.DestinationTableName = logTable;
+                    bulkCopy.WriteToServer(lgNew);
+                    bulkCopy.DestinationTableName = logCurvetable;
                     bulkCopy.WriteToServer(dtNew);
                 }
             }
@@ -270,6 +278,20 @@ namespace DatabaseManager.Server.Helpers
             return curves;
         }
 
+        private List<string> GetLogList()
+        {
+            List<string> curves = new List<string>();
+
+            DataAccessDef dataType = _dataDef.First(x => x.DataType == "LogCurve");
+            string select = dataType.Select;
+            string tmpUwi = Common.FixAposInStrings(_uwi);
+            string query = $" where UWI = '{tmpUwi}'";
+            DataTable dt = _dbConn.GetDataTable(select, query);
+            curves = dt.AsEnumerable().Select(p => p.Field<string>("CURVE_ID")).Distinct().ToList();
+
+            return curves;
+        }
+
         private void GetIndexValues()
         {
             int logCount = _logNames.Count();
@@ -282,20 +304,13 @@ namespace DatabaseManager.Server.Helpers
             }
         }
 
-        private DataTable LoadLogHeader(string json, string logName, int pointer, DataTable logCurve)
+        private DataTable LoadLogCurve(string logName, int pointer,
+            DataTable logCurve)
         {
             DataTable newTable = logCurve;
-            DataAccessDef dataType = _dataDef.First(x => x.DataType == "Log");
-            string select = dataType.Select;
-            string tmpUwi = Common.FixAposInStrings(_uwi);
-            string query = $" where UWI = '{tmpUwi}' and CURVE_ID = '{logName}'";
-            DataTable dt = _dbConn.GetDataTable(select, query);
-            if (dt.Rows.Count == 0)
+            if (!_logList.Contains(logName))
             {
-                json = Common.SetJsonDataObjectDate(json, "ROW_CREATED_DATE");
-                json = Common.SetJsonDataObjectDate(json, "ROW_CHANGED_DATE");
-
-                _dbConn.InsertDataObject(json, "Log");
+                _logList.Add(logName);
                 if (!_logCurveList.Contains(logName))
                 {
                     newTable = GetNewLogCurve(logCurve, pointer, logName);
