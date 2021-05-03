@@ -7,8 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using DatabaseManager.Server.Helpers;
 using DatabaseManager.Shared;
-using Microsoft.Azure.Storage;
-using Microsoft.Azure.Storage.File;
 using Microsoft.AspNetCore.Hosting;
 using DatabaseManager.Server.Entities;
 using System.Data;

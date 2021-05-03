@@ -9,8 +9,6 @@ using DatabaseManager.Shared;
 using DatabaseManager.Server.Helpers;
 using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json.Linq;
-using Microsoft.Azure.Storage;
-using Microsoft.Azure.Storage.File;
 using DatabaseManager.Server.Services;
 using DatabaseManager.Server.Entities;
 using AutoMapper;

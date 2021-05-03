@@ -5,8 +5,8 @@
     <UserSecretsId>7054b243-b42a-4283-b9e2-b2f893eaa62d</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.Storage.Common" Version="12.6.0" />
-    <PackageReference Include="Azure.Storage.Files.Shares" Version="12.5.0" />
+    <PackageReference Include="Azure.Storage.Common" Version="12.7.1" />
+    <PackageReference Include="Azure.Storage.Files.Shares" Version="12.6.1" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.5.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.15.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />

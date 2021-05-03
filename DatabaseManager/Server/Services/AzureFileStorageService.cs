@@ -1,58 +1,65 @@
-﻿using Microsoft.Azure.Storage;
-using Microsoft.Azure.Storage.File;
+﻿using Azure.Storage.Files.Shares;
+using Azure.Storage.Files.Shares.Models;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace DatabaseManager.Server.Services
 {
-    public class AzureFileStorageService: IFileStorageService
+    public class AzureFileStorageService : IFileStorageService
     {
         private string connectionString;
 
         public AzureFileStorageService(IConfiguration configuration)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
+
         }
 
         public async Task SaveFile(string fileShare, string fileName, string fileContent)
         {
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            CloudFileClient fileClient = account.CreateCloudFileClient();
-            CloudFileShare share = fileClient.GetShareReference(fileShare);
+            ShareClient share = new ShareClient(connectionString, fileShare);
             if (!share.Exists())
             {
                 share.Create();
             }
-            CloudFileDirectory rootDir = share.GetRootDirectoryReference();
-            CloudFile file = rootDir.GetFileReference(fileName);
+            ShareDirectoryClient rootDir = share.GetRootDirectoryClient();
+            ShareFileClient file = rootDir.GetFileClient(fileName);
             if (!file.Exists())
             {
                 file.Create(fileContent.Length);
             }
 
-            await file.UploadTextAsync(fileContent);
+            byte[] outBuff = Encoding.ASCII.GetBytes(fileContent);
+            ShareFileOpenWriteOptions options = new ShareFileOpenWriteOptions { MaxSize = outBuff.Length };
+            var stream = await file.OpenWriteAsync(true, 0, options);
+            stream.Write(outBuff, 0, outBuff.Length);
+            stream.Flush();
         }
 
         public async Task<string> SaveFileUri(string fileShare, string fileName, string fileContent)
         {
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            CloudFileClient fileClient = account.CreateCloudFileClient();
-            CloudFileShare share = fileClient.GetShareReference(fileShare);
+            ShareClient share = new ShareClient(connectionString, fileShare);
             if (!share.Exists())
             {
                 share.Create();
             }
-            CloudFileDirectory rootDir = share.GetRootDirectoryReference();
-            CloudFile file = rootDir.GetFileReference(fileName);
+            ShareDirectoryClient rootDir = share.GetRootDirectoryClient();
+            ShareFileClient file = rootDir.GetFileClient(fileName);
             if (!file.Exists())
             {
                 file.Create(fileContent.Length);
             }
 
-            await file.UploadTextAsync(fileContent);
+            byte[] outBuff = Encoding.ASCII.GetBytes(fileContent);
+            ShareFileOpenWriteOptions options = new ShareFileOpenWriteOptions { MaxSize = outBuff.Length };
+            var stream = await file.OpenWriteAsync(true, 0, options);
+            stream.Write(outBuff, 0, outBuff.Length);
+            stream.Flush();
             return file.Uri.ToString();
         }
 
@@ -69,19 +76,19 @@ namespace DatabaseManager.Server.Services
         public async Task<string> ReadFile(string fileShare, string fileName)
         {
             string json = "";
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            CloudFileClient fileClient = account.CreateCloudFileClient();
-            CloudFileShare share = fileClient.GetShareReference(fileShare);
+            ShareClient share = new ShareClient(connectionString, fileShare);
             if (!share.Exists())
             {
-                Exception error = new Exception($"Fileshare {fileShare} does not exist ");
+                Exception error = new Exception($"Fileshare {fileName} does not exist ");
                 throw error;
             }
-            CloudFileDirectory rootDir = share.GetRootDirectoryReference();
-            CloudFile file = rootDir.GetFileReference(fileName);
+            ShareDirectoryClient directory = share.GetRootDirectoryClient();
+            ShareFileClient file = directory.GetFileClient(fileName);
             if (file.Exists())
             {
-                json = await file.DownloadTextAsync();
+                Stream fileStream = await file.OpenReadAsync();
+                StreamReader reader = new StreamReader(fileStream);
+                json = reader.ReadToEnd();
             }
             else
             {
@@ -94,41 +101,33 @@ namespace DatabaseManager.Server.Services
         public async Task<List<string>> ListFiles(string fileShare)
         {
             List<string> files = new List<string>();
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            CloudFileClient fileClient = account.CreateCloudFileClient();
-            CloudFileShare share = fileClient.GetShareReference(fileShare);
+            ShareClient share = new ShareClient(connectionString, fileShare);
             if (!share.Exists())
             {
                 Exception error = new Exception($"Fileshare {fileShare} does not exist ");
                 throw error;
             }
-            IEnumerable<IListFileItem> fileList = share.GetRootDirectoryReference().ListFilesAndDirectories();
-            foreach (IListFileItem listItem in fileList)
+            ShareDirectoryClient directory = share.GetRootDirectoryClient();
+            foreach (ShareFileItem item in directory.GetFilesAndDirectories())
             {
-                if (listItem.GetType() == typeof(CloudFile))
-                {
-                    files.Add(listItem.Uri.Segments.Last());
-                }
+                files.Add(item.Name);
             }
             return files;
         }
 
         public async Task DeleteFile(string fileShare, string fileName)
         {
-            List<string> files = new List<string>();
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            CloudFileClient fileClient = account.CreateCloudFileClient();
-            CloudFileShare share = fileClient.GetShareReference(fileShare);
+            ShareClient share = new ShareClient(connectionString, fileShare);
             if (!share.Exists())
             {
                 Exception error = new Exception($"Fileshare {fileShare} does not exist ");
                 throw error;
             }
-            CloudFileDirectory rootDir = share.GetRootDirectoryReference();
-            CloudFile file = rootDir.GetFileReference(fileName);
+            ShareDirectoryClient rootDir = share.GetRootDirectoryClient();
+            ShareFileClient file = rootDir.GetFileClient(fileName);
             if (file.Exists())
             {
-                file.Delete();
+                await file.DeleteAsync();
             }
             else
             {

@@ -234,18 +234,22 @@ namespace DatabaseManager.Server.Helpers
             {
                 string logName = Common.FixAposInStrings(_logNames[k]);
                 dtNew = LoadLogCurve(logName, k, dtNew);
-                newRow = lgNew.NewRow();
-                newRow["UWI"] = _uwi;
-                newRow["CURVE_ID"] = logName;
-                newRow["NULL_REPRESENTATION"] = _nullRepresentation;
-                newRow["VALUE_COUNT"] = "-99999.0";
-                newRow["MAX_INDEX"] = "-99999.0";
-                newRow["MIN_INDEX"] = "-99999.0";
-                newRow["ROW_CREATED_BY"] = _dbConn.GetUsername();
-                newRow["ROW_CHANGED_BY"] = _dbConn.GetUsername();
-                newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
-                newRow["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
-                lgNew.Rows.Add(newRow);
+                if (!_logList.Contains(logName))
+                {
+                    newRow = lgNew.NewRow();
+                    newRow["UWI"] = _uwi;
+                    newRow["CURVE_ID"] = logName;
+                    newRow["NULL_REPRESENTATION"] = _nullRepresentation;
+                    newRow["VALUE_COUNT"] = "-99999.0";
+                    newRow["MAX_INDEX"] = "-99999.0";
+                    newRow["MIN_INDEX"] = "-99999.0";
+                    newRow["ROW_CREATED_BY"] = _dbConn.GetUsername();
+                    newRow["ROW_CHANGED_BY"] = _dbConn.GetUsername();
+                    newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                    newRow["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                    lgNew.Rows.Add(newRow);
+                    _logList.Add(logName);
+                }
             }
 
             using (SqlConnection destinationConnection =
@@ -282,7 +286,7 @@ namespace DatabaseManager.Server.Helpers
         {
             List<string> curves = new List<string>();
 
-            DataAccessDef dataType = _dataDef.First(x => x.DataType == "LogCurve");
+            DataAccessDef dataType = _dataDef.First(x => x.DataType == "Log");
             string select = dataType.Select;
             string tmpUwi = Common.FixAposInStrings(_uwi);
             string query = $" where UWI = '{tmpUwi}'";
@@ -308,14 +312,10 @@ namespace DatabaseManager.Server.Helpers
             DataTable logCurve)
         {
             DataTable newTable = logCurve;
-            if (!_logList.Contains(logName))
+            if (!_logCurveList.Contains(logName))
             {
-                _logList.Add(logName);
-                if (!_logCurveList.Contains(logName))
-                {
-                    newTable = GetNewLogCurve(logCurve, pointer, logName);
-                    _logCurveList.Add(logName);
-                }
+                newTable = GetNewLogCurve(logCurve, pointer, logName);
+                _logCurveList.Add(logName);
             }
             return newTable;
         }
