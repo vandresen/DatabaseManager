@@ -40,10 +40,11 @@ namespace DatabaseManager.Server.Services
 
         public async Task<T> GetTableRecord<T>(string container, string name) where T : ITableEntity, new()
         {
+            T data = new T();
             CloudTable table = GetTableConnect(connectionString, container);
             TableOperation retrieveOperation = TableOperation.Retrieve<T>("PPDM", name);
             TableResult result = await table.ExecuteAsync(retrieveOperation);
-            T data = (T)result.Result;
+            data = (T)result.Result;
             return data;
         }
 

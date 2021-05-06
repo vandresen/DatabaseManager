@@ -43,6 +43,12 @@ namespace DatabaseManager.Client.Helpers
             return new HttpResponseWrapper<object>(null, response.IsSuccessStatusCode, response);
         }
 
+        public async Task<HttpResponseWrapper<object>> Post(string url)
+        {
+            var response = await httpClient.PostAsync(url, null);
+            return new HttpResponseWrapper<object>(null, response.IsSuccessStatusCode, response);
+        }
+
         public async Task<HttpResponseWrapper<object>> Post<T>(string url, T data)
         {
             var dataJson = JsonSerializer.Serialize(data);

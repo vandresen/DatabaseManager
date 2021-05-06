@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Client", "D
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Shared", "DatabaseManager\Shared\DatabaseManager.Shared.csproj", "{386E0182-3078-467C-AD1D-B2799953D6D7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.AppFunctions", "DatabaseManager.AppFunctions\DatabaseManager.AppFunctions.csproj", "{2A33A814-8255-460D-B21C-00C0A2A58FB0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.AppFunctions", "DatabaseManager.AppFunctions\DatabaseManager.AppFunctions.csproj", "{2A33A814-8255-460D-B21C-00C0A2A58FB0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,5 +1,12 @@
-﻿using DatabaseManager.Server.Services;
+﻿using Azure.Storage.Queues;
+using DatabaseManager.Server.Helpers;
+using DatabaseManager.Server.Services;
+using DatabaseManager.Shared;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,9 +19,13 @@ namespace DatabaseManager.Server.Controllers
     public class DataOpsController : Controller
     {
         private readonly IFileStorageService fileStorageService;
+        private string connectionString;
+        private string dataOpsQueue;
 
-        public DataOpsController(IFileStorageService fileStorageService)
+        public DataOpsController(IConfiguration configuration, IFileStorageService fileStorageService)
         {
+            connectionString = configuration.GetConnectionString("AzureStorageConnection");
+            dataOpsQueue = configuration["DataOpsQueue"];
             this.fileStorageService = fileStorageService;
         }
 
@@ -23,51 +34,40 @@ namespace DatabaseManager.Server.Controllers
         {
             SetStorageAccount();
             List<string> result = await fileStorageService.ListFiles("dataops");
-
             return result;
         }
 
-        [HttpPost()]
-        public async Task<ActionResult<string>> execute()
+        [HttpPost("{name}")]
+        public async Task<ActionResult<string>> execute(string name)
         {
-            //string baseUrl = @"https://localhost:44386/api/";
-            //string storageAccount = "DefaultEndpointsProtocol=https;AccountName=petrodataonlinestorage;AccountKey=5AqpguqLaWYyF0hsDxUX66f8dAyJLnoc6Q4K6Rhngvu9iYn9YubljP4Lc+Hst4hY6MCuuo8ietla5n57b9ScJw==;EndpointSuffix=core.windows.net";
+            SetStorageAccount();
+            string baseUrl = $"{Request.Scheme}://{Request.Host.Value.ToString()}{Request.PathBase.Value.ToString()}/api/";
+            string storageAccount = connectionString;
 
-            //var builder = new ConfigurationBuilder();
-            //IConfiguration configuration = builder.Build();
-            //IFileStorageService fileStorageService = new AzureFileStorageService(configuration);
-            //fileStorageService.SetConnectionString(storageAccount);
+            string queueName = dataOpsQueue;
+            string fileShare = "dataops";
 
-            //string fileShare = "dataops";
-            //string artifactType = "CreateIndex";
-            //string pipeLineName = "TestPipeLine";
-            //string fileName = pipeLineName + ".txt";
-
-            //fileStorageService.ReadFile(fileShare, fileName);
-
-            //string queueName = "dataopsqueue";
-
-            //string dataOpsFile = fileStorageService.ReadFile(fileShare, fileName).GetAwaiter().GetResult();
-            //List<PipeLine> dataOps = JsonConvert.DeserializeObject<List<PipeLine>>(dataOpsFile);
-            //PipeLine firstDataOps = dataOps.First();
-            //JArray JsonDataOpsArray = JArray.Parse(dataOpsFile);
-
-            //var jToken = JsonDataOpsArray[0];
-            //artifactType = (string)jToken["ArtifactType"];
-            //int artifactId = (int)jToken["Id"];
-            //string parameters = jToken["Parameters"].ToString();
-            //DataOpParameters parms = new DataOpParameters()
-            //{
-            //    Id = firstDataOps.Id,
-            //    Name = pipeLineName,
-            //    Url = baseUrl + firstDataOps.ArtifactType,
-            //    StorageAccount = storageAccount,
-            //    JsonParameterString = firstDataOps.Parameters.ToString()
-            //};
-            //string json = JsonConvert.SerializeObject(parms);
-            //string message = json.EncodeBase64();
-            //int messageLength = message.Length;
-            //InsertMessage(queueName, message);
+            string dataOpsFile = await fileStorageService.ReadFile(fileShare, name);
+            List<PipeLine> dataOps = JsonConvert.DeserializeObject<List<PipeLine>>(dataOpsFile);
+            PipeLine firstDataOps = dataOps.First();
+            JArray JsonDataOpsArray = JArray.Parse(dataOpsFile);
+            
+            var jToken = JsonDataOpsArray[0];
+            string artifactType = (string)jToken["ArtifactType"];
+            int artifactId = (int)jToken["Id"];
+            string parameters = jToken["Parameters"].ToString();
+            DataOpParameters parms = new DataOpParameters()
+            {
+                Id = firstDataOps.Id,
+                Name = name,
+                Url = baseUrl + firstDataOps.ArtifactType,
+                StorageAccount = storageAccount,
+                JsonParameterString = firstDataOps.Parameters.ToString()
+            };
+            string json = JsonConvert.SerializeObject(parms);
+            string message = json.EncodeBase64();
+            int messageLength = message.Length;
+            InsertMessage(queueName, message, storageAccount);
 
             return Ok($"OK");
         }
@@ -75,19 +75,20 @@ namespace DatabaseManager.Server.Controllers
         private void SetStorageAccount()
         {
             string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (string.IsNullOrEmpty(connectionString)) connectionString = tmpConnString;
             fileStorageService.SetConnectionString(tmpConnString);
         }
 
         private void InsertMessage(string queueName, string message, string connectionString)
         {
-            //QueueClient queueClient = new QueueClient(connectionString, queueName);
+            QueueClient queueClient = new QueueClient(connectionString, queueName);
 
-            //queueClient.CreateIfNotExists();
+            queueClient.CreateIfNotExists();
 
-            //if (queueClient.Exists())
-            //{
-            //    queueClient.SendMessage(message);
-            //}
+            if (queueClient.Exists())
+            {
+                queueClient.SendMessage(message);
+            }
         }
     }
 }

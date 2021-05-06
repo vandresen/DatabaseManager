@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using DatabaseManager.AppFunctions.Entities;
 using DatabaseManager.AppFunctions.Helpers;
 using DatabaseManager.Shared;
 using Microsoft.Azure.WebJobs;
@@ -26,12 +27,15 @@ namespace DatabaseManager.AppFunctions
         }
 
         [FunctionName("DataOpsQue")]
-        public async Task Run([QueueTrigger("dataopsqueue", Connection = "AzureStorageConnection")]string myQueueItem, ILogger log)
+        public async Task Run([QueueTrigger("dataopsqueue", Connection = "AzureStorageConnection")]string myQueueItem, 
+            ILogger log, ExecutionContext context)
         {
             log.LogInformation($"C# Queue trigger function processed: {myQueueItem}");
 
             try
             {
+                ConfigurationInfo configuration = Utilities.GetConfigurations(context);
+                log.LogInformation($"Queue is: {configuration.DataOpsQueue}");
                 string fileShare = "dataops";
 
                 DataOpParameters parms = JsonConvert.DeserializeObject<DataOpParameters>(myQueueItem);
@@ -60,7 +64,7 @@ namespace DatabaseManager.AppFunctions
                 IFileStorageService fileStorageService = new AzureFileStorageService(fileStorageConfiguration);
                 fileStorageService.SetConnectionString(AzureStorage);
 
-                string fileName = parms.Name + ".txt";
+                string fileName = parms.Name;
                 string dataOpsFile = fileStorageService.ReadFile(fileShare, fileName).GetAwaiter().GetResult();
                 log.LogInformation(dataOpsFile);
                 List<PipeLine> dataOps = JsonConvert.DeserializeObject<List<PipeLine>>(dataOpsFile);

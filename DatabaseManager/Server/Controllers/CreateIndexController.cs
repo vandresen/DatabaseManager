@@ -12,6 +12,8 @@ using Newtonsoft.Json.Linq;
 using DatabaseManager.Server.Services;
 using DatabaseManager.Server.Entities;
 using AutoMapper;
+using Microsoft.Extensions.Logging;
+using Microsoft.Azure.Cosmos.Table;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -24,18 +26,21 @@ namespace DatabaseManager.Server.Controllers
         private readonly string taxonomyShare = "taxonomy";
         private readonly IFileStorageService fileStorageService;
         private readonly ITableStorageService tableStorageService;
+        private readonly ILogger<CreateIndexController> logger;
         private readonly IMapper mapper;
         private readonly IWebHostEnvironment _env;
 
         public CreateIndexController(IConfiguration configuration,
             IFileStorageService fileStorageService,
             ITableStorageService tableStorageService,
+            ILogger<CreateIndexController> logger,
             IMapper mapper,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
             this.tableStorageService = tableStorageService;
+            this.logger = logger;
             this.mapper = mapper;
             _env = env;
         }
@@ -79,6 +84,7 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost]
         public async Task<ActionResult> Create(CreateIndexParameters iParameters)
         {
+            logger.LogInformation("CreateIndexController: Starting index create");
             string tmpConnString = Request.Headers["AzureStorageConnection"];
             if (iParameters == null) return BadRequest();
             if (string.IsNullOrEmpty(iParameters.Taxonomy)) return BadRequest("Taxonomy not selected");
@@ -87,11 +93,12 @@ namespace DatabaseManager.Server.Controllers
             {
                 fileStorageService.SetConnectionString(tmpConnString);
                 tableStorageService.SetConnectionString(tmpConnString);
-                //IndexBuilder iBuilder = new IndexBuilder();
                 
                 string jsonTaxonomy = await fileStorageService.ReadFile("taxonomy", iParameters.Taxonomy);
                 string jsonConnectDef = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+
                 SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, iParameters.TargetName);
+                if (entity == null) return BadRequest($"No source with name {iParameters.TargetName}");
                 ConnectParameters target = mapper.Map<ConnectParameters>(entity);
                 ConnectParameters source = new ConnectParameters();
                 if (iParameters.TargetName == iParameters.SourceName)
@@ -105,6 +112,7 @@ namespace DatabaseManager.Server.Controllers
                 }
 
                 IndexBuilder iBuilder = new IndexBuilder();
+                
                 if (source.SourceType == "DataBase")
                 {
                     iBuilder = new IndexBuilder(new DBDataAccess());
@@ -122,7 +130,8 @@ namespace DatabaseManager.Server.Controllers
                     }
                     
                 }
-                
+
+                logger.LogInformation("CreateIndexController: start indexing");
                 target.DataAccessDefinition = jsonConnectDef;
                 iBuilder.InitializeIndex(target, source, jsonTaxonomy);
                 iBuilder.CreateRoot(source);
@@ -159,6 +168,7 @@ namespace DatabaseManager.Server.Controllers
             }
             catch (Exception ex)
             {
+                logger.LogInformation($"CreateIndexController: Error message = {ex}");
                 return BadRequest(ex.ToString());
             }
 
