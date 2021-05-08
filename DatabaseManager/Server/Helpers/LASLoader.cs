@@ -20,9 +20,11 @@ namespace DatabaseManager.Server.Helpers
         private DbUtilities _dbConn;
         private string _uwi;
         private string _nullRepresentation;
+        private string _logSource;
         private List<string> _logCurveList;
         private List<string> _logList;
         private List<string> _logNames = new List<string>();
+        private List<LASLine> _mnemInfo;
         private List<double> _curveValues = new List<double>();
         private List<double> _indexValues = new List<double>();
         private List<ReferenceTable> _references = new List<ReferenceTable>();
@@ -35,6 +37,7 @@ namespace DatabaseManager.Server.Helpers
         {
             _dbConn = new DbUtilities();
             _nullRepresentation = "-999.25";
+            _mnemInfo = new List<LASLine>();
             this.fileStorageService = fileStorageService;
         }
 
@@ -173,6 +176,7 @@ namespace DatabaseManager.Server.Helpers
         public async Task LoadLASFile(ConnectParameters source, ConnectParameters target,
             string fileName, string ReferenceTableDefJson)
         {
+            _logSource = fileName;
             connectionString = target.ConnectionString;
             _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(target.DataAccessDefinition);
             _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(ReferenceTableDefJson);
@@ -236,6 +240,12 @@ namespace DatabaseManager.Server.Helpers
                 dtNew = LoadLogCurve(logName, k, dtNew);
                 if (!_logList.Contains(logName))
                 {
+                    LASLine mnemInfoItem = _mnemInfo.First(x => x.Mnem == logName);
+                    string description = "";
+                    if (mnemInfoItem != null)
+                    {
+                        description = mnemInfoItem.Description;
+                    }
                     newRow = lgNew.NewRow();
                     newRow["UWI"] = _uwi;
                     newRow["CURVE_ID"] = logName;
@@ -243,6 +253,8 @@ namespace DatabaseManager.Server.Helpers
                     newRow["VALUE_COUNT"] = "-99999.0";
                     newRow["MAX_INDEX"] = "-99999.0";
                     newRow["MIN_INDEX"] = "-99999.0";
+                    newRow["SOURCE"] = _logSource;
+                    newRow["REPORTED_DESC"] = description;
                     newRow["ROW_CREATED_BY"] = _dbConn.GetUsername();
                     newRow["ROW_CHANGED_BY"] = _dbConn.GetUsername();
                     newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
@@ -386,14 +398,6 @@ namespace DatabaseManager.Server.Helpers
 
         private void GetCurveInfo(string curveInfo)
         {
-            DataAccessDef dataType = _dataDef.First(x => x.DataType == "Log");
-            Dictionary<string, string> log = new Dictionary<string, string>();
-            string[] attributes = Common.GetAttributes(dataType.Select);
-            foreach (string attribute in attributes)
-            {
-                log.Add(attribute.Trim(), "");
-            }
-
             string input = null;
             StringReader sr = new StringReader(curveInfo);
             while ((input = sr.ReadLine()) != null)
@@ -401,10 +405,14 @@ namespace DatabaseManager.Server.Helpers
                 LASLine line = DecodeLASLine(input);
                 if (!string.IsNullOrEmpty(line.Mnem))
                 {
-                    log["CURVE_ID"] = line.Mnem.Trim();
                     _logNames.Add(line.Mnem.Trim());
-                    log["UWI"] = _uwi;
-                    var json = JsonConvert.SerializeObject(log, Formatting.Indented);
+                    _mnemInfo.Add(new LASLine
+                    {
+                        Mnem = line.Mnem.Trim(),
+                        Unit = line.Unit.Trim(),
+                        Data = line.Data.Trim(),
+                        Description = line.Description
+                    });
                 }
             }
         }
@@ -560,7 +568,7 @@ namespace DatabaseManager.Server.Helpers
                     line.Mnem = line.Mnem.Trim();
                     input = input.Substring(firstDot + 1);
                     int firstSpace = input.IndexOf(" ");
-                    string unit = string.Empty;
+                    line.Unit = "";
                     if (firstSpace > 0)
                     {
                         line.Unit = input.Substring(0, firstSpace);
