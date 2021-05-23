@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -19,6 +20,67 @@ namespace DatabaseManager.Server.Helpers
             result.SaveType = "Delete";
             result.Status = "Passed";
             result.IndexId = qcSetup.IndexId;
+
+            return result;
+        }
+
+        public static PredictionResult PredictFormationOrder(QcRuleSetup qcSetup, DbUtilities dbConn)
+        {
+            List<StratUnits> inv = new List<StratUnits>();
+            PredictionResult result = new PredictionResult
+            {
+                Status = "Failed"
+            };
+            string formation;
+            string tempTable = "#MinMaxAllFormationPick";
+
+            DataTable idx = new DataTable();
+
+            try
+            {
+                string select = "select * from #MinMaxAllFormationPick";
+                string query = "";
+                idx = dbConn.GetDataTable(select, query);
+            }
+            catch (Exception ex)
+            {
+                if (ex.InnerException.Message.Contains("Invalid object name"))
+                {
+                    string select = $"EXEC spGetMinMaxAllFormationPick";
+                    string query = "";
+                    idx = dbConn.GetDataTable(select, query);
+                    string SQLCreateTempTable = Common.GetCreateSQLFromDataTable(tempTable, idx);
+                    dbConn.SQLExecute(SQLCreateTempTable);
+                    dbConn.BulkCopy(idx, tempTable);
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            JObject dataObject = JObject.Parse(qcSetup.DataObject);
+            formation = dataObject["STRAT_UNIT_ID"].ToString();
+            string tmpFormation = Common.FixAposInStrings(formation);
+            string condition = $"STRAT_UNIT_ID = '{tmpFormation}'";
+            var rows = idx.Select(condition);
+            if (rows.Length == 1)
+            {
+                RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+                int age = Convert.ToInt32(rows[0]["AGE"]);
+                dataObject[rule.DataAttribute] = age;
+                string remark = dataObject["REMARK"] + $";{rule.DataAttribute} has been predicted by QCEngine;";
+                dataObject["REMARK"] = remark;
+                result.DataObject = dataObject.ToString();
+                result.DataType = rule.DataType;
+                result.SaveType = "Update";
+                result.IndexId = qcSetup.IndexId;
+                result.Status = "Passed";
+            }
+            else if (rows.Length > 1)
+            {
+                throw new Exception("PredictFormationOrder: Multiple occurences of formation not allowed");
+            }
 
             return result;
         }

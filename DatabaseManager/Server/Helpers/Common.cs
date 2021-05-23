@@ -177,6 +177,62 @@ namespace DatabaseManager.Server.Helpers
             return stdDev;
         }
 
+        public static string GetCreateSQLFromDataTable(string tableName, DataTable schema)
+        {
+            string sql = "CREATE TABLE [" + tableName + "] (\n";
+
+            // columns
+            foreach (DataColumn column in schema.Columns)
+            {
+                string columnName = column.ColumnName;
+                string columnType = DataTableToSQLConvertType(column);
+                sql += "\t[" + columnName + "] " + columnType;
+                sql += ",\n";
+            }
+            sql = sql.TrimEnd(new char[] { ',', '\n' }) + "\n";
+
+            sql += ")";
+
+            return sql;
+        }
+
+        public static string DataTableToSQLConvertType(DataColumn column)
+        {
+            string type = column.DataType.Name;
+            int columnSize = column.MaxLength;
+            switch (type)
+            {
+                case "String":
+                    return "VARCHAR(" + ((columnSize == -1) ? "255" : (columnSize > 8000) ? "MAX" : columnSize.ToString()) + ")";
+
+                case "Decimal":
+                        return "REAL";
+
+                case "Double":
+                case "Single":
+                    return "REAL";
+
+                case "Int64":
+                    return "BIGINT";
+
+                case "Int16":
+                case "Int32":
+                    return "INT";
+
+                case "DateTime":
+                    return "DATETIME";
+
+                case "Boolean":
+                    return "BIT";
+
+                case "Byte":
+                    return "TINYINT";
+
+                default:
+                    throw new Exception(type.ToString() + " not implemented.");
+            }
+        }
+
         public static RuleModel GetRule(DbUtilities dbConn, int id, List<DataAccessDef> accessDefs)
         {
             List<RuleModel> rules = new List<RuleModel>();

@@ -166,6 +166,23 @@ namespace DatabaseManager.Server.Helpers
             return userName;
         }
 
+        public void BulkCopy(DataTable dt, string table)
+        {
+            try
+            {
+                SqlBulkCopy bulkCopy = new SqlBulkCopy(this.sqlCn);
+                bulkCopy.DestinationTableName = table;
+                bulkCopy.BulkCopyTimeout = _sqlTimeOut;
+                bulkCopy.WriteToServer(dt);
+            }
+            catch (Exception ex)
+            {
+                Exception error = new Exception("DBUtility: Error bulk copy data object: ", ex);
+                throw;
+            }
+            
+        }
+
         public void InsertDataObject(string jsonData, string dataType)
         {
             string sql = "spInsert" + dataType;

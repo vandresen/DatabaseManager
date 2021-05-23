@@ -183,6 +183,42 @@ BEGIN
 END
 GO
 
+DROP PROCEDURE IF EXISTS spGetMinMaxAllFormationPick;
+GO
+CREATE PROCEDURE spGetMinMaxAllFormationPick
+AS
+BEGIN
+	drop table if exists #TempTable
+	drop table if exists #TempTable2
+	drop table if exists #TempTable3
+	drop table if exists #MinMaxAllFormationPick
+	select JSON_VALUE(JSONDATAOBJECT,'$.STRAT_UNIT_ID') AS STRAT_UNIT_ID, JSON_VALUE(JSONDATAOBJECT,'$.PICK_DEPTH') AS DEPTH INTO #TempTable from pdo_qc_index 
+		where DATATYPE = 'MarkerWell' and JSONDATAOBJECT != ''
+	select STRAT_UNIT_ID, TRY_CONVERT(float, DEPTH) As DEPTH into #TempTable2 from #TempTable
+
+	delete from #TempTable2 where DEPTH is null
+
+	select 
+	STRAT_UNIT_ID, 
+	min(DEPTH) as MIN, 
+	max(DEPTH) as MAX  
+	into #TempTable3 
+	from #TempTable2 
+	group by STRAT_UNIT_ID
+
+	SELECT 
+	ROW_NUMBER() OVER ( ORDER BY MIN ) AGE,
+	STRAT_UNIT_ID, 
+	MIN, 
+	MAX
+	INTO #MinMaxAllFormationPick
+	FROM 
+	#TempTable3
+
+	select * from #MinMaxAllFormationPick
+END
+GO
+
 DROP PROCEDURE IF EXISTS spInsertIndex;
 DROP TYPE IF EXISTS UDIndexTable;
 GO

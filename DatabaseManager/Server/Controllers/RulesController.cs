@@ -141,9 +141,9 @@ namespace DatabaseManager.Server.Controllers
                 }
                 return result;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return BadRequest();
+                return BadRequest(ex.ToString());
             }
             
         }

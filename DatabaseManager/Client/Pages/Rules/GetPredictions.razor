@@ -2,6 +2,7 @@
 @inject SingletonServices singleton
 @inject IRules rules
 @inject NavigationManager navigationManager
+@inject IDisplayMessage displayMessage
 
 <h3>Predictions</h3>
 
@@ -18,14 +19,14 @@
             <tbody>
                 @foreach (var item in psPagination)
                 {
-                <tr>
-                    <td>
-                        <button class="btn btn-success" @onclick="@(() => SelectedPrediction(item.Name))">Select</button>
-                        <button class="btn btn-danger" @onclick="@(() => Delete(item.Name))">Delete</button>
-                    </td>
-                    <td>@item.Name</td>
-                    <td>@item.Description</td>
-                </tr>
+                    <tr>
+                        <td>
+                            <button class="btn btn-success" @onclick="@(() => SelectedPrediction(item.Name))">Select</button>
+                            <button class="btn btn-danger" @onclick="@(() => Delete(item.Name))">Delete</button>
+                        </td>
+                        <td>@item.Name</td>
+                        <td>@item.Description</td>
+                    </tr>
                 }
             </tbody>
         </table>
@@ -63,6 +64,7 @@
     {
         try
         {
+            Console.WriteLine($"Selected rule set is {name}");
             List<RuleModel> currentRules = await rules.GetRules(singleton.TargetConnector);
             foreach (RuleModel currRule in currentRules)
             {
@@ -78,7 +80,14 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Errors: {ex}");
+            if (ex.ToString().Contains("does not exist in Azure storage"))
+            {
+                await displayMessage.DisplayErrorMessage("The rule file is missing. Delete from from list");
+            }
+            else
+            {
+                Console.WriteLine($"Errors: {ex}");
+            }
         }
 
     }
