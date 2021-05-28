@@ -111,7 +111,9 @@
 
             int progressInterval = (100 / ResultList.Count) - 1;
             barValue = 1;
-            qcParams.ClearQCFlags = true;
+            qcParams.ClearQCFlags = false;
+
+            await qc.ClearQCFlags(singleton.TargetConnector);
 
             foreach (QcResult rule in ResultList)
             {

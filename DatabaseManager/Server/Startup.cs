@@ -13,6 +13,8 @@ using Azure.Storage.Queues;
 using Azure.Storage.Blobs;
 using Azure.Core.Extensions;
 using AutoMapper;
+using System.Reflection;
+using System.IO;
 
 namespace DatabaseManager.Server
 {
@@ -50,6 +52,9 @@ namespace DatabaseManager.Server
                         Url = new Uri("https://petrodataonline.com/")
                     }
                 });
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                config.IncludeXmlComments(xmlPath);
             });
             services.AddAzureClients(builder =>
             {

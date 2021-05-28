@@ -11,6 +11,18 @@ BEGIN
 END;
 GO
 
+DROP PROCEDURE IF EXISTS spClearQCFlags;
+GO
+CREATE PROC spClearQCFlags   
+AS   
+BEGIN  
+   BEGIN TRANSACTION  
+      UPDATE pdo_qc_index
+	  SET QC_STRING = ''
+   COMMIT  
+END;
+GO
+
 DROP PROCEDURE IF EXISTS spAddIndex;
 GO
 CREATE PROC spAddIndex(@parentid int, @d_name varchar(40), @type varchar(40), @datakey varchar(400), @jsondataobject varchar(max))   

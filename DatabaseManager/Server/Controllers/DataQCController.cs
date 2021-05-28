@@ -103,6 +103,41 @@ namespace DatabaseManager.Server.Controllers
             return result;
         }
 
+        /// <summary>
+        /// Will clear the QC flags in the index for the selected source
+        /// </summary>
+        /// <param name="source">Name of the source connector</param>
+        /// <returns></returns>
+        [HttpPost("ClearQCFlags/{source}")]
+        public async Task<ActionResult<string>> ClearQCFlags(string source)
+        {
+            if ( String.IsNullOrEmpty(source)) return BadRequest();
+
+            try
+            {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                tableStorageService.SetConnectionString(tmpConnString);
+                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                if (entity == null) return BadRequest("Could not find source connector");
+                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
+                DbUtilities dbConn = new DbUtilities();
+                dbConn.OpenConnection(connector);
+                dbConn.SQLExecute("EXEC spClearQCFlags");
+                dbConn.CloseConnection();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.ToString());
+            }
+            
+            return Ok($"OK");
+        }
+
+        /// <summary>
+        /// Will execute a QC rule based on the parameters settings
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
         [HttpPost]
         public async Task<ActionResult<string>> ExecuteRule(DataQCParameters qcParams)
         {

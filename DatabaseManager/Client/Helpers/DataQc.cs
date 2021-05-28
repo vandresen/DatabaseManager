@@ -36,6 +36,15 @@ namespace DatabaseManager.Client.Helpers
             return response.Response;
         }
 
+        public async Task ClearQCFlags(string source)
+        {
+            var response = await httpService.Post($"{url}/ClearQCFlags/{source}");
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
+
         public async Task ProcessQCRule(DataQCParameters qcParams)
         {
             var response = await httpService.Post(url, qcParams);

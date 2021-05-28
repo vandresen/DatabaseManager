@@ -6,6 +6,11 @@
     <UserSecretsId>aafbc8e0-3175-4fc0-a75a-182e7746c8f9</UserSecretsId>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.3.0" />
