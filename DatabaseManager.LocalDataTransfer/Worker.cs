@@ -43,7 +43,7 @@ namespace DatabaseManager.LocalDataTransfer
                         {
                             _logger.LogInformation($"Message: '{message.MessageText}', {DateTimeOffset.Now}");
                             queueClient.DeleteMessage(message.MessageId, message.PopReceipt);
-                            DataTransfer trans = new DataTransfer(_logger);
+                            DataTransfer trans = new DataTransfer(_logger, _appSettings);
                             trans.DeleteTables();
                             trans.CopyTables();
                         }

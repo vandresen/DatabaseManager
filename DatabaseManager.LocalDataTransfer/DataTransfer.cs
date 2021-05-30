@@ -1,5 +1,6 @@
 ﻿using DatabaseManager.Components;
 using DatabaseManager.Shared;
+using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -13,12 +14,16 @@ namespace DatabaseManager.LocalDataTransfer
     public class DataTransfer
     {
         private readonly ILogger<Worker> _logger;
+        private readonly AppSettings _appSeting;
         private DbUtilities _dbConn;
+        private readonly string container = "sources";
 
-        public DataTransfer(ILogger<Worker> logger)
+        public DataTransfer(ILogger<Worker> logger,
+            AppSettings appSeting)
         {
             _dbConn = new DbUtilities();
             _logger = logger;
+            _appSeting = appSeting;
         }
 
         public void DeleteTables()
@@ -56,18 +61,10 @@ namespace DatabaseManager.LocalDataTransfer
             try
             {
                 ConnectParameters target = new ConnectParameters();
-                target.SourceType = "";
-                target.SourceName = "PPDM_TEST4";
-                target.Catalog = "PPDM_TEST4";
-                target.DatabaseServer = "VIDARSURFACEPRO";
-                target.ConnectionString = @"Data Source=VIDARSURFACEPRO;Initial Catalog=PPDM_TEST4;Integrated Security=True;Connect Timeout=6000;MultipleActiveResultSets=True";
+                target.ConnectionString = GetConnectionString("PPDM_TEST4");
 
                 ConnectParameters source = new ConnectParameters();
-                source.SourceType = "";
-                source.SourceName = "Testdata";
-                source.Catalog = "Testdata";
-                source.DatabaseServer = "VIDARSURFACEPRO";
-                source.ConnectionString = @"Data Source=VIDARSURFACEPRO;Initial Catalog=Testdata;Integrated Security=True;Connect Timeout=6000;MultipleActiveResultSets=True";
+                source.ConnectionString = GetConnectionString("Testdata");
 
                 sourceConn = new SqlConnection(source.ConnectionString);
                 destinationConn = new SqlConnection(target.ConnectionString);
@@ -114,6 +111,27 @@ namespace DatabaseManager.LocalDataTransfer
                     throw error;
                 }
             }
+        }
+
+        private string GetConnectionString(string name)
+        {
+            string cnStr = "";
+
+            CloudTable table = GetTableConnect(_appSeting.StorageAccount, container);
+            TableOperation retrieveOperation = TableOperation.Retrieve<SourceEntity>("PPDM", name);
+            TableResult result = table.Execute(retrieveOperation);
+            SourceEntity data = (SourceEntity)result.Result;
+            cnStr = data.ConnectionString;
+
+            return cnStr;
+        }
+
+        private CloudTable GetTableConnect(string connectionString, string tableName)
+        {
+            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
+            CloudTableClient client = account.CreateCloudTableClient();
+            CloudTable table = client.GetTableReference(tableName);
+            return table;
         }
     }
 }
