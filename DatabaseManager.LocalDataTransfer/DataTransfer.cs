@@ -2,6 +2,7 @@
 using DatabaseManager.Shared;
 using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
@@ -17,6 +18,8 @@ namespace DatabaseManager.LocalDataTransfer
         private readonly AppSettings _appSeting;
         private DbUtilities _dbConn;
         private readonly string container = "sources";
+        private string target;
+        private string source;
 
         public DataTransfer(ILogger<Worker> logger,
             AppSettings appSeting)
@@ -26,17 +29,28 @@ namespace DatabaseManager.LocalDataTransfer
             _appSeting = appSeting;
         }
 
+        public void GetTransferConnector(string message)
+        {
+            try
+            {
+                TransferParameters transParms = JsonConvert.DeserializeObject<TransferParameters>(message);
+                target = GetConnectionString(transParms.TargetName);
+                _logger.LogInformation($"Target connect string: {target}");
+                source = GetConnectionString(transParms.SourceName);
+                _logger.LogInformation($"Source connect string: {source}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation($"Error getting connector info {ex.ToString()}");
+            }
+            
+        }
+
         public void DeleteTables()
         {
             try
             {
-                ConnectParameters target = new ConnectParameters();
-                target.SourceType = "";
-                target.SourceName = "PPDM_TEST4";
-                target.Catalog = "PPDM_TEST4";
-                target.DatabaseServer = "VIDARSURFACEPRO";
-                target.ConnectionString = @"Data Source=VIDARSURFACEPRO;Initial Catalog=PPDM_TEST4;Integrated Security=True;Connect Timeout=6000;MultipleActiveResultSets=True";
-                _dbConn.OpenConnection(target);
+                _dbConn.OpenWithConnectionString(target);
                 foreach (string tableName in DatabaseTables.Names)
                 {
                     _logger.LogInformation($"Deleteing table {tableName}");
@@ -60,14 +74,8 @@ namespace DatabaseManager.LocalDataTransfer
             SqlConnection destinationConn = new SqlConnection();
             try
             {
-                ConnectParameters target = new ConnectParameters();
-                target.ConnectionString = GetConnectionString("PPDM_TEST4");
-
-                ConnectParameters source = new ConnectParameters();
-                source.ConnectionString = GetConnectionString("Testdata");
-
-                sourceConn = new SqlConnection(source.ConnectionString);
-                destinationConn = new SqlConnection(target.ConnectionString);
+                sourceConn = new SqlConnection(source);
+                destinationConn = new SqlConnection(target);
                 sourceConn.Open();
                 destinationConn.Open();
 
