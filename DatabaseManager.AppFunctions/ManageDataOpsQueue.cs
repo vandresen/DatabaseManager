@@ -34,65 +34,65 @@ namespace DatabaseManager.AppFunctions
 
             try
             {
-                ConfigurationInfo configuration = Utilities.GetConfigurations(context);
-                log.LogInformation($"Queue is: {configuration.DataOpsQueue}");
-                string fileShare = "dataops";
+                //ConfigurationInfo configuration = Utilities.GetConfigurations(context);
+                //log.LogInformation($"Queue is: {configuration.DataOpsQueue}");
+                //string fileShare = "dataops";
 
-                DataOpParameters parms = JsonConvert.DeserializeObject<DataOpParameters>(myQueueItem);
+                //DataOpParameters parms = JsonConvert.DeserializeObject<DataOpParameters>(myQueueItem);
 
-                string AzureStorage = parms.StorageAccount;
-                httpClient.DefaultRequestHeaders.Remove("AzureStorageConnection");
-                httpClient.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
+                //string AzureStorage = parms.StorageAccount;
+                //httpClient.DefaultRequestHeaders.Remove("AzureStorageConnection");
+                //httpClient.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
 
-                log.LogInformation($"URL: {parms.Url}");
-                log.LogInformation($"URL: {parms.JsonParameterString}");
+                //log.LogInformation($"URL: {parms.Url}");
+                //log.LogInformation($"URL: {parms.JsonParameterString}");
 
-                StringContent stringContent = new StringContent(parms.JsonParameterString, Encoding.UTF8, "application/json");
-                var response = await httpClient.PostAsync(parms.Url, stringContent);
-                if (response.IsSuccessStatusCode)
-                {
-                    log.LogInformation($"Sucessfully completed");
-                }
-                else
-                {
-                    var error = response.Content.ReadAsStringAsync();
-                    log.LogInformation($"Failed with error: {error}");
-                }
+                //StringContent stringContent = new StringContent(parms.JsonParameterString, Encoding.UTF8, "application/json");
+                //var response = await httpClient.PostAsync(parms.Url, stringContent);
+                //if (response.IsSuccessStatusCode)
+                //{
+                //    log.LogInformation($"Sucessfully completed");
+                //}
+                //else
+                //{
+                //    var error = response.Content.ReadAsStringAsync();
+                //    log.LogInformation($"Failed with error: {error}");
+                //}
 
-                var builder = new ConfigurationBuilder();
-                IConfiguration fileStorageConfiguration = builder.Build();
-                IFileStorageService fileStorageService = new AzureFileStorageService(fileStorageConfiguration);
-                fileStorageService.SetConnectionString(AzureStorage);
+                //var builder = new ConfigurationBuilder();
+                //IConfiguration fileStorageConfiguration = builder.Build();
+                //IFileStorageService fileStorageService = new AzureFileStorageService(fileStorageConfiguration);
+                //fileStorageService.SetConnectionString(AzureStorage);
 
-                string fileName = parms.Name;
-                string dataOpsFile = fileStorageService.ReadFile(fileShare, fileName).GetAwaiter().GetResult();
-                log.LogInformation(dataOpsFile);
-                List<PipeLine> dataOps = JsonConvert.DeserializeObject<List<PipeLine>>(dataOpsFile);
-                int id = parms.Id + 1;
-                log.LogInformation($"Id for next aratifact is {id}");
-                PipeLine newDataOps = dataOps.Where(s => s.Id == id).FirstOrDefault();
-                if (newDataOps == null)
-                {
-                    log.LogInformation($"End of pipeline");
-                }
-                else
-                {
-                    string url = parms.Url.Substring(0, (parms.Url.LastIndexOf('/') + 1)) + newDataOps.ArtifactType;
-                    log.LogInformation($"Next artifact URL is {url}");
-                    DataOpParameters newParms = new DataOpParameters()
-                    {
-                        Id = newDataOps.Id,
-                        Name = parms.Name,
-                        Url = url,
-                        StorageAccount = parms.StorageAccount,
-                        JsonParameterString = newDataOps.Parameters.ToString()
-                    };
-                    string json = JsonConvert.SerializeObject(newParms);
-                    string message = json.EncodeBase64();
-                    string queueName = "dataopsqueue";
-                    Utilities.InsertMessage(queueName, message, AzureStorage);
-                    log.LogInformation($"Next artifact message sent");
-                }
+                //string fileName = parms.Name;
+                //string dataOpsFile = fileStorageService.ReadFile(fileShare, fileName).GetAwaiter().GetResult();
+                //log.LogInformation(dataOpsFile);
+                //List<PipeLine> dataOps = JsonConvert.DeserializeObject<List<PipeLine>>(dataOpsFile);
+                //int id = parms.Id + 1;
+                //log.LogInformation($"Id for next aratifact is {id}");
+                //PipeLine newDataOps = dataOps.Where(s => s.Id == id).FirstOrDefault();
+                //if (newDataOps == null)
+                //{
+                //    log.LogInformation($"End of pipeline");
+                //}
+                //else
+                //{
+                //    string url = parms.Url.Substring(0, (parms.Url.LastIndexOf('/') + 1)) + newDataOps.ArtifactType;
+                //    log.LogInformation($"Next artifact URL is {url}");
+                //    DataOpParameters newParms = new DataOpParameters()
+                //    {
+                //        Id = newDataOps.Id,
+                //        Name = parms.Name,
+                //        Url = url,
+                //        StorageAccount = parms.StorageAccount,
+                //        JsonParameterString = newDataOps.Parameters.ToString()
+                //    };
+                //    string json = JsonConvert.SerializeObject(newParms);
+                //    string message = json.EncodeBase64();
+                //    string queueName = "dataopsqueue";
+                //    Utilities.InsertMessage(queueName, message, AzureStorage);
+                //    log.LogInformation($"Next artifact message sent");
+                //}
             }
             catch (Exception ex)
             {

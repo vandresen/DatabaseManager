@@ -11,9 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Shared", "D
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.AppFunctions", "DatabaseManager.AppFunctions\DatabaseManager.AppFunctions.csproj", "{2A33A814-8255-460D-B21C-00C0A2A58FB0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.Components", "DatabaseManager.Components\DatabaseManager.Components.csproj", "{49124FDC-6189-40B8-AB73-CDC81DFF4F65}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Components", "DatabaseManager.Components\DatabaseManager.Components.csproj", "{49124FDC-6189-40B8-AB73-CDC81DFF4F65}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.LocalDataTransfer", "DatabaseManager.LocalDataTransfer\DatabaseManager.LocalDataTransfer.csproj", "{76C22ABD-4AE1-44BA-B231-908533D291A0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.LocalDataTransfer", "DatabaseManager.LocalDataTransfer\DatabaseManager.LocalDataTransfer.csproj", "{76C22ABD-4AE1-44BA-B231-908533D291A0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
