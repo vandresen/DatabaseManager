@@ -21,6 +21,7 @@ namespace DatabaseManager.Server.Helpers
         private string _uwi;
         private string _nullRepresentation;
         private string _logSource;
+        private string _dbUserName;
         private List<string> _logCurveList;
         private List<string> _logList;
         private List<string> _logNames = new List<string>();
@@ -200,6 +201,7 @@ namespace DatabaseManager.Server.Helpers
             }
 
             _dbConn.OpenConnection(target);
+            _dbUserName = _dbConn.GetUsername();
 
             GetVersionInfo(versionInfo);
             string json = GetHeaderInfo(wellInfo);
@@ -255,8 +257,8 @@ namespace DatabaseManager.Server.Helpers
                     newRow["MIN_INDEX"] = "-99999.0";
                     newRow["SOURCE"] = _logSource;
                     newRow["REPORTED_DESC"] = description;
-                    newRow["ROW_CREATED_BY"] = _dbConn.GetUsername();
-                    newRow["ROW_CHANGED_BY"] = _dbConn.GetUsername();
+                    newRow["ROW_CREATED_BY"] = _dbUserName;
+                    newRow["ROW_CHANGED_BY"] = _dbUserName;
                     newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
                     newRow["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
                     lgNew.Rows.Add(newRow);
@@ -352,8 +354,8 @@ namespace DatabaseManager.Server.Helpers
                     measuredValue = Convert.ToDouble(_nullRepresentation);
                 }
                 newRow["MEASURED_VALUE"] = measuredValue;
-                newRow["ROW_CREATED_BY"] = _dbConn.GetUsername();
-                newRow["ROW_CHANGED_BY"] = _dbConn.GetUsername();
+                newRow["ROW_CREATED_BY"] = _dbUserName;
+                newRow["ROW_CHANGED_BY"] = _dbUserName;
                 newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
                 newRow["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
                 dtNew.Rows.Add(newRow);
@@ -433,8 +435,8 @@ namespace DatabaseManager.Server.Helpers
             header["OPERATOR"] = "UNKNOWN";
             header["DEPTH_DATUM"] = "UNKNOWN";
             header["CURRENT_STATUS"] = "UNKNOWN";
-            //header["ROW_CREATED_BY"] = _dbConn.GetUsername();
-            //header["ROW_CHANGED_BY"] = _dbConn.GetUsername();
+            header["ROW_CREATED_BY"] = _dbUserName;
+            header["ROW_CHANGED_BY"] = _dbUserName;
             header.Add("API", "");
             StringReader sr = new StringReader(wellInfo);
             while ((input = sr.ReadLine()) != null)
