@@ -25,16 +25,22 @@ namespace DatabaseManager.LocalDataTransfer
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            int counter = 100;
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                counter++;
 
+                if (counter > 100)
+                {
+                    _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                    counter = 0;
+                }
                 QueueClient queueClient = new QueueClient(_appSettings.StorageAccount, queueName);
                 if (queueClient.Exists())
                 {
                     QueueProperties properties = queueClient.GetProperties();
                     int cachedMessagesCount = properties.ApproximateMessagesCount;
-                    _logger.LogInformation($"Number of queue messages {cachedMessagesCount}");
+                    //_logger.LogInformation($"Number of queue messages {cachedMessagesCount}");
                     if (cachedMessagesCount > 0)
                     {
                         QueueMessage[] messages = queueClient.ReceiveMessages();
@@ -51,7 +57,7 @@ namespace DatabaseManager.LocalDataTransfer
                     }
                 }
 
-                await Task.Delay(10000, stoppingToken);
+                await Task.Delay(30000, stoppingToken);
             }
         }
     }

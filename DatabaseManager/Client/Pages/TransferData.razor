@@ -2,8 +2,9 @@
 @inject IDataTransfer dataTransfer
 @inject SingletonServices singleton
 @inject IDisplayMessage displayMessage
+@inject IDataSources dataSources
 
-<h2>PPDM to PPDM Data Transfer</h2>
+<h2>Data Transfer</h2>
 <br />
 
 <TransferParametersForm TransferParameters="transferParameters" OnValidSubmit="StartDatabaseTransfer" />
@@ -32,6 +33,21 @@
         string target = singleton.TargetConnector;
         transferParameters.TargetName = target;
         Console.WriteLine($"Target source = {target}");
+
+        if (transferParameters.Remote)
+        {
+            if (transferParameters.SourceType != "DataBase")
+            {
+                await displayMessage.DisplayErrorMessage("Remote option only work for databases");
+                return;
+            }
+            Console.WriteLine("Remote database has been selected");
+            await dataTransfer.CopyRemote(transferParameters);
+            barValue = 100;
+            progress($"Remote transfer has started, check remote computer log for status");
+            return;
+        }
+
         dataObjects = await dataTransfer.GetDataObjects(source);
         int barInt = 50 / dataObjects.Count;
         if (transferParameters.SourceType == "DataBase")

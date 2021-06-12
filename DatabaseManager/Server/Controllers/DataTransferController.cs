@@ -9,6 +9,7 @@ using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -18,15 +19,19 @@ namespace DatabaseManager.Server.Controllers
     {
         private readonly ITableStorageService tableStorageService;
         private readonly IFileStorageService fileStorageService;
+        private readonly IQueueService queueService;
         private readonly IMapper mapper;
         private readonly string container = "sources";
+        private readonly string queueName = "datatransferqueue";
 
         public DataTransferController(ITableStorageService tableStorageService,
             IFileStorageService fileStorageService,
+            IQueueService queueService,
             IMapper mapper)
         {
             this.tableStorageService = tableStorageService;
             this.fileStorageService = fileStorageService;
+            this.queueService = queueService;
             this.mapper = mapper;
         }
 
@@ -117,6 +122,25 @@ namespace DatabaseManager.Server.Controllers
 
             string message = $"{transferParameters.Table} has been copied";
             return Ok(message);
+        }
+
+        [HttpPost("remote")]
+        public async Task<ActionResult<string>> CopyRemote(TransferParameters transferParameters)
+        {
+            try
+            {
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                queueService.SetConnectionString(tmpConnString);
+                string message = JsonConvert.SerializeObject(transferParameters); ;
+                queueService.InsertMessage(queueName, message);
+            }
+            catch (Exception)
+            {
+                return BadRequest("Problems with data transfer queue");
+            }
+            
+            string response= $"{transferParameters.Table} has started on remote computer";
+            return Ok(response);
         }
 
         [HttpDelete("{target}/{table}")]

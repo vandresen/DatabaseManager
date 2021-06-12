@@ -14,5 +14,6 @@ namespace DatabaseManager.Shared
         public string WellListFile { get; set; }
         public string QueryType { get; set; }
         public string Table { get; set; }
+        public bool Remote { get; set; }
     }
 }

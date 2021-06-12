@@ -35,12 +35,21 @@
                     <p>Target Database: @singleton.TargetConnector</p>
                 </div>
             </div>
+            <div class="row">
+                <div class="col-sm-12 form-group">
+                    <label>Remote source: </label>
+                    <InputCheckbox  @bind-Value="TransferParameters.Remote" />
+                    @*<input type="checkbox" id="addition" name="math" bind="@remote" />*@
+                </div>
+                
+            </div>
         </div>
     </EditForm>
 
 @code {
     [Parameter] public TransferParameters TransferParameters { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
+    public bool remote { get; set; }
     private List<string> options { get; set; } = new List<string>();
     List<ConnectParameters> ConnectParameters;
     string queryString;
@@ -66,5 +75,6 @@
         TransferParameters.SourceName = selectedString;
         ConnectParameters connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
         TransferParameters.SourceType = connector.SourceType;
+        Console.WriteLine($"Remote = {TransferParameters.Remote}");
     }
 }

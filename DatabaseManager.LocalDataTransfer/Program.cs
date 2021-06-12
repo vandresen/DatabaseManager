@@ -23,7 +23,7 @@ namespace DatabaseManager.LocalDataTransfer
 
             try
             {
-                Log.Information("Staring up Local data Transfer service");
+                Log.Information("Starting up Local data Transfer service");
                 CreateHostBuilder(args).Build().Run();
                 return;
             }

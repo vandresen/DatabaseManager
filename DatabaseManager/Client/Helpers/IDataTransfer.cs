@@ -9,6 +9,7 @@ namespace DatabaseManager.Client.Helpers
     public interface IDataTransfer
     {
         Task Copy(TransferParameters transferParameters);
+        Task CopyRemote(TransferParameters transferParameters);
         Task DeleteTable(string source, string table);
         Task<List<string>> GetDataObjects(string source);
     }

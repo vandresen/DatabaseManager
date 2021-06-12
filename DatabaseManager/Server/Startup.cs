@@ -32,6 +32,7 @@ namespace DatabaseManager.Server
             services.AddAutoMapper(typeof(Startup));
             services.AddScoped<IFileStorageService, AzureFileStorageService>();
             services.AddScoped<ITableStorageService, AzureTableStorageService>();
+            services.AddScoped<IQueueService, AzureQueueService>();
 
             services.AddMvc();
             services.AddResponseCompression(opts =>

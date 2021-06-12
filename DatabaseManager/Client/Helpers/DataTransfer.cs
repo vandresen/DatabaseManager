@@ -35,6 +35,15 @@ namespace DatabaseManager.Client.Helpers
             }
         }
 
+        public async Task CopyRemote(TransferParameters transferParameters)
+        {
+            var response = await httpService.Post($"{url}/remote", transferParameters);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
+
         public async Task DeleteTable(string source, string table)
         {
             var response = await httpService.Delete($"{url}/{source}/{table}");
