@@ -7,5 +7,10 @@
     "DataType": "MarkerPick",
     "Mappings": "UWI=2; STRAT_UNIT_ID=7; PICK_DEPTH=8",
     "Constants": "STRAT_NAME_SET_ID=UNKNOWN; INTERP_ID=UNKNOWN"
+  },
+  {
+    "DataType": "Production",
+    "Mappings": "PDEN_ID=3; PERIOD_ID=16; BOE_VOLUME=19",
+    "Constants": "PDEN_SUBTYPE=PDEN_WELL; PDEN_SOURCE=KANSAS; VOLUME_METHOD=Measured; ACTIVITY_TYPE=Production; PERIOD_TYPE=MONTH; AMENDMENT_SEQ_NO=0"
   }
 ]

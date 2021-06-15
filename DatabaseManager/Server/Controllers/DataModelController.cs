@@ -27,6 +27,8 @@ namespace DatabaseManager.Server.Controllers
         private readonly ILogger<DataModelController> logger;
         private readonly IWebHostEnvironment _env;
         private string connectionString;
+        private string _credentials;
+        private string _secret;
         private readonly string _contentRootPath;
         private readonly string container = "sources";
 
@@ -38,6 +40,8 @@ namespace DatabaseManager.Server.Controllers
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
+            _credentials = configuration["BlobCredential"];
+            _secret = configuration["BlobSecret"];
             this.fileStorageService = fileStorageService;
             this.tableStorageService = tableStorageService;
             this.mapper = mapper;
@@ -358,6 +362,7 @@ namespace DatabaseManager.Server.Controllers
                 dbConn.OpenConnection(connector);
                 dbConn.SQLExecute(sql);
                 dbConn.SQLExecute(sqlFunctions);
+                CreateSqlSources(dbConn);
                 dbConn.CloseConnection();
 
                 string fileName = "WellBore.json";
@@ -385,6 +390,47 @@ namespace DatabaseManager.Server.Controllers
                 Exception error = new Exception("Create DMS Model Error: ", ex);
                 throw error;
             }
+        }
+
+        private void CreateSqlSources(DbUtilities dbConn)
+        {
+            string sql = "";
+            //string credentials = "PDOAzureBlobsCredentials";
+            //string secret = @"sv=2019-12-12&st=2021-06-14T19%3A23%3A15Z&se=2021-06-15T19%3A23%3A15Z&sr=c&sp=rl&sig=Lnif244ps%2BlBWWUb2fyBtTPu69gnESrMnzSkre8V3%2BA%3D";
+            try
+            {
+                sql = @"CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'MasterKeyAzureBlobs'";
+                dbConn.SQLExecute(sql);
+            }
+            catch (Exception ex)
+            {
+                logger.LogInformation("Problems creating master key, it may already exist, {ex}");
+            }
+
+            sql = "Select * from sys.external_data_sources ";
+            string query = " where name = 'PDOAzureBlob'";
+            DataTable dt = dbConn.GetDataTable(sql, query);
+            if (dt.Rows.Count > 0)
+            {
+                sql = "DROP EXTERNAL DATA SOURCE PDOAzureBlob ";
+                dbConn.SQLExecute(sql);
+            }
+
+            try
+            {
+                sql = $"DROP DATABASE SCOPED CREDENTIAL {_credentials}";
+                dbConn.SQLExecute(sql);
+            }
+            catch (Exception ex)
+            {
+                logger.LogInformation("Problems deleting credentials, it may not exist, {ex}");
+            }
+            sql = $"CREATE DATABASE SCOPED CREDENTIAL {_credentials} WITH IDENTITY = 'SHARED ACCESS SIGNATURE', SECRET = '{_secret}'";
+            dbConn.SQLExecute(sql);
+            
+            string blobStorage = @"https://petrodataonlinestorage.blob.core.windows.net/welldata";
+            sql = $"CREATE EXTERNAL DATA SOURCE PDOAzureBlob WITH(TYPE = BLOB_STORAGE, LOCATION = '{blobStorage}', CREDENTIAL = {_credentials})";
+            dbConn.SQLExecute(sql);
         }
 
         private async Task CreateDSMRules(ConnectParameters connector)
@@ -429,6 +475,8 @@ namespace DatabaseManager.Server.Controllers
                 throw error;
             }
         }
+
+        
 
         private async Task CreatePPDMModel(DataModelParameters dmParameters, ConnectParameters connector)
         {
