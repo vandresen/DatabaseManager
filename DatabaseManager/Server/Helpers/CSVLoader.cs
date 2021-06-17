@@ -171,7 +171,7 @@ namespace DatabaseManager.Server.Helpers
             {
                 var conf = new CsvConfiguration(CultureInfo.InvariantCulture)
                 {
-                    BadDataFound = null
+                    //BadDataFound = null
                 };
                 using (var csv = new CsvReader(csvStream, conf))
                 {
@@ -189,7 +189,7 @@ namespace DatabaseManager.Server.Helpers
                         diff = timeEnd - timeStart;
                         //Console.WriteLine($"Time span, column changes: {diff}");
 
-                        InsertTableToDatabase(attributes, dataType, target);
+                        InsertTableToDatabase(attributes, dataType, target, constants);
                     }
                 }
             }
@@ -404,7 +404,8 @@ namespace DatabaseManager.Server.Helpers
             return tmpRow;
         }
 
-        private void InsertTableToDatabase(Dictionary<string, int> attributes, string dataType, ConnectParameters target)
+        private void InsertTableToDatabase(Dictionary<string, int> attributes, string dataType,
+            ConnectParameters target, Dictionary<string, string> constants)
         {
             int sqlTimeout = 3600;
             string tempTable = "#MyTempTable";
@@ -424,6 +425,14 @@ namespace DatabaseManager.Server.Helpers
             TimeSpan diff = timeEnd - timeStart;
             //Console.WriteLine($"Time span, Moved to temp table: {diff}");
 
+            sql = CreateSqlToFixConstants(tempTable, constants);
+            if (!String.IsNullOrEmpty(sql))
+            {
+                cmd = new SqlCommand(sql, conn);
+                cmd.CommandTimeout = sqlTimeout;
+                cmd.ExecuteNonQuery();
+            }
+
             sql = CreateSqlToFixNullKeys(tempTable);
             cmd = new SqlCommand(sql, conn);
             cmd.CommandTimeout = sqlTimeout;
@@ -440,7 +449,8 @@ namespace DatabaseManager.Server.Helpers
             diff = timeEnd - timeStart;
             //Console.WriteLine($"Time span, delete duplicate rows: {diff}");
 
-            CreateSqlToLoadReferences(dataType, conn, tempTable);
+            int refCount = _references.Where(x => x.DataType == dataType).Count();
+            if (refCount > 0) CreateSqlToLoadReferences(dataType, conn, tempTable);
 
             sql = CreateSqlToMerge(tempTable);
             cmd = new SqlCommand(sql, conn);
@@ -451,6 +461,25 @@ namespace DatabaseManager.Server.Helpers
             //Console.WriteLine($"Time span, merge: {diff}");
 
             conn.Close();
+
+        }
+
+        private string CreateSqlToFixConstants(string tempTable, Dictionary<string, string> constants)
+        {
+            string sql = "";
+            if (constants.Count > 0)
+            {
+                sql = $"UPDATE {tempTable}1 SET ";
+                string comma = "";
+                foreach (var item in constants)
+                {
+                    string column = item.Key.Trim();
+                    string value = item.Value.Trim();
+                    sql = sql + comma + column + " = '" + value + "'";
+                    comma = ", ";
+                }
+            }
+            return sql;
         }
 
         private void CreateSqlToLoadReferences(string dataType, SqlConnection conn, string tempTable)
