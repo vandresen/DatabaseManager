@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static DatabaseManager.Server.Helpers.RuleMethodUtilities;
 
@@ -13,6 +14,7 @@ namespace DatabaseManager.Server.Helpers
 {
     static class QCMethods
     {
+        private static Regex isNumberTest = new Regex("^[0-9]+$", RegexOptions.Compiled);
 
         public static string Entirety(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
         {
@@ -195,6 +197,26 @@ namespace DatabaseManager.Server.Helpers
             bool spike = RuleMethodUtilities.CurveHasSpikes(measuredValues, spikeParams);
             if (spike) returnStatus = "Failed";
 
+            return returnStatus;
+        }
+
+        public static string IsNumber(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
+        {
+            string returnStatus = "Passed";
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+            JObject dataObject = JObject.Parse(qcSetup.DataObject);
+            JToken value = dataObject.GetValue(rule.DataAttribute);
+            if (value == null)
+            {
+                //log.Warning($"Attribute is Null");
+            }
+            else
+            {
+                string strValue = value.ToString();
+                bool isValid = false;
+                isValid = isNumberTest.IsMatch(strValue);
+                if (!isValid) returnStatus = "Failed";
+            }
             return returnStatus;
         }
     }
