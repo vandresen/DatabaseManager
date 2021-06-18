@@ -35,14 +35,21 @@ Example: SURFACE_LATITUDE; SURFACE_LONGITUDE; LEASE_NAME
 Each attribute can also have a function applied to it. Every function has to start with *.
 
 NORMALIZE
-this function will remove the following characters: _-#*.@~
+This function will make following changes to the attribute:
+* Remove the following characters: _-#*.@~
+* Remove spaces, tabs and enters
+* Replace & with AND
+* Make it Upper case
+
+Example: *NORMALIZE(UWI)
 
 #### Validity
-Some validfity rules will reuire one or more parameters set in Rule Parameter. These must 
-be treated as JSon.
+Some validfity rules will rqeuire one or more parameters set in Rule Parameter. These must 
+be expressed as Json.
 The following validity methods are available:
 * ValidityRange
 * CurveSpikes
+* IsNumber
 
 ##### ValidityRange
 Checks that the data attribute is within a minimum and/or maximum value. The

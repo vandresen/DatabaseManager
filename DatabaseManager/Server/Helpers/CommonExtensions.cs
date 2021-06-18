@@ -94,11 +94,13 @@ namespace DatabaseManager.Server.Helpers
 
         public static string NormalizeString(this string str)
         {
-            var charsToRemove = new string[] { "_", "-", "#", "*", ".", "@", "~" };
+            var charsToRemove = new string[] { "_", "-", "#", "*", ".", "@", "~", " ", "\t", "\n", "\r", "\r\n" };
             foreach (var c in charsToRemove)
             {
                 str = str.Replace(c, string.Empty);
+                str = str.Replace("&", "AND");
             }
+            str = str.ToUpper();
             return str;
         }
     }
