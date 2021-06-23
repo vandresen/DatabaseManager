@@ -231,6 +231,113 @@ BEGIN
 END
 GO
 
+DROP PROCEDURE IF EXISTS spFixDuplicates;
+GO
+Create proc spFixDuplicates
+AS
+BEGIN
+-- Find duplicates wells
+
+drop table if exists #temp1;
+create table #temp1 (UKEY varchar(255), CNT int);
+
+insert into #temp1
+SELECT
+    ukey, count(*) as CNT
+FROM
+    MyTempTable
+GROUP BY
+    UKEY
+HAVING 
+    COUNT(*) > 1;
+
+update 
+	MyTempTable
+set 
+	DUP = 'Y' 
+from 
+	MyTempTable a 
+INNER JOIN
+	#temp1 b 
+ON 
+	b.UKEY = a.UKEY; 
+
+-- Find duplicates curves
+drop table if exists #temp2;
+create table #temp2 (UKEY varchar(255), UWI varchar(40), CURVEID varchar(255), DUP varchar(1), VALID varchar(1), GOODUWI varchar(40));
+
+insert into #temp2 (UKEY, UWI, CURVEID, VALID)
+select b.UKEY, a.uwi, a.curve_id, b.VALID  from well_log_curve a, MyTempTable b
+where b.uwi = a.uwi
+
+drop table if exists #temp3;
+create table #temp3 (UKEY varchar(255), curveid varchar(255), CNT int);
+
+insert into #temp3
+SELECT
+    ukey, curveid, count(*) as CNT
+FROM
+    #temp2
+GROUP BY
+    ukey, curveid
+HAVING 
+    COUNT(*) > 1;
+
+update 
+	#temp2
+set 
+	DUP = 'Y' 
+from 
+	#temp2 a 
+INNER JOIN
+	#temp3 b 
+ON 
+	b.UKEY = a.UKEY and a.curveid = b.curveid; 
+
+-- Delete duplicate log curves and values
+DELETE a
+FROM well_log_curve a
+INNER JOIN #temp2 b
+  ON a.uwi = b.uwi and a.curve_id =b.curveid and b.DUP = 'Y' and b.VALID='N'
+
+DELETE a
+FROM well_log_curve_value a
+INNER JOIN #temp2 b
+  ON a.uwi = b.uwi and a.curve_id =b.curveid and b.DUP = 'Y' and b.VALID='N'
+
+-- Update log curves and values with good UWI values
+
+drop table if exists #temp4;
+create table #temp4 (UKEY varchar(255), UWI varchar(40), DUP varchar(1), VALID varchar(1) );
+
+insert into #temp4 (UKEY, UWI, VALID)
+select b.UKEY, b.uwi, b.VALID  from #temp1 a, MyTempTable b
+where b.ukey = a.ukey and VALID = 'Y'
+
+delete from #temp2 where VALID='Y'
+
+UPDATE #temp2
+SET #temp2.GOODUWI=(SELECT #temp4.UWI
+  FROM #temp4
+  WHERE #temp2.ukey=#temp4.ukey);
+
+delete from #temp2 where GOODUWI is null
+
+UPDATE well_log_curve
+SET well_log_curve.UWI = #temp2.GOODUWI
+FROM well_log_curve
+INNER JOIN #temp2
+ON (well_log_curve.UWI = #temp2.UWI and well_log_curve.CURVE_ID = #temp2.CURVEID)
+
+UPDATE well_log_curve_value
+SET well_log_curve_value.UWI = #temp2.GOODUWI
+FROM well_log_curve_value
+INNER JOIN #temp2
+ON (well_log_curve_value.UWI = #temp2.UWI and well_log_curve_value.CURVE_ID = #temp2.CURVEID)
+
+END
+GO
+
 DROP PROCEDURE IF EXISTS spInsertIndex;
 DROP TYPE IF EXISTS UDIndexTable;
 GO
