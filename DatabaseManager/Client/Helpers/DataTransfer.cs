@@ -16,6 +16,16 @@ namespace DatabaseManager.Client.Helpers
             this.httpService = httpService;
         }
 
+        public async Task<List<string>> GetQueueMessage()
+        {
+            var response = await httpService.Get<List<string>>($"{url}");
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
         public async Task<List<string>> GetDataObjects(string source)
         {
             var response = await httpService.Get<List<string>>($"{url}/{source}");

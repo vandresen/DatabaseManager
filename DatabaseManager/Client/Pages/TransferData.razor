@@ -1,4 +1,5 @@
 ﻿@page "/transferdata"
+@using DatabaseManager.Components.Services;
 @inject IDataTransfer dataTransfer
 @inject SingletonServices singleton
 @inject IDisplayMessage displayMessage
@@ -36,15 +37,33 @@
 
         if (transferParameters.Remote)
         {
+            string info = "";
             if (transferParameters.SourceType != "DataBase")
             {
                 await displayMessage.DisplayErrorMessage("Remote option only work for databases");
                 return;
             }
             Console.WriteLine("Remote database has been selected");
+            barValue = 1;
+            progress($"Transfer starting");
             await dataTransfer.CopyRemote(transferParameters);
+
+            for (int i = 0; i < 20; i++)
+            {
+                await Task.Delay(15000);
+                List<string> messages = await dataTransfer.GetQueueMessage();
+                foreach (var message in messages)
+                {
+                    Console.WriteLine(message);
+                    info = message;
+                }
+                barValue = (i * 5) + 1;
+                progress(info);
+                if (info == "Complete") break;
+            }
+
             barValue = 100;
-            progress($"Remote transfer has started, check remote computer log for status");
+            progress($"Transfer Complete");
             return;
         }
 

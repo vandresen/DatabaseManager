@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using DatabaseManager.Components.Services;
 using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Helpers;
 using DatabaseManager.Server.Services;
@@ -23,6 +24,7 @@ namespace DatabaseManager.Server.Controllers
         private readonly IMapper mapper;
         private readonly string container = "sources";
         private readonly string queueName = "datatransferqueue";
+        private readonly string infoName = "datatransferinfo";
 
         public DataTransferController(ITableStorageService tableStorageService,
             IFileStorageService fileStorageService,
@@ -33,6 +35,36 @@ namespace DatabaseManager.Server.Controllers
             this.fileStorageService = fileStorageService;
             this.queueService = queueService;
             this.mapper = mapper;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<List<string>>> GetQueueMessage()
+        {
+            try
+            {
+                List<string> messages = new List<string>();
+                string message = "";
+                bool messageBox = true;
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                queueService.SetConnectionString(tmpConnString);
+                while (messageBox)
+                {
+                    message = queueService.GetMessage(infoName);
+                    if (string.IsNullOrEmpty(message))
+                    {
+                        messageBox = false;
+                    }
+                    else
+                    {
+                        messages.Add(message);
+                    }
+                }
+                return messages;
+            }
+            catch (Exception ex)
+            {
+                return BadRequest("Problems getting info from info queue");
+            }
         }
 
         [HttpGet("{source}")]
@@ -131,7 +163,7 @@ namespace DatabaseManager.Server.Controllers
             {
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 queueService.SetConnectionString(tmpConnString);
-                string message = JsonConvert.SerializeObject(transferParameters); ;
+                string message = JsonConvert.SerializeObject(transferParameters);
                 queueService.InsertMessage(queueName, message);
             }
             catch (Exception)

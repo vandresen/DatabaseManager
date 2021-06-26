@@ -1,5 +1,6 @@
 using Azure.Storage.Queues;
 using Azure.Storage.Queues.Models;
+using DatabaseManager.Components.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,7 @@ namespace DatabaseManager.LocalDataTransfer
         private readonly ILogger<Worker> _logger;
         private readonly AppSettings _appSettings;
         string queueName = "datatransferqueue";
+        string infoName = "datatransferinfo";
 
         public Worker(ILogger<Worker> logger, AppSettings appSettings)
         {
@@ -26,6 +28,11 @@ namespace DatabaseManager.LocalDataTransfer
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             int counter = 100;
+            string infoMessage = "";
+            var builder = new ConfigurationBuilder();
+            IConfiguration configuration = builder.Build();
+            IQueueService queueService = new AzureQueueService(configuration);
+            queueService.SetConnectionString(_appSettings.StorageAccount);
             while (!stoppingToken.IsCancellationRequested)
             {
                 counter++;
@@ -35,26 +42,24 @@ namespace DatabaseManager.LocalDataTransfer
                     _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
                     counter = 0;
                 }
-                QueueClient queueClient = new QueueClient(_appSettings.StorageAccount, queueName);
-                if (queueClient.Exists())
+
+                string message = queueService.GetMessage(queueName);
+                if (!string.IsNullOrEmpty(message))
                 {
-                    QueueProperties properties = queueClient.GetProperties();
-                    int cachedMessagesCount = properties.ApproximateMessagesCount;
-                    //_logger.LogInformation($"Number of queue messages {cachedMessagesCount}");
-                    if (cachedMessagesCount > 0)
-                    {
-                        QueueMessage[] messages = queueClient.ReceiveMessages();
-                        _logger.LogInformation($"Message length {messages.Length}");
-                        foreach (var message in messages)
-                        {
-                            _logger.LogInformation($"Message: '{message.MessageText}', {DateTimeOffset.Now}");
-                            queueClient.DeleteMessage(message.MessageId, message.PopReceipt);
-                            DataTransfer trans = new DataTransfer(_logger, _appSettings);
-                            trans.GetTransferConnector(message.MessageText);
-                            trans.DeleteTables();
-                            trans.CopyTables();
-                        }
-                    }
+                    DataTransfer trans = new DataTransfer(_logger, _appSettings, queueService);
+
+                    trans.GetTransferConnector(message);
+                    infoMessage = "Start deleting tables";
+                    queueService.InsertMessage(infoName, infoMessage);
+                    trans.DeleteTables();
+                    _logger.LogInformation($"Tables deleted");
+                    infoMessage = "Tables deleted";
+                    queueService.InsertMessage(infoName, infoMessage);
+
+                    trans.CopyTables();
+                    _logger.LogInformation($"Tables copied");
+                    infoMessage = "Complete";
+                    queueService.InsertMessage(infoName, infoMessage);
                 }
 
                 await Task.Delay(30000, stoppingToken);

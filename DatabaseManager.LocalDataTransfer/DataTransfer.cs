@@ -1,4 +1,5 @@
 ﻿using DatabaseManager.Components;
+using DatabaseManager.Components.Services;
 using DatabaseManager.Shared;
 using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Extensions.Logging;
@@ -16,17 +17,21 @@ namespace DatabaseManager.LocalDataTransfer
     {
         private readonly ILogger<Worker> _logger;
         private readonly AppSettings _appSeting;
+        private readonly IQueueService _queueService;
         private DbUtilities _dbConn;
         private readonly string container = "sources";
+        private readonly string infoQueue = "datatransferinfo";
         private string target;
         private string source;
 
         public DataTransfer(ILogger<Worker> logger,
-            AppSettings appSeting)
+            AppSettings appSeting,
+            IQueueService queueService)
         {
             _dbConn = new DbUtilities();
             _logger = logger;
             _appSeting = appSeting;
+            _queueService = queueService;
         }
 
         public void GetTransferConnector(string message)
@@ -50,10 +55,13 @@ namespace DatabaseManager.LocalDataTransfer
         {
             try
             {
+                string info = "";
                 _dbConn.OpenWithConnectionString(target);
                 foreach (string tableName in DatabaseTables.Names)
                 {
-                    _logger.LogInformation($"Deleteing table {tableName}");
+                    info = $"Deleting table {tableName}";
+                    _logger.LogInformation(info);
+                    _queueService.InsertMessage(infoQueue, info);
                     _dbConn.DBDelete(tableName);
                 }
             }
@@ -74,6 +82,7 @@ namespace DatabaseManager.LocalDataTransfer
             SqlConnection destinationConn = new SqlConnection();
             try
             {
+                string info = "";
                 sourceConn = new SqlConnection(source);
                 destinationConn = new SqlConnection(target);
                 sourceConn.Open();
@@ -81,7 +90,9 @@ namespace DatabaseManager.LocalDataTransfer
 
                 foreach (string tableName in DatabaseTables.Names)
                 {
-                    _logger.LogInformation($"Copying table {tableName}");
+                    info = $"Copying table {tableName}";
+                    _queueService.InsertMessage(infoQueue, info);
+                    _logger.LogInformation(info);
                     BulkCopy(sourceConn, destinationConn, tableName);
                 }
             }

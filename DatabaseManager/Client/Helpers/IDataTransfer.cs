@@ -12,5 +12,6 @@ namespace DatabaseManager.Client.Helpers
         Task CopyRemote(TransferParameters transferParameters);
         Task DeleteTable(string source, string table);
         Task<List<string>> GetDataObjects(string source);
+        Task<List<string>> GetQueueMessage();
     }
 }
