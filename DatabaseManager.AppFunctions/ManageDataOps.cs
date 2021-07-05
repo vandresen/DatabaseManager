@@ -5,12 +5,15 @@ using System.Text;
 using System.Threading.Tasks;
 using DatabaseManager.AppFunctions.Entities;
 using DatabaseManager.AppFunctions.Helpers;
+using DatabaseManager.Common.Helpers;
 using DatabaseManager.Shared;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace DatabaseManager.AppFunctions
 {
@@ -26,17 +29,10 @@ namespace DatabaseManager.AppFunctions
             [OrchestrationTrigger] IDurableOrchestrationContext context,
             ILogger log)
         {
-            //var outputs = new List<string>();
-
-            //// Replace "hello" with the name of your Durable Activity Function.
-            //outputs.Add(await context.CallActivityAsync<string>("ManageDataOps_Hello", "Tokyo"));
-            //outputs.Add(await context.CallActivityAsync<string>("ManageDataOps_Hello", "Seattle"));
-            //outputs.Add(await context.CallActivityAsync<string>("ManageDataOps_Hello", "London"));
-
             string response = "OK";
 
             List<DataOpParameters> pipelines = context.GetInput<List<DataOpParameters>>();
-            log.LogInformation($"Number of pipelines: {pipelines.Count}.");
+            log.LogInformation($"RunOrchestrator: Number of pipelines: {pipelines.Count}.");
 
             foreach (var pipe in pipelines)
             {
@@ -46,7 +42,20 @@ namespace DatabaseManager.AppFunctions
                 }
                 else if (pipe.Name == "DataQC")
                 {
-                    response = await context.CallActivityAsync<string>("ManageDataOps_DataQC", pipe);
+                    
+                    List<QcResult> qcList = await context.CallActivityAsync<List<QcResult>>("ManageDataOps_InitDataQC", pipe);
+                    var tasks = new Task<string>[qcList.Count];
+                    for (int i = 0; i < qcList.Count; i++)
+                    {
+                        int qcId = qcList[i].Id;
+                        JObject pipeParm = pipe.Parameters;
+                        pipeParm["RuleId"] = qcId;
+                        pipe.Parameters = pipeParm;
+                        string stat = await context.CallActivityAsync<string>("ManageDataOps_DataQC", pipe);
+                        //tasks[i] = context.CallActivityAsync<string>("ManageDataOps_DataQC", pipe);
+                    }
+
+                    //await Task.WhenAll(tasks);
                 }
                 else
                 {
@@ -54,19 +63,17 @@ namespace DatabaseManager.AppFunctions
                 }
                 
             }
-            log.LogInformation($"All pipelines processed");
+            log.LogInformation($"RunOrchestrator: All pipelines processed");
             return response;
         }
 
         [FunctionName("ManageDataOps_CreateIndex")]
         public static async Task<string> CreateIndex([ActivityTrigger] DataOpParameters pipe, ILogger log)
         {
-            log.LogInformation($"Saying hello to {pipe.Name}.");
+            log.LogInformation($"CreateIndex: Starting");
 
             string parameters = pipe.Parameters.ToString();
-            log.LogInformation($"Parameters: {parameters}.");
-            log.LogInformation($"URL: {pipe.Url}.");
-
+            
             HttpClient client = new HttpClient();
             try
             {
@@ -86,52 +93,45 @@ namespace DatabaseManager.AppFunctions
             }
             catch (Exception ex)
             {
-                log.LogInformation($"Serious exception {ex}");
+                log.LogInformation($"CreateIndex: Serious exception {ex}");
             }
             finally
             {
                 client.Dispose();
             }
 
+            log.LogInformation($"CreateIndex: Complete");
             return $"Hello {pipe.Name}!";
         }
 
-        [FunctionName("ManageDataOps_DataQC")]
-        public static string DataQC([ActivityTrigger] DataOpParameters pipe, ILogger log)
+        [FunctionName("ManageDataOps_InitDataQC")]
+        public static async Task<List<QcResult>> InitDataQC([ActivityTrigger] DataOpParameters pipe, ILogger log)
         {
-            log.LogInformation($"Saying hello to {pipe.Name}.");
-            string parameters = pipe.Parameters.ToString();
-            log.LogInformation($"Parameters: {parameters}.");
-            log.LogInformation($"URL: {pipe.Url}.");
+            log.LogInformation($"InitDataQC: Starting");
+            DataQC qc = new DataQC(pipe.StorageAccount);
+            DataQCParameters qcParms = pipe.Parameters.ToObject<DataQCParameters>();
+            List<QcResult> qcList = await qc.GetQCRules(qcParms);
+            await qc.ClearQCFlags(pipe.StorageAccount, qcParms);
+            log.LogInformation($"InitDataQC: Complete");
+            return qcList;
+        }
 
-            HttpClient client = new HttpClient();
+        [FunctionName("ManageDataOps_DataQC")]
+        public static async Task<string> DataQC([ActivityTrigger] DataOpParameters pipe, ILogger log)
+        {
             try
             {
-                client.DefaultRequestHeaders.Remove("AzureStorageConnection");
-                client.DefaultRequestHeaders.Add("AzureStorageConnection", pipe.StorageAccount);
-                StringContent stringContent = new StringContent(parameters, Encoding.UTF8, "application/json");
-                //var response = await client.PostAsync(pipe.Url, stringContent);
-                //if (response.IsSuccessStatusCode)
-                //{
-                //    log.LogInformation($"Sucessfully completed");
-                //}
-                //else
-                //{
-                //    var error = response.Content.ReadAsStringAsync();
-                //    log.LogInformation($"Failed with error: {error}");
-                //}
+                log.LogInformation($"InitDataQC: Starting");
+                DataQC qc = new DataQC(pipe.StorageAccount);
+                DataQCParameters qcParms = pipe.Parameters.ToObject<DataQCParameters>();
+                await qc.ProcessQcRule(qcParms);
             }
             catch (Exception ex)
             {
-                log.LogInformation($"Serious exception {ex}");
-            }
-            finally
-            {
-                client.Dispose();
+                log.LogInformation($"InitDataQC:Serious exception {ex}");
             }
 
-
-            return $"Hello {pipe.Name}!";
+            return $"OK";
         }
 
         [FunctionName("ManageDataOps_HttpStart")]

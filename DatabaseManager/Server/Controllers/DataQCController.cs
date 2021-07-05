@@ -228,7 +228,6 @@ namespace DatabaseManager.Server.Controllers
         private void CalculateKey(RuleModel rule, DataTable indexTable)
         {
             string[] keyAttributes = rule.RuleParameters.Split(';');
-            string function = "";
             if (keyAttributes.Length > 0)
             {
                 foreach (DataRow idxRow in indexTable.Rows)
@@ -240,6 +239,7 @@ namespace DatabaseManager.Server.Controllers
                         JObject dataObject = JObject.Parse(jsonData);
                         foreach (string key in keyAttributes)
                         {
+                            string function = "";
                             string attribute = key.Trim();
                             if (attribute.Substring(0, 1) == "*")
                             {

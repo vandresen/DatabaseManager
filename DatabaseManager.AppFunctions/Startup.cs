@@ -1,4 +1,5 @@
 ﻿using DatabaseManager.AppFunctions.Helpers;
+using DatabaseManager.Common.Services;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -15,6 +16,7 @@ namespace DatabaseManager.AppFunctions
         {
             builder.Services.AddHttpClient();
             builder.Services.AddScoped<IHttpService, HttpService>();
+            //builder.Services.AddScoped<IFileStorageServiceCommon, AzureFileStorageServiceCommon>();
         }
     }
 }

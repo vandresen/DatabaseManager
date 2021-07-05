@@ -236,6 +236,9 @@ GO
 Create proc spFixDuplicates
 AS
 BEGIN
+
+SET NOCOUNT ON
+
 -- Find duplicates wells
 
 drop table if exists #temp1;
@@ -334,6 +337,12 @@ SET well_log_curve_value.UWI = #temp2.GOODUWI
 FROM well_log_curve_value
 INNER JOIN #temp2
 ON (well_log_curve_value.UWI = #temp2.UWI and well_log_curve_value.CURVE_ID = #temp2.CURVEID)
+
+-- Delete wells
+DELETE a
+FROM well a
+INNER JOIN MyTempTable b
+  ON a.uwi = b.uwi and b.DUP = 'Y' and b.VALID='N'
 
 END
 GO
