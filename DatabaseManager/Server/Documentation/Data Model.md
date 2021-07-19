@@ -34,3 +34,7 @@ This option also created several stored procedures required by DSM. It also copi
 in folder connectdefinition.These files can be customized for your data connectivity needs. Finally it copies a standard rule set
 into your data store for use by data qc and predictions.
 
+An External Data Source for SQL Server is being created. The data source is called PDOAzureBlob. In order to create a data source
+we need a Master Data Key. If one does not exist then the system will create one. You will need CONTROL permission on the database
+for this. Application settings has to be defined for BlobStorage, BlobSecret and BlobCredential.
+

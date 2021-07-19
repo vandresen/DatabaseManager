@@ -28,6 +28,7 @@ namespace DatabaseManager.Server.Controllers
         private readonly IWebHostEnvironment _env;
         private string connectionString;
         private string _credentials;
+        private string _blobStorage;
         private string _secret;
         private readonly string _contentRootPath;
         private readonly string container = "sources";
@@ -42,6 +43,7 @@ namespace DatabaseManager.Server.Controllers
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             _credentials = configuration["BlobCredential"];
             _secret = configuration["BlobSecret"];
+            _blobStorage = configuration["BlobStorage"];
             this.fileStorageService = fileStorageService;
             this.tableStorageService = tableStorageService;
             this.mapper = mapper;
@@ -60,7 +62,6 @@ namespace DatabaseManager.Server.Controllers
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 fileStorageService.SetConnectionString(tmpConnString);
                 tableStorageService.SetConnectionString(tmpConnString);
-                //SourceEntity connector = new SourceEntity();
                 SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, dmParameters.DataConnector);
                 ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
                 if (connector == null) return BadRequest();
@@ -94,7 +95,7 @@ namespace DatabaseManager.Server.Controllers
             {
                 return BadRequest(ex.ToString());
             }
-
+            logger.LogInformation("Data model create Complete");
             return Ok($"OK");
         }
 
@@ -394,9 +395,8 @@ namespace DatabaseManager.Server.Controllers
 
         private void CreateSqlSources(DbUtilities dbConn)
         {
+            logger.LogInformation("Starting SQL source creation");
             string sql = "";
-            //string credentials = "PDOAzureBlobsCredentials";
-            //string secret = @"sv=2019-12-12&st=2021-06-14T19%3A23%3A15Z&se=2021-06-15T19%3A23%3A15Z&sr=c&sp=rl&sig=Lnif244ps%2BlBWWUb2fyBtTPu69gnESrMnzSkre8V3%2BA%3D";
             try
             {
                 sql = @"CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'MasterKeyAzureBlobs'";
@@ -423,14 +423,22 @@ namespace DatabaseManager.Server.Controllers
             }
             catch (Exception ex)
             {
-                logger.LogInformation("Problems deleting credentials, it may not exist, {ex}");
+                logger.LogInformation($"Problems deleting credentials, it may not exist, {ex}");
             }
-            sql = $"CREATE DATABASE SCOPED CREDENTIAL {_credentials} WITH IDENTITY = 'SHARED ACCESS SIGNATURE', SECRET = '{_secret}'";
-            dbConn.SQLExecute(sql);
-            
-            string blobStorage = @"https://petrodataonlinestorage.blob.core.windows.net/welldata";
-            sql = $"CREATE EXTERNAL DATA SOURCE PDOAzureBlob WITH(TYPE = BLOB_STORAGE, LOCATION = '{blobStorage}', CREDENTIAL = {_credentials})";
-            dbConn.SQLExecute(sql);
+
+            try
+            {
+                sql = $"CREATE DATABASE SCOPED CREDENTIAL {_credentials} WITH IDENTITY = 'SHARED ACCESS SIGNATURE', SECRET = '{_secret}'";
+                dbConn.SQLExecute(sql);
+
+                //string blobStorage = @"https://petrodataonlinestorage.blob.core.windows.net/welldata";
+                sql = $"CREATE EXTERNAL DATA SOURCE PDOAzureBlob WITH(TYPE = BLOB_STORAGE, LOCATION = '{_blobStorage}', CREDENTIAL = {_credentials})";
+                dbConn.SQLExecute(sql);
+            }
+            catch (Exception ex)
+            {
+                logger.LogInformation($"Problems crreating external data source, {ex}");
+            }
         }
 
         private async Task CreateDSMRules(ConnectParameters connector)
