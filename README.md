@@ -12,6 +12,13 @@ PPDM database and Data Science projects. So far this version provides functional
 
 This tool is built for the cloud generation.
 
+## Projects
+* Common - Common dll used when .NET 3.1 is required
+* DatabaseManager.Appfunctions - App functions used for serverless DatabaseManager version
+* DatabaseManager.Components - Common dll when .NET 5.0 is required
+* DatabaseManager.LocalDataTransfer - A data transfer services for remote data access
+* DatabaseManager - Standard Blazor client server application
+
 ## License 
 Database Manager is released under the GPLv3 or higher license.
 
