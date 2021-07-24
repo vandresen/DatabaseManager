@@ -231,119 +231,137 @@ BEGIN
 END
 GO
 
-DROP PROCEDURE IF EXISTS spFixDuplicates;
+DROP PROCEDURE IF EXISTS spGetDuplicateCount;
 GO
-Create proc spFixDuplicates
+CREATE PROC spGetDuplicateCount
+AS
+BEGIN
+	WITH vidar AS
+	(
+		SELECT
+			ukey, count(*) as CNT
+		FROM
+			MyTempTable
+		GROUP BY
+			UKEY
+		HAVING 
+			COUNT(*) > 1
+	)
+	Update 
+		MyTempTable
+	set 
+		DUP = 'Y' 
+	from 
+		MyTempTable a 
+	INNER JOIN
+		vidar b 
+	ON 
+		b.UKEY = a.UKEY; 
+END
+GO
+
+DROP PROCEDURE IF EXISTS spFixDuplicateWellLogs;
+GO
+Create proc spFixDuplicateWellLogs
 AS
 BEGIN
 
 SET NOCOUNT ON
 
--- Find duplicates wells
-
-drop table if exists #temp1;
-create table #temp1 (UKEY varchar(255), CNT int);
-
-insert into #temp1
-SELECT
-    ukey, count(*) as CNT
-FROM
-    MyTempTable
-GROUP BY
-    UKEY
-HAVING 
-    COUNT(*) > 1;
-
-update 
-	MyTempTable
-set 
-	DUP = 'Y' 
-from 
-	MyTempTable a 
-INNER JOIN
-	#temp1 b 
-ON 
-	b.UKEY = a.UKEY; 
-
 -- Find duplicates curves
-drop table if exists #temp2;
-create table #temp2 (UKEY varchar(255), UWI varchar(40), CURVEID varchar(255), DUP varchar(1), VALID varchar(1), GOODUWI varchar(40));
+drop table if exists #DuplicateLogs;
+CREATE TABLE #DuplicateLogs (UKEY varchar(255), UWI varchar(40), CURVEID varchar(255), DUP varchar(1), VALID varchar(1), GOODUWI varchar(40));
 
-insert into #temp2 (UKEY, UWI, CURVEID, VALID)
+insert into #DuplicateLogs (UKEY, UWI, CURVEID, VALID)
 select b.UKEY, a.uwi, a.curve_id, b.VALID  from well_log_curve a, MyTempTable b
-where b.uwi = a.uwi
+where b.uwi = a.uwi;
 
-drop table if exists #temp3;
-create table #temp3 (UKEY varchar(255), curveid varchar(255), CNT int);
-
-insert into #temp3
-SELECT
-    ukey, curveid, count(*) as CNT
-FROM
-    #temp2
-GROUP BY
-    ukey, curveid
-HAVING 
-    COUNT(*) > 1;
-
-update 
-	#temp2
+WITH DupLogCount AS
+	(
+		SELECT
+			ukey, curveid, count(*) as CNT
+		FROM
+			#DuplicateLogs
+		GROUP BY
+			UKEY, CURVEID
+		HAVING 
+			COUNT(*) > 1
+	)
+Update 
+	#DuplicateLogs
 set 
 	DUP = 'Y' 
 from 
-	#temp2 a 
+	#DuplicateLogs 
 INNER JOIN
-	#temp3 b 
+	DupLogCount 
 ON 
-	b.UKEY = a.UKEY and a.curveid = b.curveid; 
+	DupLogCount.UKEY = [#DuplicateLogs].UKEY and DupLogCount.curveid = [#DuplicateLogs].curveid;
 
 -- Delete duplicate log curves and values
 DELETE a
 FROM well_log_curve a
-INNER JOIN #temp2 b
-  ON a.uwi = b.uwi and a.curve_id =b.curveid and b.DUP = 'Y' and b.VALID='N'
+INNER JOIN #DuplicateLogs b
+  ON a.uwi = b.uwi and a.curve_id =b.curveid and b.DUP = 'Y' and b.VALID='N';
 
 DELETE a
 FROM well_log_curve_value a
-INNER JOIN #temp2 b
-  ON a.uwi = b.uwi and a.curve_id =b.curveid and b.DUP = 'Y' and b.VALID='N'
+INNER JOIN #DuplicateLogs b
+  ON a.uwi = b.uwi and a.curve_id =b.curveid and b.DUP = 'Y' and b.VALID='N';
 
 -- Update log curves and values with good UWI values
 
-drop table if exists #temp4;
-create table #temp4 (UKEY varchar(255), UWI varchar(40), DUP varchar(1), VALID varchar(1) );
+drop table if exists #DuplicateWells;
+create table #DuplicateWells (UKEY varchar(255), UWI varchar(40), DUP varchar(1), VALID varchar(1) );
 
-insert into #temp4 (UKEY, UWI, VALID)
-select b.UKEY, b.uwi, b.VALID  from #temp1 a, MyTempTable b
+WITH DuplicateCount AS
+	(
+		SELECT
+			ukey, count(*) as CNT
+		FROM
+			MyTempTable
+		GROUP BY
+			UKEY
+		HAVING 
+			COUNT(*) > 1
+	)
+insert into #DuplicateWells (UKEY, UWI, VALID)
+select b.UKEY, b.uwi, b.VALID  from DuplicateCount a, MyTempTable b
 where b.ukey = a.ukey and VALID = 'Y'
 
-delete from #temp2 where VALID='Y'
+delete from #DuplicateLogs where VALID='Y'
 
-UPDATE #temp2
-SET #temp2.GOODUWI=(SELECT #temp4.UWI
-  FROM #temp4
-  WHERE #temp2.ukey=#temp4.ukey);
+UPDATE #DuplicateLogs
+SET #DuplicateLogs.GOODUWI=(SELECT #DuplicateWells.UWI
+  FROM #DuplicateWells
+  WHERE #DuplicateLogs.ukey=#DuplicateWells.ukey);
 
-delete from #temp2 where GOODUWI is null
+delete from #DuplicateLogs where GOODUWI is null
 
 UPDATE well_log_curve
-SET well_log_curve.UWI = #temp2.GOODUWI
-FROM well_log_curve
-INNER JOIN #temp2
-ON (well_log_curve.UWI = #temp2.UWI and well_log_curve.CURVE_ID = #temp2.CURVEID)
+SET well_log_curve.UWI = [#DuplicateLogs].GOODUWI
+FROM well_log_curve  
+INNER JOIN #DuplicateLogs
+ON (well_log_curve.UWI = [#DuplicateLogs].UWI and well_log_curve.CURVE_ID = [#DuplicateLogs].CURVEID)
 
 UPDATE well_log_curve_value
-SET well_log_curve_value.UWI = #temp2.GOODUWI
+SET well_log_curve_value.UWI = [#DuplicateLogs].GOODUWI
 FROM well_log_curve_value
-INNER JOIN #temp2
-ON (well_log_curve_value.UWI = #temp2.UWI and well_log_curve_value.CURVE_ID = #temp2.CURVEID)
+INNER JOIN #DuplicateLogs
+ON (well_log_curve_value.UWI = [#DuplicateLogs].UWI and well_log_curve_value.CURVE_ID = [#DuplicateLogs].CURVEID)
 
--- Delete wells
-DELETE a
-FROM well a
-INNER JOIN MyTempTable b
-  ON a.uwi = b.uwi and b.DUP = 'Y' and b.VALID='N'
+END
+GO
 
+DROP PROCEDURE IF EXISTS spDeleteDuplicateWells;
+GO
+CREATE PROC spDeleteDuplicateWells
+AS
+BEGIN
+	DELETE a
+	FROM well a
+	INNER JOIN MyTempTable b
+	  ON a.uwi = b.uwi and b.DUP = 'Y' and b.VALID='N'
 END
 GO
 
