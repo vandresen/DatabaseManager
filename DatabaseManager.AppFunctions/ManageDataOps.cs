@@ -57,6 +57,18 @@ namespace DatabaseManager.AppFunctions
 
                     //await Task.WhenAll(tasks);
                 }
+                else if(pipe.Name == "DataTransfer")
+                {
+                    log.LogInformation($"Starting data transfer");
+                    List<string> files = await context.CallActivityAsync<List<string>>("ManageDataOps_InitDataTransfer", pipe);
+                    foreach (string file in files)
+                    {
+                        JObject pipeParm = pipe.Parameters;
+                        pipeParm["Table"] = file;
+                        pipe.Parameters = pipeParm;
+                        string stat = await context.CallActivityAsync<string>("ManageDataOps_DataTransfer", pipe);
+                    }
+                }
                 else
                 {
                     log.LogInformation($"Artifact {pipe.Name} does not exist");
@@ -114,6 +126,30 @@ namespace DatabaseManager.AppFunctions
             await qc.ClearQCFlags(pipe.StorageAccount, qcParms);
             log.LogInformation($"InitDataQC: Complete");
             return qcList;
+        }
+
+        [FunctionName("ManageDataOps_InitDataTransfer")]
+        public static async Task<List<string>> InitDataTransfer([ActivityTrigger] DataOpParameters pipe, ILogger log)
+        {
+            log.LogInformation($"InitDataTransfer: Starting");
+            
+            DataTransfer dt = new DataTransfer(pipe.StorageAccount);
+            TransferParameters parms= pipe.Parameters.ToObject<TransferParameters>();
+            List<string> files = await dt.GetFiles(parms.SourceName);
+            
+            log.LogInformation($"InitDataTransfer: Complete");
+            return files;
+        }
+
+        [FunctionName("ManageDataOps_DataTransfer")]
+        public static async Task<string> DataTransfer([ActivityTrigger] DataOpParameters pipe, ILogger log)
+        {
+            log.LogInformation($"DataTransfer: Starting");
+            DataTransfer dt = new DataTransfer(pipe.StorageAccount);
+            TransferParameters parms = pipe.Parameters.ToObject<TransferParameters>();
+            await dt.CopyFiles(parms);
+            log.LogInformation($"DataTransfer: Complete");
+            return $"OK";
         }
 
         [FunctionName("ManageDataOps_DataQC")]

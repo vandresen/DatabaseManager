@@ -1,6 +1,9 @@
-﻿using DatabaseManager.Common.Entities;
+﻿using AutoMapper;
+using DatabaseManager.Common.Entities;
+using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Azure.Cosmos.Table;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -8,39 +11,37 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
 {
     public class Common
     {
-        public static CloudTable GetTableConnect(string connectionString, string tableName)
+        public static async Task<ConnectParameters> GetConnectParameters(string azureConnectionString, string connecterSource)
         {
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            CloudTableClient client = account.CreateCloudTableClient();
-            CloudTable table = client.GetTableReference(tableName);
-            return table;
-        }
+            if (String.IsNullOrEmpty(azureConnectionString))
+            {
+                Exception error = new Exception($"Azure Connection string is not set");
+                throw error;
+            }
+            var builder = new ConfigurationBuilder();
+            IConfiguration configuration = builder.Build();
+            ITableStorageServiceCommon tableStorage = new AzureTableStorageServiceCommon(configuration);
+            tableStorage.SetConnectionString(azureConnectionString);
 
-        public static ConnectParameters GetConnectParameters(string connectionString, string tableName, string name)
-        {
             ConnectParameters connector = new ConnectParameters();
-            CloudTable table = Common.GetTableConnect(connectionString, tableName);
-            TableOperation retrieveOperation = TableOperation.Retrieve<SourceEntity>("PPDM", name);
-            TableResult result = table.Execute(retrieveOperation);
-            SourceEntity entity = result.Result as SourceEntity;
+            SourceEntity entity = await tableStorage.GetTableRecord<SourceEntity>("sources", connecterSource);
             if (entity == null)
             {
-                connector = null;
+                Exception error = new Exception($"Could not find source connector");
+                throw error;
             }
-            else
-            {
-                connector.SourceName = name;
-                connector.Catalog = entity.Catalog;
-                connector.DatabaseServer = entity.DatabaseServer;
-                connector.User = entity.User;
-                connector.Password = entity.Password;
-                connector.ConnectionString = entity.ConnectionString;
-            }
+            var config = new MapperConfiguration(cfg => {
+                cfg.CreateMap<SourceEntity, ConnectParameters>().ForMember(dest => dest.SourceName, opt => opt.MapFrom(src => src.RowKey));
+            });
+            IMapper mapper = config.CreateMapper();
+            connector = mapper.Map<ConnectParameters>(entity);
+
             return connector;
         }
 
