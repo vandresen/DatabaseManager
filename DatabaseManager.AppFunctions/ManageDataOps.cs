@@ -123,7 +123,7 @@ namespace DatabaseManager.AppFunctions
             DataQC qc = new DataQC(pipe.StorageAccount);
             DataQCParameters qcParms = pipe.Parameters.ToObject<DataQCParameters>();
             List<QcResult> qcList = await qc.GetQCRules(qcParms);
-            await qc.ClearQCFlags(pipe.StorageAccount, qcParms);
+            await qc.ClearQCFlags(qcParms.DataConnector);
             log.LogInformation($"InitDataQC: Complete");
             return qcList;
         }

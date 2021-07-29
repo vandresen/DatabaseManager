@@ -166,7 +166,7 @@ namespace DatabaseManager.Server.Controllers
 
                 string table = GetTable(sql);
                 ColumnProperties attributeProperties = GetColumnSchema(dbConn, sql);
-                string[] tableAttributes = Common.GetAttributes(sql);
+                string[] tableAttributes = Helpers.Common.GetAttributes(sql);
                 tableAttributes = tableAttributes.Where(w => w != "Id").ToArray();
 
                 sqlCommand = sqlCommand + $"CREATE PROCEDURE spInsert{dataType} ";
@@ -236,7 +236,7 @@ namespace DatabaseManager.Server.Controllers
 
                 string table = GetTable(sql);
                 ColumnProperties attributeProperties = GetColumnSchema(dbConn, sql);
-                string[] tableAttributes = Common.GetAttributes(sql);
+                string[] tableAttributes = Helpers.Common.GetAttributes(sql);
 
                 sqlCommand = sqlCommand + $"CREATE PROCEDURE spUpdate{dataType} ";
                 sqlCommand = sqlCommand + "@json NVARCHAR(max) ";
@@ -309,7 +309,7 @@ namespace DatabaseManager.Server.Controllers
             string query = $" where TABLE_NAME = '{table}'";
             DataTable dt = dbConn.GetDataTable(select, query);
 
-            string[] sqlAttributes = Common.GetAttributes(sql);
+            string[] sqlAttributes = Helpers.Common.GetAttributes(sql);
             dt.CaseSensitive = false;
 
             foreach (string attribute in sqlAttributes)

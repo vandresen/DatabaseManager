@@ -160,7 +160,7 @@ namespace DatabaseManager.Server.Controllers
             foreach (DataAccessDef accessDef in accessDefs)
             {
                 ruleInfo.DataTypeOptions.Add(accessDef.DataType);
-                string[] attributeArray = Common.GetAttributes(accessDef.Select);
+                string[] attributeArray = Helpers.Common.GetAttributes(accessDef.Select);
                 string attributes = String.Join(",", attributeArray);
                 ruleInfo.DataAttributes.Add(accessDef.DataType, attributes);
             }

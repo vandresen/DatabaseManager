@@ -47,7 +47,7 @@ namespace DatabaseManager.Common.Helpers
         public async Task<List<QcResult>> GetQCRules(DataQCParameters qcParms)
         {
             List<QcResult> qcResult = new List<QcResult>();
-            
+
             string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
             _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
 
@@ -56,21 +56,28 @@ namespace DatabaseManager.Common.Helpers
             _dbConn.OpenConnection(connector);
 
             DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Rules");
+            DataAccessDef indexAccessDef = _accessDefs.First(x => x.DataType == "Index");
             string sql = ruleAccessDef.Select;
             string query = " where Active = 'Y' and RuleType != 'Predictions'";
             DataTable dt = _dbConn.GetDataTable(sql, query);
             string jsonString = JsonConvert.SerializeObject(dt);
             qcResult = JsonConvert.DeserializeObject<List<QcResult>>(jsonString);
-
+            foreach (QcResult qcItem in qcResult)
+            {
+                sql = indexAccessDef.Select;
+                query = $" where QC_STRING like '%{qcItem.RuleKey};%'";
+                DataTable ft = _dbConn.GetDataTable(sql, query);
+                qcItem.Failures = ft.Rows.Count;
+            }
             _dbConn.CloseConnection();
             return qcResult;
         }
 
-        public async Task ClearQCFlags(string azureConnectionString, DataQCParameters qcParms)
+        public async Task ClearQCFlags(string source)
         {
             try
             {
-                ConnectParameters connector = await GetConnector(qcParms.DataConnector);
+                ConnectParameters connector = await GetConnector(source);
 
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);

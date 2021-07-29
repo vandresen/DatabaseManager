@@ -15,7 +15,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Components"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.LocalDataTransfer", "DatabaseManager.LocalDataTransfer\DatabaseManager.LocalDataTransfer.csproj", "{76C22ABD-4AE1-44BA-B231-908533D291A0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.Common", "Common\DatabaseManager.Common.csproj", "{769A9E14-8AE3-4FED-9EA3-7B8587163231}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Common", "Common\DatabaseManager.Common.csproj", "{769A9E14-8AE3-4FED-9EA3-7B8587163231}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.ServerLessClient", "DatabaseManager.ServerLessClient\DatabaseManager.ServerLessClient.csproj", "{DD6DA696-7911-459A-B426-CA3F07CD488A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{769A9E14-8AE3-4FED-9EA3-7B8587163231}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{769A9E14-8AE3-4FED-9EA3-7B8587163231}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{769A9E14-8AE3-4FED-9EA3-7B8587163231}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD6DA696-7911-459A-B426-CA3F07CD488A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD6DA696-7911-459A-B426-CA3F07CD488A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD6DA696-7911-459A-B426-CA3F07CD488A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD6DA696-7911-459A-B426-CA3F07CD488A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

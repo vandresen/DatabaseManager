@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
 using DatabaseManager.Server.Entities;
+//using DatabaseManager.Common.Helpers;
 using DatabaseManager.Server.Helpers;
 using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
@@ -129,7 +130,7 @@ namespace DatabaseManager.Server.Controllers
                 if (predictionParams.DataConnector == sourceConnector) syncPredictions = true;
                 else syncPredictions = false;
 
-                RuleModel rule = Common.GetRule(dbConn, predictionParams.PredictionId, _accessDefs);
+                RuleModel rule = Helpers.Common.GetRule(dbConn, predictionParams.PredictionId, _accessDefs);
 
                 manageIndexTable = new ManageIndexTable(_accessDefs, connector.ConnectionString, rule.DataType, rule.FailRule);
                 manageIndexTable.InitQCFlags(false);
@@ -268,7 +269,7 @@ namespace DatabaseManager.Server.Controllers
                     JObject dataObject = JObject.Parse(jsonDataObject);
                     dataObject["ROW_CHANGED_BY"] = Environment.UserName;
                     jsonDataObject = dataObject.ToString();
-                    jsonDataObject = Common.SetJsonDataObjectDate(jsonDataObject, "ROW_CHANGED_DATE");
+                    jsonDataObject = Helpers.Common.SetJsonDataObjectDate(jsonDataObject, "ROW_CHANGED_DATE");
                     string dataType = idx.Rows[0]["DATATYPE"].ToString();
                     try
                     {
