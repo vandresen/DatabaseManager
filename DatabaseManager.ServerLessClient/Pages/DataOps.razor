@@ -1,7 +1,89 @@
 ﻿@page "/dataops"
+@inject HttpClient client
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@using System.Text
 
-<h3>DataOps</h3>
+<h3>Data Ops</h3>
+
+<Table TableItem="DataOpsPipes" Items="pipeList" PageSize="@pageSize" ColumnReorder="true">
+    <Column TableItem="DataOpsPipes" Title="Action" Sortable="false">
+        <Template>
+            @*<a class="btn btn-success" href="/rules/edit/@singleton.TargetConnector/@context.Id">Edit</a>
+                <button class="btn btn-danger" @onclick="@(() => RuleDelete(context.Id))">Delete</button>*@
+            <button class="btn btn-success" @onclick="@(() => ExecutePipeline(context.Name))">Execute</button>
+        </Template>
+    </Column>
+    <Column TableItem="DataOpsPipes" Title="Pipe Name" Field="@(x => x.Name)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
+    <Pager ShowPageNumber="true" ShowTotalCount="true" />
+</Table>
 
 @code {
+    List<DataOpsPipes> pipeList;
+    int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        //string url = "https://databasemanagerappfunctions.azurewebsites.net/api/GetDataOpsData?code=2XXdQ8ZkFhoL0kqchmVDADAa7XQxNkNWVL4fBrXsvsfFQP8icYkGMw==";
+        string url = "http://localhost:7071/api/GetDataOpsList";
+        try
+        {
+            string azureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
+            client.DefaultRequestHeaders.Remove("azurestorageconnection");
+            client.DefaultRequestHeaders.Add("azurestorageconnection", azureStorage);
+            pipeList = await client.GetFromJsonAsync<List<DataOpsPipes>>(url);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors {ex.ToString()}");
+        }
+    }
+
+    private async Task ExecutePipeline(string name)
+    {
+        Console.WriteLine($"excute pipeline {name}");
+        string baseUrl = "http://localhost:7071/api/";
+        string url = "http://localhost:7071/api/GetDataOpsPipe";
+        try
+        {
+            url = $"{url}?name={name}";
+            string json = await client.GetStringAsync(url);
+            List<PipeLine> pipelines = JsonConvert.DeserializeObject<List<PipeLine>>(json);
+            Console.WriteLine($"Number of pipes are {pipelines.Count}");
+
+            string azureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
+            List<DataOpParameters> parms = new List<DataOpParameters>();
+            foreach (var pipe in pipelines)
+            {
+                parms.Add(new DataOpParameters()
+                {
+                    Id = pipe.Id,
+                    Name = pipe.ArtifactType,
+                    Url = baseUrl + pipe.ArtifactType,
+                    StorageAccount = azureStorage,
+                    Parameters = pipe.Parameters
+                });
+            }
+
+            var jsonString = JsonConvert.SerializeObject(parms);
+            Console.WriteLine(jsonString);
+            var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+            url = baseUrl + "ManageDataOps_HttpStart";
+            Console.WriteLine($"Url = {url}");
+            using var response = await client.PostAsync(url, content);
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Sucessful data ops");
+            }
+            else
+            {
+                string errorMessage = response.ReasonPhrase;
+                Console.WriteLine($"There was an error! {errorMessage}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
 
 }

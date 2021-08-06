@@ -66,9 +66,11 @@ else
     {
         try
         {
+            Console.WriteLine("Start");
             string currentHeader = "";
             if (client.DefaultRequestHeaders.Contains("AzureStorageConnection"))
             {
+                Console.WriteLine("Contains azure storage");
                 currentHeader = client.DefaultRequestHeaders.GetValues("AzureStorageConnection").FirstOrDefault();
             }
             Console.WriteLine(currentHeader);
@@ -101,6 +103,8 @@ else
             {
                 Console.WriteLine($"Errors: {ex}");
                 await displayMessage.DisplayErrorMessage(" There is a problem with the Azure storage connection string.");
+                client.DefaultRequestHeaders.Remove("AzureStorageConnection");
+                navigationManager.NavigateTo("/");
             }
         }
     }

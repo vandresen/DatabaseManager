@@ -1,24 +1,19 @@
 ﻿@page "/settings"
-@inject HttpClient client
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
 @inject NavigationManager navigationManager
-@inject ICookies cookies
+@inject HttpClient client
 
 <h3>Settings</h3>
-<p>Azure Storage used for this session:</p>
+<p>Azure Storage:</p>
 <p><input @bind="@AzureStorage" size="100" /></p>
-<p>Cookie expiration days:</p>
-<p><input type="number" @bind="@ExpirationDays" size="100" /></p>
 <p><button @onclick="Save">Save</button></p>
 
 @code {
     string AzureStorage;
-    int ExpirationDays = 7;
-    CookieParameters cookieParams = new CookieParameters();
 
     protected override async Task OnInitializedAsync()
     {
-        CookieParameters cookieParams = await cookies.GetCookie();
-        AzureStorage = cookieParams.Value;
+        AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
         Console.WriteLine($"{AzureStorage}");
     }
 
@@ -26,13 +21,11 @@
     {
         if (!string.IsNullOrEmpty(AzureStorage))
         {
-            await cookies.DeleteCookie();
-            cookieParams.Value = AzureStorage;
-            cookieParams.ExpirationDays = ExpirationDays;
-            await cookies.CreateCookie(cookieParams);
+            await localStorage.SetItemAsync("AzureStorage", AzureStorage);
             client.DefaultRequestHeaders.Remove("AzureStorageConnection");
             client.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
         }
         navigationManager.NavigateTo("/");
     }
+
 }

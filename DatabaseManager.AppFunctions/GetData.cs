@@ -16,29 +16,60 @@ namespace DatabaseManager.AppFunctions
 {
     public static class GetData
     {
-        [FunctionName("GetDataOpsData")]
-        public static async Task<IActionResult> DataOpsData(
+        [FunctionName("GetDataOpsList")]
+        public static async Task<IActionResult> DataOpsList(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             ExecutionContext context,
             ILogger log)
         {
-            log.LogInformation("GetDataOpsData: Starting.");
+            log.LogInformation("GetDataOpsList: Starting.");
             string jsonResult = "OK";
 
             var headers = req.Headers;
-            string storageAccount = headers.FirstOrDefault(x => x.Key == "AzureStorageConnection").Value;
+            string storageAccount = headers.FirstOrDefault(x => x.Key == "azurestorageconnection").Value;
+            if (string.IsNullOrEmpty(storageAccount))
+            {
+                log.LogError("GetDataOpsList: error, missing azure storage account");
+                return new BadRequestObjectResult("Missing azure storage account in http header");
+            }
             DataOps dops = new DataOps(storageAccount);
             List<DataOpsPipes> pipes = await dops.GetDataOpsPipes();
             jsonResult = JsonConvert.SerializeObject(pipes, Formatting.Indented);
 
-            //ConfigurationInfo configuration = Utilities.GetConfigurations(context);
+            log.LogInformation("GetDataOpsList: Completed.");
+            return new OkObjectResult(jsonResult);
+        }
 
-            //AzureStorageService azureConn = new AzureStorageService();
-            //azureConn.OpenConnection(configuration.AzureStorageConnection);
-            //List<SP500Stocks> stocks = azureConn.GetStocks();
-            //string jsonResult = JsonConvert.SerializeObject(stocks, Formatting.Indented);
+        [FunctionName("GetDataOpsPipe")]
+        public static async Task<IActionResult> DataOpsPipe(
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            ExecutionContext context,
+            ILogger log)
+        {
+            log.LogInformation("GetDataOpsPipe: Starting.");
+            string jsonResult = "OK";
 
-            log.LogInformation("GetDataOpsData: Completed.");
+            string pipeName = req.Query["name"];
+            //string pipeName = await new StreamReader(req.Body).ReadToEndAsync();
+            log.LogInformation($"ExecuteDataOps: {pipeName}");
+            if (string.IsNullOrEmpty(pipeName))
+            {
+                log.LogError("ExecuteDataOps: error, missing pipe name");
+                return new BadRequestObjectResult("Missing pipe name in body");
+            }
+
+            var headers = req.Headers;
+            string storageAccount = headers.FirstOrDefault(x => x.Key == "azurestorageconnection").Value;
+            if (string.IsNullOrEmpty(storageAccount))
+            {
+                log.LogError("GetDataOpsPipe: error, missing azure storage account");
+                return new BadRequestObjectResult("Missing azure storage account in http header");
+            }
+            DataOps dops = new DataOps(storageAccount);
+            List<PipeLine> dataOps = await dops.GetDataOpsPipe(pipeName);
+            jsonResult = JsonConvert.SerializeObject(dataOps, Formatting.Indented);
+
+            log.LogInformation("GetDataOpsPipe: Completed.");
             return new OkObjectResult(jsonResult);
         }
     }

@@ -17,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.LocalDataTr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Common", "Common\DatabaseManager.Common.csproj", "{769A9E14-8AE3-4FED-9EA3-7B8587163231}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.ServerLessClient", "DatabaseManager.ServerLessClient\DatabaseManager.ServerLessClient.csproj", "{DD6DA696-7911-459A-B426-CA3F07CD488A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.ServerLessClient", "DatabaseManager.ServerLessClient\DatabaseManager.ServerLessClient.csproj", "{DD6DA696-7911-459A-B426-CA3F07CD488A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

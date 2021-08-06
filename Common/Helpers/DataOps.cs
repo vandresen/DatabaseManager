@@ -1,6 +1,7 @@
 ﻿using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,6 +12,7 @@ namespace DatabaseManager.Common.Helpers
     public class DataOps
     {
         private readonly IFileStorageServiceCommon _fileStorage;
+        private string fileShare = "dataops";
 
         public DataOps(string azureConnectionString)
         {
@@ -32,5 +34,21 @@ namespace DatabaseManager.Common.Helpers
 
             return pipes;
         }
+
+        public async Task<List<PipeLine>> GetDataOpsPipe(string name)
+        {
+            List<PipeLine> dataOps = new List<PipeLine>();
+
+            List<string> result = await _fileStorage.ListFiles("dataops");
+            string dataOpsFile = await _fileStorage.ReadFile(fileShare, name);
+            dataOps = JsonConvert.DeserializeObject<List<PipeLine>>(dataOpsFile);
+            return dataOps;
+        }
+
+        public async Task execute(string pipeName)
+        {
+
+        }
+
     }
 }
