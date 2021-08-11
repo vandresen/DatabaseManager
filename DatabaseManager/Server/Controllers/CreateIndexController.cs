@@ -14,6 +14,7 @@ using DatabaseManager.Server.Entities;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.Cosmos.Table;
+using DatabaseManager.Common.Helpers;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -88,83 +89,103 @@ namespace DatabaseManager.Server.Controllers
             string tmpConnString = Request.Headers["AzureStorageConnection"];
             if (iParameters == null) return BadRequest();
             if (string.IsNullOrEmpty(iParameters.Taxonomy)) return BadRequest("Taxonomy not selected");
-            List<ParentIndexNodes> nodes = new List<ParentIndexNodes>();
+            
             try
             {
-                fileStorageService.SetConnectionString(tmpConnString);
-                tableStorageService.SetConnectionString(tmpConnString);
-                
-                string jsonTaxonomy = await fileStorageService.ReadFile("taxonomy", iParameters.Taxonomy);
-                string jsonConnectDef = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                Sources sr = new Sources(tmpConnString);
+                ConnectParameters target = await sr.GetSourceParameters(iParameters.TargetName);
+                ConnectParameters source = await sr.GetSourceParameters(iParameters.SourceName);
 
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, iParameters.TargetName);
-                if (entity == null) return BadRequest($"No source with name {iParameters.TargetName}");
-                ConnectParameters target = mapper.Map<ConnectParameters>(entity);
-                ConnectParameters source = new ConnectParameters();
-                if (iParameters.TargetName == iParameters.SourceName)
-                {
-                    source = target;
-                }
-                else
-                {
-                    entity = await tableStorageService.GetTableRecord<SourceEntity>(container, iParameters.SourceName);
-                    source = mapper.Map<ConnectParameters>(entity);
-                }
+                Indexer index = new Indexer(tmpConnString);
+                int parentNodes = await index.Initialize(target, source, iParameters.Taxonomy);
 
-                IndexBuilder iBuilder = new IndexBuilder();
-                
-                if (source.SourceType == "DataBase")
-                {
-                    iBuilder = new IndexBuilder(new DBDataAccess());
-                }
-                else
-                {
-                    source.ConnectionString = tmpConnString;
-                    if (source.DataType == "Logs")
-                    {
-                        iBuilder = new IndexBuilder(new LASDataAccess(fileStorageService));
-                    }
-                    else
-                    {
-                        iBuilder = new IndexBuilder(new CSVDataAccess(fileStorageService));
-                    }
-                    
-                }
-
-                logger.LogInformation("CreateIndexController: start indexing");
-                target.DataAccessDefinition = jsonConnectDef;
-                iBuilder.InitializeIndex(target, source, jsonTaxonomy);
-                iBuilder.CreateRoot(source);
-                int parentNodes = iBuilder.JsonIndexArray.Count;
-                int nodeId = 0;
-                for (int k = 0; k < parentNodes; k++)
-                {
-                    JToken token = iBuilder.JsonIndexArray[k];
-                    int parentCount = await iBuilder.GetObjectCount(token, k);
-                    if (parentCount > 0)
-                    {
-                        nodeId++;
-                        string strNodeId = $"/{nodeId}/";
-                        iBuilder.CreateParentNodeIndex(strNodeId);
-                        nodes.Add(new ParentIndexNodes()
-                        {
-                            NodeCount = parentCount,
-                            ParentNodeId = strNodeId,
-                            Name = (string)token["DataName"]
-                        });
-                    }
-                }
+                List<ParentIndexNodes> nodes = await index.IndexParent(parentNodes);
 
                 for (int j = 0; j < nodes.Count; j++)
                 {
                     ParentIndexNodes node = nodes[j];
                     for (int i = 0; i < node.NodeCount; i++)
                     {
-                        await iBuilder.PopulateIndex(j, i, node.ParentNodeId);
+                        index.IndexChildren(j, i, node.ParentNodeId);
                     }
                 }
 
-                iBuilder.CloseIndex();
+                //List<ParentIndexNodes> nodes = new List<ParentIndexNodes>();
+                //fileStorageService.SetConnectionString(tmpConnString);
+                //tableStorageService.SetConnectionString(tmpConnString);
+
+                //string jsonTaxonomy = await fileStorageService.ReadFile("taxonomy", iParameters.Taxonomy);
+                //string jsonConnectDef = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+
+                //SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, iParameters.TargetName);
+                //if (entity == null) return BadRequest($"No source with name {iParameters.TargetName}");
+                //ConnectParameters target = mapper.Map<ConnectParameters>(entity);
+                //ConnectParameters source = new ConnectParameters();
+                //if (iParameters.TargetName == iParameters.SourceName)
+                //{
+                //    source = target;
+                //}
+                //else
+                //{
+                //    entity = await tableStorageService.GetTableRecord<SourceEntity>(container, iParameters.SourceName);
+                //    source = mapper.Map<ConnectParameters>(entity);
+                //}
+
+                //IndexBuilder iBuilder = new IndexBuilder();
+
+                //if (source.SourceType == "DataBase")
+                //{
+                //    iBuilder = new IndexBuilder(new DBDataAccess());
+                //}
+                //else
+                //{
+                //    source.ConnectionString = tmpConnString;
+                //    if (source.DataType == "Logs")
+                //    {
+                //        iBuilder = new IndexBuilder(new LASDataAccess(fileStorageService));
+                //    }
+                //    else
+                //    {
+                //        iBuilder = new IndexBuilder(new CSVDataAccess(fileStorageService));
+                //    }
+
+                //}
+
+                //logger.LogInformation("CreateIndexController: start indexing");
+                //target.DataAccessDefinition = jsonConnectDef;
+                //iBuilder.InitializeIndex(target, source, jsonTaxonomy);
+                //iBuilder.CreateRoot(source);
+                //int parentNodes = iBuilder.JsonIndexArray.Count;
+                //int nodeId = 0;
+                //for (int k = 0; k < parentNodes; k++)
+                //{
+                //    JToken token = iBuilder.JsonIndexArray[k];
+                //    int parentCount = await iBuilder.GetObjectCount(token, k);
+                //    if (parentCount > 0)
+                //    {
+                //        nodeId++;
+                //        string strNodeId = $"/{nodeId}/";
+                //        iBuilder.CreateParentNodeIndex(strNodeId);
+                //        nodes.Add(new ParentIndexNodes()
+                //        {
+                //            NodeCount = parentCount,
+                //            ParentNodeId = strNodeId,
+                //            Name = (string)token["DataName"]
+                //        });
+                //    }
+                //}
+
+                //for (int j = 0; j < nodes.Count; j++)
+                //{
+                //    ParentIndexNodes node = nodes[j];
+                //    for (int i = 0; i < node.NodeCount; i++)
+                //    {
+                //        await iBuilder.PopulateIndex(j, i, node.ParentNodeId);
+                //    }
+                //}
+                //iBuilder.CloseIndex();
+
+                index.CloseIndex();
             }
             catch (Exception ex)
             {

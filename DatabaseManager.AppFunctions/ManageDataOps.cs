@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using DatabaseManager.AppFunctions.Entities;
 using DatabaseManager.AppFunctions.Helpers;
 using DatabaseManager.Common.Helpers;
+using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -83,33 +84,33 @@ namespace DatabaseManager.AppFunctions
         public static async Task<string> CreateIndex([ActivityTrigger] DataOpParameters pipe, ILogger log)
         {
             log.LogInformation($"CreateIndex: Starting");
-
-            string parameters = pipe.Parameters.ToString();
-            
-            HttpClient client = new HttpClient();
+            CreateIndexParameters parms = pipe.Parameters.ToObject<CreateIndexParameters>();
             try
             {
-                client.DefaultRequestHeaders.Remove("AzureStorageConnection");
-                client.DefaultRequestHeaders.Add("AzureStorageConnection", pipe.StorageAccount);
-                StringContent stringContent = new StringContent(parameters, Encoding.UTF8, "application/json");
-                var response = await client.PostAsync(pipe.Url, stringContent);
-                if (response.IsSuccessStatusCode)
+                Sources sr = new Sources(pipe.StorageAccount);
+                ConnectParameters target = await sr.GetSourceParameters(parms.TargetName);
+                ConnectParameters source = await sr.GetSourceParameters(parms.SourceName);
+
+                Indexer index = new Indexer(pipe.StorageAccount);
+                int parentNodes = await index.Initialize(target, source, parms.Taxonomy);
+
+                List<ParentIndexNodes> nodes = await index.IndexParent(parentNodes);
+
+                for (int j = 0; j < nodes.Count; j++)
                 {
-                    log.LogInformation($"Sucessfully completed");
+                    ParentIndexNodes node = nodes[j];
+                    for (int i = 0; i < node.NodeCount; i++)
+                    {
+                        index.IndexChildren(j, i, node.ParentNodeId);
+                    }
                 }
-                else
-                {
-                    var error = response.Content.ReadAsStringAsync();
-                    log.LogInformation($"Failed with error: {error}");
-                }
+
+                index.CloseIndex();
+
             }
             catch (Exception ex)
             {
                 log.LogInformation($"CreateIndex: Serious exception {ex}");
-            }
-            finally
-            {
-                client.Dispose();
             }
 
             log.LogInformation($"CreateIndex: Complete");

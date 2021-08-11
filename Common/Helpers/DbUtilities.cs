@@ -1,8 +1,10 @@
-﻿using DatabaseManager.Shared;
+﻿using DatabaseManager.Common.Entities;
+using DatabaseManager.Shared;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
+//using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Text;
 
 namespace DatabaseManager.Common.Helpers
@@ -225,26 +227,28 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        //public void InsertUserDefinedTable(IndexDataCollection myIndex)
-        //{
-        //    string sql = "spInsertIndex";
-        //    using (SqlCommand cmd = new SqlCommand(sql, this.sqlCn))
-        //    {
-        //        try
-        //        {
-        //            cmd.CommandTimeout = _sqlTimeOut;
-        //            cmd.CommandType = CommandType.StoredProcedure;
-        //            SqlParameter sqlParam = cmd.Parameters.AddWithValue("@TempTable", myIndex);
-        //            sqlParam.SqlDbType = SqlDbType.Structured;
-        //            cmd.ExecuteNonQuery();
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            Exception error = new Exception($"Sorry! Error inserting index", ex);
-        //            throw error;
-        //        }
-        //    }
-        //}
+        public void InsertUserDefinedTable(IndexDataCollection myIndex)
+        {
+            string sql = "spInsertIndex";
+            using (SqlCommand cmd = new SqlCommand(sql, this.sqlCn))
+            {
+                try
+                {
+                    cmd.CommandTimeout = _sqlTimeOut;
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    SqlParameter sqlParam = cmd.Parameters.AddWithValue("@TempTable", myIndex);
+                    sqlParam.SqlDbType = SqlDbType.Structured;
+                    sqlParam.TypeName = "dbo.UDIndexTable";
+                    sqlParam.Value = 
+                    cmd.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    Exception error = new Exception($"Sorry! Error inserting index", ex);
+                    throw error;
+                }
+            }
+        }
 
         public int InsertIndex(int parentId, string dataName, string dataType, string dataKey,
             string jsonData, double latitude, double longitude)

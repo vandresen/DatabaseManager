@@ -1,6 +1,7 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
 using DatabaseManager.Common.Entities;
+using DatabaseManager.Common.Extensions;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.VisualBasic.FileIO;
