@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using DatabaseManager.Common.Helpers;
 using DatabaseManager.Components.Services;
 using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Helpers;
@@ -114,38 +115,9 @@ namespace DatabaseManager.Server.Controllers
             try
             {
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
-                fileStorageService.SetConnectionString(tmpConnString);
-                tableStorageService.SetConnectionString(tmpConnString);
-                string referenceJson = await fileStorageService.ReadFile("connectdefinition", "PPDMReferenceTables.json");
-                string dataAccessDefinition = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, transferParameters.SourceName);
-                ConnectParameters sourceConnector = mapper.Map<ConnectParameters>(entity);
-                entity = await tableStorageService.GetTableRecord<SourceEntity>(container, transferParameters.TargetName);
-                ConnectParameters targetConnector = mapper.Map<ConnectParameters>(entity);
-                targetConnector.DataAccessDefinition = dataAccessDefinition;
 
-                if (sourceConnector.SourceType == "DataBase")
-                {
-                    DatabaseLoader dl = new DatabaseLoader();
-                    dl.CopyTable(transferParameters, sourceConnector.ConnectionString, targetConnector.ConnectionString);
-                }
-                else if (sourceConnector.SourceType == "File")
-                {
-                    if (sourceConnector.DataType == "Logs")
-                    {
-                        LASLoader ls = new LASLoader(fileStorageService);
-                        await ls.LoadLASFile(sourceConnector, targetConnector, transferParameters.Table, referenceJson);
-                    }
-                    else
-                    {
-                        CSVLoader cl = new CSVLoader(fileStorageService);
-                        await cl.LoadCSVFile(sourceConnector, targetConnector, transferParameters.Table);
-                    }
-                }
-                else
-                {
-                    return BadRequest("Not valid source type");
-                }
+                DataTransfer dt = new DataTransfer(tmpConnString);
+                await dt.CopyFiles(transferParameters);
             }
             catch (Exception ex)
             {
@@ -185,7 +157,7 @@ namespace DatabaseManager.Server.Controllers
                 tableStorageService.SetConnectionString(tmpConnString);
                 SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, target);
                 ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                DbUtilities dbConn = new DbUtilities();
+                Common.Helpers.DbUtilities dbConn = new Common.Helpers.DbUtilities();
                 dbConn.OpenConnection(connector);
                 dbConn.DBDelete(table);
                 message = $"{table} has been cleared";
@@ -198,7 +170,6 @@ namespace DatabaseManager.Server.Controllers
             }
 
             return Ok(message);
-            //return NoContent();
         }
     }
 }

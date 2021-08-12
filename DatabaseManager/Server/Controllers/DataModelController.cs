@@ -376,6 +376,11 @@ namespace DatabaseManager.Server.Controllers
                 string definition = System.IO.File.ReadAllText(defFile);
                 await fileStorageService.SaveFile("connectdefinition", fileName, definition);
 
+                fileName = "LASDataAccess.json";
+                defFile = _contentRootPath + @"\DataBase\LASDataAccess.json";
+                definition = System.IO.File.ReadAllText(defFile);
+                await fileStorageService.SaveFile("connectdefinition", fileName, definition);
+
                 fileName = "CSVDataAccess.json";
                 defFile = _contentRootPath + @"\DataBase\CSVDataAccess.json";
                 definition = System.IO.File.ReadAllText(defFile);

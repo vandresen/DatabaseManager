@@ -1,0 +1,9 @@
+{
+  "UWI": "UWI",
+  "API": "API",
+  "LAT": "SURFACE_LATITUDE",
+  "LON": "SURFACE_LONGITUDE",
+  "COMP": "OPERATOR",
+  "WELL": "WELL_NAME",
+  "LEAS": "LEASE_NAME"
+}

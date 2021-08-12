@@ -33,6 +33,7 @@ namespace DatabaseManager.Common.Helpers
         private string connectionString;
         private List<string> LASFiles = new List<string>();
         private readonly IFileStorageServiceCommon fileStorageService;
+        private JObject lasAccessJson;
 
         public LASLoader(IFileStorageServiceCommon fileStorageService)
         {
@@ -52,6 +53,7 @@ namespace DatabaseManager.Common.Helpers
         public async Task<DataTable> GetLASWellHeaders(ConnectParameters source, ConnectParameters target)
         {
             string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            lasAccessJson = JObject.Parse(await fileStorageService.ReadFile("connectdefinition", "LASDataAccess.json"));
             _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             List<string> files = new List<string>();
             files = await GetLASFileNames(source.Catalog);
@@ -147,33 +149,18 @@ namespace DatabaseManager.Common.Helpers
             connectionString = target.ConnectionString;
             _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(target.DataAccessDefinition);
             _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(ReferenceTableDefJson);
+            lasAccessJson = JObject.Parse(await fileStorageService.ReadFile("connectdefinition", "LASDataAccess.json"));
 
-            string versionInfo = "";
-            string wellInfo = "";
-            string curveInfo = "";
-            string parameterInfo = "";
-            string dataInfo = "";
-            string fileText = await fileStorageService.ReadFile(source.Catalog, fileName);
-            char[] charSeparators = new char[] { '~' };
-            string[] sections = fileText.Split(charSeparators, StringSplitOptions.RemoveEmptyEntries);
-            foreach (string section in sections)
-            {
-                string flag = section.Substring(0, 1);
-                if (flag == "V") versionInfo = section;
-                if (flag == "W") wellInfo = section;
-                if (flag == "C") curveInfo = section;
-                if (flag == "P") parameterInfo = section;
-                if (flag == "A") dataInfo = section;
-            }
+            LASSections ls = await GetLASSections(source.Catalog, fileName);
 
             _dbConn.OpenConnection(target);
             _dbUserName = _dbConn.GetUsername();
 
-            GetVersionInfo(versionInfo);
-            string json = GetHeaderInfo(wellInfo);
+            GetVersionInfo(ls.versionInfo);
+            string json = GetHeaderInfo(ls.wellInfo);
             LoadHeader(json);
-            GetCurveInfo(curveInfo);
-            GetDataInfo(dataInfo);
+            GetCurveInfo(ls.curveInfo);
+            GetDataInfo(ls.dataInfo);
             LoadLogs();
 
             _dbConn.CloseConnection();
@@ -428,15 +415,13 @@ namespace DatabaseManager.Common.Helpers
                 LASLine line = DecodeLASLine(input);
                 if (!string.IsNullOrEmpty(line.Mnem))
                 {
-                    try
+                    if (lasAccessJson.ContainsKey(line.Mnem))
                     {
-                        string key = headMap[line.Mnem];
-                        header[key] = line.Data;
-                        if (key == "NULL") _nullRepresentation = line.Data;
+                        string value = lasAccessJson.GetValue(line.Mnem).ToString();
+                        header[value] = line.Data;
+                        if (value == "NULL") _nullRepresentation = line.Data;
                     }
-                    catch (Exception)
-                    {
-                    }
+                    
                 }
             }
             if (string.IsNullOrEmpty(header["UWI"])) header["UWI"] = header["API"];
