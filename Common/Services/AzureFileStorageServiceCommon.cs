@@ -84,9 +84,13 @@ namespace DatabaseManager.Common.Services
             ShareFileClient file = directory.GetFileClient(fileName);
             if (file.Exists())
             {
-                Stream fileStream = await file.OpenReadAsync();
-                StreamReader reader = new StreamReader(fileStream);
-                json = reader.ReadToEnd();
+                using (Stream fileStream = await file.OpenReadAsync())
+                {
+                    using (StreamReader reader = new StreamReader(fileStream))
+                    {
+                        json = reader.ReadToEnd();
+                    }
+                }
             }
             else
             {

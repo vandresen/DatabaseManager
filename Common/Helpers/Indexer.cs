@@ -77,7 +77,7 @@ namespace DatabaseManager.Common.Helpers
             return nodes;
         }
 
-        public async void IndexChildren(int topId, int parentId, string parentNodeId)
+        public async Task IndexChildren(int topId, int parentId, string parentNodeId)
         {
             try
             {

@@ -29,6 +29,7 @@ namespace DatabaseManager.Common.Helpers
         private List<double> _indexValues = new List<double>();
         private List<ReferenceTable> _references = new List<ReferenceTable>();
         private List<DataAccessDef> _dataDef = new List<DataAccessDef>();
+        private List<LASSections> lasSections = new List<LASSections>();
         private string connectionString;
         private List<string> LASFiles = new List<string>();
         private readonly IFileStorageServiceCommon fileStorageService;
@@ -61,27 +62,11 @@ namespace DatabaseManager.Common.Helpers
             DataTable dt = _dbConn.GetDataTable(select, query);
             foreach (string file in files)
             {
-                string versionInfo = "";
-                string wellInfo = "";
-                string curveInfo = "";
-                string parameterInfo = "";
-                string dataInfo = "";
-                string fileText = await fileStorageService.ReadFile(source.Catalog, file);
-                char[] charSeparators = new char[] { '~' };
-                string[] sections = fileText.Split(charSeparators, StringSplitOptions.RemoveEmptyEntries);
-                foreach (string section in sections)
-                {
-                    string flag = section.Substring(0, 1);
-                    if (flag == "V") versionInfo = section;
-                    if (flag == "W") wellInfo = section;
-                    if (flag == "C") curveInfo = section;
-                    if (flag == "P") parameterInfo = section;
-                    if (flag == "A") dataInfo = section;
-                }
+                LASSections ls = await GetLASSections(source.Catalog, file);
+                lasSections.Add(ls);
 
-                GetVersionInfo(versionInfo);
-                //GetCurveInfo(curveInfo);
-                string json = GetHeaderInfo(wellInfo);
+                GetVersionInfo(ls.versionInfo);
+                string json = GetHeaderInfo(ls.wellInfo);
                 DataRow row = dt.NewRow();
                 JObject jo = JObject.Parse(json);
                 foreach (JProperty property in jo.Properties())
@@ -109,30 +94,12 @@ namespace DatabaseManager.Common.Helpers
             DataTable dt = _dbConn.GetDataTable(select, query);
             List<string> files = new List<string>();
             files = await GetLASFileNames(source.Catalog);
-            foreach (string file in files)
+            foreach (LASSections ls in lasSections)
             {
-                string versionInfo = "";
-                string wellInfo = "";
-                string curveInfo = "";
-                string parameterInfo = "";
-                string dataInfo = "";
-                string fileText = await fileStorageService.ReadFile(source.Catalog, file);
-                char[] charSeparators = new char[] { '~' };
-                string[] sections = fileText.Split(charSeparators, StringSplitOptions.RemoveEmptyEntries);
-                foreach (string section in sections)
-                {
-                    string flag = section.Substring(0, 1);
-                    if (flag == "V") versionInfo = section;
-                    if (flag == "W") wellInfo = section;
-                    if (flag == "C") curveInfo = section;
-                    if (flag == "P") parameterInfo = section;
-                    if (flag == "A") dataInfo = section;
-                }
-
-                GetVersionInfo(versionInfo);
-                string json = GetHeaderInfo(wellInfo);
+                GetVersionInfo(ls.versionInfo);
+                string json = GetHeaderInfo(ls.wellInfo);
                 _logNames = new List<string>();
-                GetCurveInfo(curveInfo);
+                GetCurveInfo(ls.curveInfo);
                 int logCount = _logNames.Count();
                 GetIndexValues();
                 for (int k = 1; k < logCount; k++)
@@ -210,6 +177,24 @@ namespace DatabaseManager.Common.Helpers
             LoadLogs();
 
             _dbConn.CloseConnection();
+        }
+
+        private async Task<LASSections> GetLASSections(string fileShare, string file)
+        {
+            LASSections lasSections = new LASSections();
+            string fileText = await fileStorageService.ReadFile(fileShare, file);
+            char[] charSeparators = new char[] { '~' };
+            string[] sections = fileText.Split(charSeparators, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string section in sections)
+            {
+                string flag = section.Substring(0, 1);
+                if (flag == "V") lasSections.versionInfo = section;
+                if (flag == "W") lasSections.wellInfo = section;
+                if (flag == "C") lasSections.curveInfo = section;
+                if (flag == "P") lasSections.parameterInfo = section;
+                if (flag == "A") lasSections.dataInfo = section;
+            }
+            return lasSections;
         }
 
         private void LoadLogs()
