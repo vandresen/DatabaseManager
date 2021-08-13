@@ -151,7 +151,9 @@ namespace DatabaseManager.Common.Helpers
             _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(ReferenceTableDefJson);
             lasAccessJson = JObject.Parse(await fileStorageService.ReadFile("connectdefinition", "LASDataAccess.json"));
 
+            lasSections = new List<LASSections>();
             LASSections ls = await GetLASSections(source.Catalog, fileName);
+            lasSections.Add(ls);
 
             _dbConn.OpenConnection(target);
             _dbUserName = _dbConn.GetUsername();
@@ -161,6 +163,7 @@ namespace DatabaseManager.Common.Helpers
             LoadHeader(json);
             GetCurveInfo(ls.curveInfo);
             GetDataInfo(ls.dataInfo);
+            LoadParameterInfo();
             LoadLogs();
 
             _dbConn.CloseConnection();
@@ -182,6 +185,69 @@ namespace DatabaseManager.Common.Helpers
                 if (flag == "A") lasSections.dataInfo = section;
             }
             return lasSections;
+        }
+
+        private void LoadParameterInfo()
+        {
+            DataAccessDef dataType = _dataDef.FirstOrDefault(x => x.DataType == "LogParameter");
+            if (dataType != null)
+            {
+                LASSections ls = lasSections[0];
+                string input = null;
+                if (!string.IsNullOrEmpty(ls.parameterInfo))
+                {
+                    if (!LogParmExist())
+                    {
+                        DataRow newRow;
+                        DataTable dtNew = new DataTable();
+                        string logParmtable = Common.GetTable(dataType.Select);
+                        string sqlQuery = $"select * from {logParmtable} where 0 = 1";
+                        SqlDataAdapter logParmAdapter = new SqlDataAdapter(sqlQuery, connectionString);
+                        logParmAdapter.Fill(dtNew);
+                        int seqNo = 0;
+                        StringReader sr = new StringReader(ls.parameterInfo);
+                        while ((input = sr.ReadLine()) != null)
+                        {
+                            LASLine line = DecodeLASLine(input);
+                            if (!string.IsNullOrEmpty(line.Mnem))
+                            {
+                                seqNo++;
+                                newRow = dtNew.NewRow();
+                                newRow["UWI"] = _uwi;
+                                newRow["WELL_LOG_ID"] = _logSource;
+                                newRow["WELL_LOG_SOURCE"] = "Source";
+                                newRow["PARAMETER_SEQ_NO"] = seqNo;
+                                newRow["PARAMETER_TEXT_VALUE"] = line.Data.Trim();
+                                newRow["REPORTED_DESC"] = line.Description.Trim();
+                                newRow["REPORTED_MNEMONIC"] = line.Mnem.Trim();
+                                newRow["ROW_CREATED_BY"] = _dbUserName;
+                                newRow["ROW_CHANGED_BY"] = _dbUserName;
+                                newRow["ROW_CREATED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                                newRow["ROW_CHANGED_DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
+                                dtNew.Rows.Add(newRow);
+                            }
+                        }
+
+                        if (dtNew.Rows.Count > 0)
+                        {
+                            using (SqlConnection destinationConnection = new SqlConnection(connectionString))
+                            {
+                                destinationConnection.Open();
+                                using (SqlBulkCopy bulkCopy =
+                                new SqlBulkCopy(destinationConnection.ConnectionString))
+                                {
+                                    bulkCopy.BatchSize = 500;
+                                    bulkCopy.DestinationTableName = logParmtable;
+                                    bulkCopy.WriteToServer(dtNew);
+                                }
+                            }
+                        }
+
+                        
+                    }
+                    
+                }
+            }
         }
 
         private void LoadLogs()
@@ -279,6 +345,20 @@ namespace DatabaseManager.Common.Helpers
             curves = dt.AsEnumerable().Select(p => p.Field<string>("CURVE_ID")).Distinct().ToList();
 
             return curves;
+        }
+
+        private bool LogParmExist()
+        {
+            bool exist = false;
+
+            DataAccessDef dataType = _dataDef.First(x => x.DataType == "LogParameter");
+            string select = dataType.Select;
+            string tmpUwi = Common.FixAposInStrings(_uwi);
+            string query = $" where UWI = '{tmpUwi}' and WELL_LOG_ID = '{_logSource}'";
+            DataTable dt = _dbConn.GetDataTable(select, query);
+            if (dt.Rows.Count > 0) exist = true;
+
+            return exist;
         }
 
         private void GetIndexValues()

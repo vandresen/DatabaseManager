@@ -15,6 +15,21 @@ that has a user and password defined.
 The system supports LAS files version 2. The files must be located in your Azure storage account under
 Fileshares with name logs.
 
+Well header attributes can be modified in the LASDataAccess.json file.
+
+The system will not out the box load parameter info. In order to add this feature you must add the 
+following to the PPDMAccessDef.json file:
+
+"DataType": "LogParameter",
+    "Keys": "UWI, WELL_LOG_ID, WELL_LOG_SOURCE, PARAMETER_SEQ_NO",
+    "Select": "Select UWI, WELL_LOG_ID, WELL_LOG_SOURCE, PARAMETER_SEQ_NO, PARAMETER_TEXT_VALUE, 
+                REPORTED_DESC, REPORTED_MNEMONIC, ROW_CHANGED_DATE, ROW_CHANGED_BY, ROW_CREATED_BY, 
+                _CREATED_DATE from well_log_parm"
+
+You must also delete the foreign key for the well_log_parm table.
+
+ALTER TABLE well_log_parm DROP CONSTRAINT WLP_WL_FK;
+
 ### Other well data
 Other well data in csv format must be put under a folder called wells. The names of the file must
 be the data type name in plural with extension txt.
