@@ -31,6 +31,7 @@ namespace DatabaseManager.Common.Helpers
 
             var config = new MapperConfiguration(cfg => {
                 cfg.CreateMap<SourceEntity, ConnectParameters>().ForMember(dest => dest.SourceName, opt => opt.MapFrom(src => src.RowKey));
+                cfg.CreateMap<ConnectParameters, SourceEntity>().ForMember(dest => dest.RowKey, opt => opt.MapFrom(src => src.SourceName));
             });
             _mapper = config.CreateMapper();
         }
@@ -46,7 +47,7 @@ namespace DatabaseManager.Common.Helpers
             SourceEntity entity = await _tableStorage.GetTableRecord<SourceEntity>(container, name);
             if (entity == null)
             {
-                Exception error = new Exception($"DataQc: Could not find source connector");
+                Exception error = new Exception($"Sources: Could not find source connector");
                 throw error;
             }
             connector = _mapper.Map<ConnectParameters>(entity);
@@ -57,6 +58,55 @@ namespace DatabaseManager.Common.Helpers
             }
 
             return connector;
+        }
+
+        public async Task<List<ConnectParameters>> GetSources()
+        {
+            List<ConnectParameters> connectors = new List<ConnectParameters>();
+            List<SourceEntity> sourceEntities = new List<SourceEntity>();
+            sourceEntities = await _tableStorage.GetTableRecords<SourceEntity>(container);
+            connectors = _mapper.Map<List<ConnectParameters>>(sourceEntities);
+            string jsonConnectDef = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            foreach (var connector in connectors)
+            {
+                if (connector.SourceType == "DataBase")
+                {
+                    connector.DataAccessDefinition = jsonConnectDef;
+                } 
+            }
+            return connectors;
+        }
+
+        public async Task SaveSource(ConnectParameters connector)
+        {
+            if (connector == null)
+            {
+                Exception error = new Exception($"Sources: Could not find connector data");
+                throw error;
+            }
+            SourceEntity sourceEntity = _mapper.Map<SourceEntity>(connector);
+            await _tableStorage.SaveTableRecord(container, connector.SourceName, sourceEntity);
+        }
+
+        public async Task UpdateSource(ConnectParameters connector)
+        {
+            if (connector == null)
+            {
+                Exception error = new Exception($"Sources: Could not find connector data");
+                throw error;
+            }
+            SourceEntity sourceEntity = _mapper.Map<SourceEntity>(connector);
+            await _tableStorage.UpdateTable(container, sourceEntity);
+        }
+
+        public async Task DeleteSource(string name)
+        {
+            if (name == null)
+            {
+                Exception error = new Exception($"Sources: Must provide a source name");
+                throw error;
+            }
+            await _tableStorage.DeleteTable(container, name);
         }
     }
 }
