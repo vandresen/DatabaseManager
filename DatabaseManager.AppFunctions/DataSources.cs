@@ -156,7 +156,7 @@ namespace DatabaseManager.AppFunctions
 
         [FunctionName("DeleteDataSource")]
         public static async Task<IActionResult> DeleteSource(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = null)] HttpRequest req,
             ILogger log)
         {
             log.LogInformation("DeleteDataSource: Starting");

@@ -1,0 +1,52 @@
+﻿@page "/datasources/create/{SourceType}"
+@inject HttpClient client
+@inject ILocalStorageService localStorage
+@inject NavigationManager navigationManager
+@using System.Text
+
+
+<h3>Create Data Connector</h3>
+@if (SourceType == "File")
+{
+    <FileSourceForm ConnectParameters="connectParameters" Type="@SourceType" OnValidSubmit="Create" />
+}
+else
+{
+    <DataSourceForm ConnectParameters="connectParameters" Type="@SourceType" OnValidSubmit="Create" />
+}
+
+@code {
+    [Parameter] public string SourceType { get; set; }
+    private ConnectParameters connectParameters = new ConnectParameters();
+
+    private async Task Create()
+    {
+        string connectStr = Common.CreateDatabaseConnectionString(connectParameters);
+        connectParameters.ConnectionString = connectStr;
+        try
+        {
+            //        //string url = "https://databasemanagerappfunctions.azurewebsites.net/api/GetDataOpsData?code=2XXdQ8ZkFhoL0kqchmVDADAa7XQxNkNWVL4fBrXsvsfFQP8icYkGMw==";
+            string url = "http://localhost:7071/api/SaveDataSource";
+            string azureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
+            client.DefaultRequestHeaders.Remove("azurestorageconnection");
+            client.DefaultRequestHeaders.Add("azurestorageconnection", azureStorage);
+            var jsonString = JsonConvert.SerializeObject(connectParameters);
+            var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+            using var response = await client.PostAsync(url, content);
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Sucessful saving data source");
+            }
+            else
+            {
+                string errorMessage = response.ReasonPhrase;
+                Console.WriteLine($"There was an error! {errorMessage}");
+            }
+            navigationManager.NavigateTo("datasources");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}
