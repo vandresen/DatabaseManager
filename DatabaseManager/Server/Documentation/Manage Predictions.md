@@ -15,19 +15,57 @@ A Completeness rule checks to see if a data attribute of a data object has a val
 attribute is null, or has a string value of UNKNOWN, or a number value of -99999.0 then the data 
 item fails the rule.
 
+| Field |Description  |
+|--|--|
+|Rule Name  |Enter a name that makes sense|
+|Active	|Y or N if this rule will be processed. N means not processed|
+|Data Type| Select the data type from the dropdown box|
+|Data Attribute| Select attribute to be quality checked from the dropdown list|
+|Rule Parameters | Not used for completeness|
+|Rule Filter |Enter a filter to limit which data items is processed for this rule (attribute = value)|
+|Description |Enter a description to clarify what the rule is checking for|
 
 #### Consistency
 A Consistency rule checks to see if the current data connector have the same value for a specific 
 data attribute of a data item in another data connector specified in the parameter field. If the 
 data attribute values are different, then the rule fails for the data item.
 
+| Field |Description  |
+|--|--|
+|Rule Name  |Enter a name that makes sense|
+|Active	|Y or N if this rule will be processed. N means not processed|
+|Data Type| Select the data type from the dropdown box|
+|Data Attribute| Select attribute to be quality checked from the dropdown list|
+|Rule Parameters | Enter the data source name to be used for the consistency check|
+|Rule Filter |Enter a filter to limit which data items is processed for this rule (attribute = value)|
+|Description |Enter a description to clarify what the rule is checking for|
+
 #### Entirety
 An Entirety rule check to see if a child data item is missing. For a given data item, this 
 rule will check to see if the data item has a specific child item based on the rule parameters. 
 If the child object is missing, then the rule will fail.
 
+| Field |Description  |
+|--|--|
+|Rule Name  |Enter a name that makes sense|
+|Active	|Y or N if this rule will be processed. N means not processed|
+|Data Type| Select the data type from the dropdown box|
+|Rule Parameters | Enter the data type name to check for possible children|
+|Rule Filter |Enter a filter to limit which data items is processed for this rule (attribute = value)|
+|Description |Enter a description to clarify what the rule is checking for|
+
 #### Uniqueness
 A Uniqueness rule will check for duplicates based on a set of attributes.
+
+| Field |Description  |
+|--|--|
+|Rule Name  |Enter a name that makes sense|
+|Active	|Y or N if this rule will be processed. N means not processed|
+|Data Type| Select the data type from the dropdown box|
+|Rule Parameters | See more info below|
+|Rule Filter |Enter a filter to limit which data items is processed for this rule (attribute = value)|
+|Description |Enter a description to clarify what the rule is checking for|
+
 In the Rule_Parameters you will define what attributes you want to use to
 determine a match. Use a ; to split the attibutes.
 Example: SURFACE_LATITUDE; SURFACE_LONGITUDE; LEASE_NAME
@@ -44,8 +82,20 @@ This function will make following changes to the attribute:
 Example: *NORMALIZE(UWI)
 
 #### Validity
-Some validfity rules will rqeuire one or more parameters set in Rule Parameter. These must 
+Some validfity rules will require one or more parameters set in Rule Parameter. These must 
 be expressed as Json.
+
+| Field |Description  |
+|--|--|
+|Rule Name  |Enter a name that makes sense|
+|Active	|Y or N if this rule will be processed. N means not processed|
+|Data Type| Select the data type from the dropdown box|
+|Data Attribute| Select attribute to be quality checked from the dropdown list|
+|Rule Parameters | Additional parameters for the selected function |
+|Rule Filter |Enter a filter to limit which data items is processed for this rule (attribute = value)|
+|Rule Function | Select a function from the dropdown list |
+|Description |Enter a description to clarify what the rule is checking for|
+
 The following validity methods are available:
 * ValidityRange
 * CurveSpikes
@@ -57,6 +107,22 @@ Checks that the data attribute is within a minimum and/or maximum value. The
 will be set to -99999.0 and 99999.0 
 
 #### Predictions
+Prediction rules use QC rules to make automated predictions for correcting 
+the data. If a data item fails a QC rule, a prediction action will be taken.
+
+| Field |Description  |
+|--|--|
+|Rule Name  |Enter a name that makes sense|
+|Active	|Y or N if this rule will be processed. N means not processed|
+|Data Type| Select the data type from the dropdown box|
+|Data Attribute| Select attribute to be quality checked from the dropdown list|
+|Rule Parameters | Additional parameters for the selected function |
+|Rule Filter |Enter a filter to limit which data items is processed for this rule (attribute = value)|
+|Fail Rule |Enter the rule key for the failed QC rule|
+|Prediction Order | The order in which prediction rules are processed. Lower numbers processed first |
+|Rule Function | Select a function from the dropdown list |
+|Description |Enter a description to clarify what the rule is checking for|
+
 The following prediction methods comes with the system:
 * DeleteDataObject
 * PredictDepthUsingIDW
