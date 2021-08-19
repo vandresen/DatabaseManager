@@ -23,6 +23,22 @@ namespace DatabaseManager.LocalDataTransfer
         private readonly string infoQueue = "datatransferinfo";
         private string target;
         private string source;
+        private string transferQuery;
+        private string queryType;
+
+        private readonly Dictionary<string, string> dictionary = new Dictionary<string, string>
+        {
+            { "WELL", "TABLE" },
+            { "BUSINESS_ASSOCIATE", "REFERENCE" },
+            { "FIELD", "REFERENCE" },
+            { "R_WELL_DATUM_TYPE", "REFERENCE" },
+            { "R_WELL_STATUS", "REFERENCE" },
+            { "STRAT_NAME_SET", "REFERENCE" },
+            { "STRAT_UNIT", "REFERENCE"},
+            { "STRAT_WELL_SECTION", "TABLE"},
+            { "WELL_LOG_CURVE", "TABLE"},
+            { "WELL_LOG_CURVE_VALUE", "TABLE"}
+        };
 
         public DataTransfer(ILogger<Worker> logger,
             AppSettings appSeting,
@@ -43,6 +59,8 @@ namespace DatabaseManager.LocalDataTransfer
                 _logger.LogInformation($"Target connect string: {target}");
                 source = GetConnectionString(transParms.SourceName);
                 _logger.LogInformation($"Source connect string: {source}");
+                transferQuery = transParms.TransferQuery;
+                queryType = transParms.QueryType;
             }
             catch (Exception ex)
             {
@@ -88,6 +106,9 @@ namespace DatabaseManager.LocalDataTransfer
                 sourceConn.Open();
                 destinationConn.Open();
 
+                CreateTempTable(sourceConn);
+                InsertQueryData(sourceConn);
+
                 foreach (string tableName in DatabaseTables.Names)
                 {
                     info = $"Copying table {tableName}";
@@ -110,7 +131,17 @@ namespace DatabaseManager.LocalDataTransfer
 
         private void BulkCopy(SqlConnection source, SqlConnection destination, string table)
         {
-            string sql = $"select * from {table}";
+            string sql = "";
+            string query = "";
+            if (dictionary[table] == "TABLE") query = transferQuery;
+            if (string.IsNullOrEmpty(query))
+            {
+                sql = $"select * from {table}";
+            }
+            else
+            {
+                sql = $"select * from {table} where UWI in (select UWI from #PDOList)";
+            }
             
             using (SqlCommand cmd = new SqlCommand(sql, source))
             {
@@ -129,6 +160,55 @@ namespace DatabaseManager.LocalDataTransfer
                     Exception error = new Exception($"Sorry! Error copying table: {table}; {ex}");
                     throw error;
                 }
+            }
+        }
+
+        private void CreateTempTable(SqlConnection source)
+        {
+            string sql = "create table #PDOList (UWI NVARCHAR(40))";
+            using (SqlCommand cmd = new SqlCommand(sql, source))
+            {
+                try
+                {
+                    cmd.CommandTimeout = 3000;
+                    cmd.ExecuteNonQuery();
+                }
+                catch (SqlException ex)
+                {
+                    Exception error = new Exception("Error inserting into table: ", ex);
+                    throw error;
+                }
+
+            }
+        }
+
+        private void InsertQueryData(SqlConnection source)
+        {
+            string sql;
+            if (queryType == "File")
+            {
+                sql = $"DECLARE @Array NVARCHAR(MAX) = '{transferQuery}' " +
+                    "INSERT INTO #PDOList ( UWI ) " +
+                    "SELECT * FROM STRING_SPLIT(@Array, ',')";
+            }
+            else
+            {
+                sql = $"INSERT INTO #PDOList (UWI) SELECT UWI FROM WELL {transferQuery} ";
+            }
+
+            using (SqlCommand cmd = new SqlCommand(sql, source))
+            {
+                try
+                {
+                    cmd.CommandTimeout = 3000;
+                    cmd.ExecuteNonQuery();
+                }
+                catch (SqlException ex)
+                {
+                    Exception error = new Exception("Error inserting into table: ", ex);
+                    throw error;
+                }
+
             }
         }
 
