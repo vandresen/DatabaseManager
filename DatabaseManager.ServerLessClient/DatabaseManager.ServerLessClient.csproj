@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common\DatabaseManager.Common.csproj" />
+    <ProjectReference Include="..\DatabaseManager.BlazorComponents\DatabaseManager.BlazorComponents.csproj" />
     <ProjectReference Include="..\DatabaseManager\Shared\DatabaseManager.Shared.csproj" />
   </ItemGroup>
 

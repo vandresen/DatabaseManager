@@ -1,29 +1,33 @@
 ﻿@page "/settings"
-@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject ILocalStorageService localStorage
 @inject NavigationManager navigationManager
 @inject HttpClient client
+@inject SingletonService settings
 
 <h3>Settings</h3>
 <p>Azure Storage:</p>
-<p><input @bind="@AzureStorage" size="100" /></p>
+<p><input @bind="@azureStorage" size="100" /></p>
+<p><input @bind="@baseUrl" size="100" /></p>
 <p><button @onclick="Save">Save</button></p>
 
 @code {
-    string AzureStorage;
+    string azureStorage;
+    string baseUrl;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
-        Console.WriteLine($"{AzureStorage}");
+        azureStorage = settings.AzureStorage;
+        baseUrl = settings.BaseUrl;
     }
 
     private async Task Save()
     {
-        if (!string.IsNullOrEmpty(AzureStorage))
+        if (!string.IsNullOrEmpty(azureStorage))
         {
-            await localStorage.SetItemAsync("AzureStorage", AzureStorage);
+            await localStorage.SetItemAsync("AzureStorage", azureStorage);
+            await localStorage.SetItemAsync("BaseUrl", baseUrl);
             client.DefaultRequestHeaders.Remove("AzureStorageConnection");
-            client.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
+            client.DefaultRequestHeaders.Add("AzureStorageConnection", azureStorage);
         }
         navigationManager.NavigateTo("/");
     }

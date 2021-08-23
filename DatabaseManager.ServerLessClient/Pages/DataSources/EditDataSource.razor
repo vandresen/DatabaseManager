@@ -2,6 +2,7 @@
 @inject NavigationManager navigationManager
 @inject HttpClient client
 @inject ILocalStorageService localStorage
+@inject SingletonService settings
 @using System.Text
 
 <h3>Edit Data Source</h3>
@@ -21,18 +22,12 @@
 @code {
     [Parameter] public string SourceName { get; set; }
     public ConnectParameters connectParameters;
-    //        //string url = "https://databasemanagerappfunctions.azurewebsites.net/api/GetDataOpsData?code=2XXdQ8ZkFhoL0kqchmVDADAa7XQxNkNWVL4fBrXsvsfFQP8icYkGMw==";
-    string url = "http://localhost:7071/api/GetDataSource";
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            string azureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
-            client.DefaultRequestHeaders.Remove("azurestorageconnection");
-            client.DefaultRequestHeaders.Add("azurestorageconnection", azureStorage);
-            url = url + "?name=" + SourceName;
-            Console.WriteLine(url);
+            string url = settings.BaseUrl + "GetDataSource?name=" + SourceName;
             connectParameters = await client.GetFromJsonAsync<ConnectParameters>(url);
         }
         catch (Exception ex)
@@ -46,11 +41,10 @@
         try
         {
             string connectStr = Common.CreateDatabaseConnectionString(connectParameters);
-            Console.WriteLine(connectStr);
             connectParameters.ConnectionString = connectStr;
             var jsonString = JsonConvert.SerializeObject(connectParameters);
             var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
-            string urlUpdate = "http://localhost:7071/api/UpdateDataSource";
+            string urlUpdate = settings.BaseUrl + "UpdateDataSource";
             using var response = await client.PostAsync(urlUpdate, content);
             if (response.IsSuccessStatusCode)
             {

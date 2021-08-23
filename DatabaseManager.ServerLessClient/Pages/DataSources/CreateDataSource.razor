@@ -2,6 +2,7 @@
 @inject HttpClient client
 @inject ILocalStorageService localStorage
 @inject NavigationManager navigationManager
+@inject SingletonService settings
 @using System.Text
 
 
@@ -25,11 +26,9 @@ else
         connectParameters.ConnectionString = connectStr;
         try
         {
-            //        //string url = "https://databasemanagerappfunctions.azurewebsites.net/api/GetDataOpsData?code=2XXdQ8ZkFhoL0kqchmVDADAa7XQxNkNWVL4fBrXsvsfFQP8icYkGMw==";
-            string url = "http://localhost:7071/api/SaveDataSource";
-            string azureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
-            client.DefaultRequestHeaders.Remove("azurestorageconnection");
-            client.DefaultRequestHeaders.Add("azurestorageconnection", azureStorage);
+            string url = settings.BaseUrl + "SaveDataSource";
+            //client.DefaultRequestHeaders.Remove("azurestorageconnection");
+            //client.DefaultRequestHeaders.Add("azurestorageconnection", settings.AzureStorage);
             var jsonString = JsonConvert.SerializeObject(connectParameters);
             var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
             using var response = await client.PostAsync(url, content);

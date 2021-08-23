@@ -1,6 +1,61 @@
 ﻿@page "/"
+@inject ILocalStorageService localStorage
+@inject SingletonService settings
+@inject HttpClient client
 
 <div class="jumbotron">
     <h1>Welcome to Database Manager tool</h1>
     <p class="lead">The tool to manage your PPDM databases</p>
 </div>
+
+<p>Target Database: @settings.TargetConnector</p>
+
+@if (options == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <GenericSelector Options="options" Selection="Selected" Label="Choose Connector" />
+}
+
+
+@code {
+    public List<ConnectParameters> ConnectParameters;
+    private List<string> options { get; set; } = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
+            settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
+            Console.WriteLine($"{settings.AzureStorage}");
+            Console.WriteLine($"{settings.BaseUrl}");
+            client.DefaultRequestHeaders.Remove("azurestorageconnection");
+            client.DefaultRequestHeaders.Add("azurestorageconnection", settings.AzureStorage);
+
+            string url = settings.BaseUrl + "GetDataSources";
+            ConnectParameters = await client.GetFromJsonAsync<List<ConnectParameters>>(url);
+            foreach (ConnectParameters conn in ConnectParameters)
+            {
+                if (conn.SourceType != "File") options.Add(conn.SourceName);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+        }
+    }
+
+    private async Task Selected(string selectedString)
+    {
+        //indexStatus = "Fetching index";
+        //StateHasChanged();
+        //ConnectParameters connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
+        //singleton.TargetConnector = selectedString;
+        //singleton.DataAccessDefinition = connector.DataAccessDefinition;
+        //await GetIndexData();
+    }
+
+}

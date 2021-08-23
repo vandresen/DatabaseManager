@@ -1,6 +1,7 @@
 ﻿@page "/datasources"
 @inject HttpClient client
 @inject ILocalStorageService localStorage
+@inject SingletonService settings
 
 <h3>Data Connectors</h3>
 
@@ -42,11 +43,7 @@
     {
         try
         {
-            //        //string url = "https://databasemanagerappfunctions.azurewebsites.net/api/GetDataOpsData?code=2XXdQ8ZkFhoL0kqchmVDADAa7XQxNkNWVL4fBrXsvsfFQP8icYkGMw==";
-            string url = "http://localhost:7071/api/GetDataSources";
-            string azureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
-            client.DefaultRequestHeaders.Remove("azurestorageconnection");
-            client.DefaultRequestHeaders.Add("azurestorageconnection", azureStorage);
+            string url = settings.BaseUrl + "GetDataSources";
             ConnectParameters = await client.GetFromJsonAsync<List<ConnectParameters>>(url);
             Console.WriteLine($"Number of sources are {ConnectParameters.Count}");
         }
@@ -60,12 +57,9 @@
     {
         try
         {
-            string url = "http://localhost:7071/api/DeleteDataSource?name=" + name;
-            string azureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
-            client.DefaultRequestHeaders.Remove("azurestorageconnection");
-            client.DefaultRequestHeaders.Add("azurestorageconnection", azureStorage);
+            string url = settings.BaseUrl + "DeleteDataSource?name=" + name;
             await client.DeleteAsync(url);
-            url = "http://localhost:7071/api/GetDataSources";
+            url = settings.BaseUrl + "GetDataSources";
             ConnectParameters = await client.GetFromJsonAsync<List<ConnectParameters>>(url);
         }
         catch (Exception ex)
