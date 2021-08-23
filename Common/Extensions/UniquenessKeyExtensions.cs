@@ -32,5 +32,34 @@ namespace DatabaseManager.Common.Extensions
                 throw;
             }
         }
+
+        public static string NormalizeString14(this string str)
+        {
+            var charsToRemove = new string[] { "_", "-", "#", "*", ".", "@", "~", " ", "\t", "\n", "\r", "\r\n" };
+            foreach (var c in charsToRemove)
+            {
+                str = str.Replace(c, string.Empty);
+                str = str.Replace("&", "AND");
+            }
+            int length = str.Length;
+            if (length < 14)
+            {
+                char pad = '0';
+                str = str.PadRight(14, pad);
+            }
+            return str;
+        }
+
+        public static string NormalizeString(this string str)
+        {
+            var charsToRemove = new string[] { "_", "-", "#", "*", ".", "@", "~", " ", "\t", "\n", "\r", "\r\n" };
+            foreach (var c in charsToRemove)
+            {
+                str = str.Replace(c, string.Empty);
+                str = str.Replace("&", "AND");
+            }
+            str = str.ToUpper();
+            return str;
+        }
     }
 }

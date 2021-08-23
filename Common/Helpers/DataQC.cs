@@ -232,6 +232,7 @@ namespace DatabaseManager.Common.Helpers
                             }
                             string value = dataObject.GetValue(attribute).ToString();
                             if (function == "*NORMALIZE") value = value.NormalizeString();
+                            if (function == "*NORMALIZE14") value = value.NormalizeString14();
                             keyText = keyText + value;
                         }
                         if (!string.IsNullOrEmpty(keyText))
