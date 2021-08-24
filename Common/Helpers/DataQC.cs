@@ -14,6 +14,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.Reflection;
+using Microsoft.VisualBasic.FileIO;
+using System.IO;
 
 namespace DatabaseManager.Common.Helpers
 {
@@ -221,6 +223,7 @@ namespace DatabaseManager.Common.Helpers
                         foreach (string key in keyAttributes)
                         {
                             string function = "";
+                            string normalizeParameter = "";
                             string attribute = key.Trim();
                             if (attribute.Substring(0, 1) == "*")
                             {
@@ -228,10 +231,16 @@ namespace DatabaseManager.Common.Helpers
                                 int start = attribute.IndexOf("(") + 1;
                                 int end = attribute.IndexOf(")", start);
                                 function = attribute.Substring(0, start - 1);
-                                attribute = attribute.Substring(start, end - start);
+                                string csv = attribute.Substring(start, end - start);
+                                TextFieldParser parser = new TextFieldParser(new StringReader(csv));
+                                parser.HasFieldsEnclosedInQuotes = true;
+                                parser.SetDelimiters(",");
+                                string[] parms = parser.ReadFields();
+                                attribute = parms[0];
+                                if (parms.Length > 1) normalizeParameter = parms[1];
                             }
                             string value = dataObject.GetValue(attribute).ToString();
-                            if (function == "*NORMALIZE") value = value.NormalizeString();
+                            if (function == "*NORMALIZE") value = value.NormalizeString(normalizeParameter);
                             if (function == "*NORMALIZE14") value = value.NormalizeString14();
                             keyText = keyText + value;
                         }

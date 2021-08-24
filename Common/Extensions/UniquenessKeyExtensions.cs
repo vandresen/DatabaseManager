@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -39,8 +40,8 @@ namespace DatabaseManager.Common.Extensions
             foreach (var c in charsToRemove)
             {
                 str = str.Replace(c, string.Empty);
-                str = str.Replace("&", "AND");
             }
+            str = str.Replace("&", "AND");
             int length = str.Length;
             if (length < 14)
             {
@@ -50,14 +51,19 @@ namespace DatabaseManager.Common.Extensions
             return str;
         }
 
-        public static string NormalizeString(this string str)
+        public static string NormalizeString(this string str, string parms = "")
         {
-            var charsToRemove = new string[] { "_", "-", "#", "*", ".", "@", "~", " ", "\t", "\n", "\r", "\r\n" };
+            string[] charsToRemove = new string[] { "_", "-", "#", "*", ".", "@", "~", " ", "\t", "\n", "\r", "\r\n" };
+            if (!string.IsNullOrEmpty(parms))
+            {
+                charsToRemove = parms.Select(x => x.ToString()).ToArray();
+            }
+            
             foreach (var c in charsToRemove)
             {
                 str = str.Replace(c, string.Empty);
-                str = str.Replace("&", "AND");
             }
+            str = str.Replace("&", "AND");
             str = str.ToUpper();
             return str;
         }

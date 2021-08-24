@@ -81,6 +81,9 @@ This function will make following changes to the attribute:
 
 Example: *NORMALIZE(UWI)
 
+NORMALIZE14
+Same as above but it will pad 0 to create a string of 14 characters.
+
 #### Validity
 Some validfity rules will require one or more parameters set in Rule Parameter. These must 
 be expressed as Json.
