@@ -33,5 +33,23 @@ namespace DatabaseManager.Client.Helpers
                 throw new ApplicationException(await response.GetBody());
             }
         }
+
+        public async Task CreatePipeline(string name)
+        {
+            var response = await httpService.Post($"{url}/CreatePipeline/{name}");
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
+
+        public async Task DeletePipeline(string Name)
+        {
+            var response = await httpService.Delete($"{url}/{Name}");
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
     }
 }

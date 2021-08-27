@@ -24,6 +24,7 @@ namespace DatabaseManager.Server.Controllers
         private static HttpClient client = new HttpClient();
         private readonly ILogger<DataOpsController> logger;
         private readonly IFileStorageService fileStorageService;
+        private string fileShare = "dataops";
         private string connectionString;
         private string dataOpsQueue;
         private string serverUrl;
@@ -93,27 +94,44 @@ namespace DatabaseManager.Server.Controllers
                 client.Dispose();
             }
 
-            //PipeLine firstDataOps = dataOps.First();
-            //JArray JsonDataOpsArray = JArray.Parse(dataOpsFile);
-
-            //var jToken = JsonDataOpsArray[0];
-            //string artifactType = (string)jToken["ArtifactType"];
-            //int artifactId = (int)jToken["Id"];
-            //string parameters = jToken["Parameters"].ToString();
-            //DataOpParameters parms = new DataOpParameters()
-            //{
-            //    Id = firstDataOps.Id,
-            //    Name = name,
-            //    Url = baseUrl + firstDataOps.ArtifactType,
-            //    StorageAccount = storageAccount,
-            //    JsonParameterString = firstDataOps.Parameters.ToString()
-            //};
-            //string json = JsonConvert.SerializeObject(parms);
-            //string message = json.EncodeBase64();
-            //int messageLength = message.Length;
-            //InsertMessage(queueName, message, storageAccount);
-
             return Ok($"OK");
+        }
+
+        [HttpPost("CreatePipeline/{name}")]
+        public async Task<ActionResult<string>> CreatePipeline(string name)
+        {
+            if (name == null) return BadRequest("Missing name");
+            try
+            {
+                string fileName = name;
+                if (!name.EndsWith(".txt")) fileName = name + ".txt";
+                SetStorageAccount();
+                await fileStorageService.SaveFile(fileShare, fileName, "");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest();
+            }
+            return Ok($"OK");
+        }
+
+        [HttpDelete("{name}")]
+        public async Task<ActionResult> Delete(string name)
+        {
+            if (name == null) return BadRequest("Missing name");
+            try
+            {
+                string fileName = name;
+                if (!name.EndsWith(".txt")) fileName = name + ".txt";
+                SetStorageAccount();
+                await fileStorageService.DeleteFile(fileShare, fileName);
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+
+            return NoContent();
         }
 
         private void SetStorageAccount()

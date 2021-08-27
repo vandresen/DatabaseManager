@@ -81,6 +81,9 @@ This function will make following changes to the attribute:
 
 Example: *NORMALIZE(UWI)
 
+An option is to add your own string of characters to remove.
+Example: *NORMALIZE(UWI, "-,.")
+
 NORMALIZE14
 Same as above but it will pad 0 to create a string of 14 characters.
 

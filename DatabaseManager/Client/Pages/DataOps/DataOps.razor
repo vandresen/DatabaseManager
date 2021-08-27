@@ -1,0 +1,101 @@
+﻿@page "/dataops"
+@inject IDataOps ops
+@inject IDisplayMessage displayMessage
+
+<h3>Data Ops</h3>
+
+<p>New Pipeline:</p>
+<p><input @bind="@pipelineName" size="50" /></p>
+<button class="btn btn-primary" @onclick="AddPipeline">Add New Pipeline</button>
+<br />
+<hr />
+
+<Table TableItem="PipeItems" Items="pipeList" PageSize="@pageSize" ColumnReorder="true">
+    <Column TableItem="PipeItems" Title="Action" Sortable="false">
+        <Template>
+            @*<a class="btn btn-success" href="/rules/edit/@singleton.TargetConnector/@context.Id">Edit</a>*@
+            <button class="btn btn-danger" @onclick="@(() => DeletePipeline(context.Name))">Delete</button>
+            <button class="btn btn-success" @onclick="@(() => ExecutePipeline(context.Name))">Execute</button>
+        </Template>
+    </Column>
+    <Column TableItem="PipeItems" Title="Pipe Name" Field="@(x => x.Name)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
+    <Pager ShowPageNumber="true" ShowTotalCount="true" />
+</Table>
+
+
+@code{
+    string pipelineName;
+
+    public class PipeItems
+    {
+        public string Name { get; set; }
+    }
+
+    List<PipeItems> pipeList;
+    int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        pipeList = await GetPipeList();
+    }
+
+    private async Task ExecutePipeline(string name)
+    {
+        Console.WriteLine($"excute pipeline {name}");
+        try
+        {
+            await ops.ProcessPipeline(name);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task AddPipeline()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(pipelineName))
+            {
+                await displayMessage.DisplayErrorMessage("Please enter a new pipeline name");
+            }
+            await ops.CreatePipeline(pipelineName);
+            pipeList = await GetPipeList();
+            pipelineName = "";
+            this.StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+        Console.WriteLine($"Add pipeline {pipelineName}");
+    }
+
+    private async Task DeletePipeline(string name)
+    {
+        try
+        {
+            await ops.DeletePipeline(name);
+            pipeList = await GetPipeList();
+            this.StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task<List<PipeItems>> GetPipeList()
+    {
+        pipeList = new List<PipeItems>();
+        List<string> pipes = await ops.GetPipelines();
+        foreach (string pipe in pipes)
+        {
+            pipeList.Add(new PipeItems { Name = pipe });
+        }
+        return pipeList;
+    }
+
+}
+
