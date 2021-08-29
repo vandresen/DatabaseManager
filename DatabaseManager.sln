@@ -19,7 +19,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Common", "C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.ServerLessClient", "DatabaseManager.ServerLessClient\DatabaseManager.ServerLessClient.csproj", "{DD6DA696-7911-459A-B426-CA3F07CD488A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.BlazorComponents", "DatabaseManager.BlazorComponents\DatabaseManager.BlazorComponents.csproj", "{8796D961-3CB8-4D2C-9394-FB0EDE5DF4A3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.BlazorComponents", "DatabaseManager.BlazorComponents\DatabaseManager.BlazorComponents.csproj", "{8796D961-3CB8-4D2C-9394-FB0EDE5DF4A3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

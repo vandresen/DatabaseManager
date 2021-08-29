@@ -1,4 +1,4 @@
-﻿using DatabaseManager.AppFunctions.Helpers;
+﻿//using DatabaseManager.AppFunctions.Helpers;
 using DatabaseManager.Common.Services;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;

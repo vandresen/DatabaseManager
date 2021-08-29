@@ -1,5 +1,6 @@
 using Blazored.LocalStorage;
 using BlazorTable;
+using DatabaseManager.Common.Services;
 using DatabaseManager.ServerLessClient.Services;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +32,9 @@ namespace DatabaseManager.ServerLessClient
         {
             services.AddSingleton<SingletonService>();
             services.AddBlazoredLocalStorage();
+            services.AddScoped<IDisplayMessage, DisplayMessage>();
+            services.AddScoped<IHttpService, HttpService>();
+            services.AddScoped<IDataOps, DataOpsServerLess>();
             services.AddBlazorTable();
         }
     }

@@ -101,7 +101,7 @@ namespace DatabaseManager.AppFunctions
                     ParentIndexNodes node = nodes[j];
                     for (int i = 0; i < node.NodeCount; i++)
                     {
-                        index.IndexChildren(j, i, node.ParentNodeId);
+                        await index.IndexChildren(j, i, node.ParentNodeId);
                     }
                 }
 

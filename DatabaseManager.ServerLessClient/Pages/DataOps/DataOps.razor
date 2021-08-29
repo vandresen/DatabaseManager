@@ -1,15 +1,23 @@
 ﻿@page "/dataops"
 @inject HttpClient client
 @inject ILocalStorageService localStorage
+@inject IDisplayMessage displayMessage
+@inject IDataOps dataOps
 @using System.Text
 
 <h3>Data Ops</h3>
 
+<p>New Pipeline:</p>
+<p><input @bind="@pipelineName" size="50" /></p>
+<button class="btn btn-primary" @onclick="AddPipeline">Add New Pipeline</button>
+<br />
+<hr />
+
 <Table TableItem="DataOpsPipes" Items="pipeList" PageSize="@pageSize" ColumnReorder="true">
     <Column TableItem="DataOpsPipes" Title="Action" Sortable="false">
         <Template>
-            @*<a class="btn btn-success" href="/rules/edit/@singleton.TargetConnector/@context.Id">Edit</a>
-                <button class="btn btn-danger" @onclick="@(() => RuleDelete(context.Id))">Delete</button>*@
+            @*<a class="btn btn-success" href="/rules/edit/@singleton.TargetConnector/@context.Id">Edit</a>*@
+            <button class="btn btn-danger" @onclick="@(() => DeletePipeline(context.Name))">Delete</button>
             <button class="btn btn-success" @onclick="@(() => ExecutePipeline(context.Name))">Execute</button>
         </Template>
     </Column>
@@ -18,23 +26,56 @@
 </Table>
 
 @code {
+    string pipelineName;
     List<DataOpsPipes> pipeList;
     int pageSize = 10;
 
+
     protected override async Task OnInitializedAsync()
     {
-        //string url = "https://databasemanagerappfunctions.azurewebsites.net/api/GetDataOpsData?code=2XXdQ8ZkFhoL0kqchmVDADAa7XQxNkNWVL4fBrXsvsfFQP8icYkGMw==";
-        string url = "http://localhost:7071/api/GetDataOpsList";
         try
         {
-            string azureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
-            client.DefaultRequestHeaders.Remove("azurestorageconnection");
-            client.DefaultRequestHeaders.Add("azurestorageconnection", azureStorage);
-            pipeList = await client.GetFromJsonAsync<List<DataOpsPipes>>(url);
+            pipeList = await dataOps.GetPipelines();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Errors {ex.ToString()}");
+        }
+    }
+
+    private async Task AddPipeline()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(pipelineName))
+            {
+                await displayMessage.DisplayErrorMessage("Please enter a new pipeline name");
+            }
+            DataOpsPipes pipe = new DataOpsPipes();
+            pipe.Name = pipelineName;
+            await dataOps.CreatePipeline(pipe);
+            pipeList = await dataOps.GetPipelines();
+            pipelineName = "";
+            this.StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+        Console.WriteLine($"Add pipeline {pipelineName}");
+    }
+
+    private async Task DeletePipeline(string name)
+    {
+        try
+        {
+            await dataOps.DeletePipeline(name);
+            pipeList = await dataOps.GetPipelines();
+            this.StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
         }
     }
 

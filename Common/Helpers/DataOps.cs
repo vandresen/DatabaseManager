@@ -45,9 +45,14 @@ namespace DatabaseManager.Common.Helpers
             return dataOps;
         }
 
-        public async Task execute(string pipeName)
+        public async Task SavePipeline(string name, string content)
         {
+            await _fileStorage.SaveFile(fileShare, name, content);
+        }
 
+        public async Task DeletePipeline(string name)
+        {
+            await _fileStorage.DeleteFile(fileShare, name);
         }
 
     }
