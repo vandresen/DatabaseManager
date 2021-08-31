@@ -1,7 +1,7 @@
 using Blazored.LocalStorage;
 using BlazorTable;
 using DatabaseManager.Common.Services;
-using DatabaseManager.ServerLessClient.Services;
+using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

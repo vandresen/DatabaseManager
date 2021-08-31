@@ -1,8 +1,9 @@
 ﻿@page "/dataops"
-@inject HttpClient client
+@*@inject HttpClient client*@
 @inject ILocalStorageService localStorage
 @inject IDisplayMessage displayMessage
 @inject IDataOps dataOps
+@inject SingletonService settings
 @using System.Text
 
 <h3>Data Ops</h3>
@@ -82,16 +83,11 @@
     private async Task ExecutePipeline(string name)
     {
         Console.WriteLine($"excute pipeline {name}");
-        string baseUrl = "http://localhost:7071/api/";
-        string url = "http://localhost:7071/api/GetDataOpsPipe";
         try
         {
-            url = $"{url}?name={name}";
-            string json = await client.GetStringAsync(url);
-            List<PipeLine> pipelines = JsonConvert.DeserializeObject<List<PipeLine>>(json);
+            List<PipeLine> pipelines = await dataOps.GetPipeline(name);
             Console.WriteLine($"Number of pipes are {pipelines.Count}");
 
-            string azureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
             List<DataOpParameters> parms = new List<DataOpParameters>();
             foreach (var pipe in pipelines)
             {
@@ -99,27 +95,12 @@
                 {
                     Id = pipe.Id,
                     Name = pipe.ArtifactType,
-                    Url = baseUrl + pipe.ArtifactType,
-                    StorageAccount = azureStorage,
-                    Parameters = pipe.Parameters
+                    StorageAccount = settings.AzureStorage,
+                    JsonParameters = pipe.Parameters.ToString()
                 });
             }
 
-            var jsonString = JsonConvert.SerializeObject(parms);
-            Console.WriteLine(jsonString);
-            var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
-            url = baseUrl + "ManageDataOps_HttpStart";
-            Console.WriteLine($"Url = {url}");
-            using var response = await client.PostAsync(url, content);
-            if (response.IsSuccessStatusCode)
-            {
-                Console.WriteLine("Sucessful data ops");
-            }
-            else
-            {
-                string errorMessage = response.ReasonPhrase;
-                Console.WriteLine($"There was an error! {errorMessage}");
-            }
+            await dataOps.ProcessPipeline(parms);
         }
         catch (Exception ex)
         {

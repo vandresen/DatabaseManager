@@ -1,9 +1,10 @@
 ﻿using DatabaseManager.Common.Helpers;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json;
+//using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Services
@@ -11,8 +12,6 @@ namespace DatabaseManager.Common.Services
     public class HttpService: IHttpService
     {
         private readonly HttpClient httpClient;
-        private JsonSerializerOptions defaultJsonSerializerOptions =>
-            new JsonSerializerOptions() { PropertyNameCaseInsensitive = true };
 
         public HttpService(HttpClient httpClient)
         {
@@ -25,7 +24,8 @@ namespace DatabaseManager.Common.Services
 
             if (responseHTTP.IsSuccessStatusCode)
             {
-                var response = await Deserialize<T>(responseHTTP, defaultJsonSerializerOptions);
+                var content = await responseHTTP.Content.ReadAsStringAsync();
+                var response = JsonConvert.DeserializeObject<T>(content);
                 return new HttpResponseWrapper<T>(response, true, responseHTTP);
             }
             else
@@ -34,12 +34,42 @@ namespace DatabaseManager.Common.Services
             }
         }
 
+        public async Task<HttpResponseWrapper<object>> Put<T>(string url, T data)
+        {
+            var dataJson = JsonConvert.SerializeObject(data);
+            var stringContent = new StringContent(dataJson, Encoding.UTF8, "application/json");
+            var response = await httpClient.PutAsync(url, stringContent);
+            return new HttpResponseWrapper<object>(null, response.IsSuccessStatusCode, response);
+        }
+
+        public async Task<HttpResponseWrapper<object>> Post(string url)
+        {
+            var response = await httpClient.PostAsync(url, null);
+            return new HttpResponseWrapper<object>(null, response.IsSuccessStatusCode, response);
+        }
+
         public async Task<HttpResponseWrapper<object>> Post<T>(string url, T data)
         {
-            var dataJson = JsonSerializer.Serialize(data);
+            var dataJson = JsonConvert.SerializeObject(data);
             var stringContent = new StringContent(dataJson, Encoding.UTF8, "application/json");
             var response = await httpClient.PostAsync(url, stringContent);
             return new HttpResponseWrapper<object>(null, response.IsSuccessStatusCode, response);
+        }
+
+        public async Task<HttpResponseWrapper<TResponse>> Post<T, TResponse>(string url, T data)
+        {
+            var dataJson = JsonConvert.SerializeObject(data);
+            var stringContent = new StringContent(dataJson, Encoding.UTF8, "application/json");
+            var response = await httpClient.PostAsync(url, stringContent);
+            if (response.IsSuccessStatusCode)
+            {
+                var responseDeserialized = await Deserialize<TResponse>(response);
+                return new HttpResponseWrapper<TResponse>(responseDeserialized, true, response);
+            }
+            else
+            {
+                return new HttpResponseWrapper<TResponse>(default, false, response);
+            }
         }
 
         public async Task<HttpResponseWrapper<object>> Delete(string url)
@@ -48,10 +78,10 @@ namespace DatabaseManager.Common.Services
             return new HttpResponseWrapper<object>(null, responseHTTP.IsSuccessStatusCode, responseHTTP);
         }
 
-        private async Task<T> Deserialize<T>(HttpResponseMessage httpResponse, JsonSerializerOptions options)
+        private async Task<T> Deserialize<T>(HttpResponseMessage httpResponse)
         {
             var responseString = await httpResponse.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<T>(responseString, options);
+            return JsonConvert.DeserializeObject<T>(responseString);
         }
     }
 }

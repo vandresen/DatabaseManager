@@ -27,14 +27,15 @@ namespace DatabaseManager.Client
         {
             services.AddOptions();
             services.AddSingleton<SingletonServices>();
-            services.AddScoped<IHttpService, HttpService>();
+            services.AddScoped<DatabaseManager.Common.Services.IHttpService, DatabaseManager.Common.Services.HttpService>();
             services.AddScoped<IDataSources, DataSources>();
             services.AddScoped<IDataModelCreate, DataModelCreate>();
             services.AddScoped<ICreateIndex, CreateIndex>();
             services.AddScoped<IIndexData, IndexData>();
             services.AddScoped<IDataFile, DataFile>();
             services.AddScoped<IRules, Rules>();
-            services.AddScoped<IDataOps, DataOps>();
+            services.AddScoped<DatabaseManager.Common.Services.IDataOps, DatabaseManager.Common.Services.DataOpsClientService>();
+            //services.AddScoped<DatabaseManager.Common.Services.IDataOps, DataOps>();
             services.AddScoped<IFunctions, Functions>();
             services.AddScoped<IDataQc, DataQc>();
             services.AddScoped<IPrediction, Prediction>();

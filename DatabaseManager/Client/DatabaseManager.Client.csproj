@@ -16,6 +16,7 @@
     <PackageReference Include="System.Net.Http.Json" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Common\DatabaseManager.Common.csproj" />
     <ProjectReference Include="..\..\DatabaseManager.Components\DatabaseManager.Components.csproj" />
     <ProjectReference Include="..\Shared\DatabaseManager.Shared.csproj" />
   </ItemGroup>

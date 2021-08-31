@@ -9,12 +9,12 @@ using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
 {
-    public class DataOps
+    public class DataOpsRepository
     {
         private readonly IFileStorageServiceCommon _fileStorage;
         private string fileShare = "dataops";
 
-        public DataOps(string azureConnectionString)
+        public DataOpsRepository(string azureConnectionString)
         {
             var builder = new ConfigurationBuilder();
             IConfiguration configuration = builder.Build();
@@ -29,7 +29,7 @@ namespace DatabaseManager.Common.Helpers
             List<string> result = await _fileStorage.ListFiles("dataops");
             foreach (string file in result)
             {
-                pipes.Add(new DataOpsPipes { Name = file});
+                pipes.Add(new DataOpsPipes { Name = file });
             }
 
             return pipes;
@@ -54,6 +54,5 @@ namespace DatabaseManager.Common.Helpers
         {
             await _fileStorage.DeleteFile(fileShare, name);
         }
-
     }
 }

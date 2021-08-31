@@ -30,12 +30,35 @@ namespace DatabaseManager.Common.Services
             return response.Response;
         }
 
+        public async Task<List<PipeLine>> GetPipeline(string name)
+        {
+            string baseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
+            string url = baseUrl + "GetDataOpsPipe" + $"?name={name}";
+            Console.WriteLine(url);
+            var response = await httpService.Get<List<PipeLine>>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
         public async Task CreatePipeline(DataOpsPipes pipe)
         {
             string baseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
             string url = baseUrl + "SavePipeline";
-            Console.WriteLine(url);
             var response = await httpService.Post(url, pipe);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
+
+        public async Task ProcessPipeline(List<DataOpParameters> parms)
+        {
+            string baseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
+            string url = baseUrl + "ManageDataOps_HttpStart";
+            var response = await httpService.Post(url, parms);
             if (!response.Success)
             {
                 throw new ApplicationException(await response.GetBody());

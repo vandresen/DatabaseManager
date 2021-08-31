@@ -10,6 +10,8 @@ namespace DatabaseManager.Common.Services
     {
         Task CreatePipeline(DataOpsPipes pipe);
         Task DeletePipeline(string name);
+        Task<List<PipeLine>> GetPipeline(string name);
         Task<List<DataOpsPipes>> GetPipelines();
+        Task ProcessPipeline(List<DataOpParameters> parms);
     }
 }

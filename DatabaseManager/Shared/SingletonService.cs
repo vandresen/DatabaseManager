@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Text;
 
-namespace DatabaseManager.ServerLessClient.Services
+namespace DatabaseManager.Shared
 {
     public class SingletonService
     {

@@ -40,7 +40,7 @@ namespace DatabaseManager.AppFunctions
                 string name = pipeName.Name;
                 if (!name.EndsWith(".txt")) name = name + ".txt";
                 log.LogInformation($"CreatePipeline: Pipe name {name}");
-                DataOps dops = new DataOps(storageAccount);
+                DataOpsRepository dops = new DataOpsRepository(storageAccount);
                 await dops.SavePipeline(name, "");
             }
             catch (Exception ex)
@@ -71,7 +71,7 @@ namespace DatabaseManager.AppFunctions
                 }
                 if (!name.EndsWith(".txt")) name = name + ".txt";
                 log.LogInformation($"CreatePipeline: Pipe name {name}");
-                DataOps dops = new DataOps(storageAccount);
+                DataOpsRepository dops = new DataOpsRepository(storageAccount);
                 await dops.DeletePipeline(name);
             }
             catch (Exception ex)

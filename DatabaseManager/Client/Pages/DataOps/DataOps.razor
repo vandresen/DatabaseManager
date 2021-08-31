@@ -1,5 +1,5 @@
 ﻿@page "/dataops"
-@inject IDataOps ops
+@inject DatabaseManager.Common.Services.IDataOps ops
 @inject IDisplayMessage displayMessage
 
 <h3>Data Ops</h3>
@@ -10,15 +10,15 @@
 <br />
 <hr />
 
-<Table TableItem="PipeItems" Items="pipeList" PageSize="@pageSize" ColumnReorder="true">
-    <Column TableItem="PipeItems" Title="Action" Sortable="false">
+<Table TableItem="DataOpsPipes" Items="pipeList" PageSize="@pageSize" ColumnReorder="true">
+    <Column TableItem="DataOpsPipes" Title="Action" Sortable="false">
         <Template>
             @*<a class="btn btn-success" href="/rules/edit/@singleton.TargetConnector/@context.Id">Edit</a>*@
             <button class="btn btn-danger" @onclick="@(() => DeletePipeline(context.Name))">Delete</button>
             <button class="btn btn-success" @onclick="@(() => ExecutePipeline(context.Name))">Execute</button>
         </Template>
     </Column>
-    <Column TableItem="PipeItems" Title="Pipe Name" Field="@(x => x.Name)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
+    <Column TableItem="DataOpsPipes" Title="Pipe Name" Field="@(x => x.Name)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
     <Pager ShowPageNumber="true" ShowTotalCount="true" />
 </Table>
 
@@ -26,17 +26,12 @@
 @code{
     string pipelineName;
 
-    public class PipeItems
-    {
-        public string Name { get; set; }
-    }
-
-    List<PipeItems> pipeList;
+    List<DataOpsPipes> pipeList;
     int pageSize = 10;
 
     protected override async Task OnInitializedAsync()
     {
-        pipeList = await GetPipeList();
+        pipeList = await ops.GetPipelines();
     }
 
     private async Task ExecutePipeline(string name)
@@ -44,7 +39,24 @@
         Console.WriteLine($"excute pipeline {name}");
         try
         {
-            await ops.ProcessPipeline(name);
+            List<PipeLine> pipelines = await ops.GetPipeline(name);
+            Console.WriteLine($"Number of pipes are {pipelines.Count}");
+            List<DataOpParameters> parms = new List<DataOpParameters>();
+            foreach (var pipe in pipelines)
+            {
+                string jsonParm = pipe.Parameters.ToString();
+                Console.WriteLine(jsonParm);
+                parms.Add(new DataOpParameters()
+                {
+                    Id = pipe.Id,
+                    Name = pipe.ArtifactType,
+                    JsonParameters = jsonParm
+                });
+            }
+
+            await ops.ProcessPipeline(parms);
+            Console.WriteLine("Finished dataops");
+            //await ops.ProcessPipeline(name);
         }
         catch (Exception ex)
         {
@@ -60,8 +72,10 @@
             {
                 await displayMessage.DisplayErrorMessage("Please enter a new pipeline name");
             }
-            await ops.CreatePipeline(pipelineName);
-            pipeList = await GetPipeList();
+            DataOpsPipes pipe = new DataOpsPipes();
+            pipe.Name = pipelineName;
+            await ops.CreatePipeline(pipe);
+            pipeList = await ops.GetPipelines();
             pipelineName = "";
             this.StateHasChanged();
         }
@@ -77,24 +91,13 @@
         try
         {
             await ops.DeletePipeline(name);
-            pipeList = await GetPipeList();
+            pipeList = await ops.GetPipelines();
             this.StateHasChanged();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Errors: {ex}");
         }
-    }
-
-    private async Task<List<PipeItems>> GetPipeList()
-    {
-        pipeList = new List<PipeItems>();
-        List<string> pipes = await ops.GetPipelines();
-        foreach (string pipe in pipes)
-        {
-            pipeList.Add(new PipeItems { Name = pipe });
-        }
-        return pipeList;
     }
 
 }

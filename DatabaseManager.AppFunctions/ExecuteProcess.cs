@@ -38,7 +38,7 @@ namespace DatabaseManager.AppFunctions
                 return new BadRequestObjectResult("Missing azure storage account in http header");
             }
 
-            DataOps dops = new DataOps(storageAccount);
+            DataOpsRepository dops = new DataOpsRepository(storageAccount);
             //List<DataOpsPipes> pipes = await dops.GetDataOpsPipes();
             //jsonResult = JsonConvert.SerializeObject(pipes, Formatting.Indented);
 

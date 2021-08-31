@@ -41,38 +41,58 @@ namespace DatabaseManager.Server.Controllers
         }
 
         [HttpGet()]
-        public async Task<ActionResult<List<string>>> Get()
+        public async Task<ActionResult<List<DataOpsPipes>>> Get()
         {
             SetStorageAccount();
+            List<DataOpsPipes> pipes = new List<DataOpsPipes>();
             List<string> result = await fileStorageService.ListFiles("dataops");
-            return result;
+            foreach (string file in result)
+            {
+                pipes.Add(new DataOpsPipes { Name = file });
+            }
+            return pipes;
         }
 
-        [HttpPost("{name}")]
-        public async Task<ActionResult<string>> execute(string name)
+        [HttpGet("{name}")]
+        public async Task<ActionResult<string>> GetPipeline(string name)
         {
             SetStorageAccount();
-            string baseUrl = $"{Request.Scheme}://{Request.Host.Value.ToString()}{Request.PathBase.Value.ToString()}/api/";
-            string storageAccount = connectionString;
-
-            string queueName = dataOpsQueue;
-            string fileShare = "dataops";
-
+            //List<PipeLine> dataOps = new List<PipeLine>();
             string dataOpsFile = await fileStorageService.ReadFile(fileShare, name);
-            List<PipeLine> dataOps = JsonConvert.DeserializeObject<List<PipeLine>>(dataOpsFile);
+            //dataOps = JsonConvert.DeserializeObject<List<PipeLine>>(dataOpsFile);
+            return dataOpsFile;
+        }
 
-            List<DataOpParameters> parms = new List<DataOpParameters>();
-            foreach (var pipe in dataOps)
+        [HttpPost()]
+        public async Task<ActionResult<string>> execute(List<DataOpParameters> parms)
+        {
+            SetStorageAccount();
+            //string baseUrl = $"{Request.Scheme}://{Request.Host.Value.ToString()}{Request.PathBase.Value.ToString()}/api/";
+            string storageAccount = connectionString;
+            foreach (var item in parms)
             {
-                parms.Add(new DataOpParameters()
-                {
-                    Id = pipe.Id,
-                    Name = pipe.ArtifactType,
-                    Url = baseUrl + pipe.ArtifactType,
-                    StorageAccount = storageAccount,
-                    Parameters = pipe.Parameters
-                });
+                item.StorageAccount = storageAccount;
             }
+            
+
+            //string queueName = dataOpsQueue;
+            //string fileShare = "dataops";
+
+            //string dataOpsFile = await fileStorageService.ReadFile(fileShare, name);
+            //List<PipeLine> dataOps = JsonConvert.DeserializeObject<List<PipeLine>>(dataOpsFile);
+
+            //List<DataOpParameters> parms = new List<DataOpParameters>();
+            //foreach (var pipe in dataOps)
+            //{
+            //    parms.Add(new DataOpParameters()
+            //    {
+            //        Id = pipe.Id,
+            //        Name = pipe.ArtifactType,
+            //        Url = baseUrl + pipe.ArtifactType,
+            //        StorageAccount = storageAccount,
+            //        Parameters = pipe.Parameters
+            //    });
+            //}
 
             try
             {

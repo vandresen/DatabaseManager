@@ -49,9 +49,9 @@ namespace DatabaseManager.AppFunctions
                     for (int i = 0; i < qcList.Count; i++)
                     {
                         int qcId = qcList[i].Id;
-                        JObject pipeParm = pipe.Parameters;
+                        JObject pipeParm = JObject.Parse(pipe.JsonParameters);
                         pipeParm["RuleId"] = qcId;
-                        pipe.Parameters = pipeParm;
+                        pipe.JsonParameters = pipeParm.ToString();
                         string stat = await context.CallActivityAsync<string>("ManageDataOps_DataQC", pipe);
                         //tasks[i] = context.CallActivityAsync<string>("ManageDataOps_DataQC", pipe);
                     }
@@ -64,9 +64,9 @@ namespace DatabaseManager.AppFunctions
                     List<string> files = await context.CallActivityAsync<List<string>>("ManageDataOps_InitDataTransfer", pipe);
                     foreach (string file in files)
                     {
-                        JObject pipeParm = pipe.Parameters;
+                        JObject pipeParm = JObject.Parse(pipe.JsonParameters);
                         pipeParm["Table"] = file;
-                        pipe.Parameters = pipeParm;
+                        pipe.JsonParameters = pipeParm.ToString();
                         string stat = await context.CallActivityAsync<string>("ManageDataOps_DataTransfer", pipe);
                     }
                 }
@@ -84,7 +84,7 @@ namespace DatabaseManager.AppFunctions
         public static async Task<string> CreateIndex([ActivityTrigger] DataOpParameters pipe, ILogger log)
         {
             log.LogInformation($"CreateIndex: Starting");
-            CreateIndexParameters parms = pipe.Parameters.ToObject<CreateIndexParameters>();
+            CreateIndexParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<CreateIndexParameters>();
             try
             {
                 Sources sr = new Sources(pipe.StorageAccount);
@@ -122,7 +122,7 @@ namespace DatabaseManager.AppFunctions
         {
             log.LogInformation($"InitDataQC: Starting");
             DataQC qc = new DataQC(pipe.StorageAccount);
-            DataQCParameters qcParms = pipe.Parameters.ToObject<DataQCParameters>();
+            DataQCParameters qcParms = JObject.Parse(pipe.JsonParameters).ToObject<DataQCParameters>();
             List<QcResult> qcList = await qc.GetQCRules(qcParms);
             await qc.ClearQCFlags(qcParms.DataConnector);
             log.LogInformation($"InitDataQC: Complete");
@@ -135,7 +135,7 @@ namespace DatabaseManager.AppFunctions
             log.LogInformation($"InitDataTransfer: Starting");
             
             DataTransfer dt = new DataTransfer(pipe.StorageAccount);
-            TransferParameters parms= pipe.Parameters.ToObject<TransferParameters>();
+            TransferParameters parms= JObject.Parse(pipe.JsonParameters).ToObject<TransferParameters>();
             List<string> files = await dt.GetFiles(parms.SourceName);
             
             log.LogInformation($"InitDataTransfer: Complete");
@@ -147,7 +147,7 @@ namespace DatabaseManager.AppFunctions
         {
             log.LogInformation($"DataTransfer: Starting");
             DataTransfer dt = new DataTransfer(pipe.StorageAccount);
-            TransferParameters parms = pipe.Parameters.ToObject<TransferParameters>();
+            TransferParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<TransferParameters>();
             await dt.CopyFiles(parms);
             log.LogInformation($"DataTransfer: Complete");
             return $"OK";
@@ -160,7 +160,7 @@ namespace DatabaseManager.AppFunctions
             {
                 log.LogInformation($"InitDataQC: Starting");
                 DataQC qc = new DataQC(pipe.StorageAccount);
-                DataQCParameters qcParms = pipe.Parameters.ToObject<DataQCParameters>();
+                DataQCParameters qcParms = JObject.Parse(pipe.JsonParameters).ToObject<DataQCParameters>();
                 await qc.ProcessQcRule(qcParms);
             }
             catch (Exception ex)

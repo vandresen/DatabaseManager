@@ -32,7 +32,7 @@ namespace DatabaseManager.AppFunctions
                 log.LogError("GetDataOpsList: error, missing azure storage account");
                 return new BadRequestObjectResult("Missing azure storage account in http header");
             }
-            DataOps dops = new DataOps(storageAccount);
+            DataOpsRepository dops = new DataOpsRepository(storageAccount);
             List<DataOpsPipes> pipes = await dops.GetDataOpsPipes();
             jsonResult = JsonConvert.SerializeObject(pipes, Formatting.Indented);
 
@@ -65,9 +65,10 @@ namespace DatabaseManager.AppFunctions
                 log.LogError("GetDataOpsPipe: error, missing azure storage account");
                 return new BadRequestObjectResult("Missing azure storage account in http header");
             }
-            DataOps dops = new DataOps(storageAccount);
+            DataOpsRepository dops = new DataOpsRepository(storageAccount);
             List<PipeLine> dataOps = await dops.GetDataOpsPipe(pipeName);
             jsonResult = JsonConvert.SerializeObject(dataOps, Formatting.Indented);
+            log.LogInformation($"GetDataOpsPipe: Json result = {jsonResult}.");
 
             log.LogInformation("GetDataOpsPipe: Completed.");
             return new OkObjectResult(jsonResult);
