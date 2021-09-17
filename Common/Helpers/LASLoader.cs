@@ -1,4 +1,5 @@
 ﻿using DatabaseManager.Common.Entities;
+using DatabaseManager.Common.Extensions;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Newtonsoft.Json;
@@ -10,6 +11,7 @@ using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
@@ -326,7 +328,8 @@ namespace DatabaseManager.Common.Helpers
 
             DataAccessDef dataType = _dataDef.First(x => x.DataType == "LogCurve");
             string select = dataType.Select;
-            string query = $" where UWI = '{_uwi}'";
+            string tmpUwi = Common.FixAposInStrings(_uwi);
+            string query = $" where UWI = '{tmpUwi}'";
             DataTable dt = _dbConn.GetDataTable(select, query);
             curves = dt.AsEnumerable().Select(p => p.Field<string>("CURVE_ID")).Distinct().ToList();
 
@@ -478,6 +481,7 @@ namespace DatabaseManager.Common.Helpers
             string input = null;
             Dictionary<string, string> header = new Dictionary<string, string>();
             string[] attributes = Common.GetAttributes(dataType.Select);
+            ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(_dbConn, dataType.Select);
             foreach (string attribute in attributes)
             {
                 header.Add(attribute.Trim(), "");
@@ -506,6 +510,16 @@ namespace DatabaseManager.Common.Helpers
             }
             if (string.IsNullOrEmpty(header["UWI"])) header["UWI"] = header["API"];
             if (string.IsNullOrEmpty(header["UWI"])) header["UWI"] = header["LEASE_NAME"] + "-" + header["WELL_NAME"];
+            foreach (string item in attributes)
+            {
+                string attribute = item.Trim();
+                string attributeType = attributeProperties[attribute];
+                if (attributeType.Contains("nvarchar"))
+                {
+                    int? length = Regex.Match(attributeType, @"\d+").Value.GetIntFromString();
+                    if (length != null) header[attribute] = header[attribute].Truncate(length.GetValueOrDefault());
+                }
+            }
             string json = JsonConvert.SerializeObject(header, Formatting.Indented);
             _uwi = header["UWI"];
             return json;

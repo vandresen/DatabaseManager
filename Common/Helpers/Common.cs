@@ -2,13 +2,16 @@
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -282,5 +285,16 @@ namespace DatabaseManager.Common.Helpers
             return rule;
         }
 
+        public static string GetStorageKey(HttpRequest req, ILogger log)
+        {
+            var headers = req.Headers;
+            string storageAccount = headers.FirstOrDefault(x => x.Key == "azurestorageconnection").Value;
+            if (string.IsNullOrEmpty(storageAccount))
+            {
+                Exception error = new Exception($"Error getting azure storage key");
+                throw error;
+            }
+            return storageAccount;
+        }
     }
 }

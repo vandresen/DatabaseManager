@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using DatabaseManager.Common.Helpers;
 using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Helpers;
 using DatabaseManager.Server.Services;
@@ -13,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using DbUtilities = DatabaseManager.Common.Helpers.DbUtilities;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -45,60 +47,34 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}")]
         public async Task<ActionResult<string>> Get(string source)
         {
-            SetStorageAccount();
-            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
             string result = "";
-            DbUtilities dbConn = new DbUtilities();
             try
             {
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                if (connector == null) return BadRequest();
-                dbConn.OpenConnection(connector);
-                string select = ruleAccessDef.Select;
-                string query = "";
-                DataTable dt = dbConn.GetDataTable(select, query);
-                result = JsonConvert.SerializeObject(dt, Formatting.Indented);
+                GetStorageAccount();
+                RuleManagement rules = new RuleManagement(connectionString);
+                result= await rules.GetRules(source);
             }
             catch (Exception)
             {
                 return BadRequest();
             }
-            
-            dbConn.CloseConnection();
             return result;
         }
 
         [HttpGet("{source}/{id:int}")]
         public async Task<ActionResult<string>> GetRule(string source, int id)
         {
-            SetStorageAccount();
-            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
             string result = "";
-            DbUtilities dbConn = new DbUtilities();
             try
             {
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                if (connector == null) return BadRequest();
-                dbConn.OpenConnection(connector);
-                string select = ruleAccessDef.Select;
-                string query = $" where Id = {id}";
-                DataTable dt = dbConn.GetDataTable(select, query);
-                result = JsonConvert.SerializeObject(dt, Formatting.Indented);
-                result = result.Replace("[", "");
-                result = result.Replace("]", "");
+                GetStorageAccount();
+                RuleManagement rules = new RuleManagement(connectionString);
+                result = await rules.GetRule(source, id);
             }
             catch (Exception)
             {
                 return BadRequest();
             }
-
-            dbConn.CloseConnection();
             return result;
         }
 
@@ -107,17 +83,11 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                SetStorageAccount();
-                List<PredictionEntity> predictionEntities = await tableStorageService.GetTableRecords<PredictionEntity>(predictionContainer);
                 List<PredictionSet> predictionSets = new List<PredictionSet>();
-                foreach (PredictionEntity entity in predictionEntities)
-                {
-                    predictionSets.Add(new PredictionSet()
-                    {
-                        Name = entity.RowKey,
-                        Description = entity.Decsription
-                    });
-                }
+                GetStorageAccount();
+                RuleManagement rules = new RuleManagement(connectionString);
+                string responseMessage = await rules.GetPredictions();
+                predictionSets = JsonConvert.DeserializeObject<List<PredictionSet>>(responseMessage);
                 return predictionSets;
             }
             catch (Exception)
@@ -131,14 +101,9 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                SetStorageAccount();
-                ruleName = ruleName + ".json";
-                string result = await fileStorageService.ReadFile(ruleShare, ruleName);
-                if (string.IsNullOrEmpty(result))
-                {
-                    Exception error = new Exception($"Empty data from {ruleName}");
-                    throw error;
-                }
+                GetStorageAccount();
+                RuleManagement rules = new RuleManagement(connectionString);
+                string result = await rules.GetPrediction(ruleName);
                 return result;
             }
             catch (Exception ex)
@@ -151,70 +116,37 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("RuleInfo/{source}")]
         public async Task<ActionResult<RuleInfo>> GetRuleInfo(string source)
         {
-            SetStorageAccount();
-            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            RuleInfo ruleInfo = new RuleInfo();
-            ruleInfo.DataTypeOptions = new List<string>();
-            ruleInfo.DataAttributes = new Dictionary<string, string>();
-            foreach (DataAccessDef accessDef in accessDefs)
-            {
-                ruleInfo.DataTypeOptions.Add(accessDef.DataType);
-                string[] attributeArray = Helpers.Common.GetAttributes(accessDef.Select);
-                string attributes = String.Join(",", attributeArray);
-                ruleInfo.DataAttributes.Add(accessDef.DataType, attributes);
-            }
+            GetStorageAccount();
+            RuleManagement rules = new RuleManagement(connectionString);
+            string responseMessage = await rules.GetRuleInfo();
+            RuleInfo ruleInfo = JsonConvert.DeserializeObject<RuleInfo>(responseMessage);
             return ruleInfo;
         }
 
         [HttpPost("{source}")]
         public async Task<ActionResult<string>> SaveRule(string source, RuleModel rule)
         {
-            SetStorageAccount();
-            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
-            if (rule == null) return BadRequest();
-            DbUtilities dbConn = new DbUtilities();
             try
             {
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                if (connector == null) return BadRequest();
-                dbConn.OpenConnection(connector);
-                RuleUtilities.SaveRule(dbConn, rule, ruleAccessDef);
+                GetStorageAccount();
+                RuleManagement rules = new RuleManagement(connectionString);
+                await rules.SaveRule(source, rule);
             }
             catch (Exception ex)
             {
                 return BadRequest();
             }
-            dbConn.CloseConnection();
             return Ok($"OK");
         }
 
         [HttpPost("RuleFile/{rulename}")]
         public async Task<ActionResult<string>> SaveRuleToFile(string RuleName, PredictionSet predictionSet)
         {
-            List<RuleModel> rules = predictionSet.RuleSet;
-            if (rules == null) return BadRequest();
             try
             {
-                SetStorageAccount();
-                PredictionEntity tmpEntity = await tableStorageService.GetTableRecord<PredictionEntity>(predictionContainer, RuleName);
-                if (tmpEntity != null)
-                {
-                    return BadRequest("Prediction set exist");
-                }
-
-                string fileName = RuleName + ".json";
-                string json = JsonConvert.SerializeObject(rules, Formatting.Indented);
-                string url = await fileStorageService.SaveFileUri(ruleShare, fileName, json);
-                PredictionEntity predictionEntity = new PredictionEntity(RuleName)
-                {
-                    RuleUrl = url,
-                    Decsription = predictionSet.Description
-                };
-                await tableStorageService.SaveTableRecord(predictionContainer, RuleName, predictionEntity);
+                GetStorageAccount();
+                RuleManagement rules = new RuleManagement(connectionString);
+                await rules.SavePredictionSet(RuleName, predictionSet);
             }
             catch (Exception ex)
             {
@@ -226,34 +158,16 @@ namespace DatabaseManager.Server.Controllers
         [HttpPut("{source}/{id:int}")]
         public async Task<ActionResult<string>> UpdateRule(string source, int id, RuleModel rule)
         {
-            if (rule == null) return BadRequest();
-            DbUtilities dbConn = new DbUtilities();
             try
             {
-                SetStorageAccount();
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                if (connector == null) return BadRequest();
-                dbConn.OpenConnection(connector);
-                string select = "Select * from pdo_qc_rules ";
-                string query = $"where Id = {id}";
-                DataTable dt = dbConn.GetDataTable(select, query);
-                if (dt.Rows.Count == 1)
-                {
-                    rule.Id = id;
-                    RuleUtilities.UpdateRule(dbConn, rule);
-                }
-                else
-                {
-                    return BadRequest();
-                }
-                
+                GetStorageAccount();
+                RuleManagement rules = new RuleManagement(connectionString);
+                await rules.UpdateRule(source, id, rule);
             }
             catch (Exception ex)
             {
                 return BadRequest();
             }
-            dbConn.CloseConnection();
             return Ok($"OK");
         }
 
@@ -262,25 +176,28 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                SetStorageAccount();
-                DbUtilities dbConn = new DbUtilities();
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                if (connector == null) return BadRequest();
-                dbConn.OpenConnection(connector);
-                string select = "Select * from pdo_qc_rules ";
-                string query = $"where Id = {id}";
-                DataTable dt = dbConn.GetDataTable(select, query);
-                if (dt.Rows.Count == 1)
-                {
-                    string table = "pdo_qc_rules";
-                    dbConn.DBDelete(table, query);
-                }
-                else
-                {
-                    return BadRequest();
-                }
-                dbConn.CloseConnection();
+                GetStorageAccount();
+                RuleManagement rules = new RuleManagement(connectionString);
+                await rules.DeleteRule(source, id);
+                //SetStorageAccount();
+                //DbUtilities dbConn = new DbUtilities();
+                //SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
+                //ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
+                //if (connector == null) return BadRequest();
+                //dbConn.OpenConnection(connector);
+                //string select = "Select * from pdo_qc_rules ";
+                //string query = $"where Id = {id}";
+                //DataTable dt = dbConn.GetDataTable(select, query);
+                //if (dt.Rows.Count == 1)
+                //{
+                //    string table = "pdo_qc_rules";
+                //    dbConn.DBDelete(table, query);
+                //}
+                //else
+                //{
+                //    return BadRequest();
+                //}
+                //dbConn.CloseConnection();
             }
             catch (Exception)
             {
@@ -300,10 +217,14 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                SetStorageAccount();
-                await tableStorageService.DeleteTable(predictionContainer, RuleName);
-                string ruleFile = RuleName + ".json";
-                await fileStorageService.DeleteFile(ruleShare, ruleFile);
+                GetStorageAccount();
+                RuleManagement rules = new RuleManagement(connectionString);
+                await rules.DeletePrediction(RuleName);
+
+                //SetStorageAccount();
+                //await tableStorageService.DeleteTable(predictionContainer, RuleName);
+                //string ruleFile = RuleName + ".json";
+                //await fileStorageService.DeleteFile(ruleShare, ruleFile);
             }
             catch (Exception ex)
             {
@@ -311,6 +232,17 @@ namespace DatabaseManager.Server.Controllers
             }
             
             return NoContent();
+        }
+
+        private void GetStorageAccount()
+        {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                Exception error = new Exception($"Azure storage key string is not set");
+                throw error;
+            }
         }
 
         private void SetStorageAccount()

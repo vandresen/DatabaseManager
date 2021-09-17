@@ -89,6 +89,20 @@ namespace DatabaseManager.Common.Extensions
             return number;
         }
 
-        
+        public static int? GetIntFromString(this string token)
+        {
+            int? number = null;
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                int value;
+                if (int.TryParse(token, out value)) number = value;
+            }
+            return number;
+        }
+
+        public static string Truncate(this string value, int maxLength)
+        {
+            return value?.Substring(0, Math.Min(value.Length, maxLength));
+        }
     }
 }
