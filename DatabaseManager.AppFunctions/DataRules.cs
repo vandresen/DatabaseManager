@@ -346,7 +346,7 @@ namespace DatabaseManager.AppFunctions
                 }
                 int id = tmpId.GetValueOrDefault();
 
-                string storageAccount = Common.Helpers.Common.GetStorageKey(req, log);
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
                 RuleManagement rules = new RuleManagement(storageAccount);
                 await rules.DeleteRule(name, id);
             }
@@ -374,7 +374,7 @@ namespace DatabaseManager.AppFunctions
                     log.LogError("DeletePredictionSet: error, prediction set name is missing");
                     return new BadRequestObjectResult("Error missing prediction set name");
                 }
-                string storageAccount = Common.Helpers.Common.GetStorageKey(req, log);
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
                 RuleManagement rules = new RuleManagement(storageAccount);
                 await rules.DeletePrediction(name);
             }

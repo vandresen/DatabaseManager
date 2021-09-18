@@ -179,25 +179,6 @@ namespace DatabaseManager.Server.Controllers
                 GetStorageAccount();
                 RuleManagement rules = new RuleManagement(connectionString);
                 await rules.DeleteRule(source, id);
-                //SetStorageAccount();
-                //DbUtilities dbConn = new DbUtilities();
-                //SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-                //ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                //if (connector == null) return BadRequest();
-                //dbConn.OpenConnection(connector);
-                //string select = "Select * from pdo_qc_rules ";
-                //string query = $"where Id = {id}";
-                //DataTable dt = dbConn.GetDataTable(select, query);
-                //if (dt.Rows.Count == 1)
-                //{
-                //    string table = "pdo_qc_rules";
-                //    dbConn.DBDelete(table, query);
-                //}
-                //else
-                //{
-                //    return BadRequest();
-                //}
-                //dbConn.CloseConnection();
             }
             catch (Exception)
             {
@@ -220,11 +201,6 @@ namespace DatabaseManager.Server.Controllers
                 GetStorageAccount();
                 RuleManagement rules = new RuleManagement(connectionString);
                 await rules.DeletePrediction(RuleName);
-
-                //SetStorageAccount();
-                //await tableStorageService.DeleteTable(predictionContainer, RuleName);
-                //string ruleFile = RuleName + ".json";
-                //await fileStorageService.DeleteFile(ruleShare, ruleFile);
             }
             catch (Exception ex)
             {

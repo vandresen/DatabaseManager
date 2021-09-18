@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using DatabaseManager.Common.Entities;
+using DatabaseManager.Common.Extensions;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Http;
@@ -285,7 +286,7 @@ namespace DatabaseManager.Common.Helpers
             return rule;
         }
 
-        public static string GetStorageKey(HttpRequest req, ILogger log)
+        public static string GetStorageKey(HttpRequest req)
         {
             var headers = req.Headers;
             string storageAccount = headers.FirstOrDefault(x => x.Key == "azurestorageconnection").Value;
@@ -295,6 +296,19 @@ namespace DatabaseManager.Common.Helpers
                 throw error;
             }
             return storageAccount;
+        }
+
+        public static int GetIntFromWebQuery(HttpRequest req)
+        {
+            string strId = req.Query["id"];
+            int? tmpId = strId.GetIntFromString();
+            if (tmpId == null)
+            {
+                Exception error = new Exception($"Error getting integer from the web query");
+                throw error;
+            }
+            int responseInt = tmpId.GetValueOrDefault();
+            return responseInt;
         }
     }
 }
