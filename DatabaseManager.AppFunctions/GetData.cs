@@ -11,16 +11,29 @@ using System.Linq;
 using DatabaseManager.Common.Helpers;
 using System.Collections.Generic;
 using DatabaseManager.Shared;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
+using Microsoft.OpenApi.Models;
+using System.Net;
 
 namespace DatabaseManager.AppFunctions
 {
-    public static class GetData
+    public class GetData
     {
+        private readonly ILogger log;
+
+        public GetData(ILogger log)
+        {
+            this.log = log;
+        }
+
         [FunctionName("GetDataOpsList")]
-        public static async Task<IActionResult> DataOpsList(
+        [OpenApiOperation(operationId: "DataOpsList", tags: new[] { "name" })]
+        [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(string), Description = "The OK response")]
+        public async Task<IActionResult> DataOpsList(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
-            ExecutionContext context,
-            ILogger log)
+            ExecutionContext context)
         {
             log.LogInformation("GetDataOpsList: Starting.");
             string jsonResult = "OK";
@@ -41,10 +54,13 @@ namespace DatabaseManager.AppFunctions
         }
 
         [FunctionName("GetDataOpsPipe")]
-        public static async Task<IActionResult> DataOpsPipe(
+        [OpenApiOperation(operationId: "DataOpsPipe", tags: new[] { "name" })]
+        [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
+        [OpenApiParameter(name: "name", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **Name** parameter")]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(string), Description = "The OK response")]
+        public async Task<IActionResult> DataOpsPipe(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
-            ExecutionContext context,
-            ILogger log)
+            ExecutionContext context)
         {
             log.LogInformation("GetDataOpsPipe: Starting.");
             string jsonResult = "OK";
