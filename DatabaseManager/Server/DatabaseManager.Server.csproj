@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Common\DatabaseManager.Common.csproj" />
+    <ProjectReference Include="..\..\DatabaseManager.Common\DatabaseManager.Common.csproj" />
     <ProjectReference Include="..\..\DatabaseManager.Components\DatabaseManager.Components.csproj" />
     <ProjectReference Include="..\Client\DatabaseManager.Client.csproj" />
     <ProjectReference Include="..\Shared\DatabaseManager.Shared.csproj" />

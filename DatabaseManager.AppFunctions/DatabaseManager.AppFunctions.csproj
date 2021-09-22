@@ -16,7 +16,7 @@
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.11" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Common\DatabaseManager.Common.csproj" />
+    <ProjectReference Include="..\DatabaseManager.Common\DatabaseManager.Common.csproj" />
     <ProjectReference Include="..\DatabaseManager\Shared\DatabaseManager.Shared.csproj" />
   </ItemGroup>
   <ItemGroup>
