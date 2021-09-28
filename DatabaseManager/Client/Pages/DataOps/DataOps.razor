@@ -13,7 +13,7 @@
 <Table TableItem="DataOpsPipes" Items="pipeList" PageSize="@pageSize" ColumnReorder="true">
     <Column TableItem="DataOpsPipes" Title="Action" Sortable="false">
         <Template>
-            @*<a class="btn btn-success" href="/rules/edit/@singleton.TargetConnector/@context.Id">Edit</a>*@
+            <a class="btn btn-primary" href="/dataops/edit/@context.Name">Edit</a>
             <button class="btn btn-danger" @onclick="@(() => DeletePipeline(context.Name))">Delete</button>
             <button class="btn btn-success" @onclick="@(() => ExecutePipeline(context.Name))">Execute</button>
         </Template>

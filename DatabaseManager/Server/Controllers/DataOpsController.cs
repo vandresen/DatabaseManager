@@ -135,6 +135,25 @@ namespace DatabaseManager.Server.Controllers
             return Ok($"OK");
         }
 
+        [HttpPost("SavePipeline/{name}")]
+        public async Task<ActionResult<string>> SavePipeline(string name, List<PipeLine> tubes)
+        {
+            if (name == null) return BadRequest("Missing name");
+            try
+            {
+                string fileName = name;
+                if (!name.EndsWith(".txt")) fileName = name + ".txt";
+                SetStorageAccount();
+                string fileContent = JsonConvert.SerializeObject(tubes, Formatting.Indented);
+                await fileStorageService.SaveFile(fileShare, fileName, fileContent);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest();
+            }
+            return Ok($"OK");
+        }
+
         [HttpDelete("{name}")]
         public async Task<ActionResult> Delete(string name)
         {

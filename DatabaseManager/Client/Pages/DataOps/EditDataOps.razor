@@ -1,0 +1,77 @@
+﻿@page  "/dataops/edit/{Name}"
+@inject DatabaseManager.Common.Services.IDataOps ops
+
+<h3>Edit DataOps Pipeline</h3>
+
+<div class="dropdown" style="margin-top:20px">
+    <button @onclick="ToggleDropdownMenu" class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="@expandedState">
+        New Tube
+    </button>
+    <div class="dropdown-menu collapse @showMenu">
+        @foreach (var tube in TubeTypes)
+        {
+            <a class="dropdown-item" href="createtube/@Name/@tube">@tube</a>
+        }
+    </div>
+</div>
+
+<br />
+
+@if (tubes == null)
+{
+    <p>No tubes available</p>
+}
+else
+{
+    <Table TableItem="PipeLine" Items="tubes" PageSize="@pageSize" ColumnReorder="true">
+        <Column TableItem="PipeLine" Title="Action" Sortable="false">
+            <Template>
+                <a class="btn btn-primary" href="/edittube/@Name/@context.Id">Edit</a>
+                <button class="btn btn-danger" @onclick="@(() => DeleteTube(context.Id))">Delete</button>
+            </Template>
+        </Column>
+        <Column TableItem="PipeLine" Title="Priority" Field="@(x => x.Priority)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
+        <Column TableItem="PipeLine" Title="Tube Type" Field="@(x => x.ArtifactType)" Sortable="true" Filterable="true"></Column>
+        <Column TableItem="PipeLine" Title="Parameters" Field="@(x => x.Parameters)" Sortable="true" Filterable="true"></Column>
+        <Pager ShowPageNumber="true" ShowTotalCount="true" />
+    </Table>
+}
+
+@code {
+    [Parameter] public string Name { get; set; }
+    private List<string> TubeTypes = new List<string>
+    { "DataTransfer", "CreateIndex", "DataQC"};
+    List<PipeLine> tubes;
+    private bool expandedState = false;
+    private string showMenu = null;
+    int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"Edit data ops, name is {Name}");
+        tubes = await ops.GetPipeline(Name);
+    }
+
+    private async Task DeleteTube(int id)
+    {
+        try
+        {
+            Console.WriteLine($"Delete tube with iod={id}");
+            tubes = await ops.GetPipeline(Name);
+            tubes.RemoveAll(x => x.Id == id);
+            DataOpsPipes pipe = new DataOpsPipes { Name = Name };
+            await ops.SavePipeline(pipe, tubes);
+            this.StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private void ToggleDropdownMenu()
+    {
+        expandedState = !expandedState;
+        showMenu = expandedState ? "show" : null;
+    }
+}

@@ -75,5 +75,15 @@ namespace DatabaseManager.Common.Services
                 throw new ApplicationException(await response.GetBody());
             }
         }
+
+        public Task CreatePipeline(DataOpsPipes pipe, List<PipeLine> tubes = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task SavePipeline(DataOpsPipes pipe, List<PipeLine> tubes)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -1,0 +1,30 @@
+﻿<EditForm Model="IndexParms" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label>Source:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="IndexParms.SourceName" />
+            <ValidationMessage For="@(() => IndexParms.SourceName)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Target:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="IndexParms.TargetName" />
+            <ValidationMessage For="@(() => IndexParms.TargetName)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Taxonomy:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="IndexParms.Taxonomy" />
+            <ValidationMessage For="@(() => IndexParms.Taxonomy)" />
+        </div>
+    </div>
+    <button class="btn btn-success" type="submit">Save Changes</button>
+</EditForm>
+
+@code {
+    [Parameter] public CreateIndexParameters IndexParms { get; set; }
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+}

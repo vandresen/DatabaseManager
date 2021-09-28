@@ -13,5 +13,6 @@ namespace DatabaseManager.Common.Services
         Task<List<PipeLine>> GetPipeline(string name);
         Task<List<DataOpsPipes>> GetPipelines();
         Task ProcessPipeline(List<DataOpParameters> parms);
+        Task SavePipeline(DataOpsPipes pipe, List<PipeLine> tubes);
     }
 }
