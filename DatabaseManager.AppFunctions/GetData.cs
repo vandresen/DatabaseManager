@@ -20,9 +20,9 @@ namespace DatabaseManager.AppFunctions
 {
     public class GetData
     {
-        private readonly ILogger log;
+        private readonly ILogger<GetData> log;
 
-        public GetData(ILogger log)
+        public GetData(ILogger<GetData> log)
         {
             this.log = log;
         }

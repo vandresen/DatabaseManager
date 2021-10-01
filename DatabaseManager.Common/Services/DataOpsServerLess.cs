@@ -76,14 +76,17 @@ namespace DatabaseManager.Common.Services
             }
         }
 
-        public Task CreatePipeline(DataOpsPipes pipe, List<PipeLine> tubes = null)
+        public async Task SavePipeline(DataOpsPipes pipe, List<PipeLine> tubes)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task SavePipeline(DataOpsPipes pipe, List<PipeLine> tubes)
-        {
-            throw new NotImplementedException();
+            string name = pipe.Name;
+            string baseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
+            string url = baseUrl + "SavePipelineData" + $"?name={name}";
+            Console.WriteLine($"Url = {url}");
+            var response = await httpService.Post(url, tubes);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
         }
     }
 }

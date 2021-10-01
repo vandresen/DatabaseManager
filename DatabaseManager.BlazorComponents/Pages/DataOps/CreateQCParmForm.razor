@@ -1,0 +1,16 @@
+﻿<EditForm Model="DataQcParms" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label>Source:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="DataQcParms.DataConnector" />
+            <ValidationMessage For="@(() => DataQcParms.DataConnector)" />
+        </div>
+    </div>
+    <button class="btn btn-success" type="submit">Save Changes</button>
+</EditForm>
+
+@code {
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+    [Parameter] public DataQCParameters DataQcParms { get; set; }
+}

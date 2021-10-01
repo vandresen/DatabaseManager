@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using DatabaseManager.AppFunctions.Helpers;
 using DatabaseManager.Shared;
 using DatabaseManager.Common.Helpers;
+using System.Collections.Generic;
 
 namespace DatabaseManager.AppFunctions
 {
@@ -50,6 +51,43 @@ namespace DatabaseManager.AppFunctions
             }
             string responseMessage = "OK";
             log.LogInformation("SavePipeline: Completed.");
+            return new OkObjectResult(responseMessage);
+        }
+
+        [FunctionName("SavePipelineData")]
+        public static async Task<IActionResult> SavePipeData(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("SavePipelineData: Starting.");
+
+            try
+            {
+                string storageAccount = Utilities.GetAzureStorageConnection(req.Headers, log);
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                string name = req.Query["name"];
+                if (string.IsNullOrEmpty(name))
+                {
+                    log.LogError("SavePipelineData: error, pipeline name is missing");
+                    return new BadRequestObjectResult("Error missing pipeline name");
+                }
+                List<PipeLine> tubes = JsonConvert.DeserializeObject<List<PipeLine>>(requestBody);
+                if (tubes == null)
+                {
+                    log.LogError("SavePipeline: error missing pipeline parameters");
+                    return new BadRequestObjectResult("Error missing pipeline parameters");
+                }
+                if (!name.EndsWith(".txt")) name = name + ".txt";
+                DataOpsRepository dops = new DataOpsRepository(storageAccount);
+                await dops.SavePipeline(name, requestBody);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"SavePipelineData: Error creating pipeline: {ex}");
+                return new BadRequestObjectResult($"Error creating pipeline: {ex}");
+            }
+            string responseMessage = "OK";
+            log.LogInformation("SavePipelineData: Completed.");
             return new OkObjectResult(responseMessage);
         }
 

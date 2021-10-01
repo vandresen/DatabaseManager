@@ -1,0 +1,80 @@
+﻿@page "/edittube/{Name}/{Id:int}"
+@inject NavigationManager navigationManager
+@inject DatabaseManager.Common.Services.IDataOps ops
+
+<h3>Edit Tube</h3>
+
+<p>Pipeline Name: @Name</p>
+<p>Tube Type: @TubeType</p>
+<p>Priority: <input @bind="priority" type="number" min="1" /></p>
+
+@if (TubeType == "CreateIndex")
+{
+    <CreateIndexParmForm IndexParms="indexParms" OnValidSubmit="Save" />
+}
+else if (TubeType == "DataQC")
+{
+    <CreateQCParmForm DataQcParms="qcParms" OnValidSubmit="Save" />
+}
+else
+{
+    <p>Tube type not supported</p>
+    <p><button @onclick="Save">Save</button></p>
+}
+
+@code {
+    [Parameter] public int id { get; set; }
+    [Parameter] public string Name { get; set; }
+    CreateIndexParameters indexParms = new CreateIndexParameters();
+    DataQCParameters qcParms = new DataQCParameters();
+    List<PipeLine> tubes = new List<PipeLine>();
+    PipeLine tube = new PipeLine();
+    string TubeType = "";
+    int priority;
+
+    protected override async Task OnInitializedAsync()
+    {
+        tubes = await ops.GetPipeline(Name);
+        tube = tubes.FirstOrDefault(x => x.Id == id);
+        if (tube != null)
+        {
+            TubeType = tube.ArtifactType;
+            priority = tube.Priority;
+            string jsonParms = tube.Parameters;
+            if (TubeType == "CreateIndex")
+            {
+                indexParms = JsonConvert.DeserializeObject<CreateIndexParameters>(jsonParms);
+            }
+            else if (TubeType == "DataQC")
+            {
+                qcParms = JsonConvert.DeserializeObject<DataQCParameters>(jsonParms);
+            }
+        }
+    }
+
+    private async Task Save()
+    {
+        Console.WriteLine($"Name is {Name}");
+        Console.WriteLine($"Priority is {priority}");
+        tube.Priority = priority;
+        string jsonString = "";
+        if (TubeType == "CreateIndex")
+        {
+            jsonString = JsonConvert.SerializeObject(indexParms);
+            Console.WriteLine($"String is {jsonString}");
+        }
+        else if (TubeType == "DataQC")
+        {
+            jsonString = JsonConvert.SerializeObject(qcParms);
+            Console.WriteLine($"String is {jsonString}");
+        }
+        else
+        {
+            Console.WriteLine("Tube type not supported");
+        }
+        tube.Parameters = jsonString;
+        DataOpsPipes pipe = new DataOpsPipes { Name = Name };
+        await ops.SavePipeline(pipe, tubes);
+        navigationManager.NavigateTo($"/dataops/edit/{Name}");
+    }
+}
