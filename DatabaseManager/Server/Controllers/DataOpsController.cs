@@ -67,32 +67,11 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> execute(List<DataOpParameters> parms)
         {
             SetStorageAccount();
-            //string baseUrl = $"{Request.Scheme}://{Request.Host.Value.ToString()}{Request.PathBase.Value.ToString()}/api/";
             string storageAccount = connectionString;
             foreach (var item in parms)
             {
                 item.StorageAccount = storageAccount;
             }
-            
-
-            //string queueName = dataOpsQueue;
-            //string fileShare = "dataops";
-
-            //string dataOpsFile = await fileStorageService.ReadFile(fileShare, name);
-            //List<PipeLine> dataOps = JsonConvert.DeserializeObject<List<PipeLine>>(dataOpsFile);
-
-            //List<DataOpParameters> parms = new List<DataOpParameters>();
-            //foreach (var pipe in dataOps)
-            //{
-            //    parms.Add(new DataOpParameters()
-            //    {
-            //        Id = pipe.Id,
-            //        Name = pipe.ArtifactType,
-            //        Url = baseUrl + pipe.ArtifactType,
-            //        StorageAccount = storageAccount,
-            //        Parameters = pipe.Parameters
-            //    });
-            //}
 
             try
             {
@@ -108,10 +87,6 @@ namespace DatabaseManager.Server.Controllers
             catch (Exception ex)
             {
                 logger.LogWarning($"DataOpsController: Problems with URL, {ex}");
-            }
-            finally
-            {
-                client.Dispose();
             }
 
             return Ok($"OK");
