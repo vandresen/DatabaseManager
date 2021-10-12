@@ -1,0 +1,67 @@
+﻿@page "/datasources/edit/{SourceName}"
+@inject IDataSources dataSources
+@inject NavigationManager navigationManager
+
+<h3>Edit Data Source</h3>
+
+@if (connectParameters != null)
+{
+    if (connectParameters.SourceType == "File")
+    {
+        <FileSourceForm ConnectParameters="connectParameters" OnValidSubmit="Edit" ReadOnlySourceName="true" />
+    }
+    else
+    {
+        <DataSourceForm ConnectParameters="connectParameters" OnValidSubmit="Edit" ReadOnlySourceName="true" />
+    }
+}
+
+@code {
+    [Parameter] public string SourceName { get; set; }
+    public ConnectParameters connectParameters;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            connectParameters = await dataSources.GetSource(SourceName);
+            //string url = settings.BaseUrl + "GetDataSource?name=" + SourceName;
+            //connectParameters = await client.GetFromJsonAsync<ConnectParameters>(url);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task Edit()
+    {
+        try
+        {
+            string connectStr = Common.CreateDatabaseConnectionString(connectParameters);
+            connectParameters.ConnectionString = connectStr;
+            await dataSources.UpdateSource(connectParameters);
+            navigationManager.NavigateTo("datasources");
+            //string connectStr = Common.CreateDatabaseConnectionString(connectParameters);
+            //connectParameters.ConnectionString = connectStr;
+            //var jsonString = JsonConvert.SerializeObject(connectParameters);
+            //var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+            //string urlUpdate = settings.BaseUrl + "UpdateDataSource";
+            //using var response = await client.PostAsync(urlUpdate, content);
+            //if (response.IsSuccessStatusCode)
+            //{
+            //    Console.WriteLine("Sucessful updating data source");
+            //}
+            //else
+            //{
+            //    string errorMessage = response.ReasonPhrase;
+            //    Console.WriteLine($"There was an error! {errorMessage}");
+            //}
+            //navigationManager.NavigateTo("datasources");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}

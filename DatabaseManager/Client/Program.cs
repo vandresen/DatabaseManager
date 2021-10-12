@@ -28,7 +28,7 @@ namespace DatabaseManager.Client
             services.AddOptions();
             services.AddSingleton<SingletonServices>();
             services.AddScoped<DatabaseManager.Common.Services.IHttpService, DatabaseManager.Common.Services.HttpService>();
-            services.AddScoped<IDataSources, DataSources>();
+            services.AddScoped<DatabaseManager.Common.Services.IDataSources, DatabaseManager.Common.Services.DataSourcesClient>();
             services.AddScoped<IDataModelCreate, DataModelCreate>();
             services.AddScoped<ICreateIndex, CreateIndex>();
             services.AddScoped<IIndexData, IndexData>();

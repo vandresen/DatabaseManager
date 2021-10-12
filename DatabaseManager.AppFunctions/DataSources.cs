@@ -121,7 +121,7 @@ namespace DatabaseManager.AppFunctions
 
         [FunctionName("UpdateDataSource")]
         public static async Task<IActionResult> UpdateSource(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route = null)] HttpRequest req,
             ILogger log)
         {
             log.LogInformation("UpdateDataSource: Starting");

@@ -1,5 +1,5 @@
 ﻿@page "/datasources"
-@inject HttpClient client
+@inject IDataSources dataSources
 @inject ILocalStorageService localStorage
 @inject SingletonService settings
 
@@ -43,24 +43,22 @@
     {
         try
         {
-            string url = settings.BaseUrl + "GetDataSources";
-            ConnectParameters = await client.GetFromJsonAsync<List<ConnectParameters>>(url);
-            Console.WriteLine($"Number of sources are {ConnectParameters.Count}");
+            ConnectParameters = await dataSources.GetSources();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Errors: {ex}");
         }
+        Console.WriteLine("Finished getting sources");
     }
 
     private async Task DeleteSources(string name)
     {
         try
         {
-            string url = settings.BaseUrl + "DeleteDataSource?name=" + name;
-            await client.DeleteAsync(url);
-            url = settings.BaseUrl + "GetDataSources";
-            ConnectParameters = await client.GetFromJsonAsync<List<ConnectParameters>>(url);
+            await dataSources.DeleteSource(name);
+            ConnectParameters = await dataSources.GetSources();
+            this.StateHasChanged();
         }
         catch (Exception ex)
         {

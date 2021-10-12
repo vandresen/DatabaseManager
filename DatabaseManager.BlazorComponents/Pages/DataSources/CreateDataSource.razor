@@ -1,5 +1,5 @@
 ﻿@page "/datasources/create/{SourceType}"
-@inject DatabaseManager.Common.Services.IDataSources dataSources
+@inject IDataSources dataSources
 @inject NavigationManager navigationManager
 
 <h3>Create Data Connector</h3>
@@ -12,14 +12,13 @@ else
     <DataSourceForm ConnectParameters="connectParameters" Type="@SourceType" OnValidSubmit="Create" />
 }
 
-
 @code {
     [Parameter] public string SourceType { get; set; }
     private ConnectParameters connectParameters = new ConnectParameters();
 
     private async Task Create()
     {
-        string connectStr = Common.GetConnectionString(connectParameters);
+        string connectStr = Common.CreateDatabaseConnectionString(connectParameters);
         connectParameters.ConnectionString = connectStr;
         try
         {
