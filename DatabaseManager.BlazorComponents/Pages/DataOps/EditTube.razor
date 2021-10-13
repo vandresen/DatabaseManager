@@ -16,6 +16,10 @@ else if (TubeType == "DataQC")
 {
     <CreateQCParmForm DataQcParms="qcParms" OnValidSubmit="Save" />
 }
+else if (TubeType == "DataTransfer")
+{
+    <CreateDataTransferParmForm TransferParms="transferParms" OnValidSubmit="Save" />
+}
 else
 {
     <p>Tube type not supported</p>
@@ -27,6 +31,7 @@ else
     [Parameter] public string Name { get; set; }
     CreateIndexParameters indexParms = new CreateIndexParameters();
     DataQCParameters qcParms = new DataQCParameters();
+    TransferParameters transferParms = new TransferParameters();
     List<PipeLine> tubes = new List<PipeLine>();
     PipeLine tube = new PipeLine();
     string TubeType = "";
@@ -49,6 +54,10 @@ else
             {
                 qcParms = JsonConvert.DeserializeObject<DataQCParameters>(jsonParms);
             }
+            else if (TubeType == "DataTransfer")
+            {
+                transferParms = JsonConvert.DeserializeObject<TransferParameters>(jsonParms);
+            }
         }
     }
 
@@ -66,6 +75,11 @@ else
         else if (TubeType == "DataQC")
         {
             jsonString = JsonConvert.SerializeObject(qcParms);
+            Console.WriteLine($"String is {jsonString}");
+        }
+        else if (TubeType == "DataTransfer")
+        {
+            jsonString = JsonConvert.SerializeObject(transferParms);
             Console.WriteLine($"String is {jsonString}");
         }
         else

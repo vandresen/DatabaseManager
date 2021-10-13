@@ -15,7 +15,7 @@
 }
 else if (TubeType == "DataTransfer")
 {
-    <p>Data transfer</p>
+    <CreateDataTransferParmForm TransferParms="transferParms" OnValidSubmit="Save" />
 }
 else if (TubeType == "DataQC")
 {
@@ -34,6 +34,7 @@ else
     [Parameter] public string Name { get; set; }
     public CreateIndexParameters indexParms = new CreateIndexParameters();
     public DataQCParameters qcParms = new DataQCParameters();
+    public TransferParameters transferParms = new TransferParameters();
     string source;
     string target;
     string taxonomy;
@@ -48,7 +49,7 @@ else
         }
         else if (TubeType == "DataTransfer")
         {
-
+            transferParms.TargetName = singleton.TargetConnector;
             Console.WriteLine("DataTransfer");
         }
         else if (TubeType == "DataQC")
@@ -74,6 +75,11 @@ else
         else if (TubeType == "DataQC")
         {
             jsonString = JsonConvert.SerializeObject(qcParms);
+            Console.WriteLine($"String is {jsonString}");
+        }
+        else if (TubeType == "DataTransfer")
+        {
+            jsonString = JsonConvert.SerializeObject(transferParms);
             Console.WriteLine($"String is {jsonString}");
         }
         else
