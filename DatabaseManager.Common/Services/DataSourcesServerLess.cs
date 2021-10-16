@@ -1,4 +1,5 @@
-﻿using DatabaseManager.Shared;
+﻿using DatabaseManager.Common.Extensions;
+using DatabaseManager.Shared;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,15 +11,17 @@ namespace DatabaseManager.Common.Services
     {
         private readonly IHttpService httpService;
         private readonly string baseUrl;
+        private readonly string apiKey;
 
         public DataSourcesServerLess(IHttpService httpService, SingletonService settings)
         {
             this.httpService = httpService;
             baseUrl = settings.BaseUrl;
+            apiKey = settings.ApiKey;
         }
         public async Task CreateSource(ConnectParameters connectParameters)
         {
-            string url = baseUrl + "SaveDataSource";
+            string url = baseUrl.BuildFunctionUrl("SaveDataSource", $"", apiKey);
             var response = await httpService.Post(url, connectParameters);
             if (!response.Success)
             {
@@ -28,7 +31,7 @@ namespace DatabaseManager.Common.Services
 
         public async Task DeleteSource(string Name)
         {
-            string url = baseUrl + "DeleteDataSource?name=" + Name;
+            string url = baseUrl.BuildFunctionUrl("DeleteDataSource", $"name={Name}", apiKey);
             var response = await httpService.Delete(url);
             if (!response.Success)
             {
@@ -38,7 +41,7 @@ namespace DatabaseManager.Common.Services
 
         public async Task<ConnectParameters> GetSource(string Name)
         {
-            string url = baseUrl + "GetDataSource?name=" + Name;
+            string url = baseUrl.BuildFunctionUrl("GetDataSource",$"name={Name}", apiKey);
             var response = await httpService.Get<ConnectParameters>(url);
             if (!response.Success)
             {
@@ -49,7 +52,7 @@ namespace DatabaseManager.Common.Services
 
         public async Task<List<ConnectParameters>> GetSources()
         {
-            string url = baseUrl + "GetDataSources";
+            string url = baseUrl.BuildFunctionUrl("GetDataSources", $"", apiKey);
             var response = await httpService.Get<List<ConnectParameters>>(url);
             if (!response.Success)
             {
@@ -60,8 +63,7 @@ namespace DatabaseManager.Common.Services
 
         public async Task UpdateSource(ConnectParameters connectParameters)
         {
-            string url = baseUrl + "UpdateDataSource";
-            Console.WriteLine(url);
+            string url = baseUrl.BuildFunctionUrl("UpdateDataSource", $"", apiKey);
             var response = await httpService.Put(url, connectParameters);
             if (!response.Success)
             {

@@ -173,7 +173,7 @@ namespace DatabaseManager.AppFunctions
 
         [FunctionName("ManageDataOps_HttpStart")]
         public static async Task<HttpResponseMessage> HttpStart(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequestMessage req,
             [DurableClient] IDurableOrchestrationClient starter,
             ExecutionContext context,
             ILogger log)

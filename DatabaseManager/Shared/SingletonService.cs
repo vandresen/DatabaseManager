@@ -10,5 +10,6 @@ namespace DatabaseManager.Shared
         public string AzureStorage { get; set; }
         public string TargetConnector { get; set; }
         public string DataAccessDefinition { get; set; }
+        public string ApiKey { get; set; }
     }
 }

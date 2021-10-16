@@ -2,6 +2,7 @@
 @inject ILocalStorageService localStorage
 @inject SingletonService settings
 @inject HttpClient client
+@inject IDisplayMessage displayMessage
 
 <div class="jumbotron">
     <h1>Welcome to Database Manager tool</h1>
@@ -29,14 +30,19 @@ else
         try
         {
             settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
-            settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
             Console.WriteLine($"{settings.AzureStorage}");
+            settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
             Console.WriteLine($"{settings.BaseUrl}");
+            settings.ApiKey = await localStorage.GetItemAsync<string>("APIKey");
+            Console.WriteLine($"{settings.ApiKey}");
+
             client.DefaultRequestHeaders.Remove("azurestorageconnection");
             client.DefaultRequestHeaders.Add("azurestorageconnection", settings.AzureStorage);
 
-            string url = settings.BaseUrl + "GetDataSources";
+            string url = settings.BaseUrl + "GetDataSources" + "?code=" + settings.ApiKey;
+            Console.WriteLine(url);
             ConnectParameters = await client.GetFromJsonAsync<List<ConnectParameters>>(url);
+            //ConnectParameters = await dataSources.GetSources();
             foreach (ConnectParameters conn in ConnectParameters)
             {
                 if (conn.SourceType != "File") options.Add(conn.SourceName);
@@ -45,6 +51,18 @@ else
         catch (Exception ex)
         {
             Console.WriteLine(ex.ToString());
+            if (ex.ToString().Contains("Connection string is not set"))
+            {
+                await displayMessage.DisplayErrorMessage("Azure storage connection string is missing. Use Settings to set it temporary for the session");
+            }
+            else if (ex.ToString().Contains("Unauthorized"))
+            {
+                await displayMessage.DisplayErrorMessage("API key may be missing or invalid. Use Settings to set it");
+            }
+            else
+            {
+                await displayMessage.DisplayErrorMessage(" There is a problem accessing server");
+            }
         }
     }
 

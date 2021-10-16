@@ -7,17 +7,22 @@
 <h3>Settings</h3>
 <p>Azure Storage:</p>
 <p><input @bind="@azureStorage" size="100" /></p>
+<p>API URL:</p>
 <p><input @bind="@baseUrl" size="100" /></p>
+<p>API Key:</p>
+<p><input @bind="@apiKey" size="100" /></p>
 <p><button @onclick="Save">Save</button></p>
 
 @code {
     string azureStorage;
     string baseUrl;
+    string apiKey;
 
     protected override void OnInitialized()
     {
         azureStorage = settings.AzureStorage;
         baseUrl = settings.BaseUrl;
+        apiKey = settings.ApiKey;
     }
 
     private async Task Save()
@@ -26,6 +31,7 @@
         {
             await localStorage.SetItemAsync("AzureStorage", azureStorage);
             await localStorage.SetItemAsync("BaseUrl", baseUrl);
+            await localStorage.SetItemAsync("APIKey", apiKey);
             client.DefaultRequestHeaders.Remove("AzureStorageConnection");
             client.DefaultRequestHeaders.Add("AzureStorageConnection", azureStorage);
         }
