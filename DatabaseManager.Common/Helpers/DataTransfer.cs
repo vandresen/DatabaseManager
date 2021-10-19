@@ -1,6 +1,7 @@
 ﻿using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,7 +13,10 @@ namespace DatabaseManager.Common.Helpers
     {
         private readonly IFileStorageServiceCommon _fileStorage;
         private readonly ITableStorageServiceCommon _tableStorage;
+        private readonly IQueueService _queueService;
         private string _azureConnectionString;
+        private readonly string infoName = "datatransferinfo";
+        private readonly string queueName = "datatransferqueue";
 
         public DataTransfer(string azureConnectionString)
         {
@@ -22,6 +26,8 @@ namespace DatabaseManager.Common.Helpers
             _fileStorage.SetConnectionString(azureConnectionString);
             _tableStorage = new AzureTableStorageServiceCommon(configuration);
             _tableStorage.SetConnectionString(azureConnectionString);
+            _queueService = new AzureQueueServiceCommon(configuration);
+            _queueService.SetConnectionString(azureConnectionString);
             _azureConnectionString = azureConnectionString;
         }
 
@@ -103,6 +109,38 @@ namespace DatabaseManager.Common.Helpers
                 Exception error = new Exception($"DataTransfer: Problems transfer files/tables, {ex}");
                 throw error;
             }
+        }
+
+        public void CopyRemote(TransferParameters parms)
+        {
+            string message = JsonConvert.SerializeObject(parms);
+            _queueService.InsertMessage(queueName, message);
+        }
+
+        public async Task DeleteTable(string target, string table)
+        {
+            ConnectParameters targetConnector = await Common.GetConnectParameters(_azureConnectionString, target);
+            DatabaseLoader dl = new DatabaseLoader();
+            dl.DeleteTable(targetConnector.ConnectionString, table);
+        }
+
+        public List<MessageQueueInfo> GetQueueMessage()
+        {
+            List<MessageQueueInfo> messages = new List<MessageQueueInfo>();
+            bool messageBox = true;
+            while (messageBox)
+            {
+                string message = _queueService.GetMessage(infoName);
+                if (string.IsNullOrEmpty(message))
+                {
+                    messageBox = false;
+                }
+                else
+                {
+                    messages.Add(new MessageQueueInfo { Message = message });
+                }
+            }
+            return messages;
         }
     }
 }

@@ -37,6 +37,14 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
+        public void DeleteTable(string connectString, string table)
+        {
+            DbUtilities dbConn = new DbUtilities();
+            dbConn.OpenWithConnectionString(connectString);
+            dbConn.DBDelete(table);
+            dbConn.CloseConnection();
+        }
+
         private void BulkCopy(SqlConnection source, SqlConnection destination, TransferParameters transferParameters)
         {
             string sql = "";

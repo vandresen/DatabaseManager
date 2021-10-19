@@ -298,6 +298,17 @@ namespace DatabaseManager.Common.Helpers
             return storageAccount;
         }
 
+        public static string GetQueryString(HttpRequest req, string queryAttribute)
+        {
+            string queryResult = req.Query[queryAttribute];
+            if (string.IsNullOrEmpty(queryResult))
+            {
+                Exception error = new Exception($"Error getting http query results for attribute {queryAttribute}");
+                throw error;
+            }
+            return queryResult;
+        }
+
         public static int GetIntFromWebQuery(HttpRequest req)
         {
             string strId = req.Query["id"];

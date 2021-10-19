@@ -1,0 +1,131 @@
+﻿@page "/transferdata"
+@*@inject IDataTransfer dataTransfer*@
+@inject SingletonService settings
+@inject IDisplayMessage displayMessage
+@inject DatabaseManager.Common.Services.IDataSources dataSources
+
+<h2>Data Transfer</h2>
+<br />
+
+<TransferParametersForm TransferParameters="transferParameters" OnValidSubmit="StartDatabaseTransfer" />
+
+<div style="margin-top:20px">
+    <ProgressBar ValueNow="barValue" />
+</div>
+
+<div>
+    <p>Current status: @statusMessage</p>
+</div>
+
+
+@code {
+    private string statusMessage = "Not started";
+    private string jsonString = "";
+    private List<string> dataObjects;
+    TransferParameters transferParameters = new TransferParameters();
+    public int barValue = 0;
+
+    protected async Task StartDatabaseTransfer()
+    {
+        barValue = 0;
+        Console.WriteLine("Start database transfer");
+        string source = transferParameters.SourceName;
+        string target = settings.TargetConnector;
+        transferParameters.TargetName = target;
+        Console.WriteLine($"Target source = {target}");
+
+        if (transferParameters.Remote)
+        {
+            string info = "";
+            if (transferParameters.SourceType != "DataBase")
+            {
+                await displayMessage.DisplayErrorMessage("Remote option only work for databases");
+                return;
+            }
+            Console.WriteLine("Remote database has been selected");
+            barValue = 1;
+            progress($"Transfer starting");
+            //await dataTransfer.CopyRemote(transferParameters);
+
+            for (int i = 0; i < 20; i++)
+            {
+                await Task.Delay(15000);
+                //List<string> messages = await dataTransfer.GetQueueMessage();
+                //foreach (var message in messages)
+                //{
+                //    Console.WriteLine(message);
+                //    info = message;
+                //}
+                barValue = (i * 5) + 1;
+                progress(info);
+                if (info == "Complete") break;
+            }
+
+            barValue = 100;
+            progress($"Transfer Complete");
+            return;
+        }
+
+        //dataObjects = await dataTransfer.GetDataObjects(source);
+        int barInt = 50 / dataObjects.Count;
+        if (transferParameters.SourceType == "DataBase")
+        {
+            foreach (string tableName in dataObjects)
+            {
+                transferParameters.Table = tableName;
+
+                progress($"Deleting from {tableName}");
+                try
+                {
+                    //await dataTransfer.DeleteTable(target, tableName);
+                    barValue = barValue + barInt;
+                }
+                catch (Exception ex)
+                {
+                    progress($"Error Deleting from {tableName}: {ex.Message}");
+                    if (ex.Message.Contains("Invalid object name"))
+                    {
+                        await displayMessage.DisplayErrorMessage("Table does not exist, have you created the data model?");
+                    }
+                    return;
+                }
+            }
+            barInt = 50 / dataObjects.Count;
+        }
+        else
+        {
+            barInt = 100 / dataObjects.Count;
+        }
+
+        foreach (string tableName in dataObjects)
+        {
+            transferParameters.Table = tableName;
+            try
+            {
+                string tmpQuery = transferParameters.TransferQuery;
+                progress($"Copying table {tableName}");
+                //await dataTransfer.Copy(transferParameters);
+                transferParameters.TransferQuery = tmpQuery;
+                barValue = barValue + barInt;
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("Table does not exist"))
+                {
+                    await displayMessage.DisplayErrorMessage("Table does not exist, have you created the data model?");
+                }
+                progress($"Error copying from {tableName}: {ex.Message}");
+                return;
+            }
+        }
+
+        barValue = 100;
+        progress($"Transfer Complete");
+    }
+
+    private void progress(string message)
+    {
+        statusMessage = message;
+        StateHasChanged();
+    }
+}
