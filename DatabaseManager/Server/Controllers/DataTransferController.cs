@@ -39,27 +39,29 @@ namespace DatabaseManager.Server.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<string>>> GetQueueMessage()
+        public async Task<ActionResult<List<MessageQueueInfo>>> GetQueueMessage()
         {
             try
             {
-                List<string> messages = new List<string>();
-                string message = "";
-                bool messageBox = true;
+                //List<string> messages = new List<string>();
+                //string message = "";
+                //bool messageBox = true;
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
-                queueService.SetConnectionString(tmpConnString);
-                while (messageBox)
-                {
-                    message = queueService.GetMessage(infoName);
-                    if (string.IsNullOrEmpty(message))
-                    {
-                        messageBox = false;
-                    }
-                    else
-                    {
-                        messages.Add(message);
-                    }
-                }
+                DataTransfer dt = new DataTransfer(tmpConnString);
+                List<MessageQueueInfo> messages = dt.GetQueueMessage();
+                //queueService.SetConnectionString(tmpConnString);
+                //while (messageBox)
+                //{
+                //    message = queueService.GetMessage(infoName);
+                //    if (string.IsNullOrEmpty(message))
+                //    {
+                //        messageBox = false;
+                //    }
+                //    else
+                //    {
+                //        messages.Add(message);
+                //    }
+                //}
                 return messages;
             }
             catch (Exception ex)
@@ -69,39 +71,19 @@ namespace DatabaseManager.Server.Controllers
         }
 
         [HttpGet("{source}")]
-        public async Task<ActionResult<List<string>>> Get(string source)
+        public async Task<ActionResult<List<TransferParameters>>> Get(string source)
         {
             try
             {
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
-                fileStorageService.SetConnectionString(tmpConnString);
-                tableStorageService.SetConnectionString(tmpConnString);
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-                List<string> files = new List<string>();
-                if (entity.SourceType == "DataBase")
+                DataTransfer dt = new DataTransfer(tmpConnString);
+                List<string> files = await dt.GetFiles(source);
+                List<TransferParameters> transParms = new List<TransferParameters>();
+                foreach (var file in files)
                 {
-                    foreach (string tableName in DatabaseTables.Names)
-                    {
-                        files.Add(tableName);
-                    }
+                    transParms.Add(new TransferParameters { TargetName = source, Table = file });
                 }
-                else if(entity.SourceType == "File")
-                {
-                    if (entity.DataType == "Logs")
-                    {
-                        files = await fileStorageService.ListFiles(entity.Catalog);
-                    }
-                    else
-                    {
-                        if (string.IsNullOrEmpty(entity.FileName))
-                        {
-                            return BadRequest();
-                        }
-                        files.Add(entity.FileName);
-                    }
-                }
-                
-                return files;
+                return transParms;
             }
             catch (Exception)
             {
@@ -115,7 +97,6 @@ namespace DatabaseManager.Server.Controllers
             try
             {
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
-
                 DataTransfer dt = new DataTransfer(tmpConnString);
                 await dt.CopyFiles(transferParameters);
             }
@@ -123,7 +104,6 @@ namespace DatabaseManager.Server.Controllers
             {
                 return BadRequest(ex.ToString());
             }
-
             string message = $"{transferParameters.Table} has been copied";
             return Ok(message);
         }
@@ -134,9 +114,8 @@ namespace DatabaseManager.Server.Controllers
             try
             {
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
-                queueService.SetConnectionString(tmpConnString);
-                string message = JsonConvert.SerializeObject(transferParameters);
-                queueService.InsertMessage(queueName, message);
+                DataTransfer dt = new DataTransfer(tmpConnString);
+                dt.CopyRemote(transferParameters);
             }
             catch (Exception)
             {
@@ -154,14 +133,8 @@ namespace DatabaseManager.Server.Controllers
             try
             {
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
-                tableStorageService.SetConnectionString(tmpConnString);
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, target);
-                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                Common.Helpers.DbUtilities dbConn = new Common.Helpers.DbUtilities();
-                dbConn.OpenConnection(connector);
-                dbConn.DBDelete(table);
-                message = $"{table} has been cleared";
-                dbConn.CloseConnection();
+                DataTransfer dt = new DataTransfer(tmpConnString);
+                await dt.DeleteTable(target, table);
             }
             catch (Exception ex)
             {

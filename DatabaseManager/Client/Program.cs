@@ -40,7 +40,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IDataQc, DataQc>();
             services.AddScoped<IPrediction, Prediction>();
             services.AddScoped<ICookies, Cookies>();
-            services.AddScoped<IDataTransfer, DataTransfer>();
+            services.AddScoped<DatabaseManager.Common.Services.IDataTransfer, DatabaseManager.Common.Services.DataTransferClient>();
             services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddBlazorTable();
         }

@@ -3,6 +3,7 @@
 @inject SingletonService settings
 @inject IDisplayMessage displayMessage
 @inject DatabaseManager.Common.Services.IDataSources dataSources
+@inject IDataTransfer dataTransfer
 
 <h2>Data Transfer</h2>
 <br />
@@ -21,7 +22,7 @@
 @code {
     private string statusMessage = "Not started";
     private string jsonString = "";
-    private List<string> dataObjects;
+    private List<TransferParameters> dataObjects;
     TransferParameters transferParameters = new TransferParameters();
     public int barValue = 0;
 
@@ -45,17 +46,17 @@
             Console.WriteLine("Remote database has been selected");
             barValue = 1;
             progress($"Transfer starting");
-            //await dataTransfer.CopyRemote(transferParameters);
+            await dataTransfer.CopyRemote(transferParameters);
 
             for (int i = 0; i < 20; i++)
             {
                 await Task.Delay(15000);
-                //List<string> messages = await dataTransfer.GetQueueMessage();
-                //foreach (var message in messages)
-                //{
-                //    Console.WriteLine(message);
-                //    info = message;
-                //}
+                List<MessageQueueInfo> messages = await dataTransfer.GetQueueMessage();
+                foreach (var message in messages)
+                {
+                    Console.WriteLine(message);
+                    info = message.Message;
+                }
                 barValue = (i * 5) + 1;
                 progress(info);
                 if (info == "Complete") break;
@@ -66,23 +67,21 @@
             return;
         }
 
-        //dataObjects = await dataTransfer.GetDataObjects(source);
+        dataObjects = await dataTransfer.GetDataObjects(source);
         int barInt = 50 / dataObjects.Count;
         if (transferParameters.SourceType == "DataBase")
         {
-            foreach (string tableName in dataObjects)
+            foreach (var dataObject in dataObjects)
             {
-                transferParameters.Table = tableName;
-
-                progress($"Deleting from {tableName}");
+                progress($"Deleting from {dataObject.Table}");
                 try
                 {
-                    //await dataTransfer.DeleteTable(target, tableName);
+                    await dataTransfer.DeleteTable(target, dataObject.Table);
                     barValue = barValue + barInt;
                 }
                 catch (Exception ex)
                 {
-                    progress($"Error Deleting from {tableName}: {ex.Message}");
+                    progress($"Error Deleting from {dataObject.Table}: {ex.Message}");
                     if (ex.Message.Contains("Invalid object name"))
                     {
                         await displayMessage.DisplayErrorMessage("Table does not exist, have you created the data model?");
@@ -97,14 +96,14 @@
             barInt = 100 / dataObjects.Count;
         }
 
-        foreach (string tableName in dataObjects)
+        foreach (var dataObject in dataObjects)
         {
-            transferParameters.Table = tableName;
+            transferParameters.Table = dataObject.Table;
             try
             {
                 string tmpQuery = transferParameters.TransferQuery;
-                progress($"Copying table {tableName}");
-                //await dataTransfer.Copy(transferParameters);
+                progress($"Copying table {transferParameters.Table}");
+                await dataTransfer.Copy(transferParameters);
                 transferParameters.TransferQuery = tmpQuery;
                 barValue = barValue + barInt;
             }
@@ -114,7 +113,7 @@
                 {
                     await displayMessage.DisplayErrorMessage("Table does not exist, have you created the data model?");
                 }
-                progress($"Error copying from {tableName}: {ex.Message}");
+                progress($"Error copying from {transferParameters.Table}: {ex.Message}");
                 return;
             }
         }

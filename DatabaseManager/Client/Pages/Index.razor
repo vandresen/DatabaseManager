@@ -75,7 +75,7 @@ else
             }
             Console.WriteLine(currentHeader);
             CookieParameters cookieParams = await cookies.GetCookie();
-            Console.WriteLine(cookieParams.Value);
+            Console.WriteLine($"Cookie value: {cookieParams.Value}");
             if (!string.IsNullOrEmpty(cookieParams.Value))
             {
                 if (cookieParams.Value != currentHeader)

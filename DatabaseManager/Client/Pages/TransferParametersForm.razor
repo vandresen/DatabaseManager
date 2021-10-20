@@ -1,4 +1,4 @@
-﻿@inject SingletonService settings
+﻿@inject SingletonServices settings
 @inject DatabaseManager.Common.Services.IDataSources dataSources
 
 <EditForm Model="TransferParameters" OnValidSubmit="OnValidSubmit">
@@ -57,6 +57,7 @@
     {
         try
         {
+            Console.WriteLine("Transfer Parameter Form");
             ConnectParameters = await dataSources.GetSources();
             foreach (ConnectParameters conn in ConnectParameters)
             {
