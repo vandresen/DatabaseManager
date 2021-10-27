@@ -70,6 +70,20 @@ namespace DatabaseManager.AppFunctions
                         string stat = await context.CallActivityAsync<string>("ManageDataOps_DataTransfer", pipe);
                     }
                 }
+                else if (pipe.Name == "Predictions")
+                {
+                    log.LogInformation($"Starting Predictions");
+                    List<PredictionCorrection> predictionList = await context.CallActivityAsync<List<PredictionCorrection>>("ManageDataOps_InitPredictions", pipe);
+                    var tasks = new Task<string>[predictionList.Count];
+                    JObject pipeParm = JObject.Parse(pipe.JsonParameters);
+                    for (int i = 0; i < predictionList.Count; i++)
+                    {
+                        int id = predictionList[i].Id;
+                        pipeParm["PredictionId"] = id;
+                        pipe.JsonParameters = pipeParm.ToString();
+                        string stat = await context.CallActivityAsync<string>("ManageDataOps_Prediction", pipe);
+                    }
+                }
                 else
                 {
                     log.LogInformation($"Artifact {pipe.Name} does not exist");
@@ -78,6 +92,19 @@ namespace DatabaseManager.AppFunctions
             }
             log.LogInformation($"RunOrchestrator: All pipelines processed");
             return response;
+        }
+
+        [FunctionName("ManageDataOps_InitPredictions")]
+        public static async Task<List<PredictionCorrection>> InitPredictions([ActivityTrigger] DataOpParameters pipe, ILogger log)
+        {
+            log.LogInformation($"InitPredictions: Starting");
+            List<PredictionCorrection> predictionList = new List<PredictionCorrection>();
+            Predictions predictions = new Predictions(pipe.StorageAccount);
+            PredictionParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<PredictionParameters>();
+            predictionList = await predictions.GetPredictions(parms.DataConnector);
+            log.LogInformation($"Number of predictions are {predictionList.Count}");
+            log.LogInformation($"InitPredictions: Complete");
+            return predictionList;
         }
 
         [FunctionName("ManageDataOps_CreateIndex")]
@@ -169,6 +196,26 @@ namespace DatabaseManager.AppFunctions
             }
 
             return $"OK";
+        }
+
+        [FunctionName("ManageDataOps_Prediction")]
+        public static async Task<string> DataPrediction([ActivityTrigger] DataOpParameters pipe, ILogger log)
+        {
+            try
+            {
+                log.LogInformation($"Prediction: Starting prediction");
+                Predictions predictions = new Predictions(pipe.StorageAccount);
+                PredictionParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<PredictionParameters>();
+                log.LogInformation($"Prediction: Processing prediction id {parms.PredictionId}");
+                await predictions.ExecutePrediction(parms);
+                log.LogInformation($"Prediction: Complete");
+            }
+            catch (Exception ex)
+            {
+                log.LogInformation($"Prediction:Serious exception {ex}");
+            }
+
+            return $"Prediction Rule {pipe.Id}";
         }
 
         [FunctionName("ManageDataOps_HttpStart")]

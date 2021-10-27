@@ -21,10 +21,14 @@ else if (TubeType == "DataQC")
 {
     <CreateQCParmForm DataQcParms="qcParms" OnValidSubmit="Save" />
 }
+else if (TubeType == "Predictions")
+{
+    <CreatePredictionParmForm PredictioncParms="predictionParms" OnValidSubmit="Save" />
+}
 else
 {
-<p>Tube type not supported</p>
-<p><button @onclick="Save">Save</button></p>
+    <p>Tube type not supported</p>
+    <p><button @onclick="Save">Save</button></p>
 }
 
 
@@ -35,6 +39,7 @@ else
     public CreateIndexParameters indexParms = new CreateIndexParameters();
     public DataQCParameters qcParms = new DataQCParameters();
     public TransferParameters transferParms = new TransferParameters();
+    public PredictionParameters predictionParms = new PredictionParameters();
     string source;
     string target;
     string taxonomy;
@@ -47,15 +52,17 @@ else
             indexParms.TargetName = singleton.TargetConnector;
             indexParms.SourceName = singleton.TargetConnector;
         }
-        else if(TubeType == "DataTransfer")
+        else if (TubeType == "DataTransfer")
         {
             transferParms.TargetName = singleton.TargetConnector;
-            Console.WriteLine("DataTransfer");
         }
         else if (TubeType == "DataQC")
         {
             qcParms.DataConnector = singleton.TargetConnector;
-            Console.WriteLine("DataQC");
+        }
+        else if (TubeType == "Predictions")
+        {
+            predictionParms.DataConnector = singleton.TargetConnector;
         }
 
     }
@@ -72,9 +79,14 @@ else
             jsonString = JsonConvert.SerializeObject(indexParms);
             Console.WriteLine($"String is {jsonString}");
         }
-        else if(TubeType == "DataQC")
+        else if (TubeType == "DataQC")
         {
             jsonString = JsonConvert.SerializeObject(qcParms);
+            Console.WriteLine($"String is {jsonString}");
+        }
+        else if (TubeType == "Predictions")
+        {
+            jsonString = JsonConvert.SerializeObject(predictionParms);
             Console.WriteLine($"String is {jsonString}");
         }
         else if (TubeType == "DataTransfer")
