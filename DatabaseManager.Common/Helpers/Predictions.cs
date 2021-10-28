@@ -78,6 +78,19 @@ namespace DatabaseManager.Common.Helpers
             return predictionResults;
         }
 
+        public async Task<List<DmsIndex>> GetPrediction(string source, int id)
+        {
+            List<DmsIndex> predictionResults = new List<DmsIndex>();
+            ConnectParameters connector = await GetConnector(source);
+            _dbConn.OpenConnection(connector);
+            string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            RuleModel rule = Common.GetRule(_dbConn, id, _accessDefs);
+            predictionResults = GetPredictedObjects(rule.RuleKey);
+            _dbConn.CloseConnection();
+            return predictionResults;
+        }
+
         public async Task ExecutePrediction(PredictionParameters parms)
         {
             string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
@@ -98,6 +111,29 @@ namespace DatabaseManager.Common.Helpers
             _dbConn.CloseConnection();
             manageIndexTable.SaveQCFlags();
 
+        }
+
+        private List<DmsIndex> GetPredictedObjects(string ruleKey)
+        {
+            List<DmsIndex> qcIndex = new List<DmsIndex>();
+            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
+            string sql = ruleAccessDef.Select;
+            string query = $" where QC_STRING like '%{ruleKey};%'";
+            DataTable idx = _dbConn.GetDataTable(sql, query);
+            foreach (DataRow idxRow in idx.Rows)
+            {
+                string dataType = idxRow["DATATYPE"].ToString();
+                string indexId = idxRow["INDEXID"].ToString();
+                string jsonData = idxRow["JSONDATAOBJECT"].ToString();
+                int intIndexId = Convert.ToInt32(indexId);
+                qcIndex.Add(new DmsIndex()
+                {
+                    Id = intIndexId,
+                    DataType = dataType,
+                    JsonData = jsonData
+                });
+            }
+            return qcIndex;
         }
 
         private void MakePredictions(RuleModel rule, ConnectParameters connector)

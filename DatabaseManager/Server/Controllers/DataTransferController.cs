@@ -43,25 +43,9 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                //List<string> messages = new List<string>();
-                //string message = "";
-                //bool messageBox = true;
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 DataTransfer dt = new DataTransfer(tmpConnString);
                 List<MessageQueueInfo> messages = dt.GetQueueMessage();
-                //queueService.SetConnectionString(tmpConnString);
-                //while (messageBox)
-                //{
-                //    message = queueService.GetMessage(infoName);
-                //    if (string.IsNullOrEmpty(message))
-                //    {
-                //        messageBox = false;
-                //    }
-                //    else
-                //    {
-                //        messages.Add(message);
-                //    }
-                //}
                 return messages;
             }
             catch (Exception ex)
