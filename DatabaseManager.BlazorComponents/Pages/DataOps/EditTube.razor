@@ -16,6 +16,10 @@ else if (TubeType == "DataQC")
 {
     <CreateQCParmForm DataQcParms="qcParms" OnValidSubmit="Save" />
 }
+else if (TubeType == "Predictions")
+{
+    <CreatePredictionParmForm PredictioncParms="predictionParms" OnValidSubmit="Save" />
+}
 else if (TubeType == "DataTransfer")
 {
     <CreateDataTransferParmForm TransferParms="transferParms" OnValidSubmit="Save" />
@@ -31,6 +35,7 @@ else
     [Parameter] public string Name { get; set; }
     CreateIndexParameters indexParms = new CreateIndexParameters();
     DataQCParameters qcParms = new DataQCParameters();
+    public PredictionParameters predictionParms = new PredictionParameters();
     TransferParameters transferParms = new TransferParameters();
     List<PipeLine> tubes = new List<PipeLine>();
     PipeLine tube = new PipeLine();
@@ -54,6 +59,10 @@ else
             {
                 qcParms = JsonConvert.DeserializeObject<DataQCParameters>(jsonParms);
             }
+            else if (TubeType == "Predictions")
+            {
+                predictionParms = JsonConvert.DeserializeObject<PredictionParameters>(jsonParms);
+            }
             else if (TubeType == "DataTransfer")
             {
                 transferParms = JsonConvert.DeserializeObject<TransferParameters>(jsonParms);
@@ -75,6 +84,11 @@ else
         else if (TubeType == "DataQC")
         {
             jsonString = JsonConvert.SerializeObject(qcParms);
+            Console.WriteLine($"String is {jsonString}");
+        }
+        else if (TubeType == "Predictions")
+        {
+            jsonString = JsonConvert.SerializeObject(predictionParms);
             Console.WriteLine($"String is {jsonString}");
         }
         else if (TubeType == "DataTransfer")

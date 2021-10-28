@@ -21,9 +21,9 @@ else if (TubeType == "DataQC")
 {
     <CreateQCParmForm DataQcParms="qcParms" OnValidSubmit="Save" />
 }
-else if (TubeType == "Prediction s")
+else if (TubeType == "Predictions")
 {
-    <p>Predictions</p>
+    <CreatePredictionParmForm PredictioncParms="predictionParms" OnValidSubmit="Save" />
 }
 else
 {
@@ -39,6 +39,7 @@ else
     public CreateIndexParameters indexParms = new CreateIndexParameters();
     public DataQCParameters qcParms = new DataQCParameters();
     public TransferParameters transferParms = new TransferParameters();
+    public PredictionParameters predictionParms = new PredictionParameters();
     string source;
     string target;
     string taxonomy;
@@ -54,12 +55,14 @@ else
         else if (TubeType == "DataTransfer")
         {
             transferParms.TargetName = singleton.TargetConnector;
-            Console.WriteLine("DataTransfer");
         }
         else if (TubeType == "DataQC")
         {
             qcParms.DataConnector = singleton.TargetConnector;
-            Console.WriteLine("DataQC");
+        }
+        else if (TubeType == "Predictions")
+        {
+            predictionParms.DataConnector = singleton.TargetConnector;
         }
 
     }
@@ -79,6 +82,11 @@ else
         else if (TubeType == "DataQC")
         {
             jsonString = JsonConvert.SerializeObject(qcParms);
+            Console.WriteLine($"String is {jsonString}");
+        }
+        else if (TubeType == "Predictions")
+        {
+            jsonString = JsonConvert.SerializeObject(predictionParms);
             Console.WriteLine($"String is {jsonString}");
         }
         else if (TubeType == "DataTransfer")
