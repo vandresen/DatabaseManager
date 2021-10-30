@@ -115,7 +115,8 @@ else
             Parameters = jsonString
         });
         DataOpsPipes pipe = new DataOpsPipes { Name = Name };
-        await ops.SavePipeline(pipe, tubes);
+        List<PipeLine> sortedTubes = tubes.OrderBy(o => o.Priority).ToList();
+        await ops.SavePipeline(pipe, sortedTubes);
         navigationManager.NavigateTo($"/dataops/edit/{Name}");
     }
 }
