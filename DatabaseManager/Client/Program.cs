@@ -8,6 +8,7 @@ using DatabaseManager.Client.Helpers;
 using System.Net.Http;
 using BlazorTable;
 using DatabaseManager.Components.Services;
+using DatabaseManager.Shared;
 
 namespace DatabaseManager.Client
 {
@@ -27,9 +28,10 @@ namespace DatabaseManager.Client
         {
             services.AddOptions();
             services.AddSingleton<SingletonServices>();
+            services.AddSingleton<SingletonService>();
             services.AddScoped<DatabaseManager.Common.Services.IHttpService, DatabaseManager.Common.Services.HttpService>();
             services.AddScoped<DatabaseManager.Common.Services.IDataSources, DatabaseManager.Common.Services.DataSourcesClient>();
-            services.AddScoped<IDataModelCreate, DataModelCreate>();
+            services.AddScoped<DatabaseManager.Common.Services.IDataModelCreate, DatabaseManager.Common.Services.DataModelCreate>();
             services.AddScoped<ICreateIndex, CreateIndex>();
             services.AddScoped<IIndexData, IndexData>();
             services.AddScoped<IDataFile, DataFile>();
