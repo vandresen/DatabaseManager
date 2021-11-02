@@ -64,7 +64,7 @@ namespace DatabaseManager.Server.Controllers
         }
 
         [HttpPost()]
-        public async Task<ActionResult<string>> execute(List<DataOpParameters> parms)
+        public async Task<ActionResult<DataOpsResults>> execute(List<DataOpParameters> parms)
         {
             SetStorageAccount();
             string storageAccount = connectionString;
@@ -72,6 +72,7 @@ namespace DatabaseManager.Server.Controllers
             {
                 item.StorageAccount = storageAccount;
             }
+            DataOpsResults dor = new DataOpsResults();
 
             try
             {
@@ -82,6 +83,7 @@ namespace DatabaseManager.Server.Controllers
                 using (HttpContent respContent = response.Content)
                 {
                     string result = respContent.ReadAsStringAsync().Result;
+                    dor = JsonConvert.DeserializeObject<DataOpsResults>(result);
                 }
             }
             catch (Exception ex)
@@ -89,7 +91,7 @@ namespace DatabaseManager.Server.Controllers
                 logger.LogWarning($"DataOpsController: Problems with URL, {ex}");
             }
 
-            return Ok($"OK");
+            return dor;
         }
 
         [HttpPost("CreatePipeline/{name}")]

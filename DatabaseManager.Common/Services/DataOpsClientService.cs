@@ -66,5 +66,25 @@ namespace DatabaseManager.Common.Services
                 throw new ApplicationException(await response.GetBody());
             }
         }
+
+        public async Task<DataOpsResults> ProcessPipelineWithStatus(List<DataOpParameters> parms)
+        {
+            var response = await httpService.Post<List<DataOpParameters>, DataOpsResults>(url, parms);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
+        public async Task<DataOpsStatus> GetStatus(string url)
+        {
+            var response = await httpService.Get<DataOpsStatus>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
     }
 }

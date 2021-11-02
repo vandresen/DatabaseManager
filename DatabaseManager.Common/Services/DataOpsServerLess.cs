@@ -101,5 +101,15 @@ namespace DatabaseManager.Common.Services
                 throw new ApplicationException(await response.GetBody());
             }
         }
+
+        public Task<DataOpsResults> ProcessPipelineWithStatus(List<DataOpParameters> parms)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<DataOpsStatus> GetStatus(string url)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

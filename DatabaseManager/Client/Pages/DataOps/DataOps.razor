@@ -22,10 +22,14 @@
     <Pager ShowPageNumber="true" ShowTotalCount="true" />
 </Table>
 
+<div>
+    <p>DataOps status: @statusMessage</p>
+</div>
+
 
 @code{
     string pipelineName;
-
+    private string statusMessage = "None running";
     List<DataOpsPipes> pipeList;
     int pageSize = 10;
 
@@ -54,9 +58,18 @@
                 });
             }
 
-            await ops.ProcessPipeline(parms);
+            var result = await ops.ProcessPipelineWithStatus(parms);
+            for (int i = 0; i < 20; i++)
+            {
+                DataOpsStatus status = await ops.GetStatus(result.statusQueryGetUri);
+                Console.WriteLine(status.runtimeStatus);
+                statusMessage = status.runtimeStatus;
+                StateHasChanged();
+                if (status.runtimeStatus == "Completed") break;
+                await Task.Delay(10000);
+            }
+
             Console.WriteLine("Finished dataops");
-            //await ops.ProcessPipeline(name);
         }
         catch (Exception ex)
         {
