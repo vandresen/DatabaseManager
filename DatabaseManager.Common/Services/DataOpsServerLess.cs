@@ -23,9 +23,7 @@ namespace DatabaseManager.Common.Services
 
         public async Task<List<DataOpsPipes>> GetPipelines()
         {
-            //string baseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
             string url = baseUrl.BuildFunctionUrl("GetDataOpsList", $"", apiKey);
-            //string url = baseUrl + "GetDataOpsList";
             Console.WriteLine($"Url = {url}");
             var response = await httpService.Get<List<DataOpsPipes>>(url);
             if (!response.Success)
@@ -37,8 +35,6 @@ namespace DatabaseManager.Common.Services
 
         public async Task<List<PipeLine>> GetPipeline(string name)
         {
-            //string baseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
-            //string url = baseUrl + "GetDataOpsPipe" + $"?name={name}";
             string url = baseUrl.BuildFunctionUrl("GetDataOpsPipe", $"name={name}", apiKey);
             Console.WriteLine(url);
             var response = await httpService.Get<List<PipeLine>>(url);
@@ -51,8 +47,6 @@ namespace DatabaseManager.Common.Services
 
         public async Task CreatePipeline(DataOpsPipes pipe)
         {
-            //string baseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
-            //string url = baseUrl + "SavePipeline";
             string url = baseUrl.BuildFunctionUrl("SavePipeline", $"", apiKey);
             Console.WriteLine($"Url = {url}");
             var response = await httpService.Post(url, pipe);
@@ -64,8 +58,6 @@ namespace DatabaseManager.Common.Services
 
         public async Task ProcessPipeline(List<DataOpParameters> parms)
         {
-            //string baseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
-            //string url = baseUrl + "ManageDataOps_HttpStart";
             string url = baseUrl.BuildFunctionUrl("ManageDataOps_HttpStart", $"", apiKey);
             Console.WriteLine($"Url = {url}");
             var response = await httpService.Post(url, parms);
@@ -77,8 +69,6 @@ namespace DatabaseManager.Common.Services
 
         public async Task DeletePipeline(string name)
         {
-            //string baseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
-            //string url = baseUrl + "DeletePipeline";
             string url = baseUrl.BuildFunctionUrl("DeletePipeline", $"name={name}", apiKey);
             Console.WriteLine($"Url = {url}");
             var response = await httpService.Delete(url);
@@ -91,8 +81,6 @@ namespace DatabaseManager.Common.Services
         public async Task SavePipeline(DataOpsPipes pipe, List<PipeLine> tubes)
         {
             string name = pipe.Name;
-            //string baseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
-            //string url = baseUrl + "SavePipelineData" + $"?name={name}";
             string url = baseUrl.BuildFunctionUrl("SavePipelineData", $"name={name}", apiKey);
             Console.WriteLine($"Url = {url}");
             var response = await httpService.Post(url, tubes);
@@ -102,14 +90,26 @@ namespace DatabaseManager.Common.Services
             }
         }
 
-        public Task<DataOpsResults> ProcessPipelineWithStatus(List<DataOpParameters> parms)
+        public async Task<DataOpsResults> ProcessPipelineWithStatus(List<DataOpParameters> parms)
         {
-            throw new NotImplementedException();
+            string url = baseUrl.BuildFunctionUrl("ManageDataOps_HttpStart", $"", apiKey);
+            Console.WriteLine($"Url = {url}");
+            var response = await httpService.Post<List<DataOpParameters>, DataOpsResults>(url, parms);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
         }
 
-        public Task<DataOpsStatus> GetStatus(string url)
+        public async Task<DataOpsStatus> GetStatus(string url)
         {
-            throw new NotImplementedException();
+            var response = await httpService.Get<DataOpsStatus>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
         }
     }
 }
