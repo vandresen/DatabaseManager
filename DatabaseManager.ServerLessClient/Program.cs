@@ -38,6 +38,7 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IDataSources, DataSourcesServerLess>();
             services.AddScoped<IDataTransfer, DataTransferServerLess>();
             services.AddScoped<IDataModelCreate, DataModelCreate>();
+            services.AddScoped<IDataIndexer, DataIndexer>();
             services.AddBlazorTable();
         }
     }

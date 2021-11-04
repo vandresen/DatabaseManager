@@ -41,8 +41,8 @@ namespace DatabaseManager.Server.Controllers
                 string storageAccount = Common.Helpers.Common.GetStorageKey(Request);
                 IndexManagement im = new IndexManagement(storageAccount);
                 string responseMessage = await im.GetTaxonomies();
-                List<CreateIndexParameters> indexParms = JsonConvert.DeserializeObject<List<CreateIndexParameters>>(responseMessage);
-                List<string> files = indexParms.Select(item => item.Taxonomy).ToList();
+                List<IndexFileList> indexParms = JsonConvert.DeserializeObject<List<IndexFileList>>(responseMessage);
+                List<string> files = indexParms.Select(item => item.Name).ToList();
                 return files;
             }
             catch (Exception)

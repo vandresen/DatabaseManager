@@ -12,7 +12,7 @@ using DatabaseManager.Shared;
 
 namespace DatabaseManager.AppFunctions
 {
-    public static class Index
+    public static class IndexOperations
     {
         [FunctionName("GetTaxonomies")]
         public static async Task<IActionResult> Taxonomies(

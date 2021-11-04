@@ -44,12 +44,12 @@ namespace DatabaseManager.Common.Helpers
         {
             string result = "";
             List<string> files = await _fileStorage.ListFiles(taxonomyShare);
-            List<CreateIndexParameters> indexParms = new List<CreateIndexParameters>();
+            List<IndexFileList> indexParms = new List<IndexFileList>();
             foreach (string file in files)
             {
-                indexParms.Add(new CreateIndexParameters()
+                indexParms.Add(new IndexFileList()
                 {
-                    Taxonomy = file
+                    Name = file
                 });
             }
             result = JsonConvert.SerializeObject(indexParms, Formatting.Indented);
