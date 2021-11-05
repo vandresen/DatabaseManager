@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Dapper;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
@@ -8,6 +9,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,6 +26,10 @@ namespace DatabaseManager.Common.Helpers
         private readonly string predictionContainer = "predictions";
         private readonly string ruleShare = "rules";
         private IMapper _mapper;
+        private string getSql = "Select Id, DataType, RuleType, RuleParameters, " +
+            "RuleKey, RuleName, RuleFunction, DataAttribute, RuleFilter, FailRule, " +
+            "PredictionOrder, KeyNumber, Active, RuleDescription, CreatedBy, ModifiedBy, " +
+            "CreatedDate, ModifiedDate from pdo_qc_rules";
 
         public RuleManagement(string azureConnectionString)
         {
@@ -47,23 +53,12 @@ namespace DatabaseManager.Common.Helpers
         {
             string result = "";
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
-            if (connector.SourceType == "DataBase")
+            using (IDbConnection cnn = new SqlConnection(connector.ConnectionString))
             {
-                string jsonConnectDef = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                connector.DataAccessDefinition = jsonConnectDef;
+                string select = getSql;
+                var rules = cnn.Query<RuleModel>(select);
+                result = JsonConvert.SerializeObject(rules, Formatting.Indented);
             }
-            else
-            {
-                Exception error = new Exception($"RuleManagement: data source must be a Database type");
-                throw error;
-            }
-            _dbConn.OpenConnection(connector);
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(connector.DataAccessDefinition);
-            DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
-            string select = ruleAccessDef.Select;
-            string query = "";
-            DataTable dt = _dbConn.GetDataTable(select, query);
-            result = JsonConvert.SerializeObject(dt, Formatting.Indented);
             return result;
         }
 
@@ -71,25 +66,8 @@ namespace DatabaseManager.Common.Helpers
         {
             string result = "";
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
-            if (connector.SourceType == "DataBase")
-            {
-                string jsonConnectDef = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                connector.DataAccessDefinition = jsonConnectDef;
-            }
-            else
-            {
-                Exception error = new Exception($"RuleManagement: data source must be a Database type");
-                throw error;
-            }
-            _dbConn.OpenConnection(connector);
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(connector.DataAccessDefinition);
-            DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
-            string select = ruleAccessDef.Select;
-            string query = $" where Id = {id}";
-            DataTable dt = _dbConn.GetDataTable(select, query);
-            string strRule = JsonConvert.SerializeObject(dt, Formatting.Indented);
-            JToken ruleToken = JArray.Parse(strRule).FirstOrDefault();
-            result = JsonConvert.SerializeObject(ruleToken);
+            RuleModel rule = SelectRule(id, connector.ConnectionString);
+            result = JsonConvert.SerializeObject(rule, Formatting.Indented);
             return result;
         }
 
@@ -145,27 +123,7 @@ namespace DatabaseManager.Common.Helpers
         public async Task SaveRule(string sourceName, RuleModel rule)
         {
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
-            if (connector.SourceType == "DataBase")
-            {
-                string jsonConnectDef = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                connector.DataAccessDefinition = jsonConnectDef;
-            }
-            else
-            {
-                Exception error = new Exception($"RuleManagement: data source must be a Database type");
-                throw error;
-            }
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(connector.DataAccessDefinition);
-            DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Rules");
-            if (rule == null)
-            {
-                Exception error = new Exception($"RuleManagement: Rule is missing");
-                throw error;
-            }
-
-            _dbConn.OpenConnection(connector);
-            InsertRule(rule, ruleAccessDef);
-            _dbConn.CloseConnection();
+            InsertRule(rule, connector.ConnectionString);
         }
 
         public async Task SavePredictionSet(string name, PredictionSet set)
@@ -191,66 +149,37 @@ namespace DatabaseManager.Common.Helpers
         public async Task UpdateRule(string name, int id, RuleModel rule)
         {
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, name);
-            if (connector.SourceType == "DataBase")
-            {
-                string jsonConnectDef = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                connector.DataAccessDefinition = jsonConnectDef;
-            }
-            else
+            if (connector.SourceType != "DataBase")
             {
                 Exception error = new Exception($"RuleManagement: data source must be a Database type");
                 throw error;
             }
-
-            _dbConn.OpenConnection(connector);
-            string select = "Select * from pdo_qc_rules ";
-            string query = $"where Id = {id}";
-            DataTable dt = _dbConn.GetDataTable(select, query);
-            if (dt.Rows.Count == 1)
-            {
-                rule.Id = id;
-                UpdateRule(rule);
-            }
-            else
+            RuleModel oldRule = SelectRule(id, connector.ConnectionString);
+            if (oldRule == null)
             {
                 Exception error = new Exception($"RuleManagement: could not find rule");
                 throw error;
             }
-
-            _dbConn.CloseConnection();
+            else
+            {
+                rule.Id = id;
+                UpdateRule(rule, connector.ConnectionString);
+            }
         }
 
         public async Task DeleteRule(string name, int id)
         {
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, name);
-            if (connector.SourceType == "DataBase")
-            {
-                string jsonConnectDef = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                connector.DataAccessDefinition = jsonConnectDef;
-            }
-            else
+            if (connector.SourceType != "DataBase")
             {
                 Exception error = new Exception($"RuleManagement: data source must be a Database type");
                 throw error;
             }
-
-            _dbConn.OpenConnection(connector);
-
-            string select = "Select * from pdo_qc_rules ";
-            string query = $"where Id = {id}";
-            DataTable dt = _dbConn.GetDataTable(select, query);
-            if (dt.Rows.Count == 1)
+            using (var cnn = new SqlConnection(connector.ConnectionString))
             {
-                string table = "pdo_qc_rules";
-                _dbConn.DBDelete(table, query);
+                string sql = "DELETE FROM pdo_qc_rules WHERE Id = @Id";
+                int recordsAffected = cnn.Execute(sql, new { Id = id });
             }
-            else
-            {
-                Exception error = new Exception($"RuleManagement: could not find rule");
-                throw error;
-            }
-
-            _dbConn.CloseConnection();
         }
 
         public async Task DeletePrediction(string name)
@@ -260,49 +189,66 @@ namespace DatabaseManager.Common.Helpers
             await _fileStorage.DeleteFile(ruleShare, ruleFile);
         }
 
-        private void UpdateRule(RuleModel rule)
+        private RuleModel SelectRule(int id, string connectionString)
         {
-            rule.ModifiedBy = _dbConn.GetUsername();
+            RuleModel rule = new RuleModel();
+            using (IDbConnection cnn = new SqlConnection(connectionString))
+            {
+                string query = $" where Id = {id}";
+                string sql = getSql + query;
+                var rules = cnn.Query<RuleModel>(sql);
+                rule = rules.FirstOrDefault();
+            }
+            return rule;
+        }
+
+        private void UpdateRule(RuleModel rule, string connectionString)
+        {
+            string userName = CommonDbUtilities.GetUsername(connectionString);
+            rule.ModifiedBy = userName;
             string json = JsonConvert.SerializeObject(rule, Formatting.Indented);
             json = Common.SetJsonDataObjectDate(json, "ModifiedDate");
-            _dbConn.UpdateDataObject(json, "Rules");
+            using (IDbConnection cnn = new SqlConnection(connectionString))
+            {
+                var p = new DynamicParameters();
+                p.Add("@json", json);
+                string sql = "dbo.spUpdateRules";
+                int recordsAffected = cnn.Execute(sql, p, commandType: CommandType.StoredProcedure);
+            }
         }
 
-        private void InsertRule(RuleModel rule, DataAccessDef ruleAccessDef)
+        private void InsertRule(RuleModel rule, string connectionString)
         {
-            string userName = _dbConn.GetUsername();
+            string userName = CommonDbUtilities.GetUsername(connectionString);
             rule.ModifiedBy = userName;
             rule.CreatedBy = userName;
-            string jsonInsert = JsonConvert.SerializeObject(rule, Formatting.Indented);
-            string json = GetRuleKey(jsonInsert, ruleAccessDef);
+            string json = GetRuleKey(rule, connectionString);
             json = Common.SetJsonDataObjectDate(json, "CreatedDate");
             json = Common.SetJsonDataObjectDate(json, "ModifiedDate");
-            _dbConn.InsertDataObject(json, "Rules");
+            using (IDbConnection cnn = new SqlConnection(connectionString))
+            {
+                var p = new DynamicParameters();
+                p.Add("@json", json);
+                string sql = "dbo.spInsertRules";
+                int recordsAffected = cnn.Execute(sql, p, commandType: CommandType.StoredProcedure);
+            }
         }
 
-        private string GetRuleKey(string jsonInput, DataAccessDef ruleAccessDef)
+        private string GetRuleKey(RuleModel rule, string connectionString)
         {
-            JObject dataObject = JObject.Parse(jsonInput);
-            string category = dataObject["RuleType"].ToString();
-            string select = ruleAccessDef.Select;
-            string query = $" where RuleType = '{category}' order by keynumber desc";
-            DataTable dt = _dbConn.GetDataTable(select, query);
-            int key = 1;
-            if (dt.Rows.Count > 0)
+            string json = "";
+            RuleModel outRule = rule;
+            using (IDbConnection cnn = new SqlConnection(connectionString))
             {
-                int.TryParse(dt.Rows[0]["KeyNumber"].ToString(), out key);
-                if (key == 0)
-                {
-                    throw new System.ArgumentException("KeyNumber is bad", "original");
-                }
-                key++;
+                string query = $" where RuleType = '{rule.RuleType}' order by keynumber desc";
+                string sql = getSql + query;
+                var rules = cnn.Query<RuleModel>(sql);
+                outRule.KeyNumber = rules.Select(s => s.KeyNumber).FirstOrDefault() + 1;
+                string strKey = outRule.KeyNumber.ToString();
+                RuleTypeDictionary rt = new RuleTypeDictionary();
+                outRule.RuleKey = rt[rule.RuleType] + strKey;
+                json = JsonConvert.SerializeObject(outRule, Formatting.Indented);
             }
-            string strKey = key.ToString();
-            dataObject["KeyNumber"] = strKey;
-            RuleTypeDictionary rt = new RuleTypeDictionary();
-            string ruleKey = rt[category];
-            dataObject["RuleKey"] = ruleKey + strKey;
-            string json = dataObject.ToString();
             return json;
         }
     }

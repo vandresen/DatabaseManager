@@ -1,7 +1,10 @@
-﻿using DatabaseManager.Common.Entities;
+﻿using Dapper;
+using DatabaseManager.Common.Entities;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
+using System.Linq;
 using System.Text;
 
 namespace DatabaseManager.Common.Helpers
@@ -53,6 +56,18 @@ namespace DatabaseManager.Common.Helpers
             }
 
             return colProps;
+        }
+
+        public static string GetUsername(string connectionString)
+        {
+            string userName = "UNKNOWN";
+            using (IDbConnection cnn = new SqlConnection(connectionString))
+            {
+                string sql = @"select stuff(suser_sname(), 1, charindex('\', suser_sname()), '') as UserName";
+                var vidar = cnn.Query(sql);
+                userName = vidar.Select(s => s.UserName).FirstOrDefault();
+            }
+            return userName;
         }
     }
 }
