@@ -20,6 +20,7 @@ namespace DatabaseManager.Common.Helpers
     {
         private readonly IFileStorageServiceCommon _fileStorage;
         private readonly ITableStorageServiceCommon _tableStorage;
+        private readonly string _azureConnectionString;
         private readonly string container = "sources";
         private List<DataAccessDef> _accessDefs;
         DataAccessDef _indexAccessDef;
@@ -32,6 +33,7 @@ namespace DatabaseManager.Common.Helpers
 
         public Predictions(string azureConnectionString)
         {
+            _azureConnectionString = azureConnectionString;
             var builder = new ConfigurationBuilder();
             IConfiguration configuration = builder.Build();
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
@@ -50,25 +52,19 @@ namespace DatabaseManager.Common.Helpers
         public async Task<List<PredictionCorrection>> GetPredictions(string source)
         {
             List<PredictionCorrection> predictionResults = new List<PredictionCorrection>();
-
             string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
             _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-
             _indexAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Rules");
-            string sql = ruleAccessDef.Select;
-            string query = " where Active = 'Y' and RuleType = 'Predictions' order by PredictionOrder";
-
             ConnectParameters connector = await GetConnector(source);
             _dbConn.OpenConnection(connector);
-
-            DataTable dt = _dbConn.GetDataTable(sql, query);
-            string jsonString = JsonConvert.SerializeObject(dt);
+            RuleManagement rules = new RuleManagement(_azureConnectionString);
+            string query = " where Active = 'Y' and RuleType = 'Predictions' order by PredictionOrder";
+            string jsonString = await rules.GetRuleByQuery(connector.SourceName, query);
             predictionResults = JsonConvert.DeserializeObject<List<PredictionCorrection>>(jsonString);
 
             foreach (PredictionCorrection predItem in predictionResults)
             {
-                sql = _indexAccessDef.Select;
+                string sql = _indexAccessDef.Select;
                 query = $" where QC_STRING like '%{predItem.RuleKey};%'";
                 DataTable ft = _dbConn.GetDataTable(sql, query);
                 predItem.NumberOfCorrections = ft.Rows.Count;
@@ -85,7 +81,9 @@ namespace DatabaseManager.Common.Helpers
             _dbConn.OpenConnection(connector);
             string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
             _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            RuleModel rule = Common.GetRule(_dbConn, id, _accessDefs);
+            RuleManagement rules = new RuleManagement(_azureConnectionString);
+            string jsonRule = await rules.GetRule(source, id);
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
             predictionResults = GetPredictedObjects(rule.RuleKey);
             _dbConn.CloseConnection();
             return predictionResults;
@@ -103,14 +101,20 @@ namespace DatabaseManager.Common.Helpers
             if (parms.DataConnector == sourceConnector) syncPredictions = true;
             else syncPredictions = false;
 
-            RuleModel rule = Common.GetRule(_dbConn, parms.PredictionId, _accessDefs);
+            RuleManagement rules = new RuleManagement(_azureConnectionString);
+            string jsonRule = await rules.GetRule(parms.DataConnector, parms.PredictionId);
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
+            string jsonFunction = await rules.GetFunctionByName(parms.DataConnector, rule.RuleFunction);
+            RuleFunctions function = JsonConvert.DeserializeObject<RuleFunctions>(jsonFunction);
+            string functionKey = "";
+            if (!string.IsNullOrEmpty(function.FunctionKey)) functionKey = "?code=" + function.FunctionKey;
+            rule.RuleFunction = function.FunctionUrl + functionKey;
 
             manageIndexTable = new ManageIndexTable(_accessDefs, connector.ConnectionString, rule.DataType, rule.FailRule);
             manageIndexTable.InitQCFlags(false);
             MakePredictions(rule, connector);
             _dbConn.CloseConnection();
             manageIndexTable.SaveQCFlags();
-
         }
 
         private List<DmsIndex> GetPredictedObjects(string ruleKey)
@@ -162,6 +166,7 @@ namespace DatabaseManager.Common.Helpers
                     if (externalQcMethod)
                     {
                         result = ProcessPrediction(qcSetup, predictionURL, rule);
+                        if (result.Status == "Server error") break;
                     }
                     else
                     {
@@ -182,6 +187,11 @@ namespace DatabaseManager.Common.Helpers
                 var jsonString = JsonConvert.SerializeObject(qcSetup);
                 var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
                 HttpResponseMessage response = Client.PostAsync(predictionURL, content).Result;
+                if (!response.IsSuccessStatusCode)
+                {
+                    result.Status = "Server error";
+                    return result;
+                }
                 using (HttpContent respContent = response.Content)
                 {
                     string tr = respContent.ReadAsStringAsync().Result;

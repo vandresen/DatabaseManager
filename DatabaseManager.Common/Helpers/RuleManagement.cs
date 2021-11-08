@@ -30,6 +30,8 @@ namespace DatabaseManager.Common.Helpers
             "RuleKey, RuleName, RuleFunction, DataAttribute, RuleFilter, FailRule, " +
             "PredictionOrder, KeyNumber, Active, RuleDescription, CreatedBy, ModifiedBy, " +
             "CreatedDate, ModifiedDate from pdo_qc_rules";
+        private string functionSql = "Select Id, FunctionName, FunctionUrl, FunctionKey, " +
+            "FunctionType from pdo_rule_functions";
 
         public RuleManagement(string azureConnectionString)
         {
@@ -68,6 +70,24 @@ namespace DatabaseManager.Common.Helpers
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
             RuleModel rule = SelectRule(id, connector.ConnectionString);
             result = JsonConvert.SerializeObject(rule, Formatting.Indented);
+            return result;
+        }
+
+        public async Task<string> GetRuleByQuery(string sourceName, string query)
+        {
+            string result = "";
+            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
+            List<RuleModel> rules = SelectRuleByQuery(query, connector.ConnectionString);
+            result = JsonConvert.SerializeObject(rules, Formatting.Indented);
+            return result;
+        }
+
+        public async Task<string> GetFunctionByName(string sourceName, string name)
+        {
+            string result = "";
+            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
+            RuleFunctions function = SelectFunctionByName(name, connector.ConnectionString);
+            result = JsonConvert.SerializeObject(function, Formatting.Indented);
             return result;
         }
 
@@ -200,6 +220,29 @@ namespace DatabaseManager.Common.Helpers
                 rule = rules.FirstOrDefault();
             }
             return rule;
+        }
+
+        private List<RuleModel> SelectRuleByQuery(string query, string connectionString)
+        {
+            List<RuleModel> rules = new List<RuleModel>();
+            using (IDbConnection cnn = new SqlConnection(connectionString))
+            {
+                string sql = getSql + query;
+                rules = cnn.Query<RuleModel>(sql).ToList();
+            }
+            return rules;
+        }
+
+        private RuleFunctions SelectFunctionByName(string functionName, string connectionString)
+        {
+            RuleFunctions function = new RuleFunctions();
+            using (IDbConnection cnn = new SqlConnection(connectionString))
+            {
+                string sql = functionSql + $" where FunctionName = '{functionName}'";
+                var functions = cnn.Query<RuleFunctions>(sql);
+                function = functions.FirstOrDefault();
+            }
+            return function;
         }
 
         private void UpdateRule(RuleModel rule, string connectionString)
