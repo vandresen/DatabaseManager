@@ -24,6 +24,7 @@ namespace DatabaseManager.Common.Helpers
         private readonly IFileStorageServiceCommon _fileStorage;
         private readonly ITableStorageServiceCommon _tableStorage;
         private readonly string container = "sources";
+        private readonly string _azureConnectionString;
         private List<DataAccessDef> _accessDefs;
         private DbUtilities _dbConn;
         private IMapper _mapper;
@@ -31,6 +32,7 @@ namespace DatabaseManager.Common.Helpers
 
         public DataQC(string azureConnectionString)
         {
+            _azureConnectionString = azureConnectionString;
             var builder = new ConfigurationBuilder();
             IConfiguration configuration = builder.Build();
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
@@ -49,30 +51,57 @@ namespace DatabaseManager.Common.Helpers
         public async Task<List<QcResult>> GetQCRules(DataQCParameters qcParms)
         {
             List<QcResult> qcResult = new List<QcResult>();
-
             string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
             _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-
             ConnectParameters connector = await GetConnector(qcParms.DataConnector);
-
             _dbConn.OpenConnection(connector);
-
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Rules");
             DataAccessDef indexAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            string sql = ruleAccessDef.Select;
+            RuleManagement rules = new RuleManagement(_azureConnectionString);
             string query = " where Active = 'Y' and RuleType != 'Predictions'";
-            DataTable dt = _dbConn.GetDataTable(sql, query);
-            string jsonString = JsonConvert.SerializeObject(dt);
+            string jsonString = await rules.GetRuleByQuery(connector.SourceName, query);
             qcResult = JsonConvert.DeserializeObject<List<QcResult>>(jsonString);
             foreach (QcResult qcItem in qcResult)
             {
-                sql = indexAccessDef.Select;
+                string sql = indexAccessDef.Select;
                 query = $" where QC_STRING like '%{qcItem.RuleKey};%'";
                 DataTable ft = _dbConn.GetDataTable(sql, query);
                 qcItem.Failures = ft.Rows.Count;
             }
             _dbConn.CloseConnection();
             return qcResult;
+        }
+
+        public async Task<string> GetQCFailures(string source, int id)
+        {
+            List<DmsIndex> qcIndex = new List<DmsIndex>();
+            ConnectParameters connector = await GetConnector(source);
+            _dbConn.OpenConnection(connector);
+            RuleManagement rules = new RuleManagement(_azureConnectionString);
+            string jsonRule = await rules.GetRule(source, id);
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
+
+            string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
+            string sql = ruleAccessDef.Select;
+            string query = $" where QC_STRING like '%{rule.RuleKey};%'";
+            DataTable idx = _dbConn.GetDataTable(sql, query);
+            foreach (DataRow idxRow in idx.Rows)
+            {
+                string dataType = idxRow["DATATYPE"].ToString();
+                string indexId = idxRow["INDEXID"].ToString();
+                string jsonData = idxRow["JSONDATAOBJECT"].ToString();
+                int intIndexId = Convert.ToInt32(indexId);
+                qcIndex.Add(new DmsIndex()
+                {
+                    Id = intIndexId,
+                    DataType = dataType,
+                    JsonData = jsonData
+                });
+            }
+            string result = JsonConvert.SerializeObject(qcIndex);
+            _dbConn.CloseConnection();
+            return result;
         }
 
         public async Task ClearQCFlags(string source)
@@ -102,9 +131,17 @@ namespace DatabaseManager.Common.Helpers
                 string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
                 _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
 
+                RuleManagement rules = new RuleManagement(_azureConnectionString);
+                string jsonRule = await rules.GetRule(qcParms.DataConnector, qcParms.RuleId);
+                RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
+                string jsonFunction = await rules.GetFunctionByName(qcParms.DataConnector, rule.RuleFunction);
+                RuleFunctions function = JsonConvert.DeserializeObject<RuleFunctions>(jsonFunction);
+                string functionKey = "";
+                if (!string.IsNullOrEmpty(function.FunctionKey)) functionKey = "?code=" + function.FunctionKey;
+                rule.RuleFunction = function.FunctionUrl + functionKey;
+
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);
-                RuleModel rule = GetRule(dbConn, qcParms.RuleId);
                 manageQCFlags = new ManageIndexTable(_accessDefs, connector.ConnectionString, rule.DataType);
                 manageQCFlags.InitQCFlags(qcParms.ClearQCFlags);
                 await QualityCheckDataType(dbConn, rule, connector);
@@ -135,29 +172,6 @@ namespace DatabaseManager.Common.Helpers
             connector = _mapper.Map<ConnectParameters>(entity);
 
             return connector;
-        }
-
-        private RuleModel GetRule(DbUtilities dbConn, int id)
-        {
-            List<RuleModel> rules = new List<RuleModel>();
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Rules");
-            string sql = ruleAccessDef.Select;
-            string query = $" where Id = {id}";
-            DataTable dt = dbConn.GetDataTable(sql, query);
-            string jsonString = JsonConvert.SerializeObject(dt);
-            rules = JsonConvert.DeserializeObject<List<RuleModel>>(jsonString);
-            RuleModel rule = rules.First();
-
-            DataAccessDef functionAccessDef = _accessDefs.First(x => x.DataType == "Functions");
-            sql = functionAccessDef.Select;
-            query = $" where FunctionName = '{rule.RuleFunction}'";
-            dt = dbConn.GetDataTable(sql, query);
-
-            string functionURL = dt.Rows[0]["FunctionUrl"].ToString();
-            string functionKey = dt.Rows[0]["FunctionKey"].ToString();
-            if (!string.IsNullOrEmpty(functionKey)) functionKey = "?code=" + functionKey;
-            rule.RuleFunction = functionURL + functionKey;
-            return rule;
         }
 
         private async Task QualityCheckDataType(DbUtilities dbConn, RuleModel rule, ConnectParameters connector)

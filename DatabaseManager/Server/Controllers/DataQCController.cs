@@ -70,27 +70,17 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}/{id}")]
         public async Task<ActionResult<string>> GetFailures(string source, int id)
         {
-            Helpers.DbUtilities dbConn = new Helpers.DbUtilities();
             string result = "[]";
             try
             {
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
-                fileStorageService.SetConnectionString(tmpConnString);
-                tableStorageService.SetConnectionString(tmpConnString);
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                dbConn.OpenConnection(connector);
-                string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-                RuleModel rule = GetRule(dbConn, id);
-                result = GetFailedObjects(dbConn, rule.RuleKey);
+                DataQC qc = new DataQC(tmpConnString);
+                result = await qc.GetQCFailures(source, id);
             }
             catch (Exception)
             {
                 return BadRequest();
             }
-       
-            dbConn.CloseConnection();
             return result;
         }
 
@@ -139,54 +129,6 @@ namespace DatabaseManager.Server.Controllers
             }
 
             return Ok($"OK");
-        }
-
-        private RuleModel GetRule(Helpers.DbUtilities dbConn, int id)
-        {
-            List<RuleModel> rules = new List<RuleModel>();
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Rules");
-            string sql = ruleAccessDef.Select;
-            string query = $" where Id = {id}";
-            DataTable dt = dbConn.GetDataTable(sql, query);
-            string jsonString = JsonConvert.SerializeObject(dt);
-            rules = JsonConvert.DeserializeObject<List<RuleModel>>(jsonString);
-            RuleModel rule = rules.First();
-
-            DataAccessDef functionAccessDef = _accessDefs.First(x => x.DataType == "Functions");
-            sql = functionAccessDef.Select;
-            query = $" where FunctionName = '{rule.RuleFunction}'";
-            dt = dbConn.GetDataTable(sql, query);
-
-            string functionURL = dt.Rows[0]["FunctionUrl"].ToString();
-            string functionKey = dt.Rows[0]["FunctionKey"].ToString();
-            if (!string.IsNullOrEmpty(functionKey)) functionKey = "?code=" + functionKey;
-            rule.RuleFunction = functionURL + functionKey;
-            return rule;
-        }
-
-        private string GetFailedObjects(Helpers.DbUtilities dbConn, string ruleKey)
-        {
-            List<DmsIndex> qcIndex = new List<DmsIndex>();
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            string sql = ruleAccessDef.Select;
-            string query = $" where QC_STRING like '%{ruleKey};%'";
-            DataTable idx = dbConn.GetDataTable(sql, query);
-            foreach (DataRow idxRow in idx.Rows)
-            {
-                string dataType = idxRow["DATATYPE"].ToString();
-                string indexId = idxRow["INDEXID"].ToString();
-                string jsonData = idxRow["JSONDATAOBJECT"].ToString();
-                int intIndexId = Convert.ToInt32(indexId);
-                qcIndex.Add(new DmsIndex()
-                {
-                    Id = intIndexId,
-                    DataType = dataType,
-                    JsonData = jsonData
-                });
-            }
-            string result = JsonConvert.SerializeObject(qcIndex);
-
-            return result;
         }
     }
 }
