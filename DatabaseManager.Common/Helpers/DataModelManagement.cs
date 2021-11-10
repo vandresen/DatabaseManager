@@ -77,11 +77,12 @@ namespace DatabaseManager.Common.Helpers
         {
             try
             {
+                RuleManagement rules = new RuleManagement(azureConnectionString);
                 List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
-                _dbConn.OpenConnection(connector);
+                //_dbConn.OpenConnection(connector);
                 string ruleString = await ReadDatabaseFile("StandardRules.json");
-                SaveRulesToDatabase(ruleString, accessDefs);
-                _dbConn.CloseConnection();
+                await rules.SaveRulesToDatabase(ruleString, connector);
+                //_dbConn.CloseConnection();
             }
             catch (Exception ex)
             {
@@ -90,80 +91,6 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        private void SaveRulesToDatabase(string jsonRule, List<DataAccessDef> accessDefs)
-        {
-            try
-            {
-                List<RuleFunctions> ruleFunctions = new List<RuleFunctions>();
-                DataAccessDef accessDef = accessDefs.First(x => x.DataType == "Functions");
-                string sql = accessDef.Select;
-                string query = "";
-                DataTable ft = _dbConn.GetDataTable(sql, query);
-
-                JArray JsonRuleArray = JArray.Parse(jsonRule);
-                foreach (JToken rule in JsonRuleArray)
-                {
-                    string function = rule["RuleFunction"].ToString();
-                    string functionType = "";
-                    if (rule["RuleType"].ToString() == "Validity") functionType = "V";
-                    if (rule["RuleType"].ToString() == "Predictions") functionType = "P";
-                    RuleFunctions ruleFunction = SaveRuleFunction(function, functionType);
-                    string functionName = ruleFunction.FunctionName;
-                    string functionQuery = $"FunctionName = '{functionName}'";
-                    DataRow[] rows = ft.Select(functionQuery);
-                    if (rows.Length == 0)
-                    {
-                        RuleFunctions result = ruleFunctions.FirstOrDefault(s => s.FunctionName == functionName);
-                        if (result == null) ruleFunctions.Add(ruleFunction);
-                    }
-
-                    rule["RuleFunction"] = ruleFunction.FunctionName;
-                    string jsonDate = DateTime.Now.ToString("yyyy-MM-dd");
-                    rule["CreatedDate"] = jsonDate;
-                    rule["ModifiedDate"] = jsonDate;
-                }
-                string jsonFunctions = JsonConvert.SerializeObject(ruleFunctions, Formatting.Indented);
-                _dbConn.InsertDataObject(jsonFunctions, "Functions");
-
-                string json = JsonRuleArray.ToString();
-                _dbConn.InsertDataObject(json, "Rules");
-            }
-            catch (Exception ex)
-            {
-                Exception error = new Exception($"Error saving rule: {ex}");
-                throw;
-            }
-        }
-
-        private RuleFunctions SaveRuleFunction(string ruleFunction, string functionType)
-        {
-            RuleFunctions rf = new RuleFunctions();
-
-            int startFunctionName = ruleFunction.IndexOf(@"/api/");
-            if (startFunctionName == -1) startFunctionName = 0;
-            else startFunctionName = startFunctionName + 5;
-
-            int endFunctionName = ruleFunction.IndexOf(@"?");
-            string functionKey = "";
-            if (endFunctionName == -1)
-            {
-                endFunctionName = ruleFunction.Length;
-            }
-            else
-            {
-                functionKey = ruleFunction.Substring((endFunctionName + 6));
-            }
-
-            int functionNameLength = endFunctionName - startFunctionName;
-            string functionname = ruleFunction.Substring(startFunctionName, functionNameLength);
-            string functionUrl = ruleFunction.Substring(0, endFunctionName);
-
-            rf.FunctionName = functionname;
-            rf.FunctionUrl = functionUrl;
-            rf.FunctionKey = functionKey;
-            rf.FunctionType = functionType;
-            return rf;
-        }
 
         private async Task CreateStoredProcedures(ConnectParameters connector)
         {

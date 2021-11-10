@@ -166,6 +166,33 @@ namespace DatabaseManager.Common.Helpers
             await _tableStorage.SaveTableRecord(predictionContainer, name, predictionEntity);
         }
 
+        public async Task SaveRulesToDatabase(string ruleString, ConnectParameters connector)
+        {
+            List<RuleFunctions> ruleFunctions = new List<RuleFunctions>();
+            string query = "";
+            List<RuleFunctions> functions = SelectFunctionByQuery(query, connector.ConnectionString);
+            List<RuleModel> rules = JsonConvert.DeserializeObject<List<RuleModel>>(ruleString);
+            foreach (var rule in rules)
+            {
+                string functionType = "";
+                if (rule.RuleType == "Validity") functionType = "V";
+                if (rule.RuleType == "Predictions") functionType = "P";
+                RuleFunctions ruleFunction = BuildFunctionData(rule.RuleFunction, functionType);
+                RuleFunctions functionIsInDB = functions.FirstOrDefault(s => s.FunctionName == ruleFunction.FunctionName);
+                if (functionIsInDB == null)
+                {
+                    RuleFunctions result = ruleFunctions.FirstOrDefault(s => s.FunctionName == ruleFunction.FunctionName);
+                    if (result == null) ruleFunctions.Add(ruleFunction);
+                }
+                rule.RuleFunction = ruleFunction.FunctionName;
+                InsertRule(rule, connector.ConnectionString);
+            }
+            foreach (var function in ruleFunctions)
+            {
+                InsertFunction(function, connector.ConnectionString);
+            }
+        }
+
         public async Task UpdateRule(string name, int id, RuleModel rule)
         {
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, name);
@@ -222,6 +249,35 @@ namespace DatabaseManager.Common.Helpers
             return rule;
         }
 
+        private RuleFunctions BuildFunctionData(string ruleFunction, string functionType)
+        {
+            RuleFunctions rf = new RuleFunctions();
+            int startFunctionName = ruleFunction.IndexOf(@"/api/");
+            if (startFunctionName == -1) startFunctionName = 0;
+            else startFunctionName = startFunctionName + 5;
+
+            int endFunctionName = ruleFunction.IndexOf(@"?");
+            string functionKey = "";
+            if (endFunctionName == -1)
+            {
+                endFunctionName = ruleFunction.Length;
+            }
+            else
+            {
+                functionKey = ruleFunction.Substring((endFunctionName + 6));
+            }
+
+            int functionNameLength = endFunctionName - startFunctionName;
+            string functionname = ruleFunction.Substring(startFunctionName, functionNameLength);
+            string functionUrl = ruleFunction.Substring(0, endFunctionName);
+
+            rf.FunctionName = functionname;
+            rf.FunctionUrl = functionUrl;
+            rf.FunctionKey = functionKey;
+            rf.FunctionType = functionType;
+            return rf;
+        }
+
         private List<RuleModel> SelectRuleByQuery(string query, string connectionString)
         {
             List<RuleModel> rules = new List<RuleModel>();
@@ -231,6 +287,17 @@ namespace DatabaseManager.Common.Helpers
                 rules = cnn.Query<RuleModel>(sql).ToList();
             }
             return rules;
+        }
+
+        private List<RuleFunctions> SelectFunctionByQuery(string query, string connectionString)
+        {
+            List<RuleFunctions> functions = new List<RuleFunctions>();
+            using (IDbConnection cnn = new SqlConnection(connectionString))
+            {
+                string sql = functionSql + query;
+                functions = cnn.Query<RuleFunctions>(sql).ToList();
+            }
+            return functions;
         }
 
         private RuleFunctions SelectFunctionByName(string functionName, string connectionString)
@@ -273,6 +340,18 @@ namespace DatabaseManager.Common.Helpers
                 var p = new DynamicParameters();
                 p.Add("@json", json);
                 string sql = "dbo.spInsertRules";
+                int recordsAffected = cnn.Execute(sql, p, commandType: CommandType.StoredProcedure);
+            }
+        }
+
+        private void InsertFunction(RuleFunctions function, string connectionString)
+        {
+            string json = JsonConvert.SerializeObject(function, Formatting.Indented);
+            using (IDbConnection cnn = new SqlConnection(connectionString))
+            {
+                var p = new DynamicParameters();
+                p.Add("@json", json);
+                string sql = "dbo.spInsertFunctions";
                 int recordsAffected = cnn.Execute(sql, p, commandType: CommandType.StoredProcedure);
             }
         }
