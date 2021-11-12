@@ -81,7 +81,7 @@ namespace DatabaseManager.AppFunctions
                     log.LogError("GetIndexItem: error, source name is missing");
                     return new BadRequestObjectResult("Error missing source name");
                 }
-                int id = Common.Helpers.Common.GetIntFromWebQuery(req);
+                int id = Common.Helpers.Common.GetIntFromWebQuery(req, "id");
                 string storageAccount = Common.Helpers.Common.GetStorageKey(req);
                 IndexManagement im = new IndexManagement(storageAccount);
                 responseMessage = await im.GetIndexItem(name, id);

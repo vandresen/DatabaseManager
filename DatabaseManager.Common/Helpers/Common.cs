@@ -286,9 +286,9 @@ namespace DatabaseManager.Common.Helpers
             return queryResult;
         }
 
-        public static int GetIntFromWebQuery(HttpRequest req)
+        public static int GetIntFromWebQuery(HttpRequest req, string queryAttribute)
         {
-            string strId = req.Query["id"];
+            string strId = req.Query[queryAttribute];
             int? tmpId = strId.GetIntFromString();
             if (tmpId == null)
             {

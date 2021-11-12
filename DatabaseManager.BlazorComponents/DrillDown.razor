@@ -1,0 +1,52 @@
+﻿@page  "/drilldown/{Id:int}"
+@inject IDataQc qc
+@*@inject IPrediction pr*@
+@*@inject IRules rules*@
+@inject SingletonService singleton
+
+<h3>@header</h3>
+
+@if (dataIndex == null)
+{
+    <text>Loading Data...</text>
+}
+else if (dataDeleted)
+{
+    <text>Data has been deleted...</text>
+}
+else
+{
+    <DisplayIndex index="dataIndex" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    public List<DmsIndex> dataIndex;
+    public RuleModel ruleModel;
+    private string header = "";
+    private bool dataDeleted = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"Rule if = {Id}");
+        //ruleModel = await rules.GetRule(singleton.TargetConnector, Id);
+        //header = ruleModel.RuleName;
+        //if (ruleModel.RuleType == "Predictions")
+        //{
+        //    Console.WriteLine("Prediction rule");
+        //    dataIndex = await pr.GetPredictedObjects(singleton.TargetConnector, Id);
+        //    if (dataIndex != null)
+        //    {
+        //        DmsIndex firstObject = dataIndex.First();
+        //        string jsonData = firstObject.JsonData;
+        //        if (string.IsNullOrEmpty(jsonData)) dataDeleted = true;
+        //    }
+        //}
+        //else
+        //{
+        //    dataIndex = await qc.GetQcFailures(singleton.TargetConnector, Id);
+        //}
+        Console.WriteLine($"Number of failures are {dataIndex.Count}");
+
+    }
+}
