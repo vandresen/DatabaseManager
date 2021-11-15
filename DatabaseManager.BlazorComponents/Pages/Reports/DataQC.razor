@@ -1,0 +1,68 @@
+﻿@page "/dataqc"
+@inject IDataQc qc
+@inject SingletonService singleton
+@inject IDisplayMessage displayMessage
+@inject NavigationManager navigationManager
+
+<h3>Data QC</h3>
+
+<Table TableItem="QcResult" Items="ResultList" PageSize="@pageSize" ColumnReorder="true">
+    @*<Column TableItem="RuleModel" Title="Action" Sortable="false">
+            <Template>
+                <a class="btn btn-success" href="/rules/edit/@singleton.TargetConnector/@context.Id">Edit</a>
+                <button class="btn btn-danger" @onclick="@(() => RuleDelete(context.Id))">Delete</button>
+            </Template>
+        </Column>*@
+    <Column TableItem="QcResult" Title="Rule Type" Field="@(x => x.RuleType)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
+    <Column TableItem="QcResult" Title="Category" Field="@(x => x.RuleName)" Sortable="true" Filterable="true"></Column>
+    <Column TableItem="QcResult" Title="Rule Name" Field="@(x => x.DataType)" Sortable="true" Filterable="true"></Column>
+    <Column TableItem="QcResult" Title="Data Objects" Field="@(x => x.Failures)" Sortable="false" Filterable="false"></Column>
+    <Column TableItem="QcResult" Title="Drilldown" Sortable="false" Filterable="false">
+        <Template>
+            @if (context.Failures > 0)
+            {
+                <button class="btn btn-info" @onclick="@(() => DrillDown(context.Id))">...</button>
+            }
+        </Template>
+</Column>
+    <Pager ShowPageNumber="true" ShowTotalCount="true" />
+</Table>
+
+
+
+@code {
+    List<QcResult> ResultList;
+    List<QcResult> qcPagination;
+
+    int totalPages;
+    int totalRecords;
+    int curPage = 1;
+    int pageSize = 10;
+
+    private string statusMessage = "Not started";
+    public int barValue = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(singleton.TargetConnector))
+        {
+            await displayMessage.DisplayErrorMessage("Please select a data connector");
+            navigationManager.NavigateTo("/");
+        }
+        try
+        {
+            ResultList = await qc.GetResults(singleton.TargetConnector);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task DrillDown(int id)
+    {
+
+        Console.WriteLine(id);
+        navigationManager.NavigateTo($"/drilldown/{id}");
+    }
+}

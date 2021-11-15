@@ -1,0 +1,142 @@
+﻿@page  "/drilldown/{Id:int}"
+@inject IDataQc qc
+@*@inject IPrediction pr*@
+@inject IRules rules
+@inject SingletonService singleton
+
+<h3>@header</h3>
+
+@if (dataIndex == null)
+{
+    <text>Loading Data...</text>
+}
+else if (dataDeleted)
+{
+    <text>Data has been deleted...</text>
+}
+else
+{
+    <br />
+    <Table TableItem="JObject" Items="data" PageSize="10" ColumnReorder="true">
+    @foreach (var head in headers)
+    {
+        @if (head.Name == "Children")
+        {
+            <Column TableItem="JObject" Title="" Sortable="false">
+                <Template>
+                    @if (context.Property("Children").Value.Value<int>() > 0)
+                    {
+                        @*<button class="btn btn-info" @onclick="@(() => DrillDown(context.ToString()))">...</button>*@
+                    }
+                </Template>
+            </Column>
+        }
+        else
+        {
+            <Column TableItem="JObject" Title="@head.Name" Field="@(x => x.Property(head.Name).Value)" Sortable="true" Filterable="@head.Filter" Type="@head.Type" />
+        }
+
+    }
+    <Pager ShowPageNumber="true" ShowTotalCount="true" />
+</Table>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    public List<DmsIndex> dataIndex; // Original data from server
+    private List<Header> headers = new List<Header>();  //Attributes used for headers after filtered for display attributes
+    private List<JObject> data = new List<JObject>();
+    public RuleModel ruleModel;
+    private string header = "";
+    private bool dataDeleted = false;
+    private string DataType = "";
+
+    Dictionary<string, string> DisplayAttributes =
+        new Dictionary<string, string>(){
+            {"WellBore", "UWI, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE,LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS,GROUND_ELEV,SPUD_DATE"},
+            {"MarkerPick", "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH"},
+            {"data", "Pig"} };
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"Rule id = {Id}");
+        ruleModel = await rules.GetRule(singleton.TargetConnector, Id);
+        header = ruleModel.RuleName;
+        dataIndex = await qc.GetResult(singleton.TargetConnector, Id);
+        if (dataIndex != null)
+        {
+            DmsIndex firstObject = dataIndex.First();
+            string jsonData = firstObject.JsonData;
+            if (string.IsNullOrEmpty(jsonData)) dataDeleted = true;
+        }
+        Console.WriteLine($"Number of failures are {dataIndex.Count}");
+
+        string json = "";
+        foreach (DmsIndex item in dataIndex)
+        {
+            json = item.JsonData;
+            if (!string.IsNullOrEmpty(json))
+            {
+                JObject token = JObject.Parse(json);
+                //token.Add(new JProperty("Children", item.NumberOfDataObjects));
+                //token.Add(new JProperty("Id", item.Id));
+                data.Add(token);
+            }
+        }
+
+        DataType = dataIndex[0].DataType;
+        Console.WriteLine($"Datatype is {DataType}");
+        headers = new List<Header>();
+        json = dataIndex[0].JsonData;
+        JObject headerToken = JObject.Parse(json);
+
+        foreach (JProperty property in headerToken.Properties())
+            {
+                bool filter = true;
+                if (data.FirstOrDefault(s => s.Property(property.Name).Value.Type == JTokenType.Null) != null) filter = false;
+
+                Type type = typeof(string);
+                var vidar = data.FirstOrDefault(s => s.Property(property.Name).Value != null);
+                var tokenType = vidar.Property(property.Name).Value.Type;
+                if (tokenType == JTokenType.Integer)
+                {
+                    type = typeof(int);
+                }
+                else if (tokenType == JTokenType.Float)
+                {
+                    type = typeof(double);
+                }
+                else if (tokenType == JTokenType.Date)
+                {
+                    type = typeof(DateTime);
+                }
+
+                bool display = true;
+                if (DisplayAttributes.ContainsKey(DataType) == true)
+                {
+                    display = false;
+                    String attributeString = DisplayAttributes[DataType];
+                    if (attributeString.Contains(property.Name)) display = true;
+                }
+
+                if (display)
+                {
+                    if (display) headers.Add(
+                        new Header()
+                        {
+                            Name = property.Name,
+                            Type = type,
+                            Filter = filter
+                        });
+                }
+
+            }
+    }
+
+    public class Header
+    {
+        public string Name { get; set; }
+        public Type Type { get; set; }
+        public bool Filter { get; set; }
+    }
+}

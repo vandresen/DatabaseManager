@@ -54,5 +54,29 @@ namespace DatabaseManager.Common.Services
         {
             throw new NotImplementedException();
         }
+
+        public async Task<List<QcResult>> GetResults(string source)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/DataQC/{source}";
+            else url = baseUrl.BuildFunctionUrl("GetResults", $"name={source}", apiKey);
+            var response = await httpService.Get<List<QcResult>>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
+        public async Task<List<DmsIndex>> GetResult(string source, int id)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/DataQC/{source}/{id}";
+            else url = baseUrl.BuildFunctionUrl("GetResult", $"name={source}&id={id}", apiKey);
+            var response = await httpService.Get<List<DmsIndex>>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
     }
 }

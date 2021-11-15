@@ -48,6 +48,64 @@ namespace DatabaseManager.Common.Helpers
             _mapper = config.CreateMapper();
         }
 
+        public async Task<List<QcResult>> GetResults(string source)
+        {
+            List<QcResult> result = new List<QcResult>();
+            string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            ConnectParameters connector = await GetConnector(source);
+            _dbConn.OpenConnection(connector);
+            DataAccessDef indexAccessDef = _accessDefs.First(x => x.DataType == "Index");
+            RuleManagement rules = new RuleManagement(_azureConnectionString);
+            string query = " where Active = 'Y'";
+            string jsonString = await rules.GetRuleByQuery(connector.SourceName, query);
+            result = JsonConvert.DeserializeObject<List<QcResult>>(jsonString);
+            foreach (QcResult qcItem in result)
+            {
+                string sql = indexAccessDef.Select;
+                query = $" where QC_STRING like '%{qcItem.RuleKey};%'";
+                DataTable ft = _dbConn.GetDataTable(sql, query);
+                qcItem.Failures = ft.Rows.Count;
+            }
+            _dbConn.CloseConnection();
+            return result;
+        }
+
+        public async Task<List<DmsIndex>> GetResult(string source, int id)
+        {
+            List<DmsIndex> result = new List<DmsIndex>();
+            string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            ConnectParameters connector = await GetConnector(source);
+            _dbConn.OpenConnection(connector);
+            DataAccessDef indexAccessDef = _accessDefs.First(x => x.DataType == "Index");
+
+            RuleManagement rules = new RuleManagement(_azureConnectionString);
+            string jsonRule = await rules.GetRule(source, id);
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
+
+            string sql = indexAccessDef.Select;
+            string query = $" where QC_STRING like '%{rule.RuleKey};%'";
+            DataTable idx = _dbConn.GetDataTable(sql, query);
+
+            foreach (DataRow idxRow in idx.Rows)
+            {
+                string dataType = idxRow["DATATYPE"].ToString();
+                string indexId = idxRow["INDEXID"].ToString();
+                string jsonData = idxRow["JSONDATAOBJECT"].ToString();
+                int intIndexId = Convert.ToInt32(indexId);
+                result.Add(new DmsIndex()
+                {
+                    Id = intIndexId,
+                    DataType = dataType,
+                    JsonData = jsonData
+                });
+            }
+
+            _dbConn.CloseConnection();
+            return result;
+        }
+
         public async Task<List<QcResult>> GetQCRules(DataQCParameters qcParms)
         {
             List<QcResult> qcResult = new List<QcResult>();
