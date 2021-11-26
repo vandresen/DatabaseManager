@@ -201,5 +201,30 @@ namespace DatabaseManager.Common.Helpers
 
             return result;
         }
+
+        public static PredictionResult PredictLogDepthAttributes(QcRuleSetup qcSetup, DbUtilities dbConn)
+        {
+            PredictionResult result = new PredictionResult
+            {
+                Status = "Failed"
+            };
+            JObject dataObject = JObject.Parse(qcSetup.DataObject);
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+            string jsonLog = RuleMethodUtilities.GetLogCurveDepths(dbConn, qcSetup.DataObject);
+            if (!string.IsNullOrEmpty(jsonLog))
+            {
+                JObject logObject = JObject.Parse(jsonLog);
+                string attribute = rule.DataAttribute;
+                dataObject[attribute] = logObject[attribute];
+                string remark = dataObject["REMARK"] + $";{attribute} was calculated from curve array;";
+                dataObject["REMARK"] = remark;
+                result.DataObject = dataObject.ToString();
+                result.DataType = rule.DataType;
+                result.SaveType = "Update";
+                result.IndexId = qcSetup.IndexId;
+                result.Status = "Passed";
+            }
+            return result;
+        }
     }
 }

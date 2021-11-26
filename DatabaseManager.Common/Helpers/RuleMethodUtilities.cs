@@ -249,5 +249,37 @@ namespace DatabaseManager.Common.Helpers
 
             return smoothValue;
         }
+
+        public static string GetLogCurveDepths(DbUtilities dbConn, string dataObject)
+        {
+            JObject logObject = JObject.Parse(dataObject);
+            string uwi = logObject["UWI"].ToString();
+            string curveName = logObject["CURVE_ID"].ToString();
+            string select = "select UWI, INDEX_VALUE, MEASURED_VALUE from WELL_LOG_CURVE_VALUE ";
+            string query = $"where CURVE_ID = '{curveName}' and UWI = '{uwi}' order by INDEX_VALUE";
+            DataTable lc = dbConn.GetDataTable(select, query);
+            //if (lc.Rows.Count == 0) log.Warning("No log curve values are available");
+
+            if (lc.Rows.Count > 0)
+            {
+                double[] measuredValue = new double[lc.Rows.Count];
+                double[] indexValue = new double[lc.Rows.Count]; ;
+                for (int j = 0; j < lc.Rows.Count; j++)
+                {
+                    measuredValue[j] = Convert.ToDouble(lc.Rows[j]["MEASURED_VALUE"]);
+                    indexValue[j] = Convert.ToDouble(lc.Rows[j]["INDEX_VALUE"]);
+                }
+
+                double topDepth = indexValue.Min();
+                logObject["MIN_INDEX"] = topDepth;
+                double bottomDepth = indexValue.Max();
+                logObject["MAX_INDEX"] = bottomDepth;
+                return logObject.ToString();
+            }
+            else
+            {
+                return "";
+            }
+        }
     }
 }
