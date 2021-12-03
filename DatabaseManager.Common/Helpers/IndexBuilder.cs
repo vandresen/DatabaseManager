@@ -1,4 +1,5 @@
-﻿using DatabaseManager.Common.Entities;
+﻿using Dapper;
+using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Extensions;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
@@ -7,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -23,6 +25,7 @@ namespace DatabaseManager.Common.Helpers
         private Location _location;
         private IndexFileData _parentItem;
         private readonly IDataAccess sourceAccess;
+        private string _connectionString;
 
         public JArray JsonIndexArray { get; set; }
 
@@ -39,6 +42,7 @@ namespace DatabaseManager.Common.Helpers
 
         public void InitializeIndex(ConnectParameters connectionString, ConnectParameters source, string jsonTaxonomy)
         {
+            _connectionString = connectionString.ConnectionString;
             myIndex = new IndexDataCollection();
             dbConn.OpenConnection(connectionString);
             sourceAccess.OpenConnection(source, connectionString);

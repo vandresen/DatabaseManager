@@ -33,6 +33,10 @@ namespace DatabaseManager.Common.Helpers
         private string functionSql = "Select Id, FunctionName, FunctionUrl, FunctionKey, " +
             "FunctionType from pdo_rule_functions";
 
+        public RuleManagement()
+        {
+        }
+
         public RuleManagement(string azureConnectionString)
         {
             this.azureConnectionString = azureConnectionString;
@@ -49,6 +53,30 @@ namespace DatabaseManager.Common.Helpers
                 cfg.CreateMap<ConnectParameters, SourceEntity>().ForMember(dest => dest.RowKey, opt => opt.MapFrom(src => src.SourceName));
             });
             _mapper = config.CreateMapper();
+        }
+
+        public DataAccessDef GetDataAccessDefinition(string dataType)
+        {
+            DataAccessDef dataAccessDef = new DataAccessDef();
+
+            if (dataType == "Rules")
+            {
+                dataAccessDef.DataType = "Rules";
+                dataAccessDef.Select = getSql;
+                dataAccessDef.Keys = "Id";
+            }
+            else if (dataType == "Functions")
+            {
+                dataAccessDef.DataType = "Functions";
+                dataAccessDef.Select = functionSql;
+                dataAccessDef.Keys = "Id";
+            }
+            else
+            {
+                throw new InvalidOperationException("Not a valif data type");
+            }
+
+            return dataAccessDef;
         }
 
         public async Task<string> GetRules(string sourceName)
@@ -79,6 +107,33 @@ namespace DatabaseManager.Common.Helpers
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
             List<RuleModel> rules = SelectRuleByQuery(query, connector.ConnectionString);
             result = JsonConvert.SerializeObject(rules, Formatting.Indented);
+            return result;
+        }
+
+        public async Task<string> GetFunctions(string sourceName)
+        {
+            string result = "";
+            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
+            using (IDbConnection cnn = new SqlConnection(connector.ConnectionString))
+            {
+                string select = functionSql;
+                var functions = cnn.Query<RuleFunctions>(select);
+                result = JsonConvert.SerializeObject(functions, Formatting.Indented);
+            }
+            return result;
+        }
+
+        public async Task<string> GetFunction(string sourceName, int id)
+        {
+            string result = "";
+            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
+            string query = $" where Id = {id}";
+            List<RuleFunctions> functions = SelectFunctionByQuery(query, connector.ConnectionString);
+            RuleFunctions function = functions.FirstOrDefault();
+            if (function != null)
+            {
+                result = JsonConvert.SerializeObject(function, Formatting.Indented);
+            }
             return result;
         }
 
@@ -144,6 +199,12 @@ namespace DatabaseManager.Common.Helpers
         {
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
             InsertRule(rule, connector.ConnectionString);
+        }
+
+        public async Task SaveFunction(string sourceName, RuleFunctions function)
+        {
+            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
+            InsertFunction(function, connector.ConnectionString);
         }
 
         public async Task SavePredictionSet(string name, PredictionSet set)
@@ -214,6 +275,34 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
+        public async Task UpdateFunction(string sourceName, int id, RuleFunctions function)
+        {
+            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
+            if (connector.SourceType != "DataBase")
+            {
+                Exception error = new Exception($"RuleManagement: data source must be a Database type");
+                throw error;
+            }
+            string query = $" where Id = {id}";
+            List<RuleFunctions> oldFunction = SelectFunctionByQuery(query, connector.ConnectionString);
+            if (oldFunction.Count == 0)
+            {
+                Exception error = new Exception($"RuleManagement: could not find function");
+                throw error;
+            }
+            else
+            {
+                string json = JsonConvert.SerializeObject(function, Formatting.Indented);
+                using (IDbConnection cnn = new SqlConnection(connector.ConnectionString))
+                {
+                    var p = new DynamicParameters();
+                    p.Add("@json", json);
+                    string sql = "dbo.spUpdateFunctions";
+                    int recordsAffected = cnn.Execute(sql, p, commandType: CommandType.StoredProcedure);
+                }
+            }
+        }
+
         public async Task DeleteRule(string name, int id)
         {
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, name);
@@ -225,6 +314,21 @@ namespace DatabaseManager.Common.Helpers
             using (var cnn = new SqlConnection(connector.ConnectionString))
             {
                 string sql = "DELETE FROM pdo_qc_rules WHERE Id = @Id";
+                int recordsAffected = cnn.Execute(sql, new { Id = id });
+            }
+        }
+
+        public async Task DeleteFunction(string source, int id)
+        {
+            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, source);
+            if (connector.SourceType != "DataBase")
+            {
+                Exception error = new Exception($"RuleManagement: data source must be a Database type");
+                throw error;
+            }
+            using (var cnn = new SqlConnection(connector.ConnectionString))
+            {
+                string sql = "DELETE FROM pdo_rule_functions WHERE Id = @Id";
                 int recordsAffected = cnn.Execute(sql, new { Id = id });
             }
         }

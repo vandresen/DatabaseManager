@@ -177,158 +177,178 @@ namespace DatabaseManager.Common.Helpers
 
         private async Task CreateInsertStoredProcedure(DbUtilities dbConn)
         {
+            List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
+            var dataTypes = accessDefs.Select(s => s.DataType).Where(s => s != "Index").ToList();
+            foreach(string dataType in dataTypes)
+            {
+                DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
+                BuildInsertProcedure(dbConn, dataType, accessDef);
+            }
+            RuleManagement rm = new RuleManagement();
+            string type = "Rules";
+            DataAccessDef ruleDef = rm.GetDataAccessDefinition(type);
+            BuildInsertProcedure(dbConn, type, ruleDef);
+            type = "Functions";
+            DataAccessDef functionDef = rm.GetDataAccessDefinition(type);
+            BuildInsertProcedure(dbConn, type, functionDef);
+        }
+
+        private void BuildInsertProcedure(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
+        {
             string comma;
             string attributes;
+            string sqlCommand = $"DROP PROCEDURE IF EXISTS spInsert{dataType} ";
+            dbConn.SQLExecute(sqlCommand);
 
-            List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
-            DbDataTypes dbDataTypes = new DbDataTypes();
-            for (int j = 0; j < dbDataTypes.DataTypes.Length; j++)
+            sqlCommand = "";
+            string sql = accessDef.Select;
+            string[] keys = accessDef.Keys.Split(',');
+
+            string table = Common.GetTable(sql);
+            ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(dbConn, sql);
+            string[] tableAttributes = Common.GetAttributes(sql);
+            tableAttributes = tableAttributes.Where(w => w != "Id").ToArray();
+
+            sqlCommand = sqlCommand + $"CREATE PROCEDURE spInsert{dataType} ";
+            sqlCommand = sqlCommand + " @json NVARCHAR(max) ";
+            sqlCommand = sqlCommand + " AS ";
+            sqlCommand = sqlCommand + " BEGIN ";
+
+            sqlCommand = sqlCommand + $" INSERT INTO {table }";
+            attributes = " (";
+            comma = "";
+            foreach (var word in tableAttributes)
             {
-                string dataType = dbDataTypes.DataTypes[j];
-                string sqlCommand = $"DROP PROCEDURE IF EXISTS spInsert{dataType} ";
-                dbConn.SQLExecute(sqlCommand);
-                sqlCommand = "";
-
-                DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
-                string sql = accessDef.Select;
-                string[] keys = accessDef.Keys.Split(',');
-
-                string table = Common.GetTable(sql);
-                ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(dbConn, sql);
-                string[] tableAttributes = Common.GetAttributes(sql);
-                tableAttributes = tableAttributes.Where(w => w != "Id").ToArray();
-
-                sqlCommand = sqlCommand + $"CREATE PROCEDURE spInsert{dataType} ";
-                sqlCommand = sqlCommand + " @json NVARCHAR(max) ";
-                sqlCommand = sqlCommand + " AS ";
-                sqlCommand = sqlCommand + " BEGIN ";
-
-                sqlCommand = sqlCommand + $" INSERT INTO {table }";
-                attributes = " (";
-                comma = "";
-                foreach (var word in tableAttributes)
-                {
-                    string attribute = word.Trim();
-                    attributes = attributes + comma + "[" + attribute + "]";
-                    comma = ",";
-                }
-                attributes = attributes + ")";
-                sqlCommand = sqlCommand + attributes;
-
-                sqlCommand = sqlCommand + $"  SELECT";
-                comma = "    ";
-                attributes = "";
-                foreach (var word in tableAttributes)
-                {
-                    string attribute = word.Trim();
-                    attributes = attributes + comma + attribute;
-                    comma = ",";
-                }
-                sqlCommand = sqlCommand + attributes;
-                sqlCommand = sqlCommand + $" FROM OPENJSON(@json)";
-
-                comma = "";
-                attributes = "    WITH (";
-                foreach (var word in tableAttributes)
-                {
-                    string attribute = word.Trim();
-                    string dataProperty = attributeProperties[attribute];
-                    attributes = attributes + comma + attribute + " " + dataProperty +
-                        " '$." + attribute + "'";
-                    comma = ",";
-                }
-                sqlCommand = sqlCommand + attributes;
-                sqlCommand = sqlCommand + ") AS jsonValues ";
-
-                sqlCommand = sqlCommand + " END";
-                dbConn.SQLExecute(sqlCommand);
+                string attribute = word.Trim();
+                attributes = attributes + comma + "[" + attribute + "]";
+                comma = ",";
             }
+            attributes = attributes + ")";
+            sqlCommand = sqlCommand + attributes;
+
+            sqlCommand = sqlCommand + $"  SELECT";
+            comma = "    ";
+            attributes = "";
+            foreach (var word in tableAttributes)
+            {
+                string attribute = word.Trim();
+                attributes = attributes + comma + attribute;
+                comma = ",";
+            }
+            sqlCommand = sqlCommand + attributes;
+            sqlCommand = sqlCommand + $" FROM OPENJSON(@json)";
+
+            comma = "";
+            attributes = "    WITH (";
+            foreach (var word in tableAttributes)
+            {
+                string attribute = word.Trim();
+                string dataProperty = attributeProperties[attribute];
+                attributes = attributes + comma + attribute + " " + dataProperty +
+                    " '$." + attribute + "'";
+                comma = ",";
+            }
+            sqlCommand = sqlCommand + attributes;
+            sqlCommand = sqlCommand + ") AS jsonValues ";
+
+            sqlCommand = sqlCommand + " END";
+            dbConn.SQLExecute(sqlCommand);
         }
 
         private async Task CreateUpdateStoredProcedure(DbUtilities dbConn)
         {
-            string comma;
-            string attributes;
-
             List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
-            DbDataTypes dbDataTypes = new DbDataTypes();
-            for (int j = 0; j < dbDataTypes.DataTypes.Length; j++)
+            var dataTypes = accessDefs.Select(s => s.DataType).Where(s => s != "Index").ToList();
+            foreach (string dataType in dataTypes)
             {
-                string dataType = dbDataTypes.DataTypes[j];
-                string sqlCommand = $"DROP PROCEDURE IF EXISTS spUpdate{dataType} ";
-                dbConn.SQLExecute(sqlCommand);
-                sqlCommand = "";
-
                 DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
-                string sql = accessDef.Select;
-                string[] keys = accessDef.Keys.Split(',');
-
-                string table = Common.GetTable(sql);
-                ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(dbConn, sql);
-                string[] tableAttributes = Helpers.Common.GetAttributes(sql);
-
-                sqlCommand = sqlCommand + $"CREATE PROCEDURE spUpdate{dataType} ";
-                sqlCommand = sqlCommand + "@json NVARCHAR(max) ";
-                sqlCommand = sqlCommand + "AS ";
-                sqlCommand = sqlCommand + "BEGIN ";
-
-                sqlCommand = sqlCommand + $"SELECT ";
-                comma = "    ";
-                attributes = "";
-                foreach (var word in tableAttributes)
-                {
-                    string attribute = word.Trim();
-                    attributes = attributes + comma + attribute;
-                    comma = ",";
-                }
-                sqlCommand = sqlCommand + attributes;
-
-                sqlCommand = sqlCommand + " INTO #TempJson ";
-                sqlCommand = sqlCommand + $" FROM OPENJSON(@json) ";
-                comma = "";
-                attributes = "    WITH (";
-                foreach (var word in tableAttributes)
-                {
-                    string attribute = word.Trim();
-                    string dataProperty = attributeProperties[attribute];
-                    attributes = attributes + comma + attribute + " " + dataProperty +
-                        " '$." + attribute + "'";
-                    comma = ",";
-                }
-                sqlCommand = sqlCommand + attributes;
-                sqlCommand = sqlCommand + ") AS jsonValues ";
-
-                sqlCommand = sqlCommand + $" UPDATE A ";
-                sqlCommand = sqlCommand + $" SET ";
-                comma = "    ";
-                attributes = "";
-                foreach (var word in tableAttributes)
-                {
-                    if (word != "Id")
-                    {
-                        string attribute = word.Trim();
-                        attributes = attributes + comma + "A." + attribute + " = " + "B." + attribute;
-                        comma = ",";
-                    }
-                }
-                sqlCommand = sqlCommand + attributes;
-                sqlCommand = sqlCommand + $" FROM ";
-                sqlCommand = sqlCommand + $" {table} AS A ";
-                sqlCommand = sqlCommand + " INNER JOIN #TempJson AS B ON ";
-                comma = "    ";
-                attributes = "";
-                foreach (string key in keys)
-                {
-                    attributes = attributes + comma + "A." + key.Trim() + " = " + "B." + key.Trim();
-                    comma = " AND ";
-                }
-                sqlCommand = sqlCommand + attributes;
-                sqlCommand = sqlCommand + " END";
-
-                dbConn.SQLExecute(sqlCommand);
+                BuildUpdateProcedure(dbConn, dataType, accessDef);
             }
+            RuleManagement rm = new RuleManagement();
+            string type = "Rules";
+            DataAccessDef ruleDef = rm.GetDataAccessDefinition(type);
+            BuildUpdateProcedure(dbConn, type, ruleDef);
+            type = "Functions";
+            DataAccessDef functionDef = rm.GetDataAccessDefinition(type);
+            BuildUpdateProcedure(dbConn, type, functionDef);
         }
 
+        private void BuildUpdateProcedure(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
+        {
+            string comma;
+            string attributes;
+            string sqlCommand = $"DROP PROCEDURE IF EXISTS spUpdate{dataType} ";
+            dbConn.SQLExecute(sqlCommand);
+
+            sqlCommand = "";
+            string sql = accessDef.Select;
+            string[] keys = accessDef.Keys.Split(',');
+
+            string table = Common.GetTable(sql);
+            ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(dbConn, sql);
+            string[] tableAttributes = Helpers.Common.GetAttributes(sql);
+
+            sqlCommand = sqlCommand + $"CREATE PROCEDURE spUpdate{dataType} ";
+            sqlCommand = sqlCommand + "@json NVARCHAR(max) ";
+            sqlCommand = sqlCommand + "AS ";
+            sqlCommand = sqlCommand + "BEGIN ";
+
+            sqlCommand = sqlCommand + $"SELECT ";
+            comma = "    ";
+            attributes = "";
+            foreach (var word in tableAttributes)
+            {
+                string attribute = word.Trim();
+                attributes = attributes + comma + attribute;
+                comma = ",";
+            }
+            sqlCommand = sqlCommand + attributes;
+
+            sqlCommand = sqlCommand + " INTO #TempJson ";
+            sqlCommand = sqlCommand + $" FROM OPENJSON(@json) ";
+            comma = "";
+            attributes = "    WITH (";
+            foreach (var word in tableAttributes)
+            {
+                string attribute = word.Trim();
+                string dataProperty = attributeProperties[attribute];
+                attributes = attributes + comma + attribute + " " + dataProperty +
+                    " '$." + attribute + "'";
+                comma = ",";
+            }
+            sqlCommand = sqlCommand + attributes;
+            sqlCommand = sqlCommand + ") AS jsonValues ";
+
+            sqlCommand = sqlCommand + $" UPDATE A ";
+            sqlCommand = sqlCommand + $" SET ";
+            comma = "    ";
+            attributes = "";
+            foreach (var word in tableAttributes)
+            {
+                if (word != "Id")
+                {
+                    string attribute = word.Trim();
+                    attributes = attributes + comma + "A." + attribute + " = " + "B." + attribute;
+                    comma = ",";
+                }
+            }
+            sqlCommand = sqlCommand + attributes;
+            sqlCommand = sqlCommand + $" FROM ";
+            sqlCommand = sqlCommand + $" {table} AS A ";
+            sqlCommand = sqlCommand + " INNER JOIN #TempJson AS B ON ";
+            comma = "    ";
+            attributes = "";
+            foreach (string key in keys)
+            {
+                attributes = attributes + comma + "A." + key.Trim() + " = " + "B." + key.Trim();
+                comma = " AND ";
+            }
+            sqlCommand = sqlCommand + attributes;
+            sqlCommand = sqlCommand + " END";
+
+            dbConn.SQLExecute(sqlCommand);
+        }
+        
         private async Task CreatePpdmModifications(ConnectParameters connector)
         {
             try

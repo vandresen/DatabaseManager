@@ -13,6 +13,7 @@ using System.Data;
 using Newtonsoft.Json;
 using DatabaseManager.Server.Services;
 using AutoMapper;
+using DatabaseManager.Common.Helpers;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -43,30 +44,17 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}")]
         public async Task<ActionResult<string>> Get(string source)
         {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            tableStorageService.SetConnectionString(tmpConnString);
-            fileStorageService.SetConnectionString(tmpConnString);
-            string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
-            SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-            ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
             string result = "";
-            DbUtilities dbConn = new DbUtilities();
             try
             {
-                dbConn.OpenConnection(connector);
-                string select = functionAccessDef.Select;
-                string query = "";
-                DataTable dt = dbConn.GetDataTable(select, query);
-                result = JsonConvert.SerializeObject(dt, Formatting.Indented);
+                GetStorageAccount();
+                RuleManagement rm = new RuleManagement(connectionString);
+                result = await rm.GetFunctions(source);
             }
             catch (Exception)
             {
                 return BadRequest();
             }
-
-            dbConn.CloseConnection();
             return result;
         }
 
@@ -74,31 +62,16 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> GetFunction(string source, int id)
         {
             string result = "";
-            DbUtilities dbConn = new DbUtilities();
             try
             {
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                tableStorageService.SetConnectionString(tmpConnString);
-                fileStorageService.SetConnectionString(tmpConnString);
-                string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-                DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                dbConn.OpenConnection(connector);
-                string select = functionAccessDef.Select;
-                string query = $" where Id = {id}";
-                DataTable dt = dbConn.GetDataTable(select, query);
-                result = JsonConvert.SerializeObject(dt, Formatting.Indented);
-                result = result.Replace("[", "");
-                result = result.Replace("]", "");
+                GetStorageAccount();
+                RuleManagement rm = new RuleManagement(connectionString);
+                result = await rm.GetFunction(source, id);
             }
             catch (Exception)
             {
                 return BadRequest();
             }
-
-            dbConn.CloseConnection();
             return result;
         }
 
@@ -106,33 +79,16 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> SaveFunction(string source, RuleFunctions function)
         {
             if (function == null) return BadRequest();
-            DbUtilities dbConn = new DbUtilities();
             try
             {
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                tableStorageService.SetConnectionString(tmpConnString);
-                fileStorageService.SetConnectionString(tmpConnString);
-                string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-                DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                dbConn.OpenConnection(connector);
-                string select = functionAccessDef.Select;
-                string query = $" where FunctionName = '{function.FunctionName}'";
-                DataTable dt = dbConn.GetDataTable(select, query);
-                if (dt.Rows.Count > 0)
-                {
-                    return BadRequest();
-                }
-                string jsonInsert = JsonConvert.SerializeObject(function, Formatting.Indented);
-                dbConn.InsertDataObject(jsonInsert, "Functions");
+                GetStorageAccount();
+                RuleManagement rm = new RuleManagement(connectionString);
+                await rm.SaveFunction(source, function);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return BadRequest();
             }
-            dbConn.CloseConnection();
             return Ok($"OK");
         }
 
@@ -140,75 +96,44 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> UpdateFunction(string source, int id, RuleFunctions function)
         {
             if (function == null) return BadRequest();
-            DbUtilities dbConn = new DbUtilities();
             try
             {
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                tableStorageService.SetConnectionString(tmpConnString);
-                fileStorageService.SetConnectionString(tmpConnString);
-                string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-                DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                dbConn.OpenConnection(connector);
-                string select = functionAccessDef.Select;
-                string query = $" where Id = {id}";
-                DataTable dt = dbConn.GetDataTable(select, query);
-                if (dt.Rows.Count == 1)
-                {
-                    function.Id = id;
-                    string jsonInsert = JsonConvert.SerializeObject(function, Formatting.Indented);
-                    dbConn.UpdateDataObject(jsonInsert, "Functions");
-                }
-                else
-                {
-                    return BadRequest();
-                }
-
+                GetStorageAccount();
+                RuleManagement rm = new RuleManagement(connectionString);
+                await rm.UpdateFunction(source, id, function);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return BadRequest();
             }
-            dbConn.CloseConnection();
             return Ok($"OK");
         }
 
         [HttpDelete("{source}/{id}")]
         public async Task<ActionResult> Delete(string source, int id)
         {
-            DbUtilities dbConn = new DbUtilities();
             try
             {
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                tableStorageService.SetConnectionString(tmpConnString);
-                fileStorageService.SetConnectionString(tmpConnString);
-                string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-                DataAccessDef functionAccessDef = accessDefs.First(x => x.DataType == "Functions");
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, source);
-                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                dbConn.OpenConnection(connector);
-                string select = functionAccessDef.Select;
-                string query = $" where Id = {id}";
-                DataTable dt = dbConn.GetDataTable(select, query);
-                if (dt.Rows.Count == 1)
-                {
-                    string table = "pdo_rule_functions";
-                    dbConn.DBDelete(table, query);
-                }
-                else
-                {
-                    return BadRequest();
-                }
+                GetStorageAccount();
+                RuleManagement rm = new RuleManagement(connectionString);
+                await rm.DeleteFunction(source, id);
             }
             catch (Exception)
             {
                 return BadRequest();
             }
-
             return NoContent();
+        }
+
+        private void GetStorageAccount()
+        {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                Exception error = new Exception($"Azure storage key string is not set");
+                throw error;
+            }
         }
     }
 }

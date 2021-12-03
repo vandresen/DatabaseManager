@@ -13,8 +13,6 @@ namespace DatabaseManager.Common.Entities
         {
             _datatypes = new string[]
             {
-                "Rules",
-                "Functions",
                 "WellBore",
                 "MarkerPick",
                 "WellTop",
