@@ -62,6 +62,19 @@ namespace DatabaseManager.AppFunctions
                 {
                     log.LogInformation($"Starting data transfer");
                     List<string> files = await context.CallActivityAsync<List<string>>("ManageDataOps_InitDataTransfer", pipe);
+
+                    TransferParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<TransferParameters>();
+                    if (parms.SourceType == "DataBase")
+                    {
+                        foreach (string file in files)
+                        {
+                            JObject pipeParm = JObject.Parse(pipe.JsonParameters);
+                            pipeParm["Table"] = file;
+                            pipe.JsonParameters = pipeParm.ToString();
+                            string stat = await context.CallActivityAsync<string>("ManageDataOps_DeleteDataTransfer", pipe);
+                        }
+                    }
+
                     foreach (string file in files)
                     {
                         JObject pipeParm = JObject.Parse(pipe.JsonParameters);
@@ -169,6 +182,17 @@ namespace DatabaseManager.AppFunctions
             return files;
         }
 
+        [FunctionName("ManageDataOps_DeleteDataTransfer")]
+        public static async Task<string> DeleteDataTransfer([ActivityTrigger] DataOpParameters pipe, ILogger log)
+        {
+            log.LogInformation($"DeleteDataTransfer: Starting deleting");
+            DataTransfer dt = new DataTransfer(pipe.StorageAccount);
+            TransferParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<TransferParameters>();
+            await dt.DeleteTable(parms.TargetName, parms.Table);
+            log.LogInformation($"DeleteDataTransfer: Complete deleting {parms.Table}");
+            return $"DeleteDataTransfer Complete";
+        }
+
         [FunctionName("ManageDataOps_DataTransfer")]
         public static async Task<string> DataTransfer([ActivityTrigger] DataOpParameters pipe, ILogger log)
         {
@@ -176,7 +200,7 @@ namespace DatabaseManager.AppFunctions
             DataTransfer dt = new DataTransfer(pipe.StorageAccount);
             TransferParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<TransferParameters>();
             await dt.CopyFiles(parms);
-            log.LogInformation($"DataTransfer: Complete");
+            log.LogInformation($"DataTransfer: Complete copying {parms.Table}");
             return $"OK";
         }
 

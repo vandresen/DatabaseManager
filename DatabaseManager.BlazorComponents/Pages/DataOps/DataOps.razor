@@ -104,7 +104,8 @@
                     JsonParameters = pipe.Parameters.ToString()
                 });
             }
-
+            string parmString = JsonConvert.SerializeObject(parms);
+            Console.WriteLine($"Pipeline parameters are {parmString}");
             var result = await dataOps.ProcessPipelineWithStatus(parms);
             for (int i = 0; i < 20; i++)
             {

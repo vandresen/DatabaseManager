@@ -1,10 +1,18 @@
-﻿<EditForm Model="TransferParms" OnValidSubmit="OnValidSubmit">
+﻿@inject DatabaseManager.Common.Services.IDataSources dataSources
+
+<EditForm Model="TransferParms" OnValidSubmit="OnValidSubmit">
     <DataAnnotationsValidator />
     <div class="form-group">
         <label>Source:</label>
         <div>
-            <InputText class="form-control" @bind-Value="TransferParms.SourceName" />
-            <ValidationMessage For="@(() => TransferParms.SourceName)" />
+            @if (options == null)
+                {
+                    <text>Loading...</text>
+                }
+                else
+                {
+                    <ConnectorSelector Options="options" SelectedConnector="Selected" />
+                }        
         </div>
     </div>
     <div class="form-group">
@@ -20,4 +28,31 @@
 @code {
     [Parameter] public TransferParameters TransferParms { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
+
+    List<ConnectParameters> ConnectParameters;
+    private List<string> options { get; set; } = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            ConnectParameters = await dataSources.GetSources();
+            foreach (ConnectParameters conn in ConnectParameters)
+            {
+                options.Add(conn.SourceName);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private void Selected(string selectedString)
+    {
+        TransferParms.SourceName = selectedString;
+        Console.WriteLine($"selected source: {selectedString}");
+        ConnectParameters connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
+        TransferParms.SourceType = connector.SourceType;
+    }
 }
