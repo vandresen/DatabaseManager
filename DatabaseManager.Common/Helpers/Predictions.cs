@@ -30,6 +30,9 @@ namespace DatabaseManager.Common.Helpers
         private ManageIndexTable manageIndexTable;
         private DataTable indexTable;
         private static HttpClient Client = new HttpClient();
+        //private static List<IndexFileData> _idxData;
+
+        //public JArray JsonIndexArray { get; set; }
 
         public Predictions(string azureConnectionString)
         {
@@ -237,7 +240,7 @@ namespace DatabaseManager.Common.Helpers
             }
             else if (result.SaveType == "Insert")
             {
-                //InsertAction(result, dbDAL);
+                InsertAction(result);
             }
             else if (result.SaveType == "Delete")
             {
@@ -290,6 +293,15 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
+        private void InsertAction(PredictionResult result)
+        {
+            InsertMissingObjectToIndex(result);
+            if (syncPredictions)
+            {
+                InsertMissingObjectToDatabase(result);
+            }
+        }
+
         private void DeleteAction(PredictionResult result, string qcStr)
         {
             DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
@@ -323,6 +335,137 @@ namespace DatabaseManager.Common.Helpers
 
         }
 
+        private void InsertMissingObjectToIndex(PredictionResult result)
+        {
+            IndexFileData indexdata = GetIndexFileData(result.DataType);
+            if (indexdata.DataName != null)
+            {
+                JObject dataObject = JObject.Parse(result.DataObject);
+                string dataName = dataObject[indexdata.NameAttribute].ToString();
+                string dataType = result.DataType;
+                DataAccessDef dataAccessDef = _accessDefs.First(x => x.DataType == dataType);
+                string dataKey = GetDataKey(dataObject, dataAccessDef.Keys);
+                int parentId = result.IndexId;
+                string jsonData = result.DataObject;
+                double latitude = -99999.0;
+                double longitude = -99999.0;
+                int nodeId = GeIndextNode(dataType, parentId);
+                if (nodeId > 0) _dbConn.InsertIndex(nodeId, dataName, dataType, dataKey, jsonData, latitude, longitude);
+            }
+        }
+
+        private void InsertMissingObjectToDatabase(PredictionResult result)
+        {
+            string jsonDataObject = result.DataObject;
+            JObject dataObject = JObject.Parse(jsonDataObject);
+            dataObject["ROW_CHANGED_BY"] = Environment.UserName;
+            dataObject["ROW_CREATED_BY"] = Environment.UserName;
+            jsonDataObject = dataObject.ToString();
+            jsonDataObject = Helpers.Common.SetJsonDataObjectDate(jsonDataObject, "ROW_CHANGED_DATE");
+            jsonDataObject = Helpers.Common.SetJsonDataObjectDate(jsonDataObject, "ROW_CREATED_DATE");
+            string dataType = result.DataType;
+            try
+            {
+                _dbConn.InsertDataObject(jsonDataObject, dataType);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        private int GeIndextNode(string dataType, int parentid)
+        {
+            int nodeid = 0;
+            string nodeName = dataType + "s";
+            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
+            string select = ruleAccessDef.Select;
+            string query = $" where INDEXID = {parentid}";
+            DataTable dt = _dbConn.GetDataTable(select, query);
+            if (dt.Rows.Count == 1)
+            {
+                string indexNode = dt.Rows[0]["Text_IndexNode"].ToString();
+                int indexLevel = Convert.ToInt32(dt.Rows[0]["INDEXLEVEL"]) + 1;
+                string strProcedure = $"EXEC spGetNumberOfDescendants '{indexNode}', {indexLevel}";
+                query = "";
+                DataTable idx = _dbConn.GetDataTable(strProcedure, query);
+                if (idx.Rows.Count == 1)
+                {
+                    string condition = $"DATANAME={nodeName}";
+                    var rows = indexTable.Select(condition);
+                    if (rows.Length > 0)
+                    {
+                        nodeid = Convert.ToInt32(rows[0]["INDEXID"]);
+                    }
+                }
+                if (nodeid == 0)
+                {
+                    nodeid = _dbConn.InsertIndex(parentid, nodeName, nodeName, "", "", 0.0, 0.0);
+                }
+            }
+            return nodeid;
+        }
+
+        private List<IndexFileData> GetIndexArray(string taxonomy)
+        {
+            List<IndexFileData> idxData;
+            JArray result = new JArray();
+            JArray JsonIndexArray = JArray.Parse(taxonomy);
+            idxData = new List<IndexFileData>();
+            foreach (JToken level in JsonIndexArray)
+            {
+                idxData.Add(ProcessJTokens(level));
+                idxData = ProcessIndexArray(JsonIndexArray, level, idxData);
+            }
+
+            return idxData;
+        }
+
+        private static IndexFileData ProcessJTokens(JToken token)
+        {
+            IndexFileData idxDataObject = new IndexFileData();
+            idxDataObject.DataName = (string)token["DataName"];
+            idxDataObject.NameAttribute = token["NameAttribute"]?.ToString();
+            idxDataObject.LatitudeAttribute = token["LatitudeAttribute"]?.ToString();
+            idxDataObject.LongitudeAttribute = token["LongitudeAttribute"]?.ToString();
+            idxDataObject.ParentKey = token["ParentKey"]?.ToString();
+            if (token["UseParentLocation"] != null) idxDataObject.UseParentLocation = (Boolean)token["UseParentLocation"];
+            if (token["Arrays"] != null)
+            {
+                idxDataObject.Arrays = token["Arrays"];
+            }
+            return idxDataObject;
+        }
+
+        private List<IndexFileData> ProcessIndexArray(JArray JsonIndexArray, JToken parent, List<IndexFileData> idxData)
+        {
+            List<IndexFileData> result = idxData;
+            if (parent["DataObjects"] != null)
+            {
+                foreach (JToken level in parent["DataObjects"])
+                {
+                    result.Add(ProcessJTokens(level));
+                    result = ProcessIndexArray(JsonIndexArray, level, result);
+                }
+            }
+            return result;
+        }
+
+        private string GetDataKey(JObject dataObject, string dbKeys)
+        {
+            string dataKey = "";
+            string and = "";
+            string[] keys = dbKeys.Split(',');
+            foreach (string key in keys)
+            {
+                string attribute = key.Trim();
+                string attributeValue = "'" + dataObject[attribute].ToString() + "'";
+                dataKey = dataKey + and + key.Trim() + " = " + attributeValue;
+                and = " AND ";
+            }
+            return dataKey;
+        }
+
         private string GetTable(string select)
         {
             select = select.ToUpper();
@@ -350,24 +493,38 @@ namespace DatabaseManager.Common.Helpers
             return connector;
         }
 
-        private string GetSource(DbUtilities dbConn)
+        private IndexFileData GetIndexFileData(string dataType)
         {
-            string source = "";
+            IndexFileData indexdata = new IndexFileData();
+            IndexRootJson rootJson = GetIndexRootData();
+            string taxonomy = rootJson.Taxonomy;
+            List<IndexFileData> idxData = GetIndexArray(taxonomy);
+            indexdata = idxData.FirstOrDefault(s => s.DataName == dataType);
+            return indexdata;
+        }
+
+        private IndexRootJson GetIndexRootData()
+        {
+            IndexRootJson rootJson = new IndexRootJson();
             DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
             string select = ruleAccessDef.Select;
             string idxQuery = $" where INDEXNODE = '/'";
-            DataTable idx = dbConn.GetDataTable(select, idxQuery);
+            DataTable idx = _dbConn.GetDataTable(select, idxQuery);
             if (idx.Rows.Count == 1)
             {
-                string jsonData = idx.Rows[0]["JSONDATAOBJECT"].ToString();
-                ConnectParameters sourceConn = JsonConvert.DeserializeObject<ConnectParameters>(jsonData);
-                source = sourceConn.SourceName;
+                string jsonStringObject = idx.Rows[0]["JSONDATAOBJECT"].ToString();
+                rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonStringObject);
             }
-            else
-            {
-                //logger.LogWarning("Cannot get the source in root  index");
-            }
+            return rootJson;
+        }
 
+        private string GetSource(DbUtilities dbConn)
+        {
+            string source = "";
+            IndexRootJson rootJson = GetIndexRootData();
+            string jsonData = rootJson.Source;
+            ConnectParameters sourceConn = JsonConvert.DeserializeObject<ConnectParameters>(jsonData);
+            source = sourceConn.SourceName;
             return source;
         }
     }

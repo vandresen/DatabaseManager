@@ -26,7 +26,7 @@ CREATE TABLE pdo_qc_rules
 	RuleDescription NVARCHAR(255) NULL,
 	RuleFunction NVARCHAR(255) NULL,
 	RuleKey NVARCHAR(16) NULL,
-	RuleParameters NVARCHAR(255) NULL,
+	RuleParameters NVARCHAR(500) NULL,
 	RuleFilter NVARCHAR(255) NULL,
 	FailRule NVARCHAR(255) NULL,
 	PredictionOrder int NULL,

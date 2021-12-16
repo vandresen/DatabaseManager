@@ -26,6 +26,7 @@ namespace DatabaseManager.Common.Helpers
         private IndexFileData _parentItem;
         private readonly IDataAccess sourceAccess;
         private string _connectionString;
+        private string _taxonomy;
 
         public JArray JsonIndexArray { get; set; }
 
@@ -43,6 +44,7 @@ namespace DatabaseManager.Common.Helpers
         public void InitializeIndex(ConnectParameters connectionString, ConnectParameters source, string jsonTaxonomy)
         {
             _connectionString = connectionString.ConnectionString;
+            _taxonomy = jsonTaxonomy;
             myIndex = new IndexDataCollection();
             dbConn.OpenConnection(connectionString);
             sourceAccess.OpenConnection(source, connectionString);
@@ -58,7 +60,13 @@ namespace DatabaseManager.Common.Helpers
 
         public void CreateRoot(ConnectParameters source)
         {
-            string json = JsonConvert.SerializeObject(source);
+            string jsonSource = JsonConvert.SerializeObject(source);
+            IndexRootJson indexRootJson = new IndexRootJson
+            {
+                Source = jsonSource,
+                Taxonomy = _taxonomy
+            };
+            string json = JsonConvert.SerializeObject(indexRootJson);
             string table = "pdo_qc_index";
             dbConn.DBDelete(table);
             myIndex.Add(new IndexData { DataName = "QCPROJECT", DataType = "QCPROJECT", IndexNode = "/", QcLocation = null, JsonDataObject = json });

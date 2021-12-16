@@ -24,6 +24,25 @@ namespace DatabaseManager.Common.Helpers
             public double NullValue { get; set; }
         }
 
+        public class MissingObjectsParameters
+        {
+            public string DataType { get; set; }
+            public List<MissingObjectKey> Keys { get; set; }
+            public List<MissingObjectDefault> Defaults { get; set; }
+        }
+
+        public class MissingObjectKey
+        {
+            public string Key { get; set; }
+            public string Value { get; set; }
+        }
+
+        public class MissingObjectDefault
+        {
+            public string Default { get; set; }
+            public string Value { get; set; }
+        }
+
         public static DataTable GetNeighbors(DbUtilities dbConn, QcRuleSetup qcSetup)
         {
             int indexId = qcSetup.IndexId;
@@ -280,6 +299,99 @@ namespace DatabaseManager.Common.Helpers
             {
                 return "";
             }
+        }
+
+        public static string GetJsonForMissingDataObject(string parameters, DbUtilities dbConn)
+        {
+            string json = "";
+            MissingObjectsParameters missingObjectParms = new MissingObjectsParameters();
+            missingObjectParms = JsonConvert.DeserializeObject<MissingObjectsParameters>(parameters);
+            string select = "SELECT TOP(1) JSONDATAOBJECT FROM pdo_qc_index";
+            string query = $" WHERE DATATYPE = '{missingObjectParms.DataType}'";
+            DataTable dt = dbConn.GetDataTable(select, query);
+            if (dt.Rows.Count == 1)
+            {
+                json = dt.Rows[0]["JSONDATAOBJECT"].ToString();
+                JObject dataObject = JObject.Parse(json);
+                foreach (KeyValuePair<String, JToken> tag in dataObject)
+                {
+                    var tagName = tag.Key;
+                    var variable = tag.Value;
+                    var type = variable.Type;
+                    if (type == JTokenType.Float)
+                    {
+                        dataObject[tagName] = -99999.0;
+                    }
+                    else
+                    {
+                        dataObject[tagName] = "";
+                    }
+                }
+                json = dataObject.ToString();
+            }
+            else
+            {
+                json = "Error";
+            }
+            return json;
+        }
+
+        public static string PopulateJsonForMissingDataObject(string parameters, string emptyJson, string parentData)
+        {
+            string json = emptyJson;
+            try
+            {
+                MissingObjectsParameters missingObjectParms = new MissingObjectsParameters();
+                missingObjectParms = JsonConvert.DeserializeObject<MissingObjectsParameters>(parameters);
+                JObject dataObject = JObject.Parse(emptyJson);
+                JObject parentObject = JObject.Parse(parentData);
+                foreach (var key in missingObjectParms.Keys)
+                {
+                    var tagName = key.Key;
+                    var variable = key.Value;
+                    if (variable.Substring(0, 1) == "!")
+                    {
+                        string parentTag = key.Value.Substring(1);
+                        variable = parentObject[parentTag].ToString();
+                    }
+                    dataObject[tagName] = variable;
+                }
+                dataObject["REMARK"] = $"Has been predicted and created by QCEngine;";
+                json = dataObject.ToString();
+            }
+            catch (Exception ex)
+            {
+                json = "Error";
+            }
+
+            return json;
+        }
+
+        public static string AddDefaultsForMissingDataObjects(string parameters, string inputJson)
+        {
+            string json = inputJson;
+            try
+            {
+                MissingObjectsParameters missingObjectParms = new MissingObjectsParameters();
+                missingObjectParms = JsonConvert.DeserializeObject<MissingObjectsParameters>(parameters);
+                if (missingObjectParms.Defaults != null)
+                {
+                    JObject dataObject = JObject.Parse(inputJson);
+                    foreach (var key in missingObjectParms.Defaults)
+                    {
+                        var tagName = key.Default;
+                        var variable = key.Value;
+                        dataObject[tagName] = variable;
+                    }
+                    json = dataObject.ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                json = "Error";
+            }
+
+            return json;
         }
     }
 }

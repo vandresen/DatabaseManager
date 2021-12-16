@@ -10,3 +10,4 @@ INSERT INTO pdo_rule_functions (FunctionName, FunctionUrl, FunctionType) VALUES 
 INSERT INTO pdo_rule_functions (FunctionName, FunctionUrl, FunctionType) VALUES ('PredictDominantLithology', 'PredictDominantLithology', 'P');
 INSERT INTO pdo_rule_functions (FunctionName, FunctionUrl, FunctionType) VALUES ('PredictFormationOrder', 'PredictFormationOrder', 'P');
 INSERT INTO pdo_rule_functions (FunctionName, FunctionUrl, FunctionType) VALUES ('PredictLogDepthAttributes', 'PredictLogDepthAttributes', 'P');
+INSERT INTO pdo_rule_functions (FunctionName, FunctionUrl, FunctionType) VALUES ('PredictMissingDataObjects', 'PredictMissingDataObjects', 'P');

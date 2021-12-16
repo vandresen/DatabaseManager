@@ -226,5 +226,42 @@ namespace DatabaseManager.Common.Helpers
             }
             return result;
         }
+
+        public static PredictionResult PredictMissingDataObjects(QcRuleSetup qcSetup, DbUtilities dbConn)
+        {
+            PredictionResult result = new PredictionResult
+            {
+                Status = "Failed"
+            };
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+            string rulePar = rule.RuleParameters;
+            JObject ruleParObject = JObject.Parse(rulePar);
+            string dataType = ruleParObject["DataType"].ToString();
+            if (string.IsNullOrEmpty(rulePar))
+            {
+                throw new NullReferenceException("Rule parameter is null.");
+            }
+            string emptyJson = RuleMethodUtilities.GetJsonForMissingDataObject(rulePar, dbConn);
+            if (emptyJson == "Error")
+            {
+                throw new NullReferenceException("Could not create an empty json data object, maybe you are missing Datatype in parameters");
+            }
+            string json = RuleMethodUtilities.PopulateJsonForMissingDataObject(rulePar, emptyJson, qcSetup.DataObject);
+            if (json == "Error")
+            {
+                throw new NullReferenceException("Could not create an json data object, problems with keys in parameters");
+            }
+            json = RuleMethodUtilities.AddDefaultsForMissingDataObjects(rulePar, json);
+            if (json == "Error")
+            {
+                throw new NullReferenceException("Could not create an json data object, problems with defaults in parameters");
+            }
+            result.DataObject = json;
+            result.DataType = dataType;
+            result.SaveType = "Insert";
+            result.IndexId = qcSetup.IndexId;
+            result.Status = "Passed";
+            return result;
+        }
     }
 }
