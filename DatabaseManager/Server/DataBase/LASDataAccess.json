@@ -1,9 +1,33 @@
 {
-  "UWI": "UWI",
-  "API": "API",
-  "LAT": "SURFACE_LATITUDE",
-  "LON": "SURFACE_LONGITUDE",
-  "COMP": "OPERATOR",
-  "WELL": "WELL_NAME",
-  "LEAS": "LEASE_NAME"
+  "WellMappings": [
+    {
+      "LASMnem": "UWI",
+      "DBMnem": "UWI"
+    },
+    {
+      "LASMnem": "LAT",
+      "DBMnem": "SURFACE_LATITUDE"
+    },
+    {
+      "LASMnem": "LON",
+      "DBMnem": "SURFACE_LONGITUDE"
+    },
+    {
+      "LASMnem": "COMP",
+      "DBMnem": "OPERATOR"
+    },
+    {
+      "LASMnem": "WELL",
+      "DBMnem": "WELL_NAME"
+    },
+    {
+      "LASMnem": "LEAS",
+      "DBMnem": "LEASE_NAME"
+    }
+  ],
+  "AlernativeKeys": 
+  [
+    { "Key": "API" },
+    { "Key": "LEAS, WELL" }
+  ]
 }

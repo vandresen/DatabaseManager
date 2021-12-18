@@ -18,6 +18,23 @@ namespace DatabaseManager.Common.Helpers
 {
     public class LASLoader
     {
+        public class WellMapping
+        {
+            public string LASMnem { get; set; }
+            public string DBMnem { get; set; }
+        }
+
+        public class AlernativeKey
+        {
+            public string Key { get; set; }
+        }
+
+        public class LASMappings
+        {
+            public List<WellMapping> WellMappings { get; set; }
+            public List<AlernativeKey> AlernativeKeys { get; set; }
+        }
+
         private DbUtilities _dbConn;
         private string _uwi;
         private string _nullRepresentation;
@@ -36,6 +53,7 @@ namespace DatabaseManager.Common.Helpers
         private List<string> LASFiles = new List<string>();
         private readonly IFileStorageServiceCommon fileStorageService;
         private JObject lasAccessJson;
+        private LASMappings lasMappings = new LASMappings();
 
         public LASLoader(IFileStorageServiceCommon fileStorageService)
         {
@@ -55,8 +73,11 @@ namespace DatabaseManager.Common.Helpers
         public async Task<DataTable> GetLASWellHeaders(ConnectParameters source, ConnectParameters target)
         {
             string accessJson = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            lasAccessJson = JObject.Parse(await fileStorageService.ReadFile("connectdefinition", "LASDataAccess.json"));
             _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+            //lasAccessJson = JObject.Parse(await fileStorageService.ReadFile("connectdefinition", "LASDataAccess.json"));
+            string lasMappingsStr = await fileStorageService.ReadFile("connectdefinition", "LASDataAccess.json");
+            lasMappings = JsonConvert.DeserializeObject<LASMappings>(lasMappingsStr);
+            
             List<string> files = new List<string>();
             files = await GetLASFileNames(source.Catalog);
             DataAccessDef dataType = _dataDef.First(x => x.DataType == "WellBore");
@@ -152,6 +173,8 @@ namespace DatabaseManager.Common.Helpers
             _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(target.DataAccessDefinition);
             _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(ReferenceTableDefJson);
             lasAccessJson = JObject.Parse(await fileStorageService.ReadFile("connectdefinition", "LASDataAccess.json"));
+            string lasMappingsStr = await fileStorageService.ReadFile("connectdefinition", "LASDataAccess.json");
+            lasMappings = JsonConvert.DeserializeObject<LASMappings>(lasMappingsStr);
 
             lasSections = new List<LASSections>();
             LASSections ls = await GetLASSections(source.Catalog, fileName);
@@ -494,22 +517,43 @@ namespace DatabaseManager.Common.Helpers
             header["ROW_CHANGED_BY"] = _dbUserName;
             header.Add("API", "");
             StringReader sr = new StringReader(wellInfo);
+            List<LASLine> headerMnems = new List<LASLine>();
             while ((input = sr.ReadLine()) != null)
             {
                 LASLine line = DecodeLASLine(input);
                 if (!string.IsNullOrEmpty(line.Mnem))
                 {
-                    if (lasAccessJson.ContainsKey(line.Mnem))
-                    {
-                        string value = lasAccessJson.GetValue(line.Mnem).ToString();
-                        header[value] = line.Data;
-                        if (value == "NULL") _nullRepresentation = line.Data;
-                    }
-                    
+                    headerMnems.Add(line);
                 }
             }
-            if (string.IsNullOrEmpty(header["UWI"])) header["UWI"] = header["API"];
-            if (string.IsNullOrEmpty(header["UWI"])) header["UWI"] = header["LEASE_NAME"] + "-" + header["WELL_NAME"];
+            foreach (var line in headerMnems)
+            {
+                WellMapping mapping = lasMappings.WellMappings.FirstOrDefault(s => s.LASMnem == line.Mnem);
+                if (mapping != null)
+                {
+                    string value = mapping.DBMnem;
+                    header[value] = line.Data;
+                    if (value == "NULL") _nullRepresentation = line.Data;
+                }
+            }
+            foreach (var alternativeKey in lasMappings.AlernativeKeys)
+            {
+                if (!string.IsNullOrEmpty(header["UWI"])) break;
+                string[] keys = alternativeKey.Key.Split(',');
+                string seperator = "";
+                foreach (var key in keys)
+                {
+                    LASLine line = headerMnems.FirstOrDefault(s => s.Mnem == key.Trim());
+                    if (line != null)
+                    {
+                        if (!string.IsNullOrEmpty(line.Data))
+                        {
+                            header["UWI"] = seperator + line.Data;
+                            seperator = "-";
+                        }
+                    }
+                }
+            }
             foreach (string item in attributes)
             {
                 string attribute = item.Trim();

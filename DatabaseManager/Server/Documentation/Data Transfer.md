@@ -15,7 +15,9 @@ that has a user and password defined.
 The system supports LAS files version 2. The files must be located in your Azure storage account under
 Fileshares with name logs.
 
-Well header attributes can be modified in the LASDataAccess.json file.
+Well header attributes can be modified in the LASDataAccess.json file. There are two sections: 
+WellMappings - This is for the mappings between LAS and the database
+AlternativeKeys - If UWI is missing then you can create UWI based on other mnemonics in the LAS file
 
 The system will not out the box load parameter info. In order to add this feature you must add the 
 following to the PPDMAccessDef.json file:
