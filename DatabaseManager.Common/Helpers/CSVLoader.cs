@@ -14,6 +14,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
@@ -31,6 +32,9 @@ namespace DatabaseManager.Common.Helpers
         private DataTable dt = new DataTable();
         SqlDataAdapter dataAdapter;
         private readonly IFileStorageServiceCommon fileStorageService;
+        private List<dynamic> newCsvRecords = new List<dynamic>();
+        private HashSet<string> hashSet = new HashSet<string>();
+        private ColumnProperties attributeProperties;
 
         public CSVLoader(IFileStorageServiceCommon fileStorageService)
         {
@@ -165,6 +169,12 @@ namespace DatabaseManager.Common.Helpers
             Dictionary<string, string> constants = csvAccess.Constants.ToStringDictionary();
             Dictionary<string, string> columnTypes = dt.GetColumnTypes();
 
+            DbUtilities dbConn = new DbUtilities();
+            dbConn.OpenWithConnectionString(connectionString);
+            string dataTypeSql = dataAccess.Select;
+            attributeProperties = CommonDbUtilities.GetColumnSchema(dbConn, dataTypeSql);
+            dbConn.CloseConnection();
+
             //Console.WriteLine("Start parsing csv file");
             using (TextReader csvStream = new StringReader(csvText))
             {
@@ -174,28 +184,158 @@ namespace DatabaseManager.Common.Helpers
                 };
                 using (var csv = new CsvReader(csvStream, conf))
                 {
-                    //csv.Configuration.BadDataFound = null; //Only works with version 19.0.0
-                    using (var dr = new CsvDataReader(csv))
+                    csv.Read();
+                    csv.ReadHeader();
+                    string[] headerRow = csv.HeaderRecord;
+                    var attributeMappings = new Dictionary<string, string>();
+                    foreach (var item in attributes)
                     {
-                        dt = new DataTable();
-                        dt.Load(dr);
-                        timeEnd = DateTime.Now;
-                        diff = timeEnd - timeStart;
-                        //Console.WriteLine($"Time span, transfer from csv to datatable: {diff}");
-
-                        dt = FixTableColumns(dt, attributes, dataType);
-                        timeEnd = DateTime.Now;
-                        diff = timeEnd - timeStart;
-                        //Console.WriteLine($"Time span, column changes: {diff}");
-
-                        InsertTableToDatabase(attributes, dataType, target, constants);
+                        int colNumber = item.Value;
+                        attributeMappings.Add(headerRow[colNumber], item.Key);
                     }
+
+                    List<dynamic> csvRecords = csv.GetRecords<dynamic>().ToList();
+                    timeEnd = DateTime.Now;
+                    diff = timeEnd - timeStart;
+                    //Console.WriteLine($"Time span, parsed cvs file into dynamic objects: {diff}");
+
+                    foreach (var row in csvRecords)
+                    {
+                        DynamicObject newCsvRecord = new DynamicObject();
+                        foreach (var item in row)
+                        {
+                            if (attributeMappings.ContainsKey(item.Key))
+                            {
+                                string dbAttribute = attributeMappings[item.Key];
+                                string value = item.Value;
+                                string dataProperty = attributeProperties[dbAttribute];
+                                if (dataProperty.Contains("varchar"))
+                                {
+                                    string numberString = Regex.Match(dataProperty, @"\d+").Value;
+                                    int maxCharacters = Int32.Parse(numberString);
+                                    if (value.Length > maxCharacters)
+                                    {
+                                        value = value.Substring(0, maxCharacters);
+                                    }
+                                }
+                                newCsvRecord.AddProperty(dbAttribute, value);
+                            }
+                        }
+                        FixKey(newCsvRecord);
+                    }
+                    timeEnd = DateTime.Now;
+                    diff = timeEnd - timeStart;
+                    //Console.WriteLine($"Time span, fixed dynamic objects: {diff}");
+
+                    dt = DynamicToDT(newCsvRecords);
+                    timeEnd = DateTime.Now;
+                    diff = timeEnd - timeStart;
+                    //Console.WriteLine($"Time span, transfer from csv to datatable: {diff}");
+
+                    InsertTableToDatabase(attributes, dataType, target, constants);
+                    //csv.Configuration.BadDataFound = null; //Only works with version 19.0.0
+                    //using (var dr = new CsvDataReader(csv))
+                    //{
+                    //    dt = new DataTable();
+                    //    dt.Load(dr);
+                    //    timeEnd = DateTime.Now;
+                    //    diff = timeEnd - timeStart;
+                    //    //Console.WriteLine($"Time span, transfer from csv to datatable: {diff}");
+
+                    //    dt = FixTableColumns(dt, attributes, dataType);
+                    //    timeEnd = DateTime.Now;
+                    //    diff = timeEnd - timeStart;
+                    //    //Console.WriteLine($"Time span, column changes: {diff}");
+
+                    //    InsertTableToDatabase(attributes, dataType, target, constants);
+                    //}
                 }
             }
 
             timeEnd = DateTime.Now;
             diff = timeEnd - timeStart;
             //Console.WriteLine($"Time span, completion: {diff}");
+        }
+
+        private void FixKey(DynamicObject newCsvRecord)
+        {
+            string[] keys = dataAccess.Keys.Split(',').Select(key => key.Trim()).ToArray();
+            string keyText = "";
+            foreach (string key in keys)
+            {
+                if (newCsvRecord.PropertyExist(key))
+                {
+                    string propValue = newCsvRecord.GetProperty(key);
+                    if (string.IsNullOrEmpty(propValue))
+                    {
+                        newCsvRecord.ChangeProperty(key, "UNKNOWN");
+                    }
+                }
+                else
+                {
+                    newCsvRecord.AddProperty(key, "UNKNOWN");
+                }
+                keyText = keyText + newCsvRecord.GetProperty(key);
+            }
+            keyText = keyText.ToUpper();
+            string keyHash = keyText.GetSHA256Hash();
+            newCsvRecord.AddProperty("KeyHash", keyHash);
+            int index = CheckForDuplicates(keyHash);
+            if (index == -1)
+            {
+                newCsvRecords.Add(newCsvRecord);
+            }
+            else
+            {
+                newCsvRecords[index] = newCsvRecord;
+            }
+        }
+
+        private int CheckForDuplicates(string keyHash)
+        {
+            int index = -1;
+            if (hashSet.Contains(keyHash))
+            {
+                DynamicObject foundObject = new DynamicObject();
+                index = 0;
+                foreach (var row in newCsvRecords)
+                {
+                    string key = row.GetProperty("KeyHash").ToString();
+                    if (key == keyHash)
+                    {
+
+                        foundObject = row;
+                        break;
+                    }
+                    index++;
+                }
+            }
+            else
+            {
+                hashSet.Add(keyHash);
+            }
+            return index;
+        }
+
+        private DataTable DynamicToDT(List<dynamic> objects)
+
+        {
+            var data = objects.ToArray();
+            if (data.Count() == 0) return null;
+            var dt = new DataTable();
+            var item = data[0];
+            List<string> keys = item.GetKeys();
+            foreach (var key in keys)
+            {
+                dt.Columns.Add(key);
+            }
+
+            foreach (var d in data)
+            {
+                dt.Rows.Add(d.GetValueArray());
+            }
+            dt.Columns.Remove("KeyHash");
+            return dt;
         }
 
         private DataTable GetParentDataTable(string dataType)
@@ -424,30 +564,6 @@ namespace DatabaseManager.Common.Helpers
             TimeSpan diff = timeEnd - timeStart;
             //Console.WriteLine($"Time span, Moved to temp table: {diff}");
 
-            sql = CreateSqlToFixConstants(tempTable, constants);
-            if (!String.IsNullOrEmpty(sql))
-            {
-                cmd = new SqlCommand(sql, conn);
-                cmd.CommandTimeout = sqlTimeout;
-                cmd.ExecuteNonQuery();
-            }
-
-            sql = CreateSqlToFixNullKeys(tempTable);
-            cmd = new SqlCommand(sql, conn);
-            cmd.CommandTimeout = sqlTimeout;
-            cmd.ExecuteNonQuery();
-            timeEnd = DateTime.Now;
-            diff = timeEnd - timeStart;
-            //Console.WriteLine($"Time span, delete null rows: {diff}");
-
-            sql = CreateSqlToDeleteDuplicates(tempTable);
-            cmd = new SqlCommand(sql, conn);
-            cmd.CommandTimeout = sqlTimeout;
-            cmd.ExecuteNonQuery();
-            timeEnd = DateTime.Now;
-            diff = timeEnd - timeStart;
-            //Console.WriteLine($"Time span, delete duplicate rows: {diff}");
-
             int refCount = _references.Where(x => x.DataType == dataType).Count();
             if (refCount > 0) CreateSqlToLoadReferences(dataType, conn, tempTable);
 
@@ -463,44 +579,13 @@ namespace DatabaseManager.Common.Helpers
 
         }
 
-        private string CreateSqlToFixConstants(string tempTable, Dictionary<string, string> constants)
-        {
-            string sql = "";
-            if (constants.Count > 0)
-            {
-                sql = $"UPDATE {tempTable}1 SET ";
-                string comma = "";
-                foreach (var item in constants)
-                {
-                    string column = item.Key.Trim();
-                    string value = item.Value.Trim();
-                    sql = sql + comma + column + " = '" + value + "'";
-                    comma = ", ";
-                }
-            }
-            return sql;
-        }
-
         private void CreateSqlToLoadReferences(string dataType, SqlConnection conn, string tempTable)
         {
-            DbUtilities dbConn = new DbUtilities();
-            dbConn.OpenWithConnectionString(connectionString);
-            string dataTypeSql = dataAccess.Select;
-            ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(dbConn, dataTypeSql);
-            dbConn.CloseConnection();
-
-            string sql = "";
-            string alterSql = $"ALTER TABLE {tempTable}2 ADD ";
-            string updateSql = $"SET ANSI_WARNINGS OFF UPDATE {tempTable}2 SET ";
-            string removeSql = $"ALTER TABLE {tempTable}2 DROP COLUMN ";
-            string renameSql = " ";
-            string nullSql = " ";
+            //string sql = "";
             string insertSql = "";
-            string addKeySql = $"ALTER TABLE {tempTable}2 ADD ";
-            string addKeyValueSql = $"UPDATE {tempTable}2 SET ";
-            string insertAdditionalRefTable = "";
+            string addKeySql = $"ALTER TABLE {tempTable}1 ADD ";
+            string addKeyValueSql = $"UPDATE {tempTable}1 SET ";
             string comma = "";
-            string keyComma = "";
 
             List<ReferenceTable> dataTypeRefs = _references.Where(x => x.DataType == dataType).ToList();
             foreach (ReferenceTable refTable in dataTypeRefs)
@@ -510,13 +595,6 @@ namespace DatabaseManager.Common.Helpers
                 string valueAttribute = refTable.ValueAttribute;
                 if (dt.Columns.Contains(column))
                 {
-                    alterSql = alterSql + comma + $"{column}2 {dataProperty}";
-                    updateSql = updateSql + comma + $"{column}2 = {column}";
-                    removeSql = removeSql + comma + $"{column}";
-                    renameSql = renameSql + $"EXEC tempdb.sys.sp_rename '{tempTable}2.{column}2', '{column}', 'COLUMN';";
-                    //renameSql = renameSql + $"EXEC sp_rename '{tempTable}2.{column}2', '{column}', 'COLUMN';";
-                    nullSql = nullSql + $"update {tempTable}2 set {column} = 'UNKNOWN'" +
-                        $" where {column} is null or {column} = '';";
                     string insertColumns;
                     string selectColumns;
                     if (valueAttribute == refTable.KeyAttribute)
@@ -542,44 +620,24 @@ namespace DatabaseManager.Common.Helpers
                         ", CAST(GETDATE() AS DATE), @user" +
                         ", CAST(GETDATE() AS DATE), @user";
                     insertSql = insertSql + $"INSERT INTO {refTable.Table} ({insertColumns})" +
-                        $" SELECT distinct {selectColumns} from {tempTable}2 B" +
+                        $" SELECT distinct {selectColumns} from {tempTable}1 B" +
                         $" LEFT JOIN {refTable.Table} A ON A.{refTable.KeyAttribute} = B.{column} WHERE A.{refTable.KeyAttribute} is null;";
-                    //$" EXCEPT SELECT {insertColumns} from {refTable.Table};";
                     comma = ",";
                 }
             }
 
-            alterSql = alterSql + ";";
-            SqlCommand cmd = new SqlCommand(alterSql, conn);
-            cmd.ExecuteNonQuery();
-
-            updateSql = updateSql + "; SET ANSI_WARNINGS ON";
-            cmd = new SqlCommand(updateSql, conn);
-            cmd.ExecuteNonQuery();
-
-            removeSql = removeSql + ";";
-            renameSql = renameSql + " ";
-            nullSql = nullSql + " ";
-            sql = removeSql + renameSql + nullSql;
-            cmd = new SqlCommand(sql, conn);
-            cmd.ExecuteNonQuery();
-
             insertSql = "DECLARE @user varchar(30);" +
                 @"SET @user = stuff(suser_sname(), 1, charindex('\', suser_sname()), '');" +
                 insertSql;
-            cmd = new SqlCommand(insertSql, conn);
+            SqlCommand cmd = new SqlCommand(insertSql, conn);
             cmd.ExecuteNonQuery();
         }
 
         private string CreateSqlToMerge(string tempTable)
         {
             string sql = "";
-            DbUtilities dbConn = new DbUtilities();
-            dbConn.OpenWithConnectionString(connectionString);
             string dataTypeSql = dataAccess.Select;
             string table = Common.GetTable(dataTypeSql);
-            ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(dbConn, dataTypeSql);
-            dbConn.CloseConnection();
             string[] columnNames = dt.Columns.Cast<DataColumn>()
                          .Select(x => x.ColumnName)
                          .ToArray();
@@ -635,7 +693,7 @@ namespace DatabaseManager.Common.Helpers
             sql = "DECLARE @user varchar(30);" +
                 @"SET @user = stuff(suser_sname(), 1, charindex('\', suser_sname()), '');" +
                 $"MERGE INTO {table} A " +
-                $" USING {tempTable}2 B " +
+                $" USING {tempTable}1 B " +
                 " ON " + joinSql +
                 " WHEN MATCHED THEN " +
                 " UPDATE " +
@@ -645,55 +703,6 @@ namespace DatabaseManager.Common.Helpers
                 " VALUES(" + valueSql + "); ";
 
 
-            return sql;
-        }
-
-        private string CreateSqlToDeleteDuplicates(string tempTable)
-        {
-            string sql = "";
-            string[] keys = dataAccess.Keys.Split(',').Select(k => k.Trim()).ToArray();
-            sql = $"select * into {tempTable}2 from {tempTable}1 " +
-                $"where id in (select max(id) from {tempTable}1 group by ";
-            string comma = "";
-            foreach (string key in keys)
-            {
-                if (dt.Columns.Contains(key))
-                {
-                    sql = sql + comma + key;
-                    comma = ",";
-                }
-            }
-            sql = sql + ")";
-            return sql;
-        }
-
-        private string CreateSqlToDeleteNullRows(string tempTable)
-        {
-            string sql = "";
-            string[] keys = dataAccess.Keys.Split(',').Select(k => k.Trim()).ToArray();
-            sql = $"Delete From {tempTable}1 Where(";
-            string or = "";
-            foreach (string key in keys)
-            {
-                if (dt.Columns.Contains(key))
-                {
-                    sql = sql + or + key + " is null or " + key + @" = ''";
-                    or = " or ";
-                }
-            }
-            sql = sql + ")";
-            return sql;
-        }
-
-        private string CreateSqlToFixNullKeys(string tempTable)
-        {
-            string sql = "";
-            string[] keys = dataAccess.Keys.Split(',').Select(k => k.Trim()).ToArray();
-            sql = $"";
-            foreach (string key in keys)
-            {
-                sql = sql + $"UPDATE {tempTable}1 SET {key} = 'UNKNOWN' where {key} is null or {key} = '';";
-            }
             return sql;
         }
 
@@ -715,34 +724,6 @@ namespace DatabaseManager.Common.Helpers
 
             sql = $"create table {tempTable}1({columns})";
             return sql;
-        }
-
-        private DataTable FixTableColumns(DataTable dt, Dictionary<string, int> attributes, string dataType)
-        {
-            foreach (var item in attributes)
-            {
-                dt.Columns[item.Value].ColumnName = item.Key;
-            }
-            string[] columnNames = dt.Columns.Cast<DataColumn>()
-                         .Select(x => x.ColumnName)
-                         .ToArray();
-
-            foreach (var cName in columnNames)
-            {
-                if (!attributes.ContainsKey(cName)) dt.Columns.Remove(cName);
-            }
-
-            dataAccess = _dataDef.First(x => x.DataType == dataType);
-            string[] keys = dataAccess.Keys.Split(',').Select(key => key.Trim()).ToArray();
-            foreach (string key in keys)
-            {
-                if (!dt.Columns.Contains(key))
-                {
-                    dt.Columns.Add(key);
-                }
-            }
-
-            return dt;
         }
     }
 }
