@@ -17,7 +17,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\DatabaseManager.Common\DatabaseManager.Common.csproj" />
-    <ProjectReference Include="..\..\DatabaseManager.Components\DatabaseManager.Components.csproj" />
     <ProjectReference Include="..\Shared\DatabaseManager.Shared.csproj" />
   </ItemGroup>
 

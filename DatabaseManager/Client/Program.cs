@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using DatabaseManager.Client.Helpers;
 using System.Net.Http;
 using BlazorTable;
-using DatabaseManager.Components.Services;
 using DatabaseManager.Shared;
 
 namespace DatabaseManager.Client

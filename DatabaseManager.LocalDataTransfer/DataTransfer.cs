@@ -1,5 +1,5 @@
-﻿using DatabaseManager.Components;
-using DatabaseManager.Components.Services;
+﻿using DatabaseManager.Common.Helpers;
+using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Extensions.Logging;

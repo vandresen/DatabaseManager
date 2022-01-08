@@ -15,7 +15,7 @@ using Azure.Core.Extensions;
 using AutoMapper;
 using System.Reflection;
 using System.IO;
-using DatabaseManager.Components.Services;
+using DatabaseManager.Common.Services;
 
 namespace DatabaseManager.Server
 {
@@ -33,7 +33,7 @@ namespace DatabaseManager.Server
             services.AddAutoMapper(typeof(Startup));
             services.AddScoped<IFileStorageService, AzureFileStorageService>();
             services.AddScoped<ITableStorageService, AzureTableStorageService>();
-            services.AddScoped<IQueueService, AzureQueueService>();
+            services.AddScoped<IQueueService, AzureQueueServiceCommon>();
 
             services.AddMvc();
             services.AddResponseCompression(opts =>

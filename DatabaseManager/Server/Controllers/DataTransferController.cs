@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using DatabaseManager.Common.Helpers;
-using DatabaseManager.Components.Services;
+using DatabaseManager.Common.Services;
 using DatabaseManager.Server.Entities;
 using DatabaseManager.Server.Helpers;
 using DatabaseManager.Server.Services;

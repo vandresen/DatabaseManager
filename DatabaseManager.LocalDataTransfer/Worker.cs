@@ -1,6 +1,6 @@
 using Azure.Storage.Queues;
 using Azure.Storage.Queues.Models;
-using DatabaseManager.Components.Services;
+using DatabaseManager.Common.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -31,7 +31,7 @@ namespace DatabaseManager.LocalDataTransfer
             string infoMessage = "";
             var builder = new ConfigurationBuilder();
             IConfiguration configuration = builder.Build();
-            IQueueService queueService = new AzureQueueService(configuration);
+            IQueueService queueService = new AzureQueueServiceCommon(configuration);
             queueService.SetConnectionString(_appSettings.StorageAccount);
             while (!stoppingToken.IsCancellationRequested)
             {
