@@ -13,11 +13,10 @@ PPDM database and Data Science projects. So far this version provides functional
 This tool is built for the cloud generation.
 
 ## Projects
-* Common - Common dll used when .NET 3.1 is required
+* Common - Common dll's used by all projects 
 * DatabaseManager.Appfunctions - App functions used for serverless DatabaseManager version
-* DatabaseManager.Components - Common dll when .NET 5.0 is required
 * DatabaseManager.LocalDataTransfer - A data transfer services for remote data access
-* DatabaseManager - Standard Blazor client server application
+* DatabaseManager - Standard Blazor MVC client server application
 
 ## License 
 Database Manager is released under the GPLv3 or higher license.
@@ -28,8 +27,8 @@ bug fixes or enhancements to the Database Manager source code following the
 usual Github Fork-Pull Request process.
 
 ## Building the software
-The software is based on .NET 5 using Blazor using webassembly. You should use
-Visual Studio 2019.8 or newer for building this. From Visual Studio you can publish this to Azure or to a local web server.
+The software is based on .NET 6 using Blazor using webassembly. You should use
+Visual Studio 2022 or newer for building this. From Visual Studio you can publish this to Azure or to a local web server.
 
 ## Datamodel
 The system does not ship with a data model. You must create a folder in your Azure File Storage called PPDM39. This is where yo put the PPDM dll files that
