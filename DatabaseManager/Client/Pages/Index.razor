@@ -2,6 +2,7 @@
 @inject DatabaseManager.Common.Services.IDataSources dataSources
 @inject IIndexData indexData
 @inject SingletonServices singleton
+@inject SingletonService singletonService
 @inject NavigationManager navigationManager
 @inject IDisplayMessage displayMessage
 @inject HttpClient client
@@ -68,6 +69,7 @@ else
         {
             Console.WriteLine("Start");
             string currentHeader = "";
+            client.Timeout = TimeSpan.FromMinutes(singletonService.HttpTimeOut);
             if (client.DefaultRequestHeaders.Contains("AzureStorageConnection"))
             {
                 Console.WriteLine("Contains azure storage");

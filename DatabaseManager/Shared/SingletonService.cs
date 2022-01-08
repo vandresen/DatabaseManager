@@ -11,5 +11,6 @@ namespace DatabaseManager.Shared
         public string TargetConnector { get; set; }
         public string DataAccessDefinition { get; set; }
         public string ApiKey { get; set; }
+        public int HttpTimeOut = 5;
     }
 }

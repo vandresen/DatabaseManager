@@ -29,6 +29,8 @@ else
     {
         try
         {
+            client.Timeout = TimeSpan.FromMinutes(settings.HttpTimeOut);
+
             settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
             Console.WriteLine($"{settings.AzureStorage}");
             settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");

@@ -16,7 +16,7 @@ namespace DatabaseManager.Common.Services
         public HttpService(HttpClient httpClient)
         {
             this.httpClient = httpClient;
-            //httpClient.Timeout = TimeSpan.FromMinutes(5);
+            
         }
 
         public async Task<HttpResponseWrapper<T>> Get<T>(string url)
