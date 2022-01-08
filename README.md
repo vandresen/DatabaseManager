@@ -13,7 +13,9 @@ PPDM database and Data Science projects. So far this version provides functional
 This tool is built for the cloud generation.
 
 ## Projects
-* Common - Common dll's used by all projects 
+* DatabaseManager.Common - Common dll's used by all projects 
+* DatabaseManager.BlazorComponents - Common blazor components that can be used in custom User Interaces
+* DatabaseManager.ServerLessClient - Serverless client using App functions to manage PPDM
 * DatabaseManager.Appfunctions - App functions used for serverless DatabaseManager version
 * DatabaseManager.LocalDataTransfer - A data transfer services for remote data access
 * DatabaseManager - Standard Blazor MVC client server application
