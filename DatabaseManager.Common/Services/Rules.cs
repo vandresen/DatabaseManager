@@ -26,9 +26,15 @@ namespace DatabaseManager.Common.Services
             throw new NotImplementedException();
         }
 
-        public Task DeleteRule(string source, int id)
+        public async Task DeleteRule(string source, int id)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/rules/{source}/{id}";
+            else url = baseUrl.BuildFunctionUrl("DeleteDataRule", $"name={source}&id={id}", apiKey);
+            var response = await httpService.Delete(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
         }
 
         public Task<List<RuleModel>> GetPrediction(string predictionName)
@@ -53,14 +59,28 @@ namespace DatabaseManager.Common.Services
             return response.Response;
         }
 
-        public Task<RuleInfo> GetRuleInfo(string source)
+        public async Task<RuleInfo> GetRuleInfo(string source)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/rules/RuleInfo/{source}";
+            else url = baseUrl.BuildFunctionUrl("GetRuleInfo", $"", apiKey);
+            var response = await httpService.Get<RuleInfo>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
         }
 
-        public Task<List<RuleModel>> GetRules(string source)
+        public async Task<List<RuleModel>> GetRules(string source)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/rules/{source}";
+            else url = baseUrl.BuildFunctionUrl("GetDataRules", $"name={source}", apiKey);
+            var response = await httpService.Get<List<RuleModel>>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
         }
 
         public Task InsertPrediction(PredictionSet predictionSet, string predictionName)
@@ -73,9 +93,15 @@ namespace DatabaseManager.Common.Services
             throw new NotImplementedException();
         }
 
-        public Task UpdateRule(RuleModel rule, string source, int id)
+        public async Task UpdateRule(RuleModel rule, string source, int id)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/rules/{source}/{id}";
+            else url = baseUrl.BuildFunctionUrl("UpdateDataRule", $"name={source}&id={id}", apiKey);
+            var response = await httpService.Put(url, rule);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
         }
     }
 }

@@ -1,0 +1,24 @@
+﻿@page "/createrule/{RuleType}"
+@inject IRules rules
+@*@inject IFunctions rf*@
+@inject SingletonService singleton
+@inject NavigationManager navigationManager
+
+<h3>New @RuleType Rule</h3>
+
+@code {
+    [Parameter] public string RuleType { get; set; }
+    public RuleInfo ruleInfo;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ruleInfo = await rules.GetRuleInfo(singleton.TargetConnector);
+        //FunctionList = await rf.GetFunctions(singleton.TargetConnector);
+        //type = RuleType;
+        //Console.WriteLine($"New Rule: {type}");
+        //string shortType = "";
+        //if (type == "Validity") shortType = "V";
+        //if (type == "Predictions") shortType = "P";
+        //functionMethods = FunctionList.Where(s => s.FunctionType == shortType).Select(s => s.FunctionName).ToList();
+    }
+}
