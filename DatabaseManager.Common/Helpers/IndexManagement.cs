@@ -95,18 +95,16 @@ namespace DatabaseManager.Common.Helpers
                 throw error;
             }
             _dbConn.OpenConnection(connector);
-            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(connector.DataAccessDefinition);
-            DataAccessDef ruleAccessDef = accessDefs.First(x => x.DataType == "Index");
-            string select = ruleAccessDef.Select;
             string query = $" where INDEXID = {id}";
-            DataTable dt = _dbConn.GetDataTable(select, query);
-            if (dt.Rows.Count == 0)
+            IndexAccess idxAccess = new IndexAccess();
+            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(query, connector.ConnectionString);
+            if (idxResults.Count == 0)
             {
                 Exception error = new Exception($"No index item found");
                 throw error;
             }
-            string indexNode = dt.Rows[0]["Text_IndexNode"].ToString();
-            int indexLevel = Convert.ToInt32(dt.Rows[0]["INDEXLEVEL"]) + 1;
+            string indexNode = idxResults[0].TextIndexNode;
+            int indexLevel = idxResults[0].IndexLevel + 1;
             string strProcedure = $"EXEC spGetNumberOfDescendants '{indexNode}', {indexLevel}";
             query = "";
             DataTable idx = _dbConn.GetDataTable(strProcedure, query);

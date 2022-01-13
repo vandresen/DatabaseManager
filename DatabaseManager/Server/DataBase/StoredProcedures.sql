@@ -77,7 +77,7 @@ CREATE PROCEDURE spGetDescendants(@indexnode varchar(400))
 AS
 BEGIN
     Select 
-	INDEXID, IndexNode.ToString() AS Text_IndexNode, INDEXLEVEL, 
+	INDEXID, IndexNode.ToString() AS TextIndexNode, INDEXLEVEL, 
 	DATANAME, DATATYPE, DATAKEY, QC_STRING, JSONDATAOBJECT 
 	from pdo_qc_index
 	WHERE IndexNode.IsDescendantOf(@indexnode) = 1

@@ -21,6 +21,7 @@ namespace DatabaseManager.Common.Helpers
         private readonly IFileStorageServiceCommon _fileStorage;
         private readonly ITableStorageServiceCommon _tableStorage;
         private readonly string _azureConnectionString;
+        private string databaseConnectionString;
         private readonly string container = "sources";
         private List<DataAccessDef> _accessDefs;
         DataAccessDef _indexAccessDef;
@@ -30,9 +31,6 @@ namespace DatabaseManager.Common.Helpers
         private ManageIndexTable manageIndexTable;
         private DataTable indexTable;
         private static HttpClient Client = new HttpClient();
-        //private static List<IndexFileData> _idxData;
-
-        //public JArray JsonIndexArray { get; set; }
 
         public Predictions(string azureConnectionString)
         {
@@ -55,25 +53,18 @@ namespace DatabaseManager.Common.Helpers
         public async Task<List<PredictionCorrection>> GetPredictions(string source)
         {
             List<PredictionCorrection> predictionResults = new List<PredictionCorrection>();
-            string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            _indexAccessDef = _accessDefs.First(x => x.DataType == "Index");
             ConnectParameters connector = await GetConnector(source);
-            _dbConn.OpenConnection(connector);
             RuleManagement rules = new RuleManagement(_azureConnectionString);
             string query = " where Active = 'Y' and RuleType = 'Predictions' order by PredictionOrder";
             string jsonString = await rules.GetRuleByQuery(connector.SourceName, query);
             predictionResults = JsonConvert.DeserializeObject<List<PredictionCorrection>>(jsonString);
 
+            IndexAccess idxAccess = new IndexAccess();
             foreach (PredictionCorrection predItem in predictionResults)
             {
-                string sql = _indexAccessDef.Select;
                 query = $" where QC_STRING like '%{predItem.RuleKey};%'";
-                DataTable ft = _dbConn.GetDataTable(sql, query);
-                predItem.NumberOfCorrections = ft.Rows.Count;
+                predItem.NumberOfCorrections = idxAccess.IndexCountByQuery(query, connector.ConnectionString);
             }
-
-            _dbConn.CloseConnection();
             return predictionResults;
         }
 
@@ -81,14 +72,21 @@ namespace DatabaseManager.Common.Helpers
         {
             List<DmsIndex> predictionResults = new List<DmsIndex>();
             ConnectParameters connector = await GetConnector(source);
-            _dbConn.OpenConnection(connector);
-            string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             RuleManagement rules = new RuleManagement(_azureConnectionString);
             string jsonRule = await rules.GetRule(source, id);
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
-            predictionResults = GetPredictedObjects(rule.RuleKey);
-            _dbConn.CloseConnection();
+            string query = $" where QC_STRING like '%{rule.RuleKey};%'";
+            IndexAccess idxAccess = new IndexAccess();
+            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(query, connector.ConnectionString);
+            foreach (var idxRow in idxResults)
+            {
+                predictionResults.Add(new DmsIndex()
+                {
+                    Id = idxRow.IndexId,
+                    DataType = idxRow.DataType,
+                    JsonData = idxRow.JsonDataObject
+                });
+            }
             return predictionResults;
         }
 
@@ -97,10 +95,11 @@ namespace DatabaseManager.Common.Helpers
             string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
             _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             ConnectParameters connector = await GetConnector(parms.DataConnector);
+            databaseConnectionString = connector.ConnectionString;
 
             _dbConn.OpenConnection(connector);
 
-            string sourceConnector = GetSource(_dbConn);
+            string sourceConnector = GetSource();
             if (parms.DataConnector == sourceConnector) syncPredictions = true;
             else syncPredictions = false;
 
@@ -118,29 +117,6 @@ namespace DatabaseManager.Common.Helpers
             MakePredictions(rule, connector);
             _dbConn.CloseConnection();
             manageIndexTable.SaveQCFlags();
-        }
-
-        private List<DmsIndex> GetPredictedObjects(string ruleKey)
-        {
-            List<DmsIndex> qcIndex = new List<DmsIndex>();
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            string sql = ruleAccessDef.Select;
-            string query = $" where QC_STRING like '%{ruleKey};%'";
-            DataTable idx = _dbConn.GetDataTable(sql, query);
-            foreach (DataRow idxRow in idx.Rows)
-            {
-                string dataType = idxRow["DATATYPE"].ToString();
-                string indexId = idxRow["INDEXID"].ToString();
-                string jsonData = idxRow["JSONDATAOBJECT"].ToString();
-                int intIndexId = Convert.ToInt32(indexId);
-                qcIndex.Add(new DmsIndex()
-                {
-                    Id = intIndexId,
-                    DataType = dataType,
-                    JsonData = jsonData
-                });
-            }
-            return qcIndex;
         }
 
         private void MakePredictions(RuleModel rule, ConnectParameters connector)
@@ -163,7 +139,7 @@ namespace DatabaseManager.Common.Helpers
                 if (!string.IsNullOrEmpty(jsonData))
                 {
                     qcSetup.IndexId = Convert.ToInt32(idxRow["INDEXID"]);
-                    qcSetup.IndexNode = idxRow["Text_IndexNode"].ToString();
+                    qcSetup.IndexNode = idxRow["TextIndexNode"].ToString();
                     qcSetup.DataObject = jsonData;
                     PredictionResult result;
                     if (externalQcMethod)
@@ -254,11 +230,10 @@ namespace DatabaseManager.Common.Helpers
 
         private void UpdateAction(PredictionResult result, string qcStr)
         {
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            string select = ruleAccessDef.Select;
             string idxQuery = $" where INDEXID = {result.IndexId}";
-            DataTable idx = _dbConn.GetDataTable(select, idxQuery);
-            if (idx.Rows.Count == 1)
+            IndexAccess idxAccess = new IndexAccess();
+            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(idxQuery, databaseConnectionString);
+            if (idxResults.Count == 1)
             {
                 string condition = $"INDEXID={result.IndexId}";
                 var rows = indexTable.Select(condition);
@@ -273,7 +248,7 @@ namespace DatabaseManager.Common.Helpers
                     dataObject["ROW_CHANGED_BY"] = Environment.UserName;
                     jsonDataObject = dataObject.ToString();
                     jsonDataObject = Helpers.Common.SetJsonDataObjectDate(jsonDataObject, "ROW_CHANGED_DATE");
-                    string dataType = idx.Rows[0]["DATATYPE"].ToString();
+                    string dataType = idxResults[0].DataType;
                     try
                     {
                         _dbConn.UpdateDataObject(jsonDataObject, dataType);
@@ -304,12 +279,10 @@ namespace DatabaseManager.Common.Helpers
 
         private void DeleteAction(PredictionResult result, string qcStr)
         {
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            string select = ruleAccessDef.Select;
-            string idxTable = GetTable(select);
             string idxQuery = $" where INDEXID = {result.IndexId}";
-            DataTable idx = _dbConn.GetDataTable(select, idxQuery);
-            if (idx.Rows.Count == 1)
+            IndexAccess idxAccess = new IndexAccess();
+            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(idxQuery, databaseConnectionString);
+            if (idxResults.Count == 1)
             {
                 string condition = $"INDEXID={result.IndexId}";
                 var rows = indexTable.Select(condition);
@@ -319,10 +292,10 @@ namespace DatabaseManager.Common.Helpers
 
                 if (syncPredictions)
                 {
-                    string dataType = idx.Rows[0]["DATATYPE"].ToString();
-                    string dataKey = idx.Rows[0]["DATAKEY"].ToString();
-                    ruleAccessDef = _accessDefs.First(x => x.DataType == dataType);
-                    select = ruleAccessDef.Select;
+                    string dataType = idxResults[0].DataType;
+                    string dataKey = idxResults[0].DataKey;
+                    DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == dataType);
+                    string select = ruleAccessDef.Select;
                     string dataTable = GetTable(select);
                     string dataQuery = "where " + dataKey;
                     _dbConn.DBDelete(dataTable, dataQuery);
@@ -378,14 +351,13 @@ namespace DatabaseManager.Common.Helpers
         {
             int nodeid = 0;
             string nodeName = dataType + "s";
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            string select = ruleAccessDef.Select;
             string query = $" where INDEXID = {parentid}";
-            DataTable dt = _dbConn.GetDataTable(select, query);
-            if (dt.Rows.Count == 1)
+            IndexAccess idxAccess = new IndexAccess();
+            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(query, databaseConnectionString);
+            if (idxResults.Count == 1)
             {
-                string indexNode = dt.Rows[0]["Text_IndexNode"].ToString();
-                int indexLevel = Convert.ToInt32(dt.Rows[0]["INDEXLEVEL"]) + 1;
+                string indexNode = idxResults[0].TextIndexNode;
+                int indexLevel = idxResults[0].IndexLevel + 1;
                 string strProcedure = $"EXEC spGetNumberOfDescendants '{indexNode}', {indexLevel}";
                 query = "";
                 DataTable idx = _dbConn.GetDataTable(strProcedure, query);
@@ -506,19 +478,18 @@ namespace DatabaseManager.Common.Helpers
         private IndexRootJson GetIndexRootData()
         {
             IndexRootJson rootJson = new IndexRootJson();
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            string select = ruleAccessDef.Select;
             string idxQuery = $" where INDEXNODE = '/'";
-            DataTable idx = _dbConn.GetDataTable(select, idxQuery);
-            if (idx.Rows.Count == 1)
+            IndexAccess idxAccess = new IndexAccess();
+            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(idxQuery, databaseConnectionString);
+            if (idxResults.Count > 0)
             {
-                string jsonStringObject = idx.Rows[0]["JSONDATAOBJECT"].ToString();
+                string jsonStringObject = idxResults[0].JsonDataObject;
                 rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonStringObject);
             }
             return rootJson;
         }
 
-        private string GetSource(DbUtilities dbConn)
+        private string GetSource()
         {
             string source = "";
             IndexRootJson rootJson = GetIndexRootData();

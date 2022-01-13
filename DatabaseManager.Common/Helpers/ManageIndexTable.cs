@@ -25,8 +25,9 @@ namespace DatabaseManager.Common.Helpers
             string dataType = "", string qcRule = "")
         {
             _accessDefs = accessDefs;
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            string select = ruleAccessDef.Select;
+            IndexAccess idxAccess = new IndexAccess();
+            //DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
+            string select = idxAccess.GetSelectSQL();
             if (!string.IsNullOrEmpty(dataType))
             {
                 select = select + $" where DATATYPE = '{dataType}'";

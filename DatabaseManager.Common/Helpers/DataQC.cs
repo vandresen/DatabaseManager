@@ -51,81 +51,60 @@ namespace DatabaseManager.Common.Helpers
         public async Task<List<QcResult>> GetResults(string source)
         {
             List<QcResult> result = new List<QcResult>();
-            string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             ConnectParameters connector = await GetConnector(source);
-            _dbConn.OpenConnection(connector);
-            DataAccessDef indexAccessDef = _accessDefs.First(x => x.DataType == "Index");
             RuleManagement rules = new RuleManagement(_azureConnectionString);
+            IndexAccess idxAccess = new IndexAccess();
             string query = " where Active = 'Y'";
             string jsonString = await rules.GetRuleByQuery(connector.SourceName, query);
             result = JsonConvert.DeserializeObject<List<QcResult>>(jsonString);
             foreach (QcResult qcItem in result)
             {
-                string sql = indexAccessDef.Select;
                 query = $" where QC_STRING like '%{qcItem.RuleKey};%'";
-                DataTable ft = _dbConn.GetDataTable(sql, query);
-                qcItem.Failures = ft.Rows.Count;
+                qcItem.Failures = idxAccess.IndexCountByQuery(query, connector.ConnectionString);
             }
-            _dbConn.CloseConnection();
             return result;
         }
 
         public async Task<List<DmsIndex>> GetResult(string source, int id)
         {
             List<DmsIndex> result = new List<DmsIndex>();
-            string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             ConnectParameters connector = await GetConnector(source);
-            _dbConn.OpenConnection(connector);
-            DataAccessDef indexAccessDef = _accessDefs.First(x => x.DataType == "Index");
-
+            
             RuleManagement rules = new RuleManagement(_azureConnectionString);
             string jsonRule = await rules.GetRule(source, id);
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
 
-            string sql = indexAccessDef.Select;
             string query = $" where QC_STRING like '%{rule.RuleKey};%'";
-            DataTable idx = _dbConn.GetDataTable(sql, query);
+            IndexAccess idxAccess = new IndexAccess();
+            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(query, connector.ConnectionString);
 
-            foreach (DataRow idxRow in idx.Rows)
+            foreach (var idxRow in idxResults)
             {
-                string dataType = idxRow["DATATYPE"].ToString();
-                string indexId = idxRow["INDEXID"].ToString();
-                string jsonData = idxRow["JSONDATAOBJECT"].ToString();
-                int intIndexId = Convert.ToInt32(indexId);
                 result.Add(new DmsIndex()
                 {
-                    Id = intIndexId,
-                    DataType = dataType,
-                    JsonData = jsonData
+                    Id = idxRow.IndexId,
+                    DataType = idxRow.DataType,
+                    JsonData = idxRow.JsonDataObject
                 });
             }
 
-            _dbConn.CloseConnection();
             return result;
         }
 
         public async Task<List<QcResult>> GetQCRules(DataQCParameters qcParms)
         {
             List<QcResult> qcResult = new List<QcResult>();
-            string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             ConnectParameters connector = await GetConnector(qcParms.DataConnector);
-            _dbConn.OpenConnection(connector);
-            DataAccessDef indexAccessDef = _accessDefs.First(x => x.DataType == "Index");
             RuleManagement rules = new RuleManagement(_azureConnectionString);
+            IndexAccess idxAccess = new IndexAccess();
             string query = " where Active = 'Y' and RuleType != 'Predictions'";
             string jsonString = await rules.GetRuleByQuery(connector.SourceName, query);
             qcResult = JsonConvert.DeserializeObject<List<QcResult>>(jsonString);
             foreach (QcResult qcItem in qcResult)
             {
-                string sql = indexAccessDef.Select;
                 query = $" where QC_STRING like '%{qcItem.RuleKey};%'";
-                DataTable ft = _dbConn.GetDataTable(sql, query);
-                qcItem.Failures = ft.Rows.Count;
+                qcItem.Failures = idxAccess.IndexCountByQuery(query, connector.ConnectionString);
             }
-            _dbConn.CloseConnection();
             return qcResult;
         }
 
@@ -133,32 +112,23 @@ namespace DatabaseManager.Common.Helpers
         {
             List<DmsIndex> qcIndex = new List<DmsIndex>();
             ConnectParameters connector = await GetConnector(source);
-            _dbConn.OpenConnection(connector);
             RuleManagement rules = new RuleManagement(_azureConnectionString);
             string jsonRule = await rules.GetRule(source, id);
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
 
-            string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
-            string sql = ruleAccessDef.Select;
             string query = $" where QC_STRING like '%{rule.RuleKey};%'";
-            DataTable idx = _dbConn.GetDataTable(sql, query);
-            foreach (DataRow idxRow in idx.Rows)
+            IndexAccess idxAccess = new IndexAccess();
+            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(query, connector.ConnectionString);
+            foreach (var idxRow in idxResults)
             {
-                string dataType = idxRow["DATATYPE"].ToString();
-                string indexId = idxRow["INDEXID"].ToString();
-                string jsonData = idxRow["JSONDATAOBJECT"].ToString();
-                int intIndexId = Convert.ToInt32(indexId);
                 qcIndex.Add(new DmsIndex()
                 {
-                    Id = intIndexId,
-                    DataType = dataType,
-                    JsonData = jsonData
+                    Id = idxRow.IndexId,
+                    DataType = idxRow.DataType,
+                    JsonData = idxRow.JsonDataObject
                 });
             }
             string result = JsonConvert.SerializeObject(qcIndex);
-            _dbConn.CloseConnection();
             return result;
         }
 
@@ -167,14 +137,11 @@ namespace DatabaseManager.Common.Helpers
             try
             {
                 ConnectParameters connector = await GetConnector(source);
-
-                DbUtilities dbConn = new DbUtilities();
-                dbConn.OpenConnection(connector);
-                dbConn.SQLExecute("EXEC spClearQCFlags");
-                dbConn.CloseConnection();
+                IndexAccess idxAccess = new IndexAccess();
+                idxAccess.ClearAllQCFlags(connector.ConnectionString);
             }
             catch (Exception ex)
-            { 
+            {
                 Exception error = new Exception($"DataQc: Could not clear qc flags, {ex}");
                 throw error;
             }
@@ -239,7 +206,6 @@ namespace DatabaseManager.Common.Helpers
             qcSetup.DatabasePassword = connector.Password;
             qcSetup.DatabaseServer = connector.DatabaseServer;
             qcSetup.DatabaseUser = connector.User;
-            DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
             string ruleFilter = rule.RuleFilter;
             string jsonRules = JsonConvert.SerializeObject(rule);
             qcSetup.RuleObject = jsonRules;
@@ -254,7 +220,7 @@ namespace DatabaseManager.Common.Helpers
                 if (!string.IsNullOrEmpty(jsonData))
                 {
                     qcSetup.IndexId = Convert.ToInt32(idxRow["INDEXID"]);
-                    qcSetup.IndexNode = idxRow["Text_IndexNode"].ToString();
+                    qcSetup.IndexNode = idxRow["TextIndexNode"].ToString();
                     string qcStr = manageQCFlags.GetQCFlag(qcSetup.IndexId);
                     qcSetup.DataObject = jsonData;
                     string result = "Passed";
