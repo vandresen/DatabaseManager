@@ -19,7 +19,7 @@ else
 
     private async Task Create()
     {
-        string connectStr = Common.GetConnectionString(connectParameters);
+        string connectStr = DatabaseManager.Common.Helpers.Common.CreateDatabaseConnectionString(connectParameters);
         connectParameters.ConnectionString = connectStr;
         try
         {

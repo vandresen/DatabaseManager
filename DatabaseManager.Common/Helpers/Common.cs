@@ -32,6 +32,7 @@ namespace DatabaseManager.Common.Helpers
             string user = "";
             //Encryption is currently not used, more testing later
             //string encryption = "Encrypt=True;TrustServerCertificate=False;";
+            string encryption = "Encrypt=False;";
             if (!string.IsNullOrWhiteSpace(connection.User))
                 user = $"User ID={connection.User};";
             else
@@ -40,7 +41,7 @@ namespace DatabaseManager.Common.Helpers
             if (!string.IsNullOrWhiteSpace(connection.Password)) password = $"Password={connection.Password};";
 
             string cnStr = "Data " + source + persistSecurity + database +
-                user + password + integratedSecurity + multipleActive;
+                user + password + integratedSecurity + encryption + multipleActive;
 
             cnStr = cnStr + timeout;
 

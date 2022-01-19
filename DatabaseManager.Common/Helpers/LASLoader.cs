@@ -2,12 +2,12 @@
 using DatabaseManager.Common.Extensions;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
+using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Text;

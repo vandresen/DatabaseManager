@@ -30,7 +30,7 @@
     {
         try
         {
-            string connectStr = Common.GetConnectionString(connectParameters);
+            string connectStr = DatabaseManager.Common.Helpers.Common.CreateDatabaseConnectionString(connectParameters);
             Console.WriteLine(connectStr);
             connectParameters.ConnectionString = connectStr;
             await dataSources.UpdateSource(connectParameters);

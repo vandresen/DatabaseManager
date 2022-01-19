@@ -2,11 +2,11 @@
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Azure.Cosmos.Table;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
