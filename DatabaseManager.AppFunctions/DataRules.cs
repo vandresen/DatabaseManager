@@ -387,5 +387,136 @@ namespace DatabaseManager.AppFunctions
             log.LogInformation("DeletePredictionSet: Complete");
             return new OkObjectResult("OK");
         }
+
+        [FunctionName("GetRuleFunctions")]
+        public static async Task<IActionResult> GetFunctions(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("GetRuleFunctions: Starting");
+            string responseMessage = "";
+
+            try
+            {
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
+                string source = Common.Helpers.Common.GetQueryString(req, "name");
+                RuleManagement rules = new RuleManagement(storageAccount);
+                responseMessage = await rules.GetFunctions(source);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"GetRuleFunctions: Error getting functions: {ex}");
+                return new BadRequestObjectResult($"Error getting functions: {ex}");
+            }
+
+            return new OkObjectResult(responseMessage);
+        }
+
+        [FunctionName("GetRuleFunction")]
+        public static async Task<IActionResult> GetFunction(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("GetRuleFunction: Starting");
+            string responseMessage = "";
+
+            try
+            {
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
+                string source = Common.Helpers.Common.GetQueryString(req, "name");
+                int id = Common.Helpers.Common.GetIntFromWebQuery(req, "id");
+                RuleManagement rules = new RuleManagement(storageAccount);
+                responseMessage = await rules.GetFunction(source, id);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"GetRuleFunction: Error getting functions: {ex}");
+                return new BadRequestObjectResult($"Error getting function: {ex}");
+            }
+
+            return new OkObjectResult(responseMessage);
+        }
+
+        [FunctionName("SaveRuleFunction")]
+        public static async Task<IActionResult> SaveFunction(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("SaveRuleFunction: Starting");
+            try
+            {
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
+                string source = Common.Helpers.Common.GetQueryString(req, "name");
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                RuleFunctions ruleFunction = JsonConvert.DeserializeObject<RuleFunctions>(requestBody);
+                if (ruleFunction == null)
+                {
+                    log.LogError("SaveRuleFunction: error missing function");
+                    return new BadRequestObjectResult("Error missing function");
+                }
+                RuleManagement rules = new RuleManagement(storageAccount);
+                await rules.SaveFunction(source, ruleFunction);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"SaveRuleFunction: Error saving functions: {ex}");
+                return new BadRequestObjectResult($"Error saving function: {ex}");
+            }
+
+            return new OkObjectResult("OK");
+        }
+
+        [FunctionName("UpdateRuleFunction")]
+        public static async Task<IActionResult> UpdateFunction(
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("UpdateRuleFunction: Starting");
+            try
+            {
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
+                string source = Common.Helpers.Common.GetQueryString(req, "name");
+                int id = Common.Helpers.Common.GetIntFromWebQuery(req, "id");
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                RuleFunctions ruleFunction = JsonConvert.DeserializeObject<RuleFunctions>(requestBody);
+                if (ruleFunction == null)
+                {
+                    log.LogError("UpdateRuleFunction: error missing function");
+                    return new BadRequestObjectResult("Error missing function");
+                }
+                RuleManagement rules = new RuleManagement(storageAccount);
+                await rules.UpdateFunction(source, id, ruleFunction);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"UpdateRuleFunction: Error updating functions: {ex}");
+                return new BadRequestObjectResult($"Error updating function: {ex}");
+            }
+
+            return new OkObjectResult("OK");
+        }
+
+        [FunctionName("DeleteRuleFunction")]
+        public static async Task<IActionResult> DeleteFunction(
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("DeleteRuleFunction: Starting");
+            try
+            {
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
+                string source = Common.Helpers.Common.GetQueryString(req, "name");
+                int id = Common.Helpers.Common.GetIntFromWebQuery(req, "id");
+                RuleManagement rules = new RuleManagement(storageAccount);
+                await rules.DeleteFunction(source, id);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"DeleteRuleFunction: Error deleting functions: {ex}");
+                return new BadRequestObjectResult($"Error deleting function: {ex}");
+            }
+
+            return new OkObjectResult("OK");
+        }
     }
 }
