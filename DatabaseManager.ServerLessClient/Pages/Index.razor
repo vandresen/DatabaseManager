@@ -3,6 +3,8 @@
 @inject SingletonService settings
 @inject HttpClient client
 @inject IDisplayMessage displayMessage
+@inject NavigationManager navigationManager
+@inject IIndexView idxView
 
 <div class="jumbotron">
     <h1>Welcome to Database Manager tool</h1>
@@ -20,10 +22,45 @@ else
     <GenericSelector Options="options" Selection="Selected" Label="Choose Connector" />
 }
 
+@if (index == null)
+{
+    <text>@indexStatus</text>
+}
+else
+{
+    <GenericList List="index">
+        <WholeListTemplate>
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Data Type</th>
+                        <th>Number Of Data Objects</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in index)
+                    {
+                        <tr>
+                            <td>
+                                <button class="btn btn-info" @onclick="@(() => DataTypes(item))">...</button>
+                            </td>
+                            <td>@item.DataType</td>
+                            <td>@item.NumberOfDataObjects</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </WholeListTemplate>
+    </GenericList>
+}
+
 
 @code {
     public List<ConnectParameters> ConnectParameters;
     private List<string> options { get; set; } = new List<string>();
+    public List<DmsIndex> index;
+    private string indexStatus = "No index available";
 
     protected override async Task OnInitializedAsync()
     {
@@ -44,7 +81,6 @@ else
             string url = settings.BaseUrl + "GetDataSources" + "?code=" + settings.ApiKey;
             Console.WriteLine(url);
             ConnectParameters = await client.GetFromJsonAsync<List<ConnectParameters>>(url);
-            //ConnectParameters = await dataSources.GetSources();
             foreach (ConnectParameters conn in ConnectParameters)
             {
                 if (conn.SourceType != "File") options.Add(conn.SourceName);
@@ -70,12 +106,36 @@ else
 
     private async Task Selected(string selectedString)
     {
-        //indexStatus = "Fetching index";
-        //StateHasChanged();
+        indexStatus = "Fetching index";
+        StateHasChanged();
         ConnectParameters connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
         settings.TargetConnector = selectedString;
         settings.DataAccessDefinition = connector.DataAccessDefinition;
-        //await GetIndexData();
+        await GetIndexData();
     }
 
+    private async Task GetIndexData()
+    {
+        try
+        {
+            string url = settings.BaseUrl + 
+            "GetIndexData" + 
+            $"?name={settings.TargetConnector}&code=" + settings.ApiKey;
+            Console.WriteLine(url);
+            index = await client.GetFromJsonAsync<List<DmsIndex>>(url);
+        }
+        catch (Exception ex)
+        {
+            index = null;
+            Console.WriteLine(ex);
+            indexStatus = "No index found";
+            StateHasChanged();
+        }
+    }
+
+    private void DataTypes(DmsIndex item)
+    {
+        string url = @"/ChildData/" + $"{item.Id}";
+        navigationManager.NavigateTo(url);
+    }
 }

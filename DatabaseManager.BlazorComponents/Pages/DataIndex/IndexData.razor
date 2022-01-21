@@ -1,9 +1,58 @@
 ﻿@page "/indexdata/{Id:int}"
-@*@inject IIndexData idxData
-@inject SingletonServices singleton*@
+@inject IIndexView idxData
+@inject SingletonService settings
 
 <h3>Index Data</h3>
 
-@code {
+@if (index == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <GenericList List="index">
+        <WholeListTemplate>
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Data Type</th>
+                        <th>Number Of Data Objects</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in index)
+                    {
+                        <tr>
+                            <td>
+                                <a class="btn btn-info" href="/childdata/@item.Id">...</a>
+                            </td>
+                            <td>@item.DataType</td>
+                            <td>@item.NumberOfDataObjects</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </WholeListTemplate>
+    </GenericList>
+}
 
+@code {
+    [Parameter] public int Id { get; set; }
+    public List<DmsIndex> index;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Console.WriteLine($"Fetch data for {Id}");
+            idxData.InitSettings(settings);
+            index = await idxData.GetChildren(settings.TargetConnector, Id);
+            Console.WriteLine($"Number of objects {index.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
 }

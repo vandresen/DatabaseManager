@@ -1,0 +1,135 @@
+﻿@page "/ChildData/{Id:int}"
+@inject SingletonService settings
+@inject IIndexView indexData
+@inject NavigationManager navigationManager
+
+
+<h3>@DataType</h3>
+
+<br />
+<Table TableItem="JObject" Items="data" PageSize="10" ColumnReorder="true">
+    @foreach (var head in headers)
+    {
+        @if (head.Name == "Children")
+        {
+            <Column TableItem="JObject" Title="" Sortable="false">
+                <Template>
+                    @if (context.Property("Children").Value.Value<int>() > 0)
+                    {
+                        <button class="btn btn-info" @onclick="@(() => DrillDown(context.ToString()))">...</button>
+                    }
+                </Template>
+            </Column>
+        }
+        else
+        {
+            <Column TableItem="JObject" Title="@head.Name" Field="@(x => x.Property(head.Name).Value)" Sortable="true" Filterable="@head.Filter" Type="@head.Type" />
+        }
+
+    }
+    <Pager ShowPageNumber="true" ShowTotalCount="true" />
+</Table>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private List<JObject> data = new List<JObject>();
+    public List<DmsIndex> index;  // Original data from server
+    private List<Header> headers = new List<Header>();  //Attributes used for headers after filtered for display attributes
+    Dictionary<string, string> DisplayAttributes =
+        new Dictionary<string, string>(){
+            {"WellBore", "UWI, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE,LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS,GROUND_ELEV,SPUD_DATE"},
+            {"MarkerPick", "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH"},
+            {"data", "Pig"} };
+
+    private string DataType = "";
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            indexData.InitSettings(settings);
+            index = await indexData.GetChildren(settings.TargetConnector, Id);
+
+            string json = "";
+            foreach (DmsIndex item in index)
+            {
+                json = item.JsonData;
+                if (!string.IsNullOrEmpty(json))
+                {
+                    JObject token = JObject.Parse(json);
+                    token.Add(new JProperty("Children", item.NumberOfDataObjects));
+                    token.Add(new JProperty("Id", item.Id));
+                    data.Add(token);
+                }
+            }
+
+            DataType = index[0].DataType;
+            headers = new List<Header>();
+            json = index[0].JsonData;
+            JObject headerToken = JObject.Parse(json);
+            headers.Add(new Header() { Name = "Children", Type = typeof(string) });
+
+            foreach (JProperty property in headerToken.Properties())
+            {
+                bool filter = true;
+                if (data.FirstOrDefault(s => s.Property(property.Name).Value.Type == JTokenType.Null) != null) filter = false;
+
+                Type type = typeof(string);
+                var vidar = data.FirstOrDefault(s => s.Property(property.Name).Value != null);
+                var tokenType = vidar.Property(property.Name).Value.Type;
+                if (tokenType == JTokenType.Integer)
+                {
+                    type = typeof(int);
+                }
+                else if (tokenType == JTokenType.Float)
+                {
+                    type = typeof(double);
+                }
+                else if (tokenType == JTokenType.Date)
+                {
+                    type = typeof(DateTime);
+                }
+
+                bool display = true;
+                if (DisplayAttributes.ContainsKey(DataType) == true)
+                {
+                    display = false;
+                    String attributeString = DisplayAttributes[DataType];
+                    if (attributeString.Contains(property.Name)) display = true;
+                }
+
+                if (display)
+                {
+                    if (display) headers.Add(
+                        new Header()
+                        {
+                            Name = property.Name,
+                            Type = type,
+                            Filter = filter
+                        });
+                }
+
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task DrillDown(string jsonString)
+    {
+        dynamic data = JObject.Parse(jsonString);
+        Console.WriteLine(data.Id);
+        navigationManager.NavigateTo($"/indexdata/{data.Id}");
+    }
+
+    public class Header
+    {
+        public string Name { get; set; }
+        public Type Type { get; set; }
+        public bool Filter { get; set; }
+    }
+
+}

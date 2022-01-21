@@ -41,6 +41,7 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IDataIndexer, DataIndexer>();
             services.AddScoped<IDataQc, DataQc>();
             services.AddScoped<IRules, Rules>();
+            services.AddScoped<IIndexView, IndexView>();
             services.AddBlazorTable();
         }
     }

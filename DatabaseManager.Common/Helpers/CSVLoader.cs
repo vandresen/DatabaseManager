@@ -233,22 +233,6 @@ namespace DatabaseManager.Common.Helpers
                     //Console.WriteLine($"Time span, transfer from csv to datatable: {diff}");
 
                     InsertTableToDatabase(attributes, dataType, target, constants);
-                    //csv.Configuration.BadDataFound = null; //Only works with version 19.0.0
-                    //using (var dr = new CsvDataReader(csv))
-                    //{
-                    //    dt = new DataTable();
-                    //    dt.Load(dr);
-                    //    timeEnd = DateTime.Now;
-                    //    diff = timeEnd - timeStart;
-                    //    //Console.WriteLine($"Time span, transfer from csv to datatable: {diff}");
-
-                    //    dt = FixTableColumns(dt, attributes, dataType);
-                    //    timeEnd = DateTime.Now;
-                    //    diff = timeEnd - timeStart;
-                    //    //Console.WriteLine($"Time span, column changes: {diff}");
-
-                    //    InsertTableToDatabase(attributes, dataType, target, constants);
-                    //}
                 }
             }
 
@@ -581,12 +565,8 @@ namespace DatabaseManager.Common.Helpers
 
         private void CreateSqlToLoadReferences(string dataType, SqlConnection conn, string tempTable)
         {
-            //string sql = "";
             string insertSql = "";
-            string addKeySql = $"ALTER TABLE {tempTable}1 ADD ";
-            string addKeyValueSql = $"UPDATE {tempTable}1 SET ";
             string comma = "";
-
             List<ReferenceTable> dataTypeRefs = _references.Where(x => x.DataType == dataType).ToList();
             foreach (ReferenceTable refTable in dataTypeRefs)
             {
