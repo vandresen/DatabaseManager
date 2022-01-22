@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
-using DatabaseManager.Server.Entities;
-using DatabaseManager.Server.Services;
+using DatabaseManager.Common.Entities;
+using DatabaseManager.Common.Helpers;
+using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -16,14 +17,14 @@ namespace DatabaseManager.Server.Controllers
     {
         private string connectionString;
         private readonly string container = "sources";
-        private readonly ITableStorageService tableStorageService;
-        private readonly IFileStorageService fileStorageService;
+        private readonly ITableStorageServiceCommon tableStorageService;
+        private readonly IFileStorageServiceCommon fileStorageService;
         private readonly IMapper mapper;
 
         public SourceController(IConfiguration configuration,
-            ITableStorageService tableStorageService,
+            ITableStorageServiceCommon tableStorageService,
             IMapper mapper,
-            IFileStorageService fileStorageService)
+            IFileStorageServiceCommon fileStorageService)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.tableStorageService = tableStorageService;
@@ -34,20 +35,12 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet]
         public async Task<ActionResult<List<ConnectParameters>>> Get()
         {
-            List<SourceEntity> sourceEntities = new List<SourceEntity>();
             List<ConnectParameters> connectors = new List<ConnectParameters>();
             try
             {
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                tableStorageService.SetConnectionString(tmpConnString);
-                fileStorageService.SetConnectionString(tmpConnString);
-                string dataAccessDef =  await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                sourceEntities = await tableStorageService.GetTableRecords<SourceEntity>(container);
-                connectors =  mapper.Map<List<ConnectParameters>>(sourceEntities);
-                foreach (ConnectParameters connector in connectors)
-                {
-                    connector.DataAccessDefinition = dataAccessDef;
-                }
+                string storageAccount = Request.Headers["AzureStorageConnection"];
+                Sources ss = new Sources(storageAccount);
+                connectors = await ss.GetSources();
             }
             catch (Exception ex)
             {
@@ -61,13 +54,9 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                tableStorageService.SetConnectionString(tmpConnString);
-                fileStorageService.SetConnectionString(tmpConnString);
-                string dataAccessDef = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, name);
-                ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                connector.DataAccessDefinition = dataAccessDef;
+                string storageAccount = Request.Headers["AzureStorageConnection"];
+                Sources ss = new Sources(storageAccount);
+                ConnectParameters connector = await ss.GetSourceParameters(name);
                 return connector;
             }
             catch (Exception ex)
@@ -81,10 +70,9 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                SourceEntity sourceEntity = mapper.Map<SourceEntity>(connectParameters);
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                tableStorageService.SetConnectionString(tmpConnString);
-                await tableStorageService.UpdateTable(container, sourceEntity);
+                string storageAccount = Request.Headers["AzureStorageConnection"];
+                Sources ss = new Sources(storageAccount);
+                await ss.UpdateSource(connectParameters);
             }
             catch (Exception ex)
             {
@@ -99,10 +87,9 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                SourceEntity sourceEntity = mapper.Map<SourceEntity>(connectParameters);
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                tableStorageService.SetConnectionString(tmpConnString);
-                await tableStorageService.SaveTableRecord(container, connectParameters.SourceName, sourceEntity);
+                string storageAccount = Request.Headers["AzureStorageConnection"];
+                Sources ss = new Sources(storageAccount);
+                await ss.SaveSource(connectParameters);
             }
             catch (Exception ex)
             {
@@ -117,9 +104,9 @@ namespace DatabaseManager.Server.Controllers
         {
             try
             {
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                tableStorageService.SetConnectionString(tmpConnString);
-                await tableStorageService.DeleteTable(container, name);
+                string storageAccount = Request.Headers["AzureStorageConnection"];
+                Sources ss = new Sources(storageAccount);
+                await ss.DeleteSource(name);
             }
             catch (Exception ex)
             {

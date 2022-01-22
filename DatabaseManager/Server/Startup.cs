@@ -1,4 +1,4 @@
-using DatabaseManager.Server.Services;
+//using DatabaseManager.Server.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.ResponseCompression;
@@ -31,8 +31,8 @@ namespace DatabaseManager.Server
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddAutoMapper(typeof(Startup));
-            services.AddScoped<IFileStorageService, AzureFileStorageService>();
-            services.AddScoped<ITableStorageService, AzureTableStorageService>();
+            services.AddScoped<IFileStorageServiceCommon, AzureFileStorageServiceCommon>();
+            services.AddScoped<ITableStorageServiceCommon, AzureTableStorageServiceCommon>();
             services.AddScoped<IQueueService, AzureQueueServiceCommon>();
 
             services.AddMvc();
