@@ -9,8 +9,6 @@ using System.Threading.Tasks;
 using AutoMapper;
 using DatabaseManager.Common.Helpers;
 using DatabaseManager.Server.Entities;
-using DatabaseManager.Server.Extensions;
-using DatabaseManager.Server.Helpers;
 using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Hosting;

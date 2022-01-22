@@ -1,16 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
-using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using DatabaseManager.Shared;
-using DatabaseManager.Server.Helpers;
 using Microsoft.AspNetCore.Hosting;
-using DatabaseManager.Server.Entities;
-using System.Data;
-using Newtonsoft.Json;
 using DatabaseManager.Server.Services;
 using AutoMapper;
 using DatabaseManager.Common.Helpers;

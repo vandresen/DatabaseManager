@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using DatabaseManager.Shared;
-using DatabaseManager.Server.Helpers;
 using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json.Linq;
 using DatabaseManager.Server.Services;

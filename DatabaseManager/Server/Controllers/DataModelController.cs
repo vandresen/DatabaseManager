@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using DatabaseManager.Server.Helpers;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Hosting;
 using DatabaseManager.Server.Entities;

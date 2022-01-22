@@ -1,4 +1,5 @@
-﻿using DatabaseManager.Server.Helpers;
+﻿//using DatabaseManager.Server.Helpers;
+using DatabaseManager.Common.Helpers;
 using DatabaseManager.Shared;
 using System;
 using System.Collections.Generic;

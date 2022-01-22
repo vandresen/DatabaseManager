@@ -1,20 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using DatabaseManager.Common.Helpers;
-using DatabaseManager.Server.Entities;
-using DatabaseManager.Server.Helpers;
 using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using DbUtilities = DatabaseManager.Common.Helpers.DbUtilities;
 
 namespace DatabaseManager.Server.Controllers
 {
