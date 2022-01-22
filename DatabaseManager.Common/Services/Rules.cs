@@ -88,9 +88,15 @@ namespace DatabaseManager.Common.Services
             throw new NotImplementedException();
         }
 
-        public Task InsertRule(RuleModel rule, string source)
+        public async Task InsertRule(RuleModel rule, string source)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/rules/{source}";
+            else url = baseUrl.BuildFunctionUrl("SaveDataRule", $"name={source}", apiKey);
+            var response = await httpService.Post(url, rule);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
         }
 
         public async Task UpdateRule(RuleModel rule, string source, int id)
@@ -102,6 +108,18 @@ namespace DatabaseManager.Common.Services
             {
                 throw new ApplicationException(await response.GetBody());
             }
+        }
+
+        public async Task<List<RuleFunctions>> GetFunctions(string source)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/functions/{source}";
+            else url = baseUrl.BuildFunctionUrl("GetRuleFunctions", $"name={source}", apiKey);
+            var response = await httpService.Get<List<RuleFunctions>>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
         }
     }
 }

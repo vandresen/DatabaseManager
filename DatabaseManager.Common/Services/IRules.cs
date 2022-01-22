@@ -18,5 +18,10 @@ namespace DatabaseManager.Common.Services
         Task InsertPrediction(PredictionSet predictionSet, string predictionName);
         Task InsertRule(RuleModel rule, string source);
         Task UpdateRule(RuleModel rule, string source, int id);
+        //Task DeleteFunction(string source, int id);
+        //Task<RuleFunctions> GetFunction(string source, int id);
+        Task<List<RuleFunctions>> GetFunctions(string source);
+        //Task InsertFunction(RuleFunctions function, string source);
+        //Task UpdateFunction(RuleFunctions function, string source, int id);
     }
 }
