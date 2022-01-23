@@ -20,20 +20,14 @@ namespace DatabaseManager.Server.Controllers
         private readonly string container = "sources";
         private readonly string ruleShare = "rules";
         private readonly string predictionContainer = "predictions";
-        private readonly IFileStorageService fileStorageService;
-        private readonly ITableStorageService tableStorageService;
         private readonly IMapper mapper;
         private readonly IWebHostEnvironment _env;
 
         public RulesController(IConfiguration configuration,
-            IFileStorageService fileStorageService,
-            ITableStorageService tableStorageService,
             IMapper mapper,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
-            this.fileStorageService = fileStorageService;
-            this.tableStorageService = tableStorageService;
             this.mapper = mapper;
             _env = env;
         }
@@ -213,13 +207,6 @@ namespace DatabaseManager.Server.Controllers
                 Exception error = new Exception($"Azure storage key string is not set");
                 throw error;
             }
-        }
-
-        private void SetStorageAccount()
-        {
-            string tmpConnString = Request.Headers["AzureStorageConnection"];
-            fileStorageService.SetConnectionString(tmpConnString);
-            tableStorageService.SetConnectionString(tmpConnString);
         }
     }
 }

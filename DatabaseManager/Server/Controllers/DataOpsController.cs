@@ -1,15 +1,12 @@
 ﻿using Azure.Storage.Queues;
-using DatabaseManager.Server.Services;
+using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,7 +19,7 @@ namespace DatabaseManager.Server.Controllers
     {
         private static HttpClient client = new HttpClient();
         private readonly ILogger<DataOpsController> logger;
-        private readonly IFileStorageService fileStorageService;
+        private readonly IFileStorageServiceCommon fileStorageService;
         private string fileShare = "dataops";
         private string connectionString;
         private string dataOpsQueue;
@@ -30,7 +27,7 @@ namespace DatabaseManager.Server.Controllers
 
         public DataOpsController(IConfiguration configuration,
             ILogger<DataOpsController> logger,
-            IFileStorageService fileStorageService)
+            IFileStorageServiceCommon fileStorageService)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             dataOpsQueue = configuration["DataOpsQueue"];
@@ -56,9 +53,7 @@ namespace DatabaseManager.Server.Controllers
         public async Task<ActionResult<string>> GetPipeline(string name)
         {
             SetStorageAccount();
-            //List<PipeLine> dataOps = new List<PipeLine>();
             string dataOpsFile = await fileStorageService.ReadFile(fileShare, name);
-            //dataOps = JsonConvert.DeserializeObject<List<PipeLine>>(dataOpsFile);
             return dataOpsFile;
         }
 

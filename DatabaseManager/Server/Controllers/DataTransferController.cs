@@ -14,16 +14,16 @@ namespace DatabaseManager.Server.Controllers
     [ApiController]
     public class DataTransferController : ControllerBase
     {
-        private readonly ITableStorageService tableStorageService;
-        private readonly IFileStorageService fileStorageService;
+        private readonly ITableStorageServiceCommon tableStorageService;
+        private readonly IFileStorageServiceCommon fileStorageService;
         private readonly IQueueService queueService;
         private readonly IMapper mapper;
         private readonly string container = "sources";
         private readonly string queueName = "datatransferqueue";
         private readonly string infoName = "datatransferinfo";
 
-        public DataTransferController(ITableStorageService tableStorageService,
-            IFileStorageService fileStorageService,
+        public DataTransferController(ITableStorageServiceCommon tableStorageService,
+            IFileStorageServiceCommon fileStorageService,
             IQueueService queueService,
             IMapper mapper)
         {

@@ -130,8 +130,16 @@ else
         catch (Exception ex)
         {
             index = null;
-            Console.WriteLine(ex);
-            indexStatus = "No index found";
+            
+            if (ex.ToString().Contains("Could not find stored procedure"))
+            {
+                indexStatus = "No datamodel found";
+            }
+            else
+            {
+                Console.WriteLine(ex);
+                indexStatus = "No index found";
+            }
             StateHasChanged();
         }
     }
