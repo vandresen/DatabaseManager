@@ -1,0 +1,115 @@
+﻿@page "/rules/getpredictions"
+@inject IRules rules
+@inject SingletonService singleton
+@inject IDisplayMessage displayMessage
+@inject NavigationManager navigationManager
+
+<h3>Predictions</h3>
+
+<GenericList List="predictionSets">
+    <WholeListTemplate>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Name</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in psPagination)
+                {
+                    <tr>
+                        <td>
+                            <button class="btn btn-success" @onclick="@(() => SelectedPrediction(item.Name))">Select</button>
+                            <button class="btn btn-danger" @onclick="@(() => Delete(item.Name))">Delete</button>
+                        </td>
+                        <td>@item.Name</td>
+                        <td>@item.Description</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <Pagination CurrentPage="@curPage" TotalAmountPages="totalPages"
+                    SelectedPage="SelectedPage" />
+    </WholeListTemplate>
+</GenericList>
+
+@code {
+    List<PredictionSet> predictionSets;
+    List<PredictionSet> psPagination;
+
+    int totalPages;
+    int totalRecords;
+    int curPage = 1;
+    int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            predictionSets = await rules.GetPredictions();
+            psPagination = new List<PredictionSet>();
+            psPagination = predictionSets.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+            totalRecords = predictionSets.Count();
+            totalPages = (int)Math.Ceiling(totalRecords / (decimal)pageSize);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task SelectedPrediction(string name)
+    {
+        try
+        {
+            Console.WriteLine($"Selected rule set is {name}");
+            List<RuleModel> currentRules = await rules.GetRules(singleton.TargetConnector);
+            foreach (RuleModel currRule in currentRules)
+            {
+                await rules.DeleteRule(singleton.TargetConnector, currRule.Id);
+            }
+            List<RuleModel> ruleSet = await rules.GetPrediction(name);
+            foreach (RuleModel newRule in ruleSet)
+            {
+                //newRule.CreatedBy = Environment.UserName;
+                await rules.InsertRule(newRule, singleton.TargetConnector);
+            }
+            navigationManager.NavigateTo("rules");
+        }
+        catch (Exception ex)
+        {
+            if (ex.ToString().Contains("does not exist in Azure storage"))
+            {
+                await displayMessage.DisplayErrorMessage("The rule file is missing. Delete from from list");
+            }
+            else
+            {
+                Console.WriteLine($"Errors: {ex}");
+            }
+        }
+
+    }
+
+    private async Task Delete(string name)
+    {
+        try
+        {
+            await rules.DeletePrediction(name);
+            navigationManager.NavigateTo("rules");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private void SelectedPage(int page)
+    {
+        curPage = page;
+        psPagination = new List<PredictionSet>();
+        psPagination = predictionSets.Skip((curPage - 1) * pageSize).Take(pageSize).ToList();
+        this.StateHasChanged();
+    }
+}

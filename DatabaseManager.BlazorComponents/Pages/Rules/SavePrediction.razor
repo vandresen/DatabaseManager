@@ -1,0 +1,69 @@
+﻿@page "/rules/saveprediction"
+@inject IRules rules
+@inject SingletonService singleton
+@inject NavigationManager navigationManager
+@inject IDisplayMessage displayMessage
+
+<h3>Save Prediction</h3>
+
+<div>
+    <label>Prediction Name:</label>
+    <div>
+        <input @bind="predictionName" />
+    </div>
+</div>
+<div>
+    <label>Description:</label>
+    <div>
+        <input @bind="description" />
+    </div>
+</div>
+
+<div style="margin-top:20px">
+    <button class="btn btn-primary" @onclick="Save">Save</button>
+</div>
+
+@code {
+    List<RuleModel> RuleList;
+    public string predictionName { get; set; }
+    private string description;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            RuleList = await rules.GetRules(singleton.TargetConnector);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task Save()
+    {
+        try
+        {
+            PredictionSet predictionSet = new PredictionSet()
+            {
+                Name = predictionName,
+                Description = description,
+                RuleSet = RuleList
+            };
+            await rules.InsertPrediction(predictionSet, predictionName);
+            navigationManager.NavigateTo("rules");
+        }
+        catch (Exception ex)
+        {
+            if (ex.ToString().Contains("Prediction set exist"))
+            {
+                await displayMessage.DisplayErrorMessage("Prediction set already exist, please use another name");
+            }
+            else
+            {
+                Console.WriteLine($"Errors: {ex}");
+            }
+        }
+
+    }
+}

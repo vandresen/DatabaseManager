@@ -21,9 +21,15 @@ namespace DatabaseManager.Common.Services
             apiKey = settings.ApiKey;
         }
 
-        public Task DeletePrediction(string predictionName)
+        public async Task DeletePrediction(string predictionName)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/rules/RuleFile/{predictionName}";
+            else url = baseUrl.BuildFunctionUrl("DeletePredictionSet", $"name={predictionName}", apiKey);
+            var response = await httpService.Delete(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
         }
 
         public async Task DeleteRule(string source, int id)
@@ -37,14 +43,28 @@ namespace DatabaseManager.Common.Services
             }
         }
 
-        public Task<List<RuleModel>> GetPrediction(string predictionName)
+        public async Task<List<RuleModel>> GetPrediction(string predictionName)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/rules/RuleFile/{predictionName}";
+            else url = baseUrl.BuildFunctionUrl("GetPredictionSet", $"name={predictionName}", apiKey);
+            var response = await httpService.Get<List<RuleModel>>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
         }
 
-        public Task<List<PredictionSet>> GetPredictions()
+        public async Task<List<PredictionSet>> GetPredictions()
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/rules/RuleFile";
+            else url = baseUrl.BuildFunctionUrl("GetPredictionSets", $"", apiKey);
+            var response = await httpService.Get<List<PredictionSet>>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
         }
 
         public async Task<RuleModel> GetRule(string source, int id)
@@ -83,9 +103,15 @@ namespace DatabaseManager.Common.Services
             return response.Response;
         }
 
-        public Task InsertPrediction(PredictionSet predictionSet, string predictionName)
+        public async Task InsertPrediction(PredictionSet predictionSet, string predictionName)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/rules/RuleFile/{predictionName}";
+            else url = baseUrl.BuildFunctionUrl("SavePredictionSet", $"name={predictionName}", apiKey);
+            var response = await httpService.Post(url, predictionSet);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
         }
 
         public async Task InsertRule(RuleModel rule, string source)
