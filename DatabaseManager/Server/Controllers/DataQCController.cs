@@ -8,6 +8,7 @@ using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -98,12 +99,34 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost]
         public async Task<ActionResult<string>> ExecuteRule(DataQCParameters qcParams)
         {
+            string result = "[]";
             try
             {
                 if (qcParams == null) return BadRequest();
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 DataQC qc = new DataQC(tmpConnString);
-                await qc.ProcessQcRule(qcParams);
+                List<int> failedObjects = new List<int>();
+                failedObjects = await qc.ExecuteQcRule(qcParams);
+                RuleFailures ruleFailures = new RuleFailures() { RuleId=qcParams.RuleId, Failures= failedObjects };
+                result = JsonConvert.SerializeObject(ruleFailures);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.ToString());
+            }
+
+            return result;
+        }
+
+        [HttpPost("Close/{source}")]
+        public async Task<ActionResult<string>> CloseRulesExecution(string source, DataQCParameters qcParams)
+        {
+            try
+            {
+                if (qcParams == null) return BadRequest();
+                string tmpConnString = Request.Headers["AzureStorageConnection"];
+                DataQC qc = new DataQC(tmpConnString);
+                await qc.CloseDataQC(source, qcParams.Failures);
             }
             catch (Exception ex)
             {

@@ -115,17 +115,20 @@
 
             await qc.ClearQCFlags(singleton.TargetConnector);
 
+            List<RuleFailures> qcFailures = new List<RuleFailures>();
             foreach (QcResult rule in ResultList)
             {
                 progress($"Processing rule {rule.RuleName}");
                 qcParams.DataConnector = singleton.TargetConnector;
                 qcParams.RuleId = rule.Id;
 
-                await qc.ProcessQCRule(qcParams);
-
+                RuleFailures ruleFailures = await qc.ProcessQCRule(qcParams);
+                qcFailures.Add(ruleFailures);
                 barValue = barValue + progressInterval;
                 qcParams.ClearQCFlags = false;
             }
+            qcParams.Failures = qcFailures;
+            await qc.CloseQcProcessing(singleton.TargetConnector, qcParams);
             barValue = 100;
 
             await QCResults();

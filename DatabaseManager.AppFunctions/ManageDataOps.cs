@@ -1,19 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
-using DatabaseManager.AppFunctions.Entities;
-using DatabaseManager.AppFunctions.Helpers;
 using DatabaseManager.Common.Helpers;
-using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace DatabaseManager.AppFunctions
@@ -45,18 +39,30 @@ namespace DatabaseManager.AppFunctions
                 {
                     
                     List<QcResult> qcList = await context.CallActivityAsync<List<QcResult>>("ManageDataOps_InitDataQC", pipe);
-                    var tasks = new Task<string>[qcList.Count];
+                    var tasks = new Task<List<int>>[qcList.Count];
                     for (int i = 0; i < qcList.Count; i++)
                     {
                         int qcId = qcList[i].Id;
                         JObject pipeParm = JObject.Parse(pipe.JsonParameters);
                         pipeParm["RuleId"] = qcId;
                         pipe.JsonParameters = pipeParm.ToString();
-                        string stat = await context.CallActivityAsync<string>("ManageDataOps_DataQC", pipe);
-                        //tasks[i] = context.CallActivityAsync<string>("ManageDataOps_DataQC", pipe);
+                        tasks[i] = context.CallActivityAsync<List<int>>("ManageDataOps_DataQC", pipe);
                     }
 
-                    //await Task.WhenAll(tasks);
+                    await Task.WhenAll(tasks);
+                    List<RuleFailures> failures = new List<RuleFailures>(); 
+                    for (int i = 0; i < qcList.Count; i++)
+                    {
+                        failures.Add(new RuleFailures { RuleId = qcList[i].Id, Failures = tasks[i].Result });
+                    }
+                    DataQCDataOpsCloseParameters parms = new DataQCDataOpsCloseParameters() 
+                    {
+                        Parameters = pipe,
+                        Failures = failures
+                    };
+                    log.LogInformation($"RunOrchestrator: Ready to close data QC");
+                    string stat = await context.CallActivityAsync<string>("ManageDataOps_CloseDataQC", parms);
+
                 }
                 else if(pipe.Name == "DataTransfer")
                 {
@@ -169,6 +175,18 @@ namespace DatabaseManager.AppFunctions
             return qcList;
         }
 
+        [FunctionName("ManageDataOps_CloseDataQC")]
+        public static async Task<string> CloseDataQC([ActivityTrigger] DataQCDataOpsCloseParameters parms, ILogger log)
+        {
+            log.LogInformation($"CloseDataQC: Starting");
+            DataOpParameters pipe = parms.Parameters;
+            DataQCParameters qcParms = JObject.Parse(pipe.JsonParameters).ToObject<DataQCParameters>();
+            DataQC qc = new DataQC(pipe.StorageAccount);
+            await qc.CloseDataQC(qcParms.DataConnector, parms.Failures);
+            log.LogInformation($"CloseDataQC: Complete");
+            return "Data QC Closed";
+        }
+
         [FunctionName("ManageDataOps_InitDataTransfer")]
         public static async Task<List<string>> InitDataTransfer([ActivityTrigger] DataOpParameters pipe, ILogger log)
         {
@@ -205,21 +223,23 @@ namespace DatabaseManager.AppFunctions
         }
 
         [FunctionName("ManageDataOps_DataQC")]
-        public static async Task<string> DataQC([ActivityTrigger] DataOpParameters pipe, ILogger log)
+        public static async Task<List<int>> DataQC([ActivityTrigger] DataOpParameters pipe, ILogger log)
         {
+            List<int> result = new List<int>();
             try
             {
-                log.LogInformation($"InitDataQC: Starting");
+                log.LogInformation($"DataQC: Starting");
                 DataQC qc = new DataQC(pipe.StorageAccount);
                 DataQCParameters qcParms = JObject.Parse(pipe.JsonParameters).ToObject<DataQCParameters>();
-                await qc.ProcessQcRule(qcParms);
+                result = await qc.ExecuteQcRule(qcParms);
+                log.LogInformation($"DataQC: completed rule id {qcParms.RuleId} with result = {result}");
             }
             catch (Exception ex)
             {
                 log.LogInformation($"InitDataQC:Serious exception {ex}");
             }
 
-            return $"OK";
+            return result;
         }
 
         [FunctionName("ManageDataOps_Prediction")]

@@ -46,9 +46,19 @@ namespace DatabaseManager.Client.Helpers
             }
         }
 
-        public async Task ProcessQCRule(DataQCParameters qcParams)
+        public async Task<RuleFailures> ProcessQCRule(DataQCParameters qcParams)
         {
-            var response = await httpService.Post(url, qcParams);
+            var response = await httpService.Post<DataQCParameters, RuleFailures>(url, qcParams);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
+        public async Task CloseQcProcessing(string source, DataQCParameters qcParams)
+        {
+            var response = await httpService.Post($"{url}/Close/{source}", qcParams);
             if (!response.Success)
             {
                 throw new ApplicationException(await response.GetBody());

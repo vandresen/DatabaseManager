@@ -4,11 +4,9 @@ using System.Text;
 
 namespace DatabaseManager.Shared
 {
-    public class DataQCParameters
+    public class DataQCDataOpsCloseParameters
     {
-        public string DataConnector { get; set; }
-        public int RuleId { get; set; }
-        public bool ClearQCFlags { get; set; }
+        public DataOpParameters Parameters { get; set; }
         public List<RuleFailures> Failures { get; set; }
     }
 }

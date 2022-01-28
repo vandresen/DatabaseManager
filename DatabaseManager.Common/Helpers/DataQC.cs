@@ -16,6 +16,8 @@ using System.Net.Http;
 using System.Reflection;
 using Microsoft.VisualBasic.FileIO;
 using System.IO;
+using Microsoft.Data.SqlClient;
+using Dapper;
 
 namespace DatabaseManager.Common.Helpers
 {
@@ -147,37 +149,66 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        public async Task ProcessQcRule(DataQCParameters qcParms)
+        public async Task CloseDataQC(string source, List<RuleFailures> ruleFailures)
+        {
+            try
+            {
+                ConnectParameters connector = await GetConnector(source);
+                RuleManagement rm = new RuleManagement(_azureConnectionString);
+                string jsonRules = await rm.GetRules(source);
+                List<RuleModel> rules = JsonConvert.DeserializeObject<List<RuleModel>>(jsonRules);
+                ManageIndexTable idxTable = new ManageIndexTable(connector.ConnectionString);
+                foreach (var ruleFailure in ruleFailures)
+                {
+                    RuleModel rule = rules.FirstOrDefault(o => o.Id == ruleFailure.RuleId);
+                    foreach (var failure in ruleFailure.Failures)
+                    {
+                        string qcString = idxTable.GetQCFlag(failure);
+                        qcString = qcString + rule.RuleKey + ";";
+                        idxTable.SetQCFlag(failure, qcString);
+                    }
+                }
+                idxTable.SaveQCFlagDapper();
+            }
+            catch (Exception ex)
+            {
+                Exception error = new Exception($"DataQc: Could not close and save qc flags, {ex}");
+                throw error;
+            }
+        }
+
+        public async Task<List<int>> ExecuteQcRule(DataQCParameters qcParms)
         {
             try
             {
                 ConnectParameters connector = await GetConnector(qcParms.DataConnector);
-
-                string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-
-                RuleManagement rules = new RuleManagement(_azureConnectionString);
-                string jsonRule = await rules.GetRule(qcParms.DataConnector, qcParms.RuleId);
-                RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
-                string jsonFunction = await rules.GetFunctionByName(qcParms.DataConnector, rule.RuleFunction);
-                RuleFunctions function = JsonConvert.DeserializeObject<RuleFunctions>(jsonFunction);
-                string functionKey = "";
-                if (!string.IsNullOrEmpty(function.FunctionKey)) functionKey = "?code=" + function.FunctionKey;
-                rule.RuleFunction = function.FunctionUrl + functionKey;
+                RuleModel rule = await GetRuleAndFunctionInfo(qcParms.DataConnector, qcParms.RuleId);
 
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);
                 manageQCFlags = new ManageIndexTable(_accessDefs, connector.ConnectionString, rule.DataType);
-                manageQCFlags.InitQCFlags(qcParms.ClearQCFlags);
-                await QualityCheckDataType(dbConn, rule, connector);
+                List<int> failedObjects = await QualityCheckDataType(dbConn, rule, connector);
                 dbConn.CloseConnection();
-                manageQCFlags.SaveQCFlags();
+                return failedObjects;
             }
             catch (Exception ex)
             {
                 Exception error = new Exception($"DataQc: Could process rule {qcParms.RuleId}, {ex}");
                 throw error;
             }
+        }
+
+        private async Task<RuleModel> GetRuleAndFunctionInfo(string dataConnector, int ruleId)
+        {
+            RuleManagement rules = new RuleManagement(_azureConnectionString);
+            string jsonRule = await rules.GetRule(dataConnector, ruleId);
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
+            string jsonFunction = await rules.GetFunctionByName(dataConnector, rule.RuleFunction);
+            RuleFunctions function = JsonConvert.DeserializeObject<RuleFunctions>(jsonFunction);
+            string functionKey = "";
+            if (!string.IsNullOrEmpty(function.FunctionKey)) functionKey = "?code=" + function.FunctionKey;
+            rule.RuleFunction = function.FunctionUrl + functionKey;
+            return rule;
         }
 
         private async Task<ConnectParameters> GetConnector(string connectorStr)
@@ -199,8 +230,9 @@ namespace DatabaseManager.Common.Helpers
             return connector;
         }
 
-        private async Task QualityCheckDataType(DbUtilities dbConn, RuleModel rule, ConnectParameters connector)
+        private async Task<List<int>> QualityCheckDataType(DbUtilities dbConn, RuleModel rule, ConnectParameters connector)
         {
+            List<int> failedObjects = new List<int>();
             QcRuleSetup qcSetup = new QcRuleSetup();
             qcSetup.Database = connector.Catalog;
             qcSetup.DatabasePassword = connector.Password;
@@ -221,7 +253,6 @@ namespace DatabaseManager.Common.Helpers
                 {
                     qcSetup.IndexId = Convert.ToInt32(idxRow["INDEXID"]);
                     qcSetup.IndexNode = idxRow["TextIndexNode"].ToString();
-                    string qcStr = manageQCFlags.GetQCFlag(qcSetup.IndexId);
                     qcSetup.DataObject = jsonData;
                     string result = "Passed";
                     if (!Filter(jsonData, ruleFilter))
@@ -238,12 +269,12 @@ namespace DatabaseManager.Common.Helpers
                         }
                         if (result == "Failed")
                         {
-                            qcStr = qcStr + rule.RuleKey + ";";
-                            manageQCFlags.SetQCFlag(qcSetup.IndexId, qcStr);
+                            failedObjects.Add(qcSetup.IndexId);
                         }
                     }
                 }
             }
+            return failedObjects;
         }
 
         private void CalculateKey(RuleModel rule, DataTable indexTable)

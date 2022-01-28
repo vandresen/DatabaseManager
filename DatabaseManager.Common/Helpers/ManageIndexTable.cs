@@ -1,4 +1,5 @@
 ﻿using DatabaseManager.Common.Entities;
+using DatabaseManager.Shared;
 using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
@@ -15,10 +16,25 @@ namespace DatabaseManager.Common.Helpers
         private SqlDataAdapter indexAdapter;
         private QcFlags qcFlags;
         private DataTable indexTable;
+        private string _connectionString;
+        private List<IndexModel> idxList;
+        private IndexAccess idxAccess;
 
         public ManageIndexTable()
         {
             qcFlags = new QcFlags();
+        }
+
+        public ManageIndexTable(string connectionString)
+        {
+            _connectionString = connectionString;
+            idxAccess = new IndexAccess();
+            idxList = idxAccess.SelectIndexesByQuery("", connectionString);
+            qcFlags = new QcFlags();
+            foreach (var idx in idxList)
+            {
+                qcFlags[idx.IndexId] = idx.QC_String;
+            }
         }
 
         public ManageIndexTable(List<DataAccessDef> accessDefs, string connectionString,
@@ -66,6 +82,15 @@ namespace DatabaseManager.Common.Helpers
                     qcFlags[idx] = row["QC_STRING"].ToString();
                 }
             }
+        }
+
+        public void SaveQCFlagDapper()
+        {
+            foreach (var idx in idxList)
+            {
+                idx.QC_String = qcFlags[idx.IndexId];
+            }
+            idxAccess.UpdateDataQCFlags(_connectionString, idxList);
         }
 
         public void SaveQCFlags()

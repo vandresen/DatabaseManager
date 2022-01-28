@@ -67,5 +67,15 @@ namespace DatabaseManager.Common.Helpers
                 count = cnn.Execute(sql);
             }
         }
+
+        public void UpdateDataQCFlags(string connectionString, List<IndexModel> idxList)
+        {
+            int count = 0;
+            string upd = @"update pdo_qc_index set QC_STRING = @QC_String where INDEXID = @IndexId";
+            using (IDbConnection cnn = new SqlConnection(connectionString))
+            {
+                count = cnn.Execute(upd, idxList);
+            }
+        }
     }
 }
