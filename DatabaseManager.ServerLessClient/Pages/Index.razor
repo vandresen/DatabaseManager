@@ -66,8 +66,6 @@ else
     {
         try
         {
-            client.Timeout = TimeSpan.FromMinutes(settings.HttpTimeOut);
-
             settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
             Console.WriteLine($"{settings.AzureStorage}");
             settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
@@ -84,6 +82,10 @@ else
             foreach (ConnectParameters conn in ConnectParameters)
             {
                 if (conn.SourceType != "File") options.Add(conn.SourceName);
+            }
+            if (!string.IsNullOrEmpty(settings.TargetConnector))
+            {
+                await GetIndexData();
             }
         }
         catch (Exception ex)
