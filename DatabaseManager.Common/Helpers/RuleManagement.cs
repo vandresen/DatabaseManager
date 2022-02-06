@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using Dapper;
+using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
@@ -21,6 +23,8 @@ namespace DatabaseManager.Common.Helpers
         private readonly string azureConnectionString;
         private readonly IFileStorageServiceCommon _fileStorage;
         private readonly ITableStorageServiceCommon _tableStorage;
+        private readonly IRuleData _ruleData;
+        private readonly IDapperDataAccess _dp;
         private DbUtilities _dbConn;
         private readonly string container = "sources";
         private readonly string predictionContainer = "predictions";
@@ -45,7 +49,9 @@ namespace DatabaseManager.Common.Helpers
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
             _fileStorage.SetConnectionString(azureConnectionString);
             _tableStorage = new AzureTableStorageServiceCommon(configuration);
-            _tableStorage.SetConnectionString(azureConnectionString); 
+            _tableStorage.SetConnectionString(azureConnectionString);
+            _dp = new DapperDataAccess();
+            _ruleData = new RuleData(_dp);
             _dbConn = new DbUtilities();
 
             var config = new MapperConfiguration(cfg => {
@@ -83,12 +89,9 @@ namespace DatabaseManager.Common.Helpers
         {
             string result = "";
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
-            using (IDbConnection cnn = new SqlConnection(connector.ConnectionString))
-            {
-                string select = getSql;
-                var rules = cnn.Query<RuleModel>(select);
-                result = JsonConvert.SerializeObject(rules, Formatting.Indented);
-            }
+            string select = getSql;
+            IEnumerable<RuleModel> rules = await _ruleData.GetRules(select, connector.ConnectionString);
+            if (rules.Any())result = JsonConvert.SerializeObject(rules, Formatting.Indented);
             return result;
         }
 

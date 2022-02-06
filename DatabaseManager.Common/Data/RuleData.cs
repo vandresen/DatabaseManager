@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Data
 {
-    public class RuleData
+    public class RuleData : IRuleData
     {
         private readonly IDapperDataAccess _dp;
 
@@ -18,6 +18,16 @@ namespace DatabaseManager.Common.Data
         }
 
         public Task<IEnumerable<RuleModel>> GetRulesFromSP(string connectionString) =>
-            _dp.LoadData<RuleModel, dynamic>("dbo.spRules_GetAll", new { }, connectionString);
+            _dp.LoadData<RuleModel, dynamic>("dbo.spRule_GetAll", new { }, connectionString);
+
+        public async Task<RuleModel?> GetRuleFromSP(int id, string connectionString)
+        {
+            var results = await _dp.LoadData<RuleModel, dynamic>("dbo.spRule_Get", new { Id = id }, connectionString);
+            return results.FirstOrDefault();
+        }
+
+        public Task<IEnumerable<RuleModel>> GetRules(string sql, string connectionString) =>
+            _dp.ReadData<RuleModel>(sql, connectionString);
+
     }
 }

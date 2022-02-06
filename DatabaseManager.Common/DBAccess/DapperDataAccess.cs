@@ -26,5 +26,11 @@ namespace DatabaseManager.Common.DBAccess
             using IDbConnection cnn = new SqlConnection(connectionString);
             await cnn.ExecuteAsync(storedProcedure, parameters, commandType: CommandType.StoredProcedure);
         }
+
+       public async Task<IEnumerable<T>> ReadData<T>(string sql, string connectionString)
+        {
+            using IDbConnection cnn = new SqlConnection(connectionString);
+            return await cnn.QueryAsync<T>(sql);
+        }
     }
 }
