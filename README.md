@@ -5,7 +5,7 @@ PPDM database and Data Science projects. So far this version provides functional
 * Load the PPDM model
 * Manage PPDM, CSV and LAS data connectors
 * Transfer well data from one PPDM database, LAS or csv files to a PPDM database 
-* Create a index
+* Create a index for repository
 * Manage data QC and prediction rules
 * Execute QC rules and view result
 * Execute prediction rules and view result
