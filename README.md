@@ -30,7 +30,7 @@ usual Github Fork-Pull Request process.
 
 ## Building the software
 The software is based on .NET 6 using Blazor using webassembly. You should use
-Visual Studio 2022 or newer for building this. From Visual Studio you can publish this to Azure or to a local web server.
+Visual Studio 2022 or newer for building this. From Visual Studio you can publish this to Azure or to a local web server. You can also use Azure Devops to build and publish the software.
 
 ## Datamodel
 The system does not ship with a data model. You must create a folder in your Azure File Storage called PPDM39. This is where you put the PPDM dll files that
