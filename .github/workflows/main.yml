@@ -22,3 +22,8 @@ jobs:
         run: dotnet build DatabaseManager.ServerLessClient/DatabaseManager.ServerLessClient.csproj --no-restore
       - name: Publish
         run: dotnet publish DatabaseManager.ServerLessClient/DatabaseManager.ServerLessClient.csproj
+      - name: Upload ServerlessUI Build Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ServerlessUI
+          path: D:\a\DatabaseManager\DatabaseManager\DatabaseManager.ServerLessClient\bin\Debug\net6.0\publish\
