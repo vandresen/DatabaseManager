@@ -8,6 +8,36 @@ on:
         required: true
   
 jobs:
+  release:
+    name: Release ConsoleTestStuff 
+    runs-on: windows-2022
+    needs: build
+    steps:
+    - name: Download serverlessUI content
+      uses: actions/download-artifact@v2
+      with:
+        name: ServerlessUI
+    - name: Archive content
+      uses: thedoctor0/zip-release@master
+      with:
+        filename: serverlessUI.zip
+    - name: Create github release
+      id: create-new-release 
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.event.inputs.versionNumber }}
+        release_name: Release V${{ github.event.inputs.versionNumber }}
+    - name: Upload asset to Github release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create-new-release.outputs.upload_url }}
+        asset_path: ./serverlessUI.zip
+        asset_name: serverlessUI-v${{ github.event.inputs.versionNumber }}.zip
+        asset_content_type: application/zip
   build:
     runs-on: windows-2022
     steps:
