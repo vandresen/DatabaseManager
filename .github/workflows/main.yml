@@ -28,7 +28,7 @@ jobs:
     - name: Create Release
       uses: ncipollo/release-action@v1.9.0
       with:
-        artifacts: "./site.zip"
+        artifacts: "./serverlessUI.zip"
         artifactContentType: application/zip
         bodyFile: "./CHANGELOG.md"
         name: Release V${{ github.event.inputs.versionNumber }}
