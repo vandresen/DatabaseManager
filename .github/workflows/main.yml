@@ -1,0 +1,65 @@
+name: DatabaseManagerBuild
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionNumber:
+        description: 'Version number'   
+        required: true
+  
+jobs:
+  release:
+    name: Release ConsoleTestStuff 
+    runs-on: windows-2022
+    needs: build
+    steps:
+    - name: Download serverlessUI content
+      uses: actions/download-artifact@v2
+      with:
+        name: ServerlessUI
+    - name: Archive content
+      uses: thedoctor0/zip-release@master
+      with:
+        filename: serverlessUI.zip
+    - name: Download changelog
+      uses: actions/download-artifact@v2
+      with:
+        name: ChangelogStuff
+    - name: Create Release
+      uses: ncipollo/release-action@v1.9.0
+      with:
+        artifacts: "./serverlessUI.zip"
+        artifactContentType: application/zip
+        bodyFile: "./CHANGELOG.md"
+        name: Release V${{ github.event.inputs.versionNumber }}
+        tag: v${{ github.event.inputs.versionNumber }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+  changelog-project:
+    name: Prepare changelog
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v2
+      - name: Upload Changelog Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ChangelogStuff
+          path: ./CHANGELOG.md
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build DatabaseManager.ServerLessClient/DatabaseManager.ServerLessClient.csproj --no-restore
+      - name: Publish
+        run: dotnet publish DatabaseManager.ServerLessClient/DatabaseManager.ServerLessClient.csproj
+      - name: Upload ServerlessUI Build Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ServerlessUI
+          path: D:\a\DatabaseManager\DatabaseManager\DatabaseManager.ServerLessClient\bin\Debug\net6.0\publish\

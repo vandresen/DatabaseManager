@@ -5,7 +5,7 @@ PPDM database and Data Science projects. So far this version provides functional
 * Load the PPDM model
 * Manage PPDM, CSV and LAS data connectors
 * Transfer well data from one PPDM database, LAS or csv files to a PPDM database 
-* Create a index
+* Create a index for repository
 * Manage data QC and prediction rules
 * Execute QC rules and view result
 * Execute prediction rules and view result
@@ -30,7 +30,7 @@ usual Github Fork-Pull Request process.
 
 ## Building the software
 The software is based on .NET 6 using Blazor using webassembly. You should use
-Visual Studio 2022 or newer for building this. From Visual Studio you can publish this to Azure or to a local web server.
+Visual Studio 2022 or newer for building this. From Visual Studio you can publish this to Azure or to a local web server. You can also use Azure Devops to build and publish the software.
 
 ## Datamodel
 The system does not ship with a data model. You must create a folder in your Azure File Storage called PPDM39. This is where you put the PPDM dll files that
