@@ -1,0 +1,46 @@
+﻿@page "/rules/functions"
+@inject SingletonService singleton
+@inject IRules rf
+
+<h3>Manage Rule Functions</h3>
+
+<div class="form-group">
+    <a class="btn btn-info" href="rules/newfunction">New Function</a>
+</div>
+
+<Table TableItem="RuleFunctions" Items="FunctionList" PageSize="@pageSize" ColumnReorder="true">
+    <Column TableItem="RuleFunctions" Title="Action" Sortable="false">
+        <Template>
+            <a class="btn btn-success" href="/rules/editfunction/@context.Id">Edit</a>
+            <button class="btn btn-danger" @onclick="@(() => Delete(context.Id))">Delete</button>
+        </Template>
+    </Column>
+    <Column TableItem="RuleFunctions" Title="Function Name" Field="@(x => x.FunctionName)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
+    <Column TableItem="RuleFunctions" Title="Function URL" Field="@(x => x.FunctionUrl)" Sortable="true" Filterable="true"></Column>
+    <Pager ShowPageNumber="true" ShowTotalCount="true" />
+</Table>
+
+@code {
+    List<RuleFunctions> FunctionList;
+    int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            FunctionList = await rf.GetFunctions(singleton.TargetConnector);
+            Console.WriteLine($"Number of functions is {FunctionList.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task Delete(int id)
+    {
+        await rf.DeleteFunction(singleton.TargetConnector, id);
+        FunctionList = await rf.GetFunctions(singleton.TargetConnector);
+        this.StateHasChanged();
+    }
+}

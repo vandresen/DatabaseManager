@@ -147,5 +147,50 @@ namespace DatabaseManager.Common.Services
             }
             return response.Response;
         }
+
+        public async Task InsertFunction(RuleFunctions function, string source)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/functions/{source}";
+            else url = baseUrl.BuildFunctionUrl("SaveRuleFunction", $"name={source}", apiKey);
+            var response = await httpService.Post(url, function);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
+
+        public async Task UpdateFunction(RuleFunctions function, string source, int id)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/functions/{source}/{id}";
+            else url = baseUrl.BuildFunctionUrl("UpdateRuleFunction", $"name={source}&id={id}", apiKey);
+            var response = await httpService.Put(url, function);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
+
+        public async Task<RuleFunctions> GetFunction(string source, int id)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/functions/{source}/{id}";
+            else url = baseUrl.BuildFunctionUrl("GetRuleFunction", $"name={source}&id={id}", apiKey);
+            var response = await httpService.Get<RuleFunctions>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
+        public async Task DeleteFunction(string source, int id)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/functions/{source}/{id}";
+            else url = baseUrl.BuildFunctionUrl("DeleteRuleFunction", $"name={source}&id={id}", apiKey);
+            var response = await httpService.Delete(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
     }
 }
