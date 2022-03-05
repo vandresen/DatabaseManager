@@ -4,6 +4,16 @@
 @inject HttpClient client
 @inject SingletonService settings
 
+<style> 
+input {
+  padding: 12px 20px;
+  margin: 8px 0;
+  box-sizing: border-box;
+  border: 2px solid black;
+  border-radius: 4px;
+}
+</style>
+
 <h3>Settings</h3>
 <p>Azure Storage:</p>
 <p><input @bind="@azureStorage" size="100" /></p>

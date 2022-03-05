@@ -8,6 +8,7 @@ using DatabaseManager.Client.Helpers;
 using System.Net.Http;
 using BlazorTable;
 using DatabaseManager.Shared;
+using MudBlazor.Services;
 
 namespace DatabaseManager.Client
 {
@@ -44,6 +45,8 @@ namespace DatabaseManager.Client
             services.AddScoped<DatabaseManager.Common.Services.IDataTransfer, DatabaseManager.Common.Services.DataTransferClient>();
             services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddBlazorTable();
+            services.AddMudServices();
+
         }
     }
 }

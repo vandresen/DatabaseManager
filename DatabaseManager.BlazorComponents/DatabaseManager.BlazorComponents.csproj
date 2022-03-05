@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="BlazorTable" Version="1.17.0" />
+    <PackageReference Include="MudBlazor" Version="6.0.7" />
   </ItemGroup>
 
   <ItemGroup>

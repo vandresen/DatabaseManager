@@ -3,9 +3,19 @@
 @inject NavigationManager navigationManager
 @inject ICookies cookies
 
+<style> 
+input {
+  padding: 12px 20px;
+  margin: 8px 0;
+  box-sizing: border-box;
+  border: 2px solid black;
+  border-radius: 4px;
+}
+</style>
+
 <h3>Settings</h3>
 <p>Azure Storage used for this session:</p>
-<p><input @bind="@AzureStorage" size="100" /></p>
+<p><input type="text" @bind="@AzureStorage" size="100" /></p>
 <p>Cookie expiration days:</p>
 <p><input type="number" @bind="@ExpirationDays" size="100" /></p>
 <p><button @onclick="Save">Save</button></p>

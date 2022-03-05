@@ -61,7 +61,7 @@ else
             tubes.RemoveAll(x => x.Id == id);
             DataOpsPipes pipe = new DataOpsPipes { Name = Name };
             await ops.SavePipeline(pipe, tubes);
-            this.StateHasChanged();
+            StateHasChanged();
         }
         catch (Exception ex)
         {

@@ -3,114 +3,70 @@
 @inject IIndexView indexData
 @inject NavigationManager navigationManager
 
-
 <h3>@DataType</h3>
 
-<br />
-<Table TableItem="JObject" Items="data" PageSize="10" ColumnReorder="true">
-    @foreach (var head in headers)
-    {
-        @if (head.Name == "Children")
-        {
-            <Column TableItem="JObject" Title="" Sortable="false">
-                <Template>
-                    @if (context.Property("Children").Value.Value<int>() > 0)
-                    {
-                        <button class="btn btn-info" @onclick="@(() => DrillDown(context.ToString()))">...</button>
-                    }
-                </Template>
-            </Column>
-        }
-        else
-        {
-            <Column TableItem="JObject" Title="@head.Name" Field="@(x => x.Property(head.Name).Value)" Sortable="true" Filterable="@head.Filter" Type="@head.Type" />
-        }
+@if (AvailableHeaderColumns != null)
+{
+    <SelectColumns AvailableColumns="AvailableHeaderColumns" SelectedColumns="selectedColumns" Selections="Selected"></SelectColumns>
+}
 
-    }
-    <Pager ShowPageNumber="true" ShowTotalCount="true" />
-</Table>
+@if (refreshButton)
+{
+    <br/>
+    <button class="btn btn-primary" @onclick="Refresh">Refresh</button>
+    <br/>
+}
+
+@if(data.Count > 0)
+{    
+    <CreateTableView Data="data" Attributes="@attributes" ChildrenDrillDown="Drilldown" ></CreateTableView>
+}
+else
+{
+    <p>@message</p>
+}
 
 @code {
     [Parameter] public int Id { get; set; }
-    private List<JObject> data = new List<JObject>();
-    public List<DmsIndex> index;  // Original data from server
-    private List<Header> headers = new List<Header>();  //Attributes used for headers after filtered for display attributes
+    private List<JObject> data;
+    private List<JObject> originalData;
+    public List<DmsIndex> index;  
     Dictionary<string, string> DisplayAttributes =
         new Dictionary<string, string>(){
             {"WellBore", "UWI, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE,LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS,GROUND_ELEV,SPUD_DATE"},
-            {"MarkerPick", "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH"},
-            {"data", "Pig"} };
+            {"MarkerPick", "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH"} };
 
     private string DataType = "";
+    private string message = "No data";
+    private string[] AvailableHeaderColumns;
+    private IEnumerable<string> selectedColumns { get; set; }
+    private string attributes = "";
+    private bool refreshButton = false;
 
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            data = new List<JObject>();
             indexData.InitSettings(settings);
             index = await indexData.GetChildren(settings.TargetConnector, Id);
-
-            string json = "";
-            foreach (DmsIndex item in index)
-            {
-                json = item.JsonData;
-                if (!string.IsNullOrEmpty(json))
-                {
-                    JObject token = JObject.Parse(json);
-                    token.Add(new JProperty("Children", item.NumberOfDataObjects));
-                    token.Add(new JProperty("Id", item.Id));
-                    data.Add(token);
-                }
-            }
-
             DataType = index[0].DataType;
-            headers = new List<Header>();
-            json = index[0].JsonData;
-            JObject headerToken = JObject.Parse(json);
-            headers.Add(new Header() { Name = "Children", Type = typeof(string) });
+            Console.WriteLine($"Index count: {index.Count}, dataType {DataType}");
 
-            foreach (JProperty property in headerToken.Properties())
+            originalData = CreateDataTable();
+            data = originalData;
+            AvailableHeaderColumns = CreateHeaderColumns();
+            if (DisplayAttributes.ContainsKey(DataType) == true)
             {
-                bool filter = true;
-                if (data.FirstOrDefault(s => s.Property(property.Name).Value.Type == JTokenType.Null) != null) filter = false;
-
-                Type type = typeof(string);
-                var vidar = data.FirstOrDefault(s => s.Property(property.Name).Value != null);
-                var tokenType = vidar.Property(property.Name).Value.Type;
-                if (tokenType == JTokenType.Integer)
-                {
-                    type = typeof(int);
-                }
-                else if (tokenType == JTokenType.Float)
-                {
-                    type = typeof(double);
-                }
-                else if (tokenType == JTokenType.Date)
-                {
-                    type = typeof(DateTime);
-                }
-
-                bool display = true;
-                if (DisplayAttributes.ContainsKey(DataType) == true)
-                {
-                    display = false;
-                    String attributeString = DisplayAttributes[DataType];
-                    if (attributeString.Contains(property.Name)) display = true;
-                }
-
-                if (display)
-                {
-                    if (display) headers.Add(
-                        new Header()
-                        {
-                            Name = property.Name,
-                            Type = type,
-                            Filter = filter
-                        });
-                }
-
+                attributes = DisplayAttributes[DataType];
             }
+            else
+            {
+                attributes = String.Join(",", AvailableHeaderColumns);
+            }
+            Console.WriteLine($"Attributes: {attributes}");
+            selectedColumns = CreateSelectedColumns(attributes);
         }
         catch (Exception ex)
         {
@@ -118,18 +74,66 @@
         }
     }
 
-    private async Task DrillDown(string jsonString)
+    private List<JObject> CreateDataTable()
+    {
+        List<JObject> dataTable = new List<JObject>();
+        string json = "";
+        foreach (DmsIndex item in index)
+        {
+            json = item.JsonData;
+            //Console.WriteLine($"Index item: {json}");
+            if (!string.IsNullOrEmpty(json))
+            {
+                JObject token = JObject.Parse(json);
+                token.Add(new JProperty("Children", item.NumberOfDataObjects));
+                token.Add(new JProperty("Id", item.Id));
+                dataTable.Add(token);
+            }
+        }
+        return dataTable;
+    }
+
+    private IEnumerable<string> CreateSelectedColumns(string selection)
+    {
+        List<string> parts = selection.Split(',').Select(p => p.Trim()).ToList();
+        return parts;
+    }
+
+    private string[] CreateHeaderColumns()
+    {
+        List<string> columnList = new List<string>();
+        string json = index[0].JsonData;
+        JObject headerToken = JObject.Parse(json);
+        foreach (JProperty property in headerToken.Properties())
+        {
+            columnList.Add(property.Name);
+        }
+        return columnList.ToArray();
+    }
+
+    private void Selected(string attributeString)
+    {
+        Console.WriteLine($"Selected {attributeString}");
+        data = new List<JObject>();
+        attributes = attributeString;
+        message = "Hit the Refresh button";
+        refreshButton = true;
+        selectedColumns = CreateSelectedColumns(attributes);
+        this.StateHasChanged();
+    }
+
+    private void Drilldown(string jsonString)
     {
         dynamic data = JObject.Parse(jsonString);
-        Console.WriteLine(data.Id);
+        Console.WriteLine($"Drilldown, id={data.Id}");
         navigationManager.NavigateTo($"/indexdata/{data.Id}");
     }
 
-    public class Header
+    private void Refresh()
     {
-        public string Name { get; set; }
-        public Type Type { get; set; }
-        public bool Filter { get; set; }
+        Console.WriteLine("Refresh");
+        message = "No data";
+        refreshButton = false;
+        data = originalData;
     }
-
 }
