@@ -8,7 +8,6 @@ using Microsoft.Extensions.Configuration;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json.Linq;
-using DatabaseManager.Server.Services;
 using DatabaseManager.Server.Entities;
 using AutoMapper;
 using Microsoft.Extensions.Logging;

@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using AutoMapper;
 using DatabaseManager.Common.Helpers;
 using DatabaseManager.Common.Services;
-using DatabaseManager.Server.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Mvc;
 
