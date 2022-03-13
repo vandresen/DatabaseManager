@@ -32,7 +32,7 @@ namespace DatabaseManager.Server.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<string>>> GetTaxonomies()
+        public async Task<ActionResult<List<IndexFileList>>> GetTaxonomies()
         {
             try
             {
@@ -40,8 +40,8 @@ namespace DatabaseManager.Server.Controllers
                 IndexManagement im = new IndexManagement(storageAccount);
                 string responseMessage = await im.GetTaxonomies();
                 List<IndexFileList> indexParms = JsonConvert.DeserializeObject<List<IndexFileList>>(responseMessage);
-                List<string> files = indexParms.Select(item => item.Name).ToList();
-                return files;
+                //List<string> files = indexParms.Select(item => item.Name).ToList();
+                return indexParms;
             }
             catch (Exception)
             {

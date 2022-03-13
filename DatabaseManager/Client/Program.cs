@@ -1,14 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Text;
+﻿using BlazorTable;
+//using DatabaseManager.Client.Helpers;
+using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using DatabaseManager.Client.Helpers;
-using System.Net.Http;
-using BlazorTable;
-using DatabaseManager.Shared;
 using MudBlazor.Services;
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+using DatabaseManager.Common.Services;
 
 namespace DatabaseManager.Client
 {
@@ -27,22 +26,17 @@ namespace DatabaseManager.Client
         private static void ConfigureServices(IServiceCollection services)
         {
             services.AddOptions();
-            services.AddSingleton<SingletonServices>();
             services.AddSingleton<SingletonService>();
-            services.AddScoped<DatabaseManager.Common.Services.IHttpService, DatabaseManager.Common.Services.HttpService>();
-            services.AddScoped<DatabaseManager.Common.Services.IDataSources, DatabaseManager.Common.Services.DataSourcesClient>();
-            services.AddScoped<DatabaseManager.Common.Services.IDataModelCreate, DatabaseManager.Common.Services.DataModelCreate>();
-            services.AddScoped<ICreateIndex, CreateIndex>();
-            services.AddScoped<IIndexData, IndexData>();
-            services.AddScoped<IDataFile, DataFile>();
+            services.AddScoped<IHttpService, HttpService>();
+            services.AddScoped<IDataSources, DataSourcesClient>();
+            services.AddScoped<IDataModelCreate, DataModelCreate>();
+            services.AddScoped<IDataIndexer, DataIndexer>();
+            services.AddScoped<IIndexView, IndexView>();
             services.AddScoped<IRules, Rules>();
-            services.AddScoped<DatabaseManager.Common.Services.IDataOps, DatabaseManager.Common.Services.DataOpsClientService>();
-            //services.AddScoped<DatabaseManager.Common.Services.IDataOps, DataOps>();
-            services.AddScoped<IFunctions, Functions>();
+            services.AddScoped<IDataOps, DataOpsClientService>();
             services.AddScoped<IDataQc, DataQc>();
-            services.AddScoped<IPrediction, Prediction>();
             services.AddScoped<ICookies, Cookies>();
-            services.AddScoped<DatabaseManager.Common.Services.IDataTransfer, DatabaseManager.Common.Services.DataTransferClient>();
+            services.AddScoped<IDataTransfer, DataTransferClient>();
             services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddBlazorTable();
             services.AddMudServices();

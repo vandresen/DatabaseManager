@@ -1,11 +1,11 @@
-﻿using DatabaseManager.Common.Services;
-using DatabaseManager.Shared;
+﻿using DatabaseManager.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
-namespace DatabaseManager.Client.Helpers
+namespace DatabaseManager.Common.Services
 {
     public class Cookies : ICookies
     {

@@ -72,9 +72,9 @@ else
             await displayMessage.DisplayErrorMessage("Please select a data connector");
             navigationManager.NavigateTo("/");
         }
-        var fileList = await createIndex.GetTaxonomies();
-        var vidar = fileList.Select(s => s.Name);
-        taxonomies = vidar.ToList();
+        List<IndexFileList> fileList = await createIndex.GetTaxonomies();
+        var files = fileList.Select(s => s.Name);
+        taxonomies = files.ToList();
 
         source = singleton.TargetConnector;
 

@@ -1,19 +1,18 @@
 ﻿@page "/"
-@inject DatabaseManager.Common.Services.IDataSources dataSources
-@inject IIndexData indexData
-@inject SingletonServices singleton
-@inject SingletonService singletonService
-@inject NavigationManager navigationManager
 @inject IDisplayMessage displayMessage
 @inject HttpClient client
 @inject ICookies cookies
+@inject IDataSources dataSources
+@inject SingletonService settings
+@inject IIndexView idxView
+@inject NavigationManager navigationManager
 
 <div class="jumbotron">
-    <h1>Welcome to Database Manager tool</h1>
+    <h1>Welcome to Database Manager</h1>
     <p class="lead">The tool to manage your PPDM databases</p>
 </div>
 
-<p>Target Database: @singleton.TargetConnector</p>
+<p>Target Database: @settings.TargetConnector</p>
 
 @if (options == null)
 {
@@ -58,16 +57,16 @@ else
 }
 
 @code {
-    private List<string> options { get; set; } = new List<string>();
-    private string indexStatus = "No index available";
     public List<ConnectParameters> ConnectParameters;
+    private List<string> options { get; set; } = new List<string>();
     public List<DmsIndex> index;
+    private string indexStatus = "No index available";
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            Console.WriteLine("Start");
+            Console.WriteLine("Start index page");
             string currentHeader = "";
             if (client.DefaultRequestHeaders.Contains("AzureStorageConnection"))
             {
@@ -85,27 +84,30 @@ else
                 }
             }
             ConnectParameters = await dataSources.GetSources();
+            Console.WriteLine($"Connector count: {ConnectParameters.Count}");
             foreach (ConnectParameters conn in ConnectParameters)
             {
                 if (conn.SourceType != "File") options.Add(conn.SourceName);
             }
-            if (!string.IsNullOrEmpty(singleton.TargetConnector))
+            if (!string.IsNullOrEmpty(settings.TargetConnector))
             {
                 await GetIndexData();
             }
         }
         catch (Exception ex)
         {
+            Console.WriteLine(ex.ToString());
             if (ex.ToString().Contains("Connection string is not set"))
             {
                 await displayMessage.DisplayErrorMessage("Azure storage connection string is missing. Use Settings to set it temporary for the session");
             }
+            else if (ex.ToString().Contains("Unauthorized"))
+            {
+                await displayMessage.DisplayErrorMessage("API key may be missing or invalid. Use Settings to set it");
+            }
             else
             {
-                Console.WriteLine($"Errors: {ex}");
-                await displayMessage.DisplayErrorMessage(" There is a problem with the Azure storage connection string.");
-                client.DefaultRequestHeaders.Remove("AzureStorageConnection");
-                navigationManager.NavigateTo("/");
+                await displayMessage.DisplayErrorMessage(" There is a problem accessing server");
             }
         }
     }
@@ -115,8 +117,8 @@ else
         indexStatus = "Fetching index";
         StateHasChanged();
         ConnectParameters connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
-        singleton.TargetConnector = selectedString;
-        singleton.DataAccessDefinition = connector.DataAccessDefinition;
+        settings.TargetConnector = selectedString;
+        settings.DataAccessDefinition = connector.DataAccessDefinition;
         await GetIndexData();
     }
 
@@ -124,21 +126,13 @@ else
     {
         try
         {
-            index = await indexData.GetIndex(singleton.TargetConnector);
+            index = await idxView.GetIndex(settings.TargetConnector);
         }
         catch (Exception ex)
         {
             index = null;
-            
-            if (ex.ToString().Contains("Could not find stored procedure"))
-            {
-                indexStatus = "No datamodel found";
-            }
-            else
-            {
-                Console.WriteLine(ex);
-                indexStatus = "No index found";
-            }
+            Console.WriteLine(ex);
+            indexStatus = "No index found";
             StateHasChanged();
         }
     }
@@ -149,3 +143,4 @@ else
         navigationManager.NavigateTo(url);
     }
 }
+
