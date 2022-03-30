@@ -100,6 +100,17 @@ namespace DatabaseManager.Common.Extensions
             return number;
         }
 
+        public static double GetDoubleFromString(this string token)
+        {
+            double number = 0.0;
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                double value;
+                if (double.TryParse(token, out value)) number = value;
+            }
+            return number;
+        }
+
         public static string Truncate(this string value, int maxLength)
         {
             return value?.Substring(0, Math.Min(value.Length, maxLength));

@@ -37,6 +37,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IDataQc, DataQc>();
             services.AddScoped<ICookies, Cookies>();
             services.AddScoped<IDataTransfer, DataTransferClient>();
+            services.AddScoped<IReportEdit, ReportEdit>();
             services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddBlazorTable();
             services.AddMudServices();

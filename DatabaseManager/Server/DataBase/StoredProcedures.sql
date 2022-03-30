@@ -71,6 +71,37 @@ BEGIN
 END;
 GO
 
+DROP PROCEDURE IF EXISTS spGetIndexFromIdList;
+GO
+CREATE PROC spGetIndexFromIdList (@idlist varchar(max))
+AS
+BEGIN
+	select * from pdo_qc_index where IndexId in (SELECT * FROM STRING_SPLIT(@idlist, ';'))
+END
+GO
+
+DROP PROCEDURE IF EXISTS spGetIndexFromId;
+GO
+CREATE PROC spGetIndexFromId (@id int)
+AS
+BEGIN
+	select * from pdo_qc_index where IndexId = @id
+END
+GO
+
+DROP PROCEDURE IF EXISTS spUpdateIndex;
+GO
+CREATE PROC spUpdateIndex 
+    @IndexId int,
+	@QC_String NVARCHAR(400),
+	@JsonDataObject NVARCHAR(max)
+AS
+BEGIN
+	update dbo.[pdo_qc_index]
+	set QC_STRING = @QC_String, JSONDATAOBJECT = @JsonDataObject where INDEXID = @IndexId
+END
+GO
+
 DROP PROCEDURE IF EXISTS spGetDescendants;
 GO
 CREATE PROCEDURE spGetDescendants(@indexnode varchar(400))

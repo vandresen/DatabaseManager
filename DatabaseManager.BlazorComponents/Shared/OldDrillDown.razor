@@ -1,0 +1,178 @@
+﻿@page  "/olddrilldown/{Id:int}"
+@inject IDataQc qc
+@inject IRules rules
+@inject IReportEdit re
+@inject SingletonService singleton
+@using BlazorTable
+@using DatabaseManager.Common.Extensions
+
+<h3>@header</h3>
+
+@if (dataIndex == null)
+{
+    <text>Loading Data...</text>
+}
+else if (dataDeleted)
+{
+    <text>Data has been deleted...</text>
+}
+else
+{
+    @if (canEdit)
+    {
+        <button class="btn btn-sm btn-danger" title="Toggle Edit Mode" @onclick="@((x) => ToggleEdit())">Toggle Edit Mode</button>
+    }
+    <br />
+    <br />
+    <Table TableItem="ReportData" Items="reportList" PageSize="@pageSize" ColumnReorder="true" @ref="Table">
+    @*<Column TableItem="RuleFunctions" Title="Action" Sortable="false">
+        <Template>
+            <a class="btn btn-success" href="/rules/editfunction/@context.Id">Edit</a>
+            <button class="btn btn-danger" @onclick="@(() => Delete(context.Id))">Delete</button>
+        </Template>
+    </Column>*@
+    <Column TableItem="ReportData" Title="Index Id" Field="@(x => x.Id)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
+    <Column TableItem="ReportData" Title="Data Key" Field="@(x => x.Key)" Sortable="true" Filterable="true" ></Column>
+    @if (canEdit)
+    {
+        @if (valueType == "number")
+        {
+            <Column TableItem="ReportData" Title="@columnName" Field="@(x => x.NumberValue)" Sortable="true" Filterable="true">
+                <EditTemplate>
+                    <input type="number" value="@context.NumberValue" @onchange="OnValueChanged" class="form-control form-control-sm" />
+                </EditTemplate>
+            </Column>   
+        }
+        else
+        {
+            <Column TableItem="ReportData" Title="@columnName" Field="@(x => x.TextValue)" Sortable="true" Filterable="true">
+                <EditTemplate>
+                    <input type="text" @bind-value="@context.TextValue" class="form-control form-control-sm" />
+                </EditTemplate>
+            </Column>
+        }  
+    }
+    <DetailTemplate TableItem="ReportData">
+        <strong>Data</strong> @context.JsonData
+        <br />
+    </DetailTemplate>
+    <Pager ShowPageNumber="true" ShowTotalCount="true" />
+    </Table>
+    <br />
+    <br />
+    @if (canEdit)
+    {
+        <button class="btn btn-sm btn-danger" title="Save Edits" @onclick="@((x) => SaveEdit())">Save Edits</button>
+    }
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    public List<DmsIndex> dataIndex;
+    List<ReportData> reportList;
+    public RuleModel ruleModel;
+    private ITable<ReportData> Table;
+    private string header = "";
+    private string dataType = "";
+    private string columnName = "";
+    private string valueType = "none";
+    private bool dataDeleted = false;
+    private bool canEdit = false;
+    int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"Rule id = {Id}");
+
+        ruleModel = await rules.GetRule(singleton.TargetConnector, Id);
+        string ruleAttribute = ruleModel.DataAttribute.Trim();
+        header = ruleModel.RuleName;
+        dataType = ruleModel.DataType;
+        columnName = ruleModel.DataAttribute;
+        canEdit = ruleModel.RuleType == "Validity" || ruleModel.RuleType == "Completeness";
+
+        List<string> keyList = new List<string>();
+        List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(singleton.DataAccessDefinition);
+        DataAccessDef dataDef = accessDefs.FirstOrDefault(x => x.DataType == dataType);
+        if (dataDef != null) keyList = dataDef.Keys.Split(',').ToList();
+
+        if (canEdit)
+        {
+            AttributeInfo info = await re.GetAttributeInfo(singleton.TargetConnector, dataType);
+            Console.WriteLine($"Number of attributes: {info.DataAttributes.Count}");
+            if (!info.DataAttributes.TryGetValue(columnName, out valueType)) 
+            {
+                Console.WriteLine($"Error: Could not get a value for {columnName}");
+            }
+            if (valueType == "System.Decimal") { valueType = "number"; }
+            else { valueType = "text"; }
+            Console.WriteLine($"Value type is {valueType}");
+        }
+
+        dataIndex = await qc.GetResult(singleton.TargetConnector, Id);
+        if (dataIndex != null)
+        {
+            DmsIndex firstObject = dataIndex.First();
+            string jsonData = firstObject.JsonData;
+            if (string.IsNullOrEmpty(jsonData)) dataDeleted = true;
+        }
+        reportList = new List<ReportData>();
+        foreach (var item in dataIndex)
+        {
+            JObject dataObject = JObject.Parse(item.JsonData);
+            string comma = "";
+            string key = "";
+            string value = "";
+            double number = 0.0;
+            foreach(var keyAttribute in keyList)
+            {
+                string attribute = keyAttribute.Trim();
+                key = key + comma + dataObject[attribute];
+                if (canEdit) value = dataObject[columnName].ToString();
+                if (valueType == "number")
+                {
+                    number = value.GetDoubleFromString();
+                }
+                comma = ", ";
+            }
+            reportList.Add(new ReportData
+            {
+                Id = item.Id,
+                JsonData = item.JsonData,
+                Key = key,
+                TextValue = value,
+                ColumnName = columnName,
+                ColumnType = valueType,
+                NumberValue = number
+            });
+        }
+        Console.WriteLine($"Number of failures are {dataIndex.Count}");
+    }
+
+    private void ToggleEdit()
+    {
+        Table.ToggleEditMode();
+    }
+
+    private void SaveEdit()
+    {
+        //re.Update(singleton.TargetConnector, reportList);
+        //foreach (var item in reportList)
+        //{
+        //    Console.WriteLine(item.TextValue);
+        //    re.Update(singleton.TargetConnector, reportList);
+        //}
+    }
+
+    private void OnValueChanged()
+    {
+        
+    }
+
+    private class DataAccessDef
+    {
+        public string DataType { get; set; }
+        public string Select { get; set; }
+        public string Keys { get; set; }
+    }
+}

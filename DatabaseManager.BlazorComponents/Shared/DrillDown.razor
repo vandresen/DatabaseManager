@@ -1,8 +1,13 @@
 ﻿@page  "/drilldown/{Id:int}"
 @inject IDataQc qc
-@*@inject IPrediction pr*@
 @inject IRules rules
+@inject IReportEdit re
 @inject SingletonService singleton
+@inject IDisplayMessage displayMessage
+@using DatabaseManager.Common.Extensions
+@using MudBlazor
+@*@inject ISnackbar Snackbar*@
+
 
 <h3>@header</h3>
 
@@ -16,52 +21,135 @@ else if (dataDeleted)
 }
 else
 {
-    <br />
-    <Table TableItem="JObject" Items="data" PageSize="10" ColumnReorder="true">
-    @foreach (var head in headers)
-    {
-        @if (head.Name == "Children")
-        {
-            <Column TableItem="JObject" Title="" Sortable="false">
-                <Template>
-                    @if (context.Property("Children").Value.Value<int>() > 0)
-                    {
-                        @*<button class="btn btn-info" @onclick="@(() => DrillDown(context.ToString()))">...</button>*@
-                    }
-                </Template>
-            </Column>
-        }
-        else
-        {
-            <Column TableItem="JObject" Title="@head.Name" Field="@(x => x.Property(head.Name).Value)" Sortable="true" Filterable="@head.Filter" Type="@head.Type" />
-        }
-
-    }
-    <Pager ShowPageNumber="true" ShowTotalCount="true" />
-</Table>
+    <MudTable Items="@reportList" Dense="true" Hover="true" ReadOnly="false" CanCancelEdit="true" RowEditPreview="BackupItem" 
+    RowEditCancel="ResetToOriginalValue" Striped="true" IsEditRowSwitchingBlocked="false" Filter="new Func<ReportData, bool>(FilterFunc)"
+    CommitEditTooltip="Commit Edit" RowEditCommit="ItemHasBeenCommitted">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">@header</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
+        <ColGroup>
+            <col style="width:50px;" />
+            <col style="width:50px;" />
+            <col style="width:140px;"/>
+            <col />
+            <col />
+            <col style="width:50px;" />
+        </ColGroup>
+        <HeaderContent>
+            <MudTh style="background-color:lightgray">Actions</MudTh>
+            <MudTh style="background-color:lightgray">Detail</MudTh>
+            <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<ReportData, object>(x=>x.Id)">Index Id</MudTableSortLabel></MudTh>
+            <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<ReportData, object>(x=>x.Key)">Data Key</MudTableSortLabel></MudTh>
+            <MudTh style="background-color:lightgray">@columnName</MudTh>
+            <MudTh style="background-color:lightgray">Commit</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="">
+                <MudFab @onclick="@(()=>Delete(@context.Id))" Color="Color.Secondary" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+            </MudTd>
+            <MudTd>
+                <MudFab @onclick="@(() => ShowBtnPress(context.Id))" Color="Color.Primary" Icon="@((context.ShowDetails == true)? @UnHideIcon : @HideIcon)" Size="Size.Small" IconSize="Size.Small" />
+            </MudTd>
+            <MudTd DataLabel="Index Id">@context.Id</MudTd>
+            <MudTd DataLabel="Data Key">@context.Key</MudTd>
+            @if (valueType == "number")
+            {
+                <MudTd DataLabel="@columnName">@context.NumberValue</MudTd>
+            }
+            else
+            {
+                <MudTd DataLabel="@columnName">@context.TextValue</MudTd>
+            }
+        </RowTemplate>
+        <RowEditingTemplate>
+            <MudTd DataLabel="Actions"></MudTd>
+            <MudTd>
+                <MudFab @onclick="@(() => ShowBtnPress(context.Id))" Color="Color.Primary" Icon="@((context.ShowDetails == true)? @UnHideIcon : @HideIcon)" Size="Size.Small" IconSize="Size.Small" />
+            </MudTd>
+            <MudTd DataLabel="Index Id">@context.Id</MudTd>
+            <MudTd DataLabel="Data Key">@context.Key</MudTd>
+            <MudTd DataLabel="@columnName">
+            @if (valueType == "number")
+            {
+                <MudTextField @bind-Value="@context.NumberValue" Required />
+            }
+            else
+            {
+                <MudTextField @bind-Value="@context.TextValue" Required />
+            }
+        </MudTd>
+        </RowEditingTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+        <ChildRowContent>
+            @if (context.ShowDetails)
+            {
+                <MudTr>
+                    <td colspan="4">
+                        <MudCard Elevation="0">
+                            <MudCardContent>
+                                <MudText>Data Object</MudText>
+                                <MudText Typo="Typo.body2">@context.JsonData</MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </td>
+                </MudTr>
+            }
+        </ChildRowContent>
+    </MudTable>
 }
 
 @code {
     [Parameter] public int Id { get; set; }
-    public List<DmsIndex> dataIndex; // Original data from server
-    private List<Header> headers = new List<Header>();  //Attributes used for headers after filtered for display attributes
-    private List<JObject> data = new List<JObject>();
+    public List<DmsIndex> dataIndex;
+    List<ReportData> reportList;
     public RuleModel ruleModel;
+    private ITable<ReportData> Table;
     private string header = "";
+    private string dataType = "";
+    private string columnName = "";
+    private string valueType = "none";
+    private string HideIcon = Icons.Material.Filled.Add;
+    private string backupText = "";
+    private string UnHideIcon = Icons.Material.Filled.HorizontalRule;
+    private string searchString = "";
+    private double backupNumber = 0;
     private bool dataDeleted = false;
-    private string DataType = "";
-
-    Dictionary<string, string> DisplayAttributes =
-        new Dictionary<string, string>(){
-            {"WellBore", "UWI, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE,LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS,GROUND_ELEV,SPUD_DATE"},
-            {"MarkerPick", "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH"},
-            {"data", "Pig"} };
+    private bool canEdit = false;
+    int pageSize = 10;
 
     protected override async Task OnInitializedAsync()
     {
         Console.WriteLine($"Rule id = {Id}");
+
         ruleModel = await rules.GetRule(singleton.TargetConnector, Id);
+        string ruleAttribute = ruleModel.DataAttribute.Trim();
         header = ruleModel.RuleName;
+        dataType = ruleModel.DataType;
+        columnName = ruleModel.DataAttribute;
+        canEdit = ruleModel.RuleType == "Validity" || ruleModel.RuleType == "Completeness";
+
+        List<string> keyList = new List<string>();
+        List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(singleton.DataAccessDefinition);
+        DataAccessDef dataDef = accessDefs.FirstOrDefault(x => x.DataType == dataType);
+        if (dataDef != null) keyList = dataDef.Keys.Split(',').ToList();
+
+        if (canEdit)
+        {
+            AttributeInfo info = await re.GetAttributeInfo(singleton.TargetConnector, dataType);
+            Console.WriteLine($"Number of attributes: {info.DataAttributes.Count}");
+            if (!info.DataAttributes.TryGetValue(columnName, out valueType)) 
+            {
+                Console.WriteLine($"Error: Could not get a value for {columnName}");
+            }
+            if (valueType == "System.Decimal") { valueType = "number"; }
+            else { valueType = "text"; }
+            Console.WriteLine($"Value type is {valueType}");
+        }
+
         dataIndex = await qc.GetResult(singleton.TargetConnector, Id);
         if (dataIndex != null)
         {
@@ -69,74 +157,97 @@ else
             string jsonData = firstObject.JsonData;
             if (string.IsNullOrEmpty(jsonData)) dataDeleted = true;
         }
-        Console.WriteLine($"Number of failures are {dataIndex.Count}");
-
-        string json = "";
-        foreach (DmsIndex item in dataIndex)
+        reportList = new List<ReportData>();
+        foreach (var item in dataIndex)
         {
-            json = item.JsonData;
-            if (!string.IsNullOrEmpty(json))
+            JObject dataObject = JObject.Parse(item.JsonData);
+            string comma = "";
+            string key = "";
+            string value = "";
+            double number = 0.0;
+            foreach(var keyAttribute in keyList)
             {
-                JObject token = JObject.Parse(json);
-                //token.Add(new JProperty("Children", item.NumberOfDataObjects));
-                //token.Add(new JProperty("Id", item.Id));
-                data.Add(token);
+                string attribute = keyAttribute.Trim();
+                key = key + comma + dataObject[attribute];
+                if (canEdit) value = dataObject[columnName].ToString();
+                if (valueType == "number")
+                {
+                    number = value.GetDoubleFromString();
+                }
+                comma = ", ";
             }
+            reportList.Add(new ReportData
+            {
+                Id = item.Id,
+                JsonData = item.JsonData,
+                Key = key,
+                TextValue = value,
+                ColumnName = columnName,
+                ColumnType = valueType,
+                RuleKey = ruleModel.RuleKey,
+                DataType = dataType,
+                NumberValue = number
+            });
         }
-
-        DataType = dataIndex[0].DataType;
-        Console.WriteLine($"Datatype is {DataType}");
-        headers = new List<Header>();
-        json = dataIndex[0].JsonData;
-        JObject headerToken = JObject.Parse(json);
-
-        foreach (JProperty property in headerToken.Properties())
-            {
-                bool filter = true;
-                if (data.FirstOrDefault(s => s.Property(property.Name).Value.Type == JTokenType.Null) != null) filter = false;
-
-                Type type = typeof(string);
-                var vidar = data.FirstOrDefault(s => s.Property(property.Name).Value != null);
-                var tokenType = vidar.Property(property.Name).Value.Type;
-                if (tokenType == JTokenType.Integer)
-                {
-                    type = typeof(int);
-                }
-                else if (tokenType == JTokenType.Float)
-                {
-                    type = typeof(double);
-                }
-                else if (tokenType == JTokenType.Date)
-                {
-                    type = typeof(DateTime);
-                }
-
-                bool display = true;
-                if (DisplayAttributes.ContainsKey(DataType) == true)
-                {
-                    display = false;
-                    String attributeString = DisplayAttributes[DataType];
-                    if (attributeString.Contains(property.Name)) display = true;
-                }
-
-                if (display)
-                {
-                    if (display) headers.Add(
-                        new Header()
-                        {
-                            Name = property.Name,
-                            Type = type,
-                            Filter = filter
-                        });
-                }
-
-            }
+        Console.WriteLine($"Number of failures are {dataIndex.Count}");
     }
 
-    public class Header
+    private void ItemHasBeenCommitted(object item)
     {
-        public string Name { get; set; }
-        public Type Type { get; set; }
-        public bool Filter { get; set; }
+        Console.WriteLine($"RowEditCommit event: Changes to Element {((ReportData)item).Key} committed");
+        re.Update(singleton.TargetConnector, (ReportData)item);
+    }
+
+    private async Task Delete(int id)
+    {
+        await displayMessage.DisplayErrorMessage("Delete not implemented yet");
+    }
+
+    private bool FilterFunc(ReportData item)
+    {
+        Console.WriteLine($"Filter Function");
+        if (string.IsNullOrWhiteSpace(searchString)) return true;
+        if (item.JsonData.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private void ShowBtnPress(int id)
+    {
+        ReportData item = reportList.First(f => f.Id == id);
+        item.ShowDetails = !item.ShowDetails;
+    }
+
+    private void BackupItem(object element)
+    {
+        Console.WriteLine($"Backup Function");
+        if (valueType == "number")
+        {
+            backupNumber = ((ReportData)element).NumberValue;
+        }
+        else
+        {
+            backupText = ((ReportData)element).TextValue;
+        }
+    }
+
+    private void ResetToOriginalValue(object element)
+    {
+        Console.WriteLine($"Reset value");
+        if (valueType == "number")
+        {
+            ((ReportData)element).NumberValue = backupNumber;
+        }
+        else
+        {
+            ((ReportData)element).TextValue = backupText;
+        }
+    }
+
+    private class DataAccessDef
+    {
+        public string DataType { get; set; }
+        public string Select { get; set; }
+        public string Keys { get; set; }
     }
 }

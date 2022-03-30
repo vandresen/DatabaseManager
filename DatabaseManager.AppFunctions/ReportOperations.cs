@@ -97,8 +97,6 @@ namespace DatabaseManager.AppFunctions
                 return new BadRequestObjectResult($"Error getting QCResults: {ex}");
             }
 
-            
-
             log.LogInformation("GetDataQcResults: Complete.");
             return new OkObjectResult(jsonResult);
         }
@@ -127,11 +125,57 @@ namespace DatabaseManager.AppFunctions
                 log.LogError($"GetDataQcResults: Error getting QCResults: {ex}");
                 return new BadRequestObjectResult($"Error getting QCResults: {ex}");
             }
-
-
-
             log.LogInformation("GetDataQcResults: Complete.");
             return new OkObjectResult(jsonResult);
+        }
+
+        [FunctionName("ReportAttributeInfo")]
+        public static async Task<IActionResult> AttributeInfo(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            string jsonResult = "OK";
+            try
+            {
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
+                string source = Common.Helpers.Common.GetQueryString(req, "name");
+                string dataType = Common.Helpers.Common.GetQueryString(req, "datatype");
+                Sources ss = new Sources(storageAccount);
+                ConnectParameters connector = await ss.GetSourceParameters(source);
+                AttributeInfo info = new AttributeInfo();
+                ReportEditManagement rm = new ReportEditManagement(storageAccount);
+                jsonResult = await rm.GetAttributeInfo(source, dataType);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"ReportAttributeInfo: Error getting attribute info: {ex}");
+                return new BadRequestObjectResult($"Error getting attribute info: {ex}");
+            }
+            return new OkObjectResult(jsonResult);
+        }
+
+        [FunctionName("UpdateReportData")]
+        public static async Task<IActionResult> UpdateIndex(
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("UpdateReportData: Starting");
+            try
+            {
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
+                string source = Common.Helpers.Common.GetQueryString(req, "name");
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                ReportData reportData = JsonConvert.DeserializeObject<ReportData>(requestBody);
+                ReportEditManagement rm = new ReportEditManagement(storageAccount);
+                await rm.InsertEdits(reportData, source);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"UpdateReportData: Error updating report edits: {ex}");
+                return new BadRequestObjectResult($"Error updating report edits: {ex}");
+            }
+            log.LogInformation("UpdateReportData: Completed");
+            return new OkObjectResult("OK");
         }
     }
 }
