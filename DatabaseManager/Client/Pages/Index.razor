@@ -6,6 +6,7 @@
 @inject SingletonService settings
 @inject IIndexView idxView
 @inject NavigationManager navigationManager
+@using MudBlazor
 
 <div class="jumbotron">
     <h1>Welcome to Database Manager</h1>
@@ -16,7 +17,11 @@
 
 @if (options == null)
 {
+    <br/>
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+    <br/>
     <text>Loading...</text>
+    <br/>
 }
 else
 {
@@ -25,48 +30,50 @@ else
 
 @if (index == null)
 {
+    @if (spinner)
+    {
+        <br/>
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+        <br/>
+    }
     <text>@indexStatus</text>
 }
 else
 {
-    <GenericList List="index">
-        <WholeListTemplate>
-            <table class="table table-striped table-bordered">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>Data Type</th>
-                        <th>Number Of Data Objects</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in index)
-                    {
-                        <tr>
-                            <td>
-                                <button class="btn btn-info" @onclick="@(() => DataTypes(item))">...</button>
-                            </td>
-                            <td>@item.DataType</td>
-                            <td>@item.NumberOfDataObjects</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </WholeListTemplate>
-    </GenericList>
+    <MudTable Items="@index" Hover="true" Bordered="true" Striped="true" Outlined="true" Dense="true">
+        <ColGroup>
+            <col style="width:10px;" />
+            <col />
+            <col />
+        </ColGroup>
+    <HeaderContent>
+        <MudTh style="background-color:lightgray"></MudTh>
+        <MudTh style="background-color:lightgray">Data Type</MudTh>
+        <MudTh style="background-color:lightgray">Number Of Data Objects</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="">
+            <MudFab @onclick="@(() => DataTypes(context))" Color="Color.Info" Icon="@Icons.Material.Filled.MoreHoriz" Size="Size.Small" IconSize="Size.Small" />
+        </MudTd>
+        <MudTd DataLabel="Sign">@context.DataType</MudTd>
+        <MudTd DataLabel="Name">@context.NumberOfDataObjects</MudTd>
+    </RowTemplate>
+</MudTable>
 }
 
 @code {
     public List<ConnectParameters> ConnectParameters;
-    private List<string> options { get; set; } = new List<string>();
+    private List<string> options;
     public List<DmsIndex> index;
     private string indexStatus = "No index available";
+    bool spinner = false;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             Console.WriteLine("Start index page");
+
             string currentHeader = "";
             if (client.DefaultRequestHeaders.Contains("AzureStorageConnection"))
             {
@@ -85,6 +92,7 @@ else
             }
             ConnectParameters = await dataSources.GetSources();
             Console.WriteLine($"Connector count: {ConnectParameters.Count}");
+            options = new List<string>();
             foreach (ConnectParameters conn in ConnectParameters)
             {
                 if (conn.SourceType != "File") options.Add(conn.SourceName);
@@ -114,6 +122,7 @@ else
 
     private async Task Selected(string selectedString)
     {
+        spinner = true;
         indexStatus = "Fetching index";
         StateHasChanged();
         ConnectParameters connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);

@@ -23,6 +23,7 @@ namespace DatabaseManager.Server.Controllers
         private string fileShare = "dataops";
         private string connectionString;
         private string dataOpsQueue;
+        private string dataOpsCode;
         private string serverUrl;
 
         public DataOpsController(IConfiguration configuration,
@@ -32,6 +33,7 @@ namespace DatabaseManager.Server.Controllers
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             dataOpsQueue = configuration["DataOpsQueue"];
             serverUrl = configuration["BaseUrl"];
+            dataOpsCode = configuration["DataOpsCode"];
             this.logger = logger;
             this.fileStorageService = fileStorageService;
         }
@@ -60,6 +62,7 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost()]
         public async Task<ActionResult<DataOpsResults>> execute(List<DataOpParameters> parms)
         {
+            logger.LogInformation($"DataOpsController: Starting");
             SetStorageAccount();
             string storageAccount = connectionString;
             foreach (var item in parms)
@@ -73,6 +76,8 @@ namespace DatabaseManager.Server.Controllers
                 var jsonString = JsonConvert.SerializeObject(parms);
                 var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
                 string url = serverUrl + "/ManageDataOps_HttpStart";
+                if (!string.IsNullOrEmpty(dataOpsCode)) url = url + "?code=" + dataOpsCode;
+                logger.LogInformation($"DataOpsController: URL is {url}");
                 HttpResponseMessage response = client.PostAsync(url, content).Result;
                 using (HttpContent respContent = response.Content)
                 {
