@@ -104,14 +104,16 @@ GO
 
 DROP PROCEDURE IF EXISTS spGetDescendants;
 GO
-CREATE PROCEDURE spGetDescendants(@indexnode varchar(400))
+CREATE PROCEDURE spGetDescendants(@id int)
 AS
 BEGIN
+    Declare @indexNode hierarchyid
+	SET @indexNode = (Select IndexNode from pdo_qc_index where IndexId = @id)
     Select 
 	INDEXID, IndexNode.ToString() AS TextIndexNode, INDEXLEVEL, 
 	DATANAME, DATATYPE, DATAKEY, QC_STRING, JSONDATAOBJECT 
 	from pdo_qc_index
-	WHERE IndexNode.IsDescendantOf(@indexnode) = 1
+	WHERE IndexNode.IsDescendantOf(@indexNode) = 1
 END
 GO
 
@@ -130,6 +132,29 @@ WHERE IndexNode.IsDescendantOf(@indexnode) = 1 and INDEXLEVEL = @level
 
 SELECT A.INDEXID, A.DATATYPE, A.JSONDATAOBJECT, ((select count(1) from pdo_qc_index B where B.IndexNode.IsDescendantOf(A.IndexNode) = 1)-1) AS NumberOfDataObjects 
 FROM #MyTemp A
+
+END
+GO
+
+DROP PROCEDURE IF EXISTS spGetNumberOfDescendantsById;
+GO
+CREATE PROCEDURE spGetNumberOfDescendantsById(@id int)
+AS
+BEGIN
+	DROP TABLE If EXISTS #MyTemp
+
+	Declare @indexNode hierarchyid
+	SET @indexNode = (Select IndexNode from pdo_qc_index where IndexId = @id)
+	Declare @level int
+	SET @level = (Select INDEXLEVEL from pdo_qc_index where IndexId = @id) + 1
+
+	SELECT INDEXID, DATATYPE, JSONDATAOBJECT, INDEXNODE
+	INTO #MyTemp
+	FROM pdo_qc_index 
+	WHERE IndexNode.IsDescendantOf(@indexnode) = 1 and INDEXLEVEL = @level
+
+	SELECT A.INDEXID AS Id, A.DATATYPE, A.JSONDATAOBJECT AS JsonData, ((select count(1) from pdo_qc_index B where B.IndexNode.IsDescendantOf(A.IndexNode) = 1)-1) AS NumberOfDataObjects 
+	FROM #MyTemp A
 
 END
 GO

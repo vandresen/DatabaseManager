@@ -11,5 +11,7 @@ namespace DatabaseManager.Common.Data
     {
         Task<IndexModel> GetIndexFromSP(int id, string connectionString);
         Task UpdateIndex(IndexModel indexModel, string connectionString);
+        Task<IEnumerable<IndexModel>> GetDescendantsFromSP(int id, string connectionString);
+        Task<IEnumerable<DmsIndex>> GetNumberOfDescendantsSP(int id, string connectionString);
     }
 }

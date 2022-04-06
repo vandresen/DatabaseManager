@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
@@ -21,6 +23,8 @@ namespace DatabaseManager.Common.Helpers
         private readonly string taxonomyShare = "taxonomy";
         private DbUtilities _dbConn;
         private IMapper _mapper;
+        private readonly DapperDataAccess _dp;
+        private readonly IIndexDBAccess _indexData;
 
         public IndexManagement(string azureConnectionString)
         {
@@ -38,6 +42,8 @@ namespace DatabaseManager.Common.Helpers
                 cfg.CreateMap<ConnectParameters, SourceEntity>().ForMember(dest => dest.RowKey, opt => opt.MapFrom(src => src.SourceName));
             });
             _mapper = config.CreateMapper();
+            _dp = new DapperDataAccess();
+            _indexData = new IndexDBAccess(_dp);
         }
 
         public async Task<string> GetTaxonomies()
@@ -94,23 +100,8 @@ namespace DatabaseManager.Common.Helpers
                 Exception error = new Exception($"RuleManagement: data source must be a Database type");
                 throw error;
             }
-            _dbConn.OpenConnection(connector);
-            string query = $" where INDEXID = {id}";
-            IndexAccess idxAccess = new IndexAccess();
-            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(query, connector.ConnectionString);
-            if (idxResults.Count == 0)
-            {
-                Exception error = new Exception($"No index item found");
-                throw error;
-            }
-            string indexNode = idxResults[0].TextIndexNode;
-            int indexLevel = idxResults[0].IndexLevel + 1;
-            string strProcedure = $"EXEC spGetNumberOfDescendants '{indexNode}', {indexLevel}";
-            query = "";
-            DataTable idx = _dbConn.GetDataTable(strProcedure, query);
-            List<DmsIndex> index = ProcessAllChildren(idx);
-            result = JsonConvert.SerializeObject(index, Formatting.Indented);
-            _dbConn.CloseConnection();
+            IEnumerable<DmsIndex> dmsIndex = await _indexData.GetNumberOfDescendantsSP(id, connector.ConnectionString);
+            result = JsonConvert.SerializeObject(dmsIndex, Formatting.Indented);
             return result;
         }
 

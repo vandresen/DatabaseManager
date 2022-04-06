@@ -16,11 +16,18 @@ namespace DatabaseManager.Common.Data
         {
             _dp = dp;
         }
+
+        public Task<IEnumerable<IndexModel>> GetDescendantsFromSP(int id, string connectionString) =>
+            _dp.LoadData<IndexModel, dynamic>("dbo.spGetDescendants", new { id = id }, connectionString);
+
         public async Task<IndexModel> GetIndexFromSP(int id, string connectionString)
         {
             var results = await _dp.LoadData<IndexModel, dynamic>("dbo.spGetIndexFromId", new { id = id }, connectionString);
             return results.FirstOrDefault();
         }
+
+        public Task<IEnumerable<DmsIndex>> GetNumberOfDescendantsSP(int id, string connectionString) =>
+            _dp.LoadData<DmsIndex, dynamic>("dbo.spGetNumberOfDescendantsById", new { id = id }, connectionString);
 
         public Task UpdateIndex(IndexModel indexModel, string connectionString) =>
             _dp.SaveData("dbo.spUpdateIndex", new {indexModel.IndexId, indexModel.QC_String, indexModel.JsonDataObject}, connectionString);
