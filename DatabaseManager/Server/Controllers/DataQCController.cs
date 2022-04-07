@@ -34,20 +34,21 @@ namespace DatabaseManager.Server.Controllers
         [HttpGet("{source}")]
         public async Task<ActionResult<List<QcResult>>> Get(string source)
         {
-            List<QcResult> qcResults = new List<QcResult>();
+            List<QcResult> results = new List<QcResult>();
             try
             {
                 string tmpConnString = Request.Headers["AzureStorageConnection"];
                 DataQC qc = new DataQC(tmpConnString);
                 DataQCParameters qcParms = new DataQCParameters();
                 qcParms.DataConnector = source;
-                qcResults = await qc.GetQCRules(qcParms);
+                //qcResults = await qc.GetQCRules(qcParms);
+                results = await qc.GetResults(source);
             }
             catch (Exception ex)
             {
                 return BadRequest($"{ex}");
             }
-            return qcResults;
+            return results;
         }
 
         [HttpGet("{source}/{id}")]

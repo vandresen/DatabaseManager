@@ -52,6 +52,7 @@
         try
         {
             ResultList = await qc.GetResults(singleton.TargetConnector);
+            Console.WriteLine($"Number of report results are {ResultList.Count}");
         }
         catch (Exception ex)
         {
