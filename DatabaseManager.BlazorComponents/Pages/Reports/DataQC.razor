@@ -7,12 +7,6 @@
 <h3>Data QC</h3>
 
 <Table TableItem="QcResult" Items="ResultList" PageSize="@pageSize" ColumnReorder="true">
-    @*<Column TableItem="RuleModel" Title="Action" Sortable="false">
-            <Template>
-                <a class="btn btn-success" href="/rules/edit/@singleton.TargetConnector/@context.Id">Edit</a>
-                <button class="btn btn-danger" @onclick="@(() => RuleDelete(context.Id))">Delete</button>
-            </Template>
-        </Column>*@
     <Column TableItem="QcResult" Title="Rule Type" Field="@(x => x.RuleType)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
     <Column TableItem="QcResult" Title="Category" Field="@(x => x.RuleName)" Sortable="true" Filterable="true"></Column>
     <Column TableItem="QcResult" Title="Rule Name" Field="@(x => x.DataType)" Sortable="true" Filterable="true"></Column>

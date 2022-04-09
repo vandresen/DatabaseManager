@@ -160,22 +160,9 @@ else
         reportList = new List<ReportData>();
         foreach (var item in dataIndex)
         {
-            JObject dataObject = JObject.Parse(item.JsonData);
-            string comma = "";
-            string key = "";
+            string key = item.DataKey;
             string value = "";
             double number = 0.0;
-            foreach(var keyAttribute in keyList)
-            {
-                string attribute = keyAttribute.Trim();
-                key = key + comma + dataObject[attribute];
-                if (canEdit) value = dataObject[columnName].ToString();
-                if (valueType == "number")
-                {
-                    number = value.GetDoubleFromString();
-                }
-                comma = ", ";
-            }
             reportList.Add(new ReportData
             {
                 Id = item.Id,

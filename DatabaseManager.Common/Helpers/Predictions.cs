@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
@@ -31,6 +33,8 @@ namespace DatabaseManager.Common.Helpers
         private ManageIndexTable manageIndexTable;
         private DataTable indexTable;
         private static HttpClient Client = new HttpClient();
+        private readonly DapperDataAccess _dp;
+        private readonly IIndexDBAccess _indexData;
 
         public Predictions(string azureConnectionString)
         {
@@ -48,6 +52,8 @@ namespace DatabaseManager.Common.Helpers
                 cfg.CreateMap<SourceEntity, ConnectParameters>().ForMember(dest => dest.SourceName, opt => opt.MapFrom(src => src.RowKey));
             });
             _mapper = config.CreateMapper();
+            _dp = new DapperDataAccess();
+            _indexData = new IndexDBAccess(_dp);
         }
 
         public async Task<List<PredictionCorrection>> GetPredictions(string source)
@@ -114,12 +120,12 @@ namespace DatabaseManager.Common.Helpers
 
             manageIndexTable = new ManageIndexTable(_accessDefs, connector.ConnectionString, rule.DataType, rule.FailRule);
             manageIndexTable.InitQCFlags(false);
-            MakePredictions(rule, connector);
+            await MakePredictions(rule, connector);
             _dbConn.CloseConnection();
             manageIndexTable.SaveQCFlags();
         }
 
-        private void MakePredictions(RuleModel rule, ConnectParameters connector)
+        private async Task MakePredictions(RuleModel rule, ConnectParameters connector)
         {
             QcRuleSetup qcSetup = new QcRuleSetup();
             qcSetup.Database = connector.Catalog;
@@ -153,7 +159,7 @@ namespace DatabaseManager.Common.Helpers
                         MethodInfo info = type.GetMethod(rule.RuleFunction);
                         result = (PredictionResult)info.Invoke(null, new object[] { qcSetup, _dbConn });
                     }
-                    ProcessResult(result, rule);
+                    await ProcessResult(result, rule);
                 }
             }
         }
@@ -184,7 +190,7 @@ namespace DatabaseManager.Common.Helpers
             return result;
         }
 
-        private void ProcessResult(PredictionResult result, RuleModel rule)
+        private async Task ProcessResult(PredictionResult result, RuleModel rule)
         {
             if (result.Status == "Passed")
             {
@@ -200,7 +206,7 @@ namespace DatabaseManager.Common.Helpers
                     qcStr = qcStr.Replace(failRule, pCode);
                 }
                 manageIndexTable.SetQCFlag(result.IndexId, qcStr);
-                SavePrediction(result, qcStr);
+                await SavePrediction(result, qcStr);
             }
             else
             {
@@ -208,7 +214,7 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        private void SavePrediction(PredictionResult result, string qcStr)
+        private async Task SavePrediction(PredictionResult result, string qcStr)
         {
             if (result.SaveType == "Update")
             {
@@ -220,7 +226,7 @@ namespace DatabaseManager.Common.Helpers
             }
             else if (result.SaveType == "Delete")
             {
-                DeleteAction(result, qcStr);
+                await DeleteAction(result, qcStr);
             }
             else
             {
@@ -277,35 +283,50 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        private void DeleteAction(PredictionResult result, string qcStr)
+        private async Task DeleteAction(PredictionResult result, string qcStr)
         {
-            string idxQuery = $" where INDEXID = {result.IndexId}";
-            IndexAccess idxAccess = new IndexAccess();
-            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(idxQuery, databaseConnectionString);
-            if (idxResults.Count == 1)
+            IndexModel idxResults= await _indexData.GetIndexFromSP(result.IndexId, databaseConnectionString);
+            if (idxResults != null)
             {
-                string condition = $"INDEXID={result.IndexId}";
-                var rows = indexTable.Select(condition);
-                rows[0]["JSONDATAOBJECT"] = "";
-                rows[0]["QC_STRING"] = qcStr;
-                indexTable.AcceptChanges();
-
-                if (syncPredictions)
-                {
-                    string dataType = idxResults[0].DataType;
-                    string dataKey = idxResults[0].DataKey;
-                    DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == dataType);
-                    string select = ruleAccessDef.Select;
-                    string dataTable = GetTable(select);
-                    string dataQuery = "where " + dataKey;
-                    _dbConn.DBDelete(dataTable, dataQuery);
-                }
+                DeleteChildren(result.IndexId, qcStr);
+                DeleteParent(qcStr, idxResults);
             }
             else
             {
                 //logger.LogWarning("Cannot find data key during update");
             }
 
+        }
+
+        private async Task DeleteChildren(int id, string qcStr)
+        {
+            IEnumerable<IndexModel> dmsIndex = await _indexData.GetDescendantsFromSP(id, databaseConnectionString);
+            foreach (IndexModel index in dmsIndex)
+            {
+                index.JsonDataObject = "";
+                index.QC_String = qcStr;
+                await _indexData.UpdateIndex(index, databaseConnectionString);
+            }
+        }
+
+        private void DeleteParent(string qcStr, IndexModel idxResults)
+        {
+            string condition = $"INDEXID={idxResults.IndexId}";
+            var rows = indexTable.Select(condition);
+            rows[0]["JSONDATAOBJECT"] = "";
+            rows[0]["QC_STRING"] = qcStr;
+            indexTable.AcceptChanges();
+
+            if (syncPredictions)
+            {
+                string dataType = idxResults.DataType;
+                string dataKey = idxResults.DataKey;
+                DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == dataType);
+                string select = ruleAccessDef.Select;
+                string dataTable = GetTable(select);
+                string dataQuery = "where " + dataKey;
+                _dbConn.DBDelete(dataTable, dataQuery);
+            }
         }
 
         private void InsertMissingObjectToIndex(PredictionResult result)

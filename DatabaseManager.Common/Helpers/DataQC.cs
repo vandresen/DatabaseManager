@@ -86,6 +86,7 @@ namespace DatabaseManager.Common.Helpers
                 {
                     Id = idxRow.IndexId,
                     DataType = idxRow.DataType,
+                    DataKey = idxRow.DataKey,
                     JsonData = idxRow.JsonDataObject
                 });
             }
@@ -127,6 +128,7 @@ namespace DatabaseManager.Common.Helpers
                 {
                     Id = idxRow.IndexId,
                     DataType = idxRow.DataType,
+                    DataKey = idxRow.DataKey,
                     JsonData = idxRow.JsonDataObject
                 });
             }
