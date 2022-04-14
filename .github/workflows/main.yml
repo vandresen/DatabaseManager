@@ -63,3 +63,28 @@ jobs:
         with:
           name: ServerlessUI
           path: D:\a\DatabaseManager\DatabaseManager\DatabaseManager.ServerLessClient\bin\Debug\net6.0\publish\
+  build-hostedserver:
+    runs-on: windows-2022
+    needs: build
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET for HostedServer
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
+      - name: Publish HostedServer Project
+        run: dotnet publish build-hostedserver:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
+      - name: Publish .NET Core Project
+        run: dotnet publish DatabaseManager/Server/DatabaseManager.Server.csproj -c Release -o release --nologo
+      - name: Upload HostedServer Build Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: HostedServer
+          path: D:\a\DatabaseManager\DatabaseManager\release\
