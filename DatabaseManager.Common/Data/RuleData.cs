@@ -18,7 +18,7 @@ namespace DatabaseManager.Common.Data
         }
 
         public Task<IEnumerable<RuleModel>> GetRulesFromSP(string connectionString) =>
-            _dp.LoadData<RuleModel, dynamic>("dbo.spRule_GetAll", new { }, connectionString);
+            _dp.LoadData<RuleModel, dynamic>("dbo.spGetRules", new { }, connectionString);
 
         public async Task<RuleModel?> GetRuleFromSP(int id, string connectionString)
         {

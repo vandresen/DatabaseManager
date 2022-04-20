@@ -89,8 +89,7 @@ namespace DatabaseManager.Common.Helpers
         {
             string result = "";
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
-            string select = getSql;
-            IEnumerable<RuleModel> rules = await _ruleData.GetRules(select, connector.ConnectionString);
+            IEnumerable<RuleModel> rules = await _ruleData.GetRulesFromSP(connector.ConnectionString);
             if (rules.Any())result = JsonConvert.SerializeObject(rules, Formatting.Indented);
             return result;
         }
@@ -101,15 +100,6 @@ namespace DatabaseManager.Common.Helpers
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
             RuleModel rule = SelectRule(id, connector.ConnectionString);
             result = JsonConvert.SerializeObject(rule, Formatting.Indented);
-            return result;
-        }
-
-        public async Task<string> GetRuleByQuery(string sourceName, string query)
-        {
-            string result = "";
-            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
-            List<RuleModel> rules = SelectRuleByQuery(query, connector.ConnectionString);
-            result = JsonConvert.SerializeObject(rules, Formatting.Indented);
             return result;
         }
 
@@ -137,6 +127,41 @@ namespace DatabaseManager.Common.Helpers
             {
                 result = JsonConvert.SerializeObject(function, Formatting.Indented);
             }
+            return result;
+        }
+
+        public async Task<string> GetActiveRules(string sourceName)
+        {
+            string result = "";
+            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
+            IEnumerable<RuleModel> rules = await _ruleData.GetRulesFromSP(connector.ConnectionString);
+            List<RuleModel> activeRules = rules.Where(x => x.Active == "Y").ToList();
+            if (activeRules != null) result = JsonConvert.SerializeObject(activeRules, Formatting.Indented);
+            return result;
+        }
+
+        public async Task<string> GetActiveQCRules(string sourceName)
+        {
+            string result = "";
+            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
+            IEnumerable<RuleModel> rules = await _ruleData.GetRulesFromSP(connector.ConnectionString);
+            List<RuleModel> activeRules = rules.
+                Where(x => x.Active == "Y" && x.RuleType != "Predictions").
+                ToList();
+            if (activeRules != null) result = JsonConvert.SerializeObject(activeRules, Formatting.Indented);
+            return result;
+        }
+
+        public async Task<string> GetActivePredictionRules(string sourceName)
+        {
+            string result = "";
+            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
+            IEnumerable<RuleModel> rules = await _ruleData.GetRulesFromSP(connector.ConnectionString);
+            List<RuleModel> activeRules = rules.
+                Where(x => x.Active == "Y" && x.RuleType == "Predictions").
+                OrderBy(x => x.PredictionOrder).
+                ToList();
+            if (activeRules != null) result = JsonConvert.SerializeObject(activeRules, Formatting.Indented);
             return result;
         }
 

@@ -56,12 +56,11 @@ namespace DatabaseManager.Common.Helpers
             ConnectParameters connector = await GetConnector(source);
             RuleManagement rules = new RuleManagement(_azureConnectionString);
             IndexAccess idxAccess = new IndexAccess();
-            string query = " where Active = 'Y'";
-            string jsonString = await rules.GetRuleByQuery(connector.SourceName, query);
+            string jsonString = await rules.GetActiveRules(connector.SourceName);
             result = JsonConvert.DeserializeObject<List<QcResult>>(jsonString);
             foreach (QcResult qcItem in result)
             {
-                query = $" where QC_STRING like '%{qcItem.RuleKey};%'";
+                string query = $" where QC_STRING like '%{qcItem.RuleKey};%'";
                 qcItem.Failures = idxAccess.IndexCountByQuery(query, connector.ConnectionString);
             }
             return result;
@@ -100,12 +99,11 @@ namespace DatabaseManager.Common.Helpers
             ConnectParameters connector = await GetConnector(qcParms.DataConnector);
             RuleManagement rules = new RuleManagement(_azureConnectionString);
             IndexAccess idxAccess = new IndexAccess();
-            string query = " where Active = 'Y' and RuleType != 'Predictions'";
-            string jsonString = await rules.GetRuleByQuery(connector.SourceName, query);
+            string jsonString = await rules.GetActiveQCRules(connector.SourceName);
             qcResult = JsonConvert.DeserializeObject<List<QcResult>>(jsonString);
             foreach (QcResult qcItem in qcResult)
             {
-                query = $" where QC_STRING like '%{qcItem.RuleKey};%'";
+                string query = $" where QC_STRING like '%{qcItem.RuleKey};%'";
                 qcItem.Failures = idxAccess.IndexCountByQuery(query, connector.ConnectionString);
             }
             return qcResult;

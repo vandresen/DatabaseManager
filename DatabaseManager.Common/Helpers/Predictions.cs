@@ -61,14 +61,13 @@ namespace DatabaseManager.Common.Helpers
             List<PredictionCorrection> predictionResults = new List<PredictionCorrection>();
             ConnectParameters connector = await GetConnector(source);
             RuleManagement rules = new RuleManagement(_azureConnectionString);
-            string query = " where Active = 'Y' and RuleType = 'Predictions' order by PredictionOrder";
-            string jsonString = await rules.GetRuleByQuery(connector.SourceName, query);
+            string jsonString = await rules.GetActivePredictionRules(source);
             predictionResults = JsonConvert.DeserializeObject<List<PredictionCorrection>>(jsonString);
 
             IndexAccess idxAccess = new IndexAccess();
             foreach (PredictionCorrection predItem in predictionResults)
             {
-                query = $" where QC_STRING like '%{predItem.RuleKey};%'";
+                string query = $" where QC_STRING like '%{predItem.RuleKey};%'";
                 predItem.NumberOfCorrections = idxAccess.IndexCountByQuery(query, connector.ConnectionString);
             }
             return predictionResults;

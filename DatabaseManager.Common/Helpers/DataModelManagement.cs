@@ -108,6 +108,7 @@ namespace DatabaseManager.Common.Helpers
                     }
                 }
 
+                await CreateGetStoredProcedure(dbConn);
                 await CreateInsertStoredProcedure(dbConn);
                 await CreateUpdateStoredProcedure(dbConn);
 
@@ -173,6 +174,32 @@ namespace DatabaseManager.Common.Helpers
                 Exception error = new Exception("Create DMS Model Error: ", ex);
                 throw error;
             }
+        }
+
+        private async Task CreateGetStoredProcedure(DbUtilities dbConn)
+        {
+            RuleManagement rm = new RuleManagement();
+            string type = "Rules";
+            DataAccessDef ruleDef = rm.GetDataAccessDefinition(type);
+            BuildGetProcedure(dbConn, type, ruleDef);
+            type = "Functions";
+            DataAccessDef functionDef = rm.GetDataAccessDefinition(type);
+            BuildGetProcedure(dbConn, type, functionDef);
+        }
+
+        private void BuildGetProcedure(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
+        {
+            string sqlCommand = $"DROP PROCEDURE IF EXISTS spGet{dataType} ";
+            dbConn.SQLExecute(sqlCommand);
+
+            sqlCommand = "";
+            string sql = accessDef.Select;
+            sqlCommand = sqlCommand + $"CREATE PROCEDURE spGet{dataType} ";
+            sqlCommand = sqlCommand + " AS ";
+            sqlCommand = sqlCommand + " BEGIN ";
+            sqlCommand = sqlCommand + sql;
+            sqlCommand = sqlCommand + " END";
+            dbConn.SQLExecute(sqlCommand);
         }
 
         private async Task CreateInsertStoredProcedure(DbUtilities dbConn)

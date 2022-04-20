@@ -170,6 +170,7 @@ namespace DatabaseManager.AppFunctions
             DataQC qc = new DataQC(pipe.StorageAccount);
             DataQCParameters qcParms = JObject.Parse(pipe.JsonParameters).ToObject<DataQCParameters>();
             List<QcResult> qcList = await qc.GetQCRules(qcParms);
+            log.LogInformation($"InitDataQC: Number of QC rules are {qcList.Count}");
             await qc.ClearQCFlags(qcParms.DataConnector);
             log.LogInformation($"InitDataQC: Complete");
             return qcList;
