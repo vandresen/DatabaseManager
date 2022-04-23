@@ -56,8 +56,16 @@
 
     private async Task DrillDown(int id)
     {
-
+        string ruleType = ResultList.Where(x => x.Id == id).Select(a => a.RuleType).First();
         Console.WriteLine(id);
-        navigationManager.NavigateTo($"/drilldown/{id}");
+        Console.WriteLine(ruleType);
+        if (ruleType == "Predictions")
+        {
+            navigationManager.NavigateTo($"/predictiondrilldown/{id}");
+        }
+        else
+        {
+            navigationManager.NavigateTo($"/drilldown/{id}");
+        }
     }
 }
