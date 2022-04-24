@@ -98,7 +98,7 @@ namespace DatabaseManager.Common.Helpers
         {
             string result = "";
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
-            RuleModel rule = SelectRule(id, connector.ConnectionString);
+            RuleModel rule = await _ruleData.GetRuleFromSP(id, connector.ConnectionString);
             result = JsonConvert.SerializeObject(rule, Formatting.Indented);
             return result;
         }
@@ -290,7 +290,7 @@ namespace DatabaseManager.Common.Helpers
                 Exception error = new Exception($"RuleManagement: data source must be a Database type");
                 throw error;
             }
-            RuleModel oldRule = SelectRule(id, connector.ConnectionString);
+            RuleModel oldRule = await _ruleData.GetRuleFromSP(id, connector.ConnectionString);
             if (oldRule == null)
             {
                 Exception error = new Exception($"RuleManagement: could not find rule");
@@ -368,19 +368,6 @@ namespace DatabaseManager.Common.Helpers
             await _fileStorage.DeleteFile(ruleShare, ruleFile);
         }
 
-        private RuleModel SelectRule(int id, string connectionString)
-        {
-            RuleModel rule = new RuleModel();
-            using (IDbConnection cnn = new SqlConnection(connectionString))
-            {
-                string query = $" where Id = {id}";
-                string sql = getSql + query;
-                var rules = cnn.Query<RuleModel>(sql);
-                rule = rules.FirstOrDefault();
-            }
-            return rule;
-        }
-
         private RuleFunctions BuildFunctionData(string ruleFunction, string functionType)
         {
             RuleFunctions rf = new RuleFunctions();
@@ -408,17 +395,6 @@ namespace DatabaseManager.Common.Helpers
             rf.FunctionKey = functionKey;
             rf.FunctionType = functionType;
             return rf;
-        }
-
-        private List<RuleModel> SelectRuleByQuery(string query, string connectionString)
-        {
-            List<RuleModel> rules = new List<RuleModel>();
-            using (IDbConnection cnn = new SqlConnection(connectionString))
-            {
-                string sql = getSql + query;
-                rules = cnn.Query<RuleModel>(sql).ToList();
-            }
-            return rules;
         }
 
         private List<RuleFunctions> SelectFunctionByQuery(string query, string connectionString)

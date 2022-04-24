@@ -79,10 +79,8 @@ namespace DatabaseManager.Common.Helpers
             {
                 RuleManagement rules = new RuleManagement(azureConnectionString);
                 List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
-                //_dbConn.OpenConnection(connector);
                 string ruleString = await ReadDatabaseFile("StandardRules.json");
                 await rules.SaveRulesToDatabase(ruleString, connector);
-                //_dbConn.CloseConnection();
             }
             catch (Exception ex)
             {
@@ -182,9 +180,11 @@ namespace DatabaseManager.Common.Helpers
             string type = "Rules";
             DataAccessDef ruleDef = rm.GetDataAccessDefinition(type);
             BuildGetProcedure(dbConn, type, ruleDef);
+            BuildGetProcedureWithId(dbConn, type, ruleDef);
             type = "Functions";
             DataAccessDef functionDef = rm.GetDataAccessDefinition(type);
             BuildGetProcedure(dbConn, type, functionDef);
+            BuildGetProcedureWithId(dbConn, type, ruleDef);
         }
 
         private void BuildGetProcedure(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
@@ -198,6 +198,23 @@ namespace DatabaseManager.Common.Helpers
             sqlCommand = sqlCommand + " AS ";
             sqlCommand = sqlCommand + " BEGIN ";
             sqlCommand = sqlCommand + sql;
+            sqlCommand = sqlCommand + " END";
+            dbConn.SQLExecute(sqlCommand);
+        }
+
+        private void BuildGetProcedureWithId(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
+        {
+            string sqlCommand = $"DROP PROCEDURE IF EXISTS spGetWitId{dataType} ";
+            dbConn.SQLExecute(sqlCommand);
+
+            sqlCommand = "";
+            string sql = accessDef.Select;
+            string query = " WHERE ID = @id ";
+            sqlCommand = sqlCommand + $"CREATE PROCEDURE spGetWithId{dataType} ";
+            sqlCommand = sqlCommand + " @id INT ";
+            sqlCommand = sqlCommand + " AS ";
+            sqlCommand = sqlCommand + " BEGIN ";
+            sqlCommand = sqlCommand + sql + query;
             sqlCommand = sqlCommand + " END";
             dbConn.SQLExecute(sqlCommand);
         }

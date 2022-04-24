@@ -22,7 +22,7 @@ namespace DatabaseManager.Common.Data
 
         public async Task<RuleModel?> GetRuleFromSP(int id, string connectionString)
         {
-            var results = await _dp.LoadData<RuleModel, dynamic>("dbo.spRule_Get", new { Id = id }, connectionString);
+            var results = await _dp.LoadData<RuleModel, dynamic>("dbo.spGetWithIdRules", new { Id = id }, connectionString);
             return results.FirstOrDefault();
         }
 
