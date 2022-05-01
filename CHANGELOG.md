@@ -1,4 +1,4 @@
 New functionality are:
-* Functionality to add and remove columns when doing index drilldown
-* The user interface is now the same in serverless and the MVS version.
-* Functionality to manually edit data QC failures have been implemented. Currently you can only do this for Completeness and Validity rules
+* Added spinners to the home page to show that we are waiting for data
+* Drilling down in reporting for a prediction results shows a different view than drilling down for Data QC issues
+* Improved the prediction function delete to also delete all children
