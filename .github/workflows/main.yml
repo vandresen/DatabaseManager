@@ -44,7 +44,7 @@ jobs:
         with:
           name: ChangelogStuff
           path: ./CHANGELOG.md
-  build:
+  build-serverlessclient:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v2
@@ -74,3 +74,8 @@ jobs:
           dotnet-version: 6.0.x
       - name: Publish Hosted Server
         run: dotnet publish DatabaseManager/Server/DatabaseManager.Server.csproj -c Release -o release --nologo
+      - name: Upload Hosted Server Build Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: HostedServer
+          path: D:\a\DatabaseManager\DatabaseManager\release\
