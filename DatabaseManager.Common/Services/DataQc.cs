@@ -57,8 +57,9 @@ namespace DatabaseManager.Common.Services
 
         public async Task<List<QcResult>> GetResults(string source)
         {
-            if (string.IsNullOrEmpty(baseUrl)) url = $"api/DataQC/{source}";
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/dataqc/{source}";
             else url = baseUrl.BuildFunctionUrl("GetResults", $"name={source}", apiKey);
+            Console.WriteLine(url);
             var response = await httpService.Get<List<QcResult>>(url);
             if (!response.Success)
             {

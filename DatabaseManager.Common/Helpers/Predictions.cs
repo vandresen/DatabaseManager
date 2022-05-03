@@ -73,27 +73,27 @@ namespace DatabaseManager.Common.Helpers
             return predictionResults;
         }
 
-        public async Task<List<DmsIndex>> GetPrediction(string source, int id)
-        {
-            List<DmsIndex> predictionResults = new List<DmsIndex>();
-            ConnectParameters connector = await GetConnector(source);
-            RuleManagement rules = new RuleManagement(_azureConnectionString);
-            string jsonRule = await rules.GetRule(source, id);
-            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
-            string query = $" where QC_STRING like '%{rule.RuleKey};%'";
-            IndexAccess idxAccess = new IndexAccess();
-            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(query, connector.ConnectionString);
-            foreach (var idxRow in idxResults)
-            {
-                predictionResults.Add(new DmsIndex()
-                {
-                    Id = idxRow.IndexId,
-                    DataType = idxRow.DataType,
-                    JsonData = idxRow.JsonDataObject
-                });
-            }
-            return predictionResults;
-        }
+        //public async Task<List<DmsIndex>> GetPrediction(string source, int id)
+        //{
+        //    List<DmsIndex> predictionResults = new List<DmsIndex>();
+        //    ConnectParameters connector = await GetConnector(source);
+        //    RuleManagement rules = new RuleManagement(_azureConnectionString);
+        //    string jsonRule = await rules.GetRule(source, id);
+        //    RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
+        //    string query = $" where QC_STRING like '%{rule.RuleKey};%'";
+        //    IndexAccess idxAccess = new IndexAccess();
+        //    List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(query, connector.ConnectionString);
+        //    foreach (var idxRow in idxResults)
+        //    {
+        //        predictionResults.Add(new DmsIndex()
+        //        {
+        //            Id = idxRow.IndexId,
+        //            DataType = idxRow.DataType,
+        //            JsonData = idxRow.JsonDataObject
+        //        });
+        //    }
+        //    return predictionResults;
+        //}
 
         public async Task ExecutePrediction(PredictionParameters parms)
         {

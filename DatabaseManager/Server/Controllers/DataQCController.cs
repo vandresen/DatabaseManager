@@ -76,7 +76,7 @@ namespace DatabaseManager.Server.Controllers
         [HttpPost("ClearQCFlags/{source}")]
         public async Task<ActionResult<string>> ClearQCFlags(string source)
         {
-            if ( String.IsNullOrEmpty(source)) return BadRequest();
+            if (String.IsNullOrEmpty(source)) return BadRequest();
 
             try
             {
@@ -88,7 +88,7 @@ namespace DatabaseManager.Server.Controllers
             {
                 return BadRequest(ex.ToString());
             }
-            
+
             return Ok($"OK");
         }
 
@@ -108,7 +108,7 @@ namespace DatabaseManager.Server.Controllers
                 DataQC qc = new DataQC(tmpConnString);
                 List<int> failedObjects = new List<int>();
                 failedObjects = await qc.ExecuteQcRule(qcParams);
-                RuleFailures ruleFailures = new RuleFailures() { RuleId=qcParams.RuleId, Failures= failedObjects };
+                RuleFailures ruleFailures = new RuleFailures() { RuleId = qcParams.RuleId, Failures = failedObjects };
                 result = JsonConvert.SerializeObject(ruleFailures);
             }
             catch (Exception ex)

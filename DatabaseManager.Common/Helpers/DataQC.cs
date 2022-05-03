@@ -68,28 +68,13 @@ namespace DatabaseManager.Common.Helpers
 
         public async Task<List<DmsIndex>> GetResult(string source, int id)
         {
-            List<DmsIndex> result = new List<DmsIndex>();
             ConnectParameters connector = await GetConnector(source);
-            
             RuleManagement rules = new RuleManagement(_azureConnectionString);
             string jsonRule = await rules.GetRule(source, id);
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
 
-            string query = $" where QC_STRING like '%{rule.RuleKey};%'";
-            IndexAccess idxAccess = new IndexAccess();
-            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(query, connector.ConnectionString);
-
-            foreach (var idxRow in idxResults)
-            {
-                result.Add(new DmsIndex()
-                {
-                    Id = idxRow.IndexId,
-                    DataType = idxRow.DataType,
-                    DataKey = idxRow.DataKey,
-                    JsonData = idxRow.JsonDataObject
-                });
-            }
-
+            ManageIndexTable mit = new ManageIndexTable(connector.ConnectionString);
+            List<DmsIndex> result = await mit.GetQcOrPredictionsFromIndex(rule.RuleKey);
             return result;
         }
 
@@ -111,26 +96,14 @@ namespace DatabaseManager.Common.Helpers
 
         public async Task<string> GetQCFailures(string source, int id)
         {
-            List<DmsIndex> qcIndex = new List<DmsIndex>();
             ConnectParameters connector = await GetConnector(source);
             RuleManagement rules = new RuleManagement(_azureConnectionString);
             string jsonRule = await rules.GetRule(source, id);
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
 
-            string query = $" where QC_STRING like '%{rule.RuleKey};%'";
-            IndexAccess idxAccess = new IndexAccess();
-            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(query, connector.ConnectionString);
-            foreach (var idxRow in idxResults)
-            {
-                qcIndex.Add(new DmsIndex()
-                {
-                    Id = idxRow.IndexId,
-                    DataType = idxRow.DataType,
-                    DataKey = idxRow.DataKey,
-                    JsonData = idxRow.JsonDataObject
-                });
-            }
-            string result = JsonConvert.SerializeObject(qcIndex);
+            ManageIndexTable mit = new ManageIndexTable(connector.ConnectionString);
+            List<DmsIndex> indexList = await mit.GetQcOrPredictionsFromIndex(rule.RuleKey);
+            string result = JsonConvert.SerializeObject(indexList);
             return result;
         }
 
@@ -158,6 +131,7 @@ namespace DatabaseManager.Common.Helpers
                 string jsonRules = await rm.GetRules(source);
                 List<RuleModel> rules = JsonConvert.DeserializeObject<List<RuleModel>>(jsonRules);
                 ManageIndexTable idxTable = new ManageIndexTable(connector.ConnectionString);
+                await idxTable.GetIndexQCFlagData();
                 foreach (var ruleFailure in ruleFailures)
                 {
                     RuleModel rule = rules.FirstOrDefault(o => o.Id == ruleFailure.RuleId);

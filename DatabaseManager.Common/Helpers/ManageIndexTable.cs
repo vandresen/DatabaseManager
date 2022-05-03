@@ -1,4 +1,6 @@
-﻿using DatabaseManager.Common.Entities;
+﻿using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
+using DatabaseManager.Common.Entities;
 using DatabaseManager.Shared;
 using Microsoft.Data.SqlClient;
 using System;
@@ -6,6 +8,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
 {
@@ -19,6 +22,8 @@ namespace DatabaseManager.Common.Helpers
         private string _connectionString;
         private List<IndexModel> idxList;
         private IndexAccess idxAccess;
+        private readonly IDapperDataAccess _dp;
+        private readonly IIndexDBAccess _indexData;
 
         public ManageIndexTable()
         {
@@ -28,13 +33,8 @@ namespace DatabaseManager.Common.Helpers
         public ManageIndexTable(string connectionString)
         {
             _connectionString = connectionString;
-            idxAccess = new IndexAccess();
-            idxList = idxAccess.SelectIndexesByQuery("", connectionString);
-            qcFlags = new QcFlags();
-            foreach (var idx in idxList)
-            {
-                qcFlags[idx.IndexId] = idx.QC_String;
-            }
+            _dp = new DapperDataAccess();
+            _indexData = new IndexDBAccess(_dp);
         }
 
         public ManageIndexTable(List<DataAccessDef> accessDefs, string connectionString,
@@ -42,7 +42,6 @@ namespace DatabaseManager.Common.Helpers
         {
             _accessDefs = accessDefs;
             IndexAccess idxAccess = new IndexAccess();
-            //DataAccessDef ruleAccessDef = _accessDefs.First(x => x.DataType == "Index");
             string select = idxAccess.GetSelectSQL();
             if (!string.IsNullOrEmpty(dataType))
             {
@@ -86,6 +85,7 @@ namespace DatabaseManager.Common.Helpers
 
         public void SaveQCFlagDapper()
         {
+            idxAccess = new IndexAccess();
             foreach (var idx in idxList)
             {
                 idx.QC_String = qcFlags[idx.IndexId];
@@ -112,6 +112,17 @@ namespace DatabaseManager.Common.Helpers
             indexAdapter.Update(indexTable);
         }
 
+        public async Task GetIndexQCFlagData()
+        {
+            IEnumerable<IndexModel> enumerable = await _indexData.GetIndexesFromSP(_connectionString);
+            idxList = enumerable.ToList();
+            qcFlags = new QcFlags();
+            foreach (var idx in idxList)
+            {
+                qcFlags[idx.IndexId] = idx.QC_String;
+            }
+        }
+
         public DataTable GetIndexTable()
         {
             return indexTable;
@@ -125,6 +136,23 @@ namespace DatabaseManager.Common.Helpers
         public string GetQCFlag(int indexId)
         {
             return qcFlags[indexId];
+        }
+
+        public async Task<List<DmsIndex>> GetQcOrPredictionsFromIndex(string ruleKey)
+        {
+            IEnumerable<IndexModel> enumerable = await _indexData.GetIndexesWithQcStringFromSP(ruleKey, _connectionString);
+            List<DmsIndex> qcIndex = new List<DmsIndex>();
+            foreach (var idxRow in enumerable)
+            {
+                qcIndex.Add(new DmsIndex()
+                {
+                    Id = idxRow.IndexId,
+                    DataType = idxRow.DataType,
+                    DataKey = idxRow.DataKey,
+                    JsonData = idxRow.JsonDataObject
+                });
+            }
+            return qcIndex;
         }
     }
 }

@@ -185,6 +185,12 @@ namespace DatabaseManager.Common.Helpers
             DataAccessDef functionDef = rm.GetDataAccessDefinition(type);
             BuildGetProcedure(dbConn, type, functionDef);
             BuildGetProcedureWithId(dbConn, type, ruleDef);
+
+            IndexAccess ia = new IndexAccess();
+            type = "Index";
+            DataAccessDef indexDef = ia.GetDataAccessDefinition();
+            BuildGetProcedure(dbConn, type, indexDef);
+            BuildGetProcedureWithQcString(dbConn, indexDef);
         }
 
         private void BuildGetProcedure(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
@@ -204,7 +210,7 @@ namespace DatabaseManager.Common.Helpers
 
         private void BuildGetProcedureWithId(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
         {
-            string sqlCommand = $"DROP PROCEDURE IF EXISTS spGetWitId{dataType} ";
+            string sqlCommand = $"DROP PROCEDURE IF EXISTS spGetWithId{dataType} ";
             dbConn.SQLExecute(sqlCommand);
 
             sqlCommand = "";
@@ -215,6 +221,26 @@ namespace DatabaseManager.Common.Helpers
             sqlCommand = sqlCommand + " AS ";
             sqlCommand = sqlCommand + " BEGIN ";
             sqlCommand = sqlCommand + sql + query;
+            sqlCommand = sqlCommand + " END";
+            dbConn.SQLExecute(sqlCommand);
+        }
+
+        private void BuildGetProcedureWithQcString(DbUtilities dbConn, DataAccessDef accessDef)
+        {
+            string sqlCommand = $"DROP PROCEDURE IF EXISTS spGetWithQcStringIndex ";
+            dbConn.SQLExecute(sqlCommand);
+
+            sqlCommand = "";
+            string sql = accessDef.Select;
+            
+            sqlCommand = sqlCommand + $"CREATE PROCEDURE spGetWithQcStringIndex ";
+            sqlCommand = sqlCommand + " @qcstring VARCHAR(10) ";
+            sqlCommand = sqlCommand + " AS ";
+            sqlCommand = sqlCommand + " BEGIN ";
+            sqlCommand = sqlCommand + " declare @query as varchar(240) ";
+            sqlCommand = sqlCommand + " set @query = '%' + @qcstring + ';%'";
+            sqlCommand = sqlCommand + sql;
+            sqlCommand = sqlCommand + " WHERE QC_STRING like @query";
             sqlCommand = sqlCommand + " END";
             dbConn.SQLExecute(sqlCommand);
         }

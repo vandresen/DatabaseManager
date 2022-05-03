@@ -41,24 +41,24 @@ namespace DatabaseManager.Server.Controllers
             return predictionResuls;
         }
 
-        [HttpGet("{source}/{id}")]
-        public async Task<ActionResult<string>> GetPredictions(string source, int id)
-        {
-            string result = "[]";
-            try
-            {
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                Predictions predict = new Predictions(tmpConnString);
-                List<DmsIndex> qcIndex = new List<DmsIndex>();
-                qcIndex = await predict.GetPrediction(source, id);
-                result = JsonConvert.SerializeObject(qcIndex);
-            }
-            catch (Exception)
-            {
-                return BadRequest();
-            }
-            return result;
-        }
+        //[HttpGet("{source}/{id}")]
+        //public async Task<ActionResult<string>> GetPredictions(string source, int id)
+        //{
+        //    string result = "[]";
+        //    try
+        //    {
+        //        string tmpConnString = Request.Headers["AzureStorageConnection"];
+        //        Predictions predict = new Predictions(tmpConnString);
+        //        List<DmsIndex> qcIndex = new List<DmsIndex>();
+        //        qcIndex = await predict.GetPrediction(source, id);
+        //        result = JsonConvert.SerializeObject(qcIndex);
+        //    }
+        //    catch (Exception)
+        //    {
+        //        return BadRequest();
+        //    }
+        //    return result;
+        //}
 
         [HttpPost]
         public async Task<ActionResult<string>> ExecutePrediction(PredictionParameters predictionParams)
