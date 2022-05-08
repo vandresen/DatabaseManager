@@ -83,7 +83,7 @@ namespace DatabaseManager.Common.Helpers
                 if (sourceConnector.SourceType == "DataBase")
                 {
                     DatabaseLoader dl = new DatabaseLoader();
-                    dl.CopyTable(parms, sourceConnector.ConnectionString, targetConnector.ConnectionString);
+                    dl.CopyTable(parms, sourceConnector.ConnectionString, targetConnector, referenceJson);
                 }
                 else if (sourceConnector.SourceType == "File")
                 {

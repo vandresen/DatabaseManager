@@ -1,8 +1,10 @@
-﻿using DatabaseManager.Common.Helpers;
+﻿using DatabaseManager.Common.Entities;
+using DatabaseManager.Common.Helpers;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
@@ -19,12 +21,16 @@ namespace DatabaseManager.LocalDataTransfer
         private readonly AppSettings _appSeting;
         private readonly IQueueService _queueService;
         private DbUtilities _dbConn;
+        private readonly IFileStorageServiceCommon _fileStorage;
+        private ConnectParameters _targetConnector;
+        private TransferParameters _transferParameters;
         private readonly string container = "sources";
         private readonly string infoQueue = "datatransferinfo";
         private string target;
         private string source;
         private string transferQuery;
         private string queryType;
+        private string _referenceJson;
 
         private readonly Dictionary<string, string> dictionary = new Dictionary<string, string>
         {
@@ -41,26 +47,36 @@ namespace DatabaseManager.LocalDataTransfer
         };
 
         public DataTransfer(ILogger<Worker> logger,
-            AppSettings appSeting,
+            AppSettings appSetting,
             IQueueService queueService)
         {
             _dbConn = new DbUtilities();
             _logger = logger;
-            _appSeting = appSeting;
+            _appSeting = appSetting;
             _queueService = queueService;
+            var builder = new ConfigurationBuilder();
+            IConfiguration configuration = builder.Build();
+            _fileStorage = new AzureFileStorageServiceCommon(configuration);
+            _fileStorage.SetConnectionString(appSetting.StorageAccount);
         }
 
-        public void GetTransferConnector(string message)
+        public async Task GetTransferConnector(string message)
         {
             try
             {
                 TransferParameters transParms = JsonConvert.DeserializeObject<TransferParameters>(message);
-                target = GetConnectionString(transParms.TargetName);
+                _targetConnector = GetConnectionString(transParms.TargetName);
+                string dataAccessDefinition = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                _targetConnector.DataAccessDefinition = dataAccessDefinition;
+                target = _targetConnector.ConnectionString;
                 _logger.LogInformation($"Target connect string: {target}");
-                source = GetConnectionString(transParms.SourceName);
+                ConnectParameters sourceConnector = GetConnectionString(transParms.SourceName);
+                source = sourceConnector.ConnectionString;
                 _logger.LogInformation($"Source connect string: {source}");
                 transferQuery = transParms.TransferQuery;
                 queryType = transParms.QueryType;
+                
+                _referenceJson = await _fileStorage.ReadFile("connectdefinition", "PPDMReferenceTables.json");
             }
             catch (Exception ex)
             {
@@ -129,6 +145,85 @@ namespace DatabaseManager.LocalDataTransfer
 
         }
 
+        private void ProcessReferenceTables(string table, SqlConnection source, SqlConnection destination)
+        {
+            string dataType = "";
+            List<DataAccessDef> accessDefList = JsonConvert.DeserializeObject<List<DataAccessDef>>(_targetConnector.DataAccessDefinition);
+            foreach (DataAccessDef accessDef in accessDefList)
+            {
+                string selectTable = Common.Helpers.Common.GetTable(accessDef.Select);
+                if (selectTable == table)
+                {
+                    dataType = accessDef.DataType;
+                    break;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(dataType))
+            {
+                List<ReferenceTable> allReferences = JsonConvert.DeserializeObject<List<ReferenceTable>>(_referenceJson);
+                List<ReferenceTable> references = allReferences.FindAll(x => x.DataType == dataType);
+                foreach (var reference in references)
+                {
+                    if (!DatabaseTables.Names.Contains(reference.Table))
+                    {
+                        BuildRefTable(reference, table, source, destination);
+                    }
+                }
+            }
+        }
+
+        private void BuildRefTable(ReferenceTable reference, string table, SqlConnection source, SqlConnection destination)
+        {
+            DeleteTable(reference.Table);
+            CreateRefTempTable(source, table, reference.ReferenceAttribute);
+            string sqlCommand = $" SELECT A.* FROM {reference.Table} A INNER JOIN #REFID B ON A.{reference.KeyAttribute} = B.{reference.ReferenceAttribute}";
+            using (SqlCommand cmd = new SqlCommand(sqlCommand, source))
+            {
+                try
+                {
+                    cmd.CommandTimeout = 3600;
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    SqlBulkCopy bulkData = new SqlBulkCopy(destination);
+                    bulkData.DestinationTableName = reference.Table;
+                    bulkData.BulkCopyTimeout = 1000;
+                    bulkData.WriteToServer(reader);
+                    string info = $"Creating table {reference.Table}";
+                    _queueService.InsertMessage(infoQueue, info);
+                    _logger.LogInformation(info);
+                }
+                catch (SqlException ex)
+                {
+                    Exception error = new Exception($"Sorry! Error copying table: {table}; {ex}");
+                    throw error;
+                }
+            }
+        }
+
+        private void CreateRefTempTable(SqlConnection source, string table, string referenceAttribute)
+        {
+            string sqlCommand = "DROP TABLE IF EXISTS #REFID";
+            sqlCommand = sqlCommand + $" SELECT DISTINCT({referenceAttribute}) into #REFID from {table}";
+            if (!string.IsNullOrEmpty(transferQuery))
+            {
+                sqlCommand = sqlCommand + $" where UWI in (select UWI from #PDOList)";
+            }
+            using (SqlCommand cmd = new SqlCommand(sqlCommand, source))
+            {
+                try
+                {
+                    cmd.CommandTimeout = 3000;
+                    cmd.ExecuteNonQuery();
+                }
+                catch (SqlException ex)
+                {
+                    Exception error = new Exception("Error inserting into ref temp table: ", ex);
+                    throw error;
+                }
+
+            }
+        }
+
         private void BulkCopy(SqlConnection source, SqlConnection destination, string table)
         {
             string sql = "";
@@ -142,7 +237,9 @@ namespace DatabaseManager.LocalDataTransfer
             {
                 sql = $"select * from {table} where UWI in (select UWI from #PDOList)";
             }
-            
+
+            ProcessReferenceTables(table, source, destination);
+
             using (SqlCommand cmd = new SqlCommand(sql, source))
             {
                 try
@@ -212,17 +309,45 @@ namespace DatabaseManager.LocalDataTransfer
             }
         }
 
-        private string GetConnectionString(string name)
+        private void DeleteTable(string tableName)
         {
-            string cnStr = "";
+            try
+            {
+                string info = "";
+                _dbConn.OpenWithConnectionString(target);
+                info = $"Deleting table {tableName}";
+                _logger.LogInformation(info);
+                _queueService.InsertMessage(infoQueue, info);
+                _dbConn.DBDelete(tableName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation($"Error deleting table {ex.ToString()}");
+            }
+            finally
+            {
+                _dbConn.CloseConnection();
+            }
+        }
 
+        private ConnectParameters GetConnectionString(string name)
+        {
+            ConnectParameters connectParms = new ConnectParameters();
             CloudTable table = GetTableConnect(_appSeting.StorageAccount, container);
             TableOperation retrieveOperation = TableOperation.Retrieve<SourceEntity>("PPDM", name);
             TableResult result = table.Execute(retrieveOperation);
             SourceEntity data = (SourceEntity)result.Result;
-            cnStr = data.ConnectionString;
-
-            return cnStr;
+            connectParms.SourceName = name;
+            connectParms.SourceType = data.SourceType;
+            connectParms.Catalog = data.Catalog;
+            connectParms.DatabaseServer = data.DatabaseServer;
+            connectParms.Password = data.Password;
+            connectParms.User = data.User;
+            connectParms.ConnectionString = data.ConnectionString;
+            connectParms.DataType = data.DataType;
+            connectParms.FileName = data.FileName;
+            connectParms.CommandTimeOut = data.CommandTimeOut;
+            return connectParms;
         }
 
         private CloudTable GetTableConnect(string connectionString, string tableName)

@@ -14,8 +14,6 @@ namespace DatabaseManager.Shared
         "STRAT_UNIT",
         "STRAT_NAME_SET",
         "WELL",
-        "BUSINESS_ASSOCIATE",
-        "FIELD",
         "R_WELL_DATUM_TYPE",
         "R_WELL_STATUS"
         };

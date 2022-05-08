@@ -48,7 +48,7 @@ namespace DatabaseManager.LocalDataTransfer
                 {
                     DataTransfer trans = new DataTransfer(_logger, _appSettings, queueService);
 
-                    trans.GetTransferConnector(message);
+                    await trans.GetTransferConnector(message);
                     infoMessage = "Start deleting tables";
                     queueService.InsertMessage(infoName, infoMessage);
                     trans.DeleteTables();
