@@ -184,7 +184,7 @@ namespace DatabaseManager.Common.Helpers
             type = "Functions";
             DataAccessDef functionDef = rm.GetDataAccessDefinition(type);
             BuildGetProcedure(dbConn, type, functionDef);
-            BuildGetProcedureWithId(dbConn, type, ruleDef);
+            BuildGetProcedureWithId(dbConn, type, functionDef);
 
             IndexAccess ia = new IndexAccess();
             type = "Index";

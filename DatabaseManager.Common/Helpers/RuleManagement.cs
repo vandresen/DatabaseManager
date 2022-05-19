@@ -24,6 +24,7 @@ namespace DatabaseManager.Common.Helpers
         private readonly IFileStorageServiceCommon _fileStorage;
         private readonly ITableStorageServiceCommon _tableStorage;
         private readonly IRuleData _ruleData;
+        private readonly IFunctionData _functionData;
         private readonly IDapperDataAccess _dp;
         private DbUtilities _dbConn;
         private readonly string container = "sources";
@@ -52,6 +53,7 @@ namespace DatabaseManager.Common.Helpers
             _tableStorage.SetConnectionString(azureConnectionString);
             _dp = new DapperDataAccess();
             _ruleData = new RuleData(_dp);
+            _functionData = new FunctionData(_dp);
             _dbConn = new DbUtilities();
 
             var config = new MapperConfiguration(cfg => {
@@ -107,12 +109,8 @@ namespace DatabaseManager.Common.Helpers
         {
             string result = "";
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
-            using (IDbConnection cnn = new SqlConnection(connector.ConnectionString))
-            {
-                string select = functionSql;
-                var functions = cnn.Query<RuleFunctions>(select);
-                result = JsonConvert.SerializeObject(functions, Formatting.Indented);
-            }
+            IEnumerable<RuleFunctions> functions = await _functionData.GetFunctionsFromSP(connector.ConnectionString);
+            if (functions.Any()) result = JsonConvert.SerializeObject(functions, Formatting.Indented);
             return result;
         }
 
@@ -120,13 +118,8 @@ namespace DatabaseManager.Common.Helpers
         {
             string result = "";
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
-            string query = $" where Id = {id}";
-            List<RuleFunctions> functions = SelectFunctionByQuery(query, connector.ConnectionString);
-            RuleFunctions function = functions.FirstOrDefault();
-            if (function != null)
-            {
-                result = JsonConvert.SerializeObject(function, Formatting.Indented);
-            }
+            RuleFunctions function = await _functionData.GetFunctionFromSP(id, connector.ConnectionString);
+            result = JsonConvert.SerializeObject(function, Formatting.Indented);
             return result;
         }
 
@@ -165,13 +158,18 @@ namespace DatabaseManager.Common.Helpers
             return result;
         }
 
-        public async Task<string> GetFunctionByName(string sourceName, string name)
+        public async Task<RuleModel> GetRuleAndFunction(string sourceName, int id)
         {
-            string result = "";
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
-            RuleFunctions function = SelectFunctionByName(name, connector.ConnectionString);
-            result = JsonConvert.SerializeObject(function, Formatting.Indented);
-            return result;
+            RuleModel rule = await _ruleData.GetRuleFromSP(id, connector.ConnectionString);
+            IEnumerable<RuleFunctions> functions = await _functionData.GetFunctionsFromSP(connector.ConnectionString);
+            RuleFunctions function = functions.FirstOrDefault(x => x.FunctionName == rule.RuleFunction);
+            if (function != null)
+            {
+                if (!string.IsNullOrEmpty(function.FunctionKey)) 
+                    rule.RuleFunction = function.FunctionUrl + "?code=" + function.FunctionKey;
+            }
+            return rule;
         }
 
         public async Task<string> GetPredictions()

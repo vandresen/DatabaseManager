@@ -175,13 +175,7 @@ namespace DatabaseManager.Common.Helpers
         private async Task<RuleModel> GetRuleAndFunctionInfo(string dataConnector, int ruleId)
         {
             RuleManagement rules = new RuleManagement(_azureConnectionString);
-            string jsonRule = await rules.GetRule(dataConnector, ruleId);
-            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
-            string jsonFunction = await rules.GetFunctionByName(dataConnector, rule.RuleFunction);
-            RuleFunctions function = JsonConvert.DeserializeObject<RuleFunctions>(jsonFunction);
-            string functionKey = "";
-            if (!string.IsNullOrEmpty(function.FunctionKey)) functionKey = "?code=" + function.FunctionKey;
-            rule.RuleFunction = function.FunctionUrl + functionKey;
+            RuleModel  rule = await rules.GetRuleAndFunction(dataConnector, ruleId);
             return rule;
         }
 

@@ -8,6 +8,13 @@
         </div>
     </div>
     <div class="form-group">
+        <label>Function Type:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@RuleFunctions.FunctionType" />
+            <ValidationMessage For="@(() => RuleFunctions.FunctionType)" />
+        </div>
+    </div>
+    <div class="form-group">
         <label>Function URL:</label>
         <div>
             <InputText class="form-control" @bind-Value="@RuleFunctions.FunctionUrl" />
@@ -29,4 +36,5 @@
     [Parameter] public RuleFunctions RuleFunctions { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public bool ReadOnlyName { get; set; }
+    private List<string> FunctionTypeOptions = new List<string> { "None", "Validity", "Predictions"};
 }

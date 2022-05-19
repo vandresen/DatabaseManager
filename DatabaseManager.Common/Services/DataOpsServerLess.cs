@@ -14,7 +14,7 @@ namespace DatabaseManager.Common.Services
         private readonly string baseUrl;
         private readonly string apiKey;
 
-        public DataOpsServerLess(IHttpService httpService, SingletonService settings)
+        public DataOpsServerLess(IHttpService httpService, SingletonServices settings)
         {
             this.httpService = httpService;
             baseUrl = settings.BaseUrl;

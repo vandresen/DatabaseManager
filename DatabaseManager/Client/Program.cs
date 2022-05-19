@@ -26,7 +26,7 @@ namespace DatabaseManager.Client
         private static void ConfigureServices(IServiceCollection services)
         {
             services.AddOptions();
-            services.AddSingleton<SingletonService>();
+            services.AddSingleton<SingletonServices>();
             services.AddScoped<IHttpService, HttpService>();
             services.AddScoped<IDataSources, DataSourcesClient>();
             services.AddScoped<IDataModelCreate, DataModelCreate>();

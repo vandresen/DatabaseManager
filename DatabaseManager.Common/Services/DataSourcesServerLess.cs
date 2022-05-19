@@ -13,7 +13,7 @@ namespace DatabaseManager.Common.Services
         private readonly string baseUrl;
         private readonly string apiKey;
 
-        public DataSourcesServerLess(IHttpService httpService, SingletonService settings)
+        public DataSourcesServerLess(IHttpService httpService, SingletonServices settings)
         {
             this.httpService = httpService;
             baseUrl = settings.BaseUrl;

@@ -9,7 +9,7 @@ namespace DatabaseManager.Common.Services
 {
     public interface IIndexView
     {
-        void InitSettings(SingletonService settings);
+        void InitSettings(SingletonServices settings);
         Task<List<DmsIndex>> GetChildren(string source, int id);
         Task<List<DmsIndex>> GetIndex(string source);
     }

@@ -109,13 +109,7 @@ namespace DatabaseManager.Common.Helpers
             else syncPredictions = false;
 
             RuleManagement rules = new RuleManagement(_azureConnectionString);
-            string jsonRule = await rules.GetRule(parms.DataConnector, parms.PredictionId);
-            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
-            string jsonFunction = await rules.GetFunctionByName(parms.DataConnector, rule.RuleFunction);
-            RuleFunctions function = JsonConvert.DeserializeObject<RuleFunctions>(jsonFunction);
-            string functionKey = "";
-            if (!string.IsNullOrEmpty(function.FunctionKey)) functionKey = "?code=" + function.FunctionKey;
-            rule.RuleFunction = function.FunctionUrl + functionKey;
+            RuleModel rule = await rules.GetRuleAndFunction(parms.DataConnector, parms.PredictionId);
 
             manageIndexTable = new ManageIndexTable(_accessDefs, connector.ConnectionString, rule.DataType, rule.FailRule);
             manageIndexTable.InitQCFlags(false);

@@ -15,7 +15,7 @@ namespace DatabaseManager.Common.Services
         private string baseUrl;
         private string apiKey;
 
-        public IndexView(IHttpService httpService, SingletonService settings)
+        public IndexView(IHttpService httpService, SingletonServices settings)
         {
             this.httpService = httpService;
             baseUrl = settings.BaseUrl;
@@ -46,7 +46,7 @@ namespace DatabaseManager.Common.Services
             return response.Response;
         }
 
-        public void InitSettings(SingletonService settings)
+        public void InitSettings(SingletonServices settings)
         {
             baseUrl = settings.BaseUrl;
             apiKey = settings.ApiKey;

@@ -1,10 +1,10 @@
 ﻿using DatabaseManager.Common.Helpers;
+using DatabaseManager.Shared;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
-//using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Services
@@ -16,7 +16,7 @@ namespace DatabaseManager.Common.Services
         public HttpService(HttpClient httpClient)
         {
             this.httpClient = httpClient;
-            
+            httpClient.Timeout = TimeSpan.FromSeconds(500);
         }
 
         public async Task<HttpResponseWrapper<T>> Get<T>(string url)

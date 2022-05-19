@@ -31,7 +31,7 @@ namespace DatabaseManager.ServerLessClient
 
         private static void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<SingletonService>();
+            services.AddSingleton<SingletonServices>();
             services.AddBlazoredLocalStorage();
             services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddScoped<IHttpService, HttpService>();

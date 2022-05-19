@@ -14,7 +14,7 @@ namespace DatabaseManager.Common.Services
         private string baseUrl;
         private readonly string apiKey;
 
-        public Rules(IHttpService httpService, SingletonService settings)
+        public Rules(IHttpService httpService, SingletonServices settings)
         {
             this.httpService = httpService;
             baseUrl = settings.BaseUrl;
