@@ -49,7 +49,7 @@ namespace DatabaseManager.Shared
 
         public string CreatedBy { get; set; }
 
-        public DateTime CreatedDate { get; set; }
+        public DateTime? CreatedDate { get; set; }
 
         public string ModifiedBy { get; set; }
 

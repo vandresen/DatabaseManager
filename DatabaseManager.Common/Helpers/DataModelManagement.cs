@@ -134,6 +134,24 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
+        private void CreateUserDefinedTypes(DbUtilities dbConn, ColumnProperties attributeProperties, string sql, string dataType)
+        {
+            string[] tableAttributes = Common.GetAttributes(sql);
+            string comma = "";
+            string attributes = "";
+            foreach (var word in tableAttributes)
+            {
+                string attribute = word.Trim();
+                string dataProperty = attributeProperties[attribute];
+                attributes = attributes + comma + attribute + " " + dataProperty;
+                comma = ",";
+            }
+            string sqlCommand = $"CREATE TYPE [dbo].[UDT{dataType}] AS TABLE ( ";
+            sqlCommand = sqlCommand + attributes + ")";
+
+            dbConn.SQLExecute(sqlCommand);
+        }
+
         private async Task CreateDMSModel(DataModelParameters dmParameters, ConnectParameters connector)
         {
             try
@@ -257,17 +275,47 @@ namespace DatabaseManager.Common.Helpers
             RuleManagement rm = new RuleManagement();
             string type = "Rules";
             DataAccessDef ruleDef = rm.GetDataAccessDefinition(type);
-            BuildInsertProcedure(dbConn, type, ruleDef);
+            BuildInsertWithUDTProcedure(dbConn, type, ruleDef);
             type = "Functions";
             DataAccessDef functionDef = rm.GetDataAccessDefinition(type);
             BuildInsertProcedure(dbConn, type, functionDef);
+        }
+
+        private void BuildInsertWithUDTProcedure(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
+        {
+            string sqlCommand = $"DROP PROCEDURE IF EXISTS spInsert{dataType}; ";
+            sqlCommand = sqlCommand + $"DROP TYPE IF EXISTS[dbo].[UDT{dataType}];";
+            dbConn.SQLExecute(sqlCommand);
+
+            sqlCommand = "";
+            string sql = accessDef.Select;
+            string table = Common.GetTable(sql);
+            ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(dbConn, sql);
+            string[] tableAttributes = Common.GetAttributes(sql);
+            tableAttributes = tableAttributes.Where(w => w != "Id").ToArray();
+            CreateUserDefinedTypes(dbConn, attributeProperties, sql, dataType);
+            string comma = "";
+            string attributes = "";
+            foreach (var word in tableAttributes)
+            {
+                string attribute = word.Trim();
+                attributes = attributes + comma + "[" + attribute + "]";
+                comma = ",";
+            }
+            sqlCommand = sqlCommand + $"CREATE PROCEDURE [dbo].[spInsert{dataType}] @rules UDT{dataType} readonly " +
+                " AS BEGIN " +
+                $" INSERT INTO dbo.{table}({attributes}) " +
+                $" SELECT {attributes} FROM @rules;" +
+                " END";
+            dbConn.SQLExecute(sqlCommand);
         }
 
         private void BuildInsertProcedure(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
         {
             string comma;
             string attributes;
-            string sqlCommand = $"DROP PROCEDURE IF EXISTS spInsert{dataType} ";
+            string sqlCommand = $"DROP PROCEDURE IF EXISTS spInsert{dataType}; ";
+            sqlCommand = sqlCommand + $"DROP TYPE IF EXISTS[dbo].[UDT{dataType}];";
             dbConn.SQLExecute(sqlCommand);
 
             sqlCommand = "";
@@ -278,7 +326,7 @@ namespace DatabaseManager.Common.Helpers
             ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(dbConn, sql);
             string[] tableAttributes = Common.GetAttributes(sql);
             tableAttributes = tableAttributes.Where(w => w != "Id").ToArray();
-
+            
             sqlCommand = sqlCommand + $"CREATE PROCEDURE spInsert{dataType} ";
             sqlCommand = sqlCommand + " @json NVARCHAR(max) ";
             sqlCommand = sqlCommand + " AS ";

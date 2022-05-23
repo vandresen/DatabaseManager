@@ -26,6 +26,7 @@ namespace DatabaseManager.Common.Helpers
         private readonly IRuleData _ruleData;
         private readonly IFunctionData _functionData;
         private readonly IDapperDataAccess _dp;
+        private readonly IADODataAccess _db;
         private DbUtilities _dbConn;
         private readonly string container = "sources";
         private readonly string predictionContainer = "predictions";
@@ -52,7 +53,8 @@ namespace DatabaseManager.Common.Helpers
             _tableStorage = new AzureTableStorageServiceCommon(configuration);
             _tableStorage.SetConnectionString(azureConnectionString);
             _dp = new DapperDataAccess();
-            _ruleData = new RuleData(_dp);
+            _db = new ADODataAccess();
+            _ruleData = new RuleData(_dp, _db);
             _functionData = new FunctionData(_dp);
             _dbConn = new DbUtilities();
 
@@ -257,7 +259,7 @@ namespace DatabaseManager.Common.Helpers
         {
             List<RuleFunctions> ruleFunctions = new List<RuleFunctions>();
             string query = "";
-            List<RuleFunctions> functions = SelectFunctionByQuery(query, connector.ConnectionString);
+            IEnumerable<RuleFunctions> functions = await _functionData.GetFunctionsFromSP(connector.ConnectionString);
             List<RuleModel> rules = JsonConvert.DeserializeObject<List<RuleModel>>(ruleString);
             foreach (var rule in rules)
             {
@@ -272,8 +274,8 @@ namespace DatabaseManager.Common.Helpers
                     if (result == null) ruleFunctions.Add(ruleFunction);
                 }
                 rule.RuleFunction = ruleFunction.FunctionName;
-                InsertRule(rule, connector.ConnectionString);
             }
+            await _ruleData.InsertRules(rules, connector.ConnectionString);
             foreach (var function in ruleFunctions)
             {
                 InsertFunction(function, connector.ConnectionString);

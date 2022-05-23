@@ -9,5 +9,6 @@ namespace DatabaseManager.Common.Data
         Task<RuleModel> GetRuleFromSP(int id, string connectionString);
         Task<IEnumerable<RuleModel>> GetRules(string sql, string connectionString);
         Task<IEnumerable<RuleModel>> GetRulesFromSP(string connectionString);
+        Task InsertRules(List<RuleModel> rules, string connectionString);
     }
 }
