@@ -220,5 +220,45 @@ namespace DatabaseManager.Common.Helpers
             }
             return returnStatus;
         }
+
+        public static string StringLength(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
+        {
+            string returnStatus = "Failed";
+            string error = "";
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+            JObject dataObject = JObject.Parse(qcSetup.DataObject);
+            JToken value = dataObject.GetValue(rule.DataAttribute);
+            StringLengthParameters stringParams = new StringLengthParameters()
+            {
+                Min = 20,
+                Max = 20
+            };
+            if (!string.IsNullOrEmpty(rule.RuleParameters))
+            {
+                try
+                {
+                    stringParams = JsonConvert.DeserializeObject<StringLengthParameters>(rule.RuleParameters);
+                    if (stringParams.Min == 0) stringParams.Min = 20;
+                    if (stringParams.Max == 0) stringParams.Max = stringParams.Min;
+                }
+                catch (Exception ex)
+                {
+                    error = $"Bad parameter Json, {ex}";
+                }
+
+            }
+            string strValue = value.ToString();
+            strValue = strValue.Trim();
+            int stringLength = strValue.Length;
+            if (stringLength >= stringParams.Min & stringLength <= stringParams.Max)
+            {
+                returnStatus = "Passed";
+            }
+            else
+            {
+                returnStatus = "Failed";
+            }
+            return returnStatus;
+        }
     }
 }

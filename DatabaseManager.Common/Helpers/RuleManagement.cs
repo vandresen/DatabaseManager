@@ -435,21 +435,17 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        private void InsertRule(RuleModel rule, string connectionString)
+        private async Task InsertRule(RuleModel rule, string connectionString)
         {
+            List<RuleModel> rules = new List<RuleModel>();
             string userName = CommonDbUtilities.GetUsername(connectionString);
             rule.ModifiedBy = userName;
             rule.CreatedBy = userName;
-            string json = GetRuleKey(rule, connectionString);
-            json = Common.SetJsonDataObjectDate(json, "CreatedDate");
-            json = Common.SetJsonDataObjectDate(json, "ModifiedDate");
-            using (IDbConnection cnn = new SqlConnection(connectionString))
-            {
-                var p = new DynamicParameters();
-                p.Add("@json", json);
-                string sql = "dbo.spInsertRules";
-                int recordsAffected = cnn.Execute(sql, p, commandType: CommandType.StoredProcedure);
-            }
+            rule.RuleKey = GetRuleKey(rule, connectionString);
+            rule.CreatedDate = DateTime.Now;
+            rule.ModifiedDate = DateTime.Now;
+            rules.Add(rule);
+            await _ruleData.InsertRules(rules, connectionString);
         }
 
         private void InsertFunction(RuleFunctions function, string connectionString)
@@ -466,7 +462,7 @@ namespace DatabaseManager.Common.Helpers
 
         private string GetRuleKey(RuleModel rule, string connectionString)
         {
-            string json = "";
+            string ruleKey = "";
             RuleModel outRule = rule;
             using (IDbConnection cnn = new SqlConnection(connectionString))
             {
@@ -476,10 +472,9 @@ namespace DatabaseManager.Common.Helpers
                 outRule.KeyNumber = rules.Select(s => s.KeyNumber).FirstOrDefault() + 1;
                 string strKey = outRule.KeyNumber.ToString();
                 RuleTypeDictionary rt = new RuleTypeDictionary();
-                outRule.RuleKey = rt[rule.RuleType] + strKey;
-                json = JsonConvert.SerializeObject(outRule, Formatting.Indented);
+                ruleKey = rt[rule.RuleType] + strKey;
             }
-            return json;
+            return ruleKey;
         }
     }
 }

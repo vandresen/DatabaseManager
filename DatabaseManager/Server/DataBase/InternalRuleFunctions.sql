@@ -6,6 +6,7 @@ INSERT INTO pdo_rule_functions (FunctionName, FunctionUrl) VALUES ('Consistency'
 INSERT INTO pdo_rule_functions (FunctionName, FunctionUrl, FunctionType) VALUES ('ValidityRange', 'ValidityRange', 'V');
 INSERT INTO pdo_rule_functions (FunctionName, FunctionUrl, FunctionType) VALUES ('CurveSpikes', 'CurveSpikes', 'V');
 INSERT INTO pdo_rule_functions (FunctionName, FunctionUrl, FunctionType) VALUES ('IsNumber', 'IsNumber', 'V');
+INSERT INTO pdo_rule_functions (FunctionName, FunctionUrl, FunctionType) VALUES ('StringLength', 'StringLength', 'V');
 INSERT INTO pdo_rule_functions (FunctionName, FunctionUrl, FunctionType) VALUES ('PredictDepthUsingIDW', 'PredictDepthUsingIDW', 'P');
 INSERT INTO pdo_rule_functions (FunctionName, FunctionUrl, FunctionType) VALUES ('PredictDominantLithology', 'PredictDominantLithology', 'P');
 INSERT INTO pdo_rule_functions (FunctionName, FunctionUrl, FunctionType) VALUES ('PredictFormationOrder', 'PredictFormationOrder', 'P');

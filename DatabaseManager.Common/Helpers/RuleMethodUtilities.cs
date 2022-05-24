@@ -24,6 +24,12 @@ namespace DatabaseManager.Common.Helpers
             public double NullValue { get; set; }
         }
 
+        public class StringLengthParameters
+        {
+            public int Min { get; set; }
+            public int Max { get; set; }
+        }
+
         public class MissingObjectsParameters
         {
             public string DataType { get; set; }
