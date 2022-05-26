@@ -10,10 +10,27 @@ namespace DatabaseManager.Common.DBAccess
 {
     public class ADODataAccess: IADODataAccess
     {
-        private readonly string _connectionString;
+        private int _sqlTimeOut;
 
         public ADODataAccess()
         {
+            _sqlTimeOut = 1000;
+        }
+
+        public DataTable GetDataTable(string sql, string connectionString)
+        {
+            SqlConnection conn = null;
+            DataTable result = new DataTable();
+            using (conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                cmd.CommandTimeout = _sqlTimeOut;
+                SqlDataReader dr = cmd.ExecuteReader();
+                result.Load(dr);
+                dr.Close();
+            }
+            return result;
         }
 
         public async Task InsertWithUDT<T>(string storedProcedure, string parameterName, T collection, string connectionString)

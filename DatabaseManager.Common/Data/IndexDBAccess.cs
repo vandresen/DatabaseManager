@@ -17,8 +17,21 @@ namespace DatabaseManager.Common.Data
             _dp = dp;
         }
 
+        public async Task<IEnumerable<IndexModel>> GetChildrenWithName(string connectionString, string indexNode, string name)
+        {
+            string sql = $"SELECT DATANAME FROM pdo_qc_index WHERE IndexNode.IsDescendantOf('{indexNode}') = 1 and DATANAME = '{name}'";
+            IEnumerable<IndexModel> result = await _dp.ReadData<IndexModel>(sql, connectionString);
+            return result;
+        }
+
         public Task<IEnumerable<IndexModel>> GetDescendantsFromSP(int id, string connectionString) =>
             _dp.LoadData<IndexModel, dynamic>("dbo.spGetDescendants", new { id = id }, connectionString);
+
+        public async Task<IndexModel> GetIndex(int id, string connectionString)
+        {
+            var results = await _dp.LoadData<IndexModel, dynamic>("dbo.spGetIndexFromId", new { id = id }, connectionString);
+            return results.FirstOrDefault();
+        }
 
         public Task<IEnumerable<IndexModel>> GetIndexesFromSP(string connectionString) =>
             _dp.LoadData<IndexModel, dynamic>("dbo.spGetIndex", new { }, connectionString);

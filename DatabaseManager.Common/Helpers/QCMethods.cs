@@ -1,4 +1,6 @@
-﻿using DatabaseManager.Common.Entities;
+﻿using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
+using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Extensions;
 using DatabaseManager.Shared;
 using Newtonsoft.Json;
@@ -9,6 +11,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using static DatabaseManager.Common.Helpers.RuleMethodUtilities;
 
 namespace DatabaseManager.Common.Helpers
@@ -17,21 +20,18 @@ namespace DatabaseManager.Common.Helpers
     {
         private static Regex isNumberTest = new Regex("^[0-9]+$", RegexOptions.Compiled);
 
-        public static string Entirety(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
+        public static string Entirety(QcRuleSetup qcSetup, DataTable dt, List<DataAccessDef> accessDefs, IIndexDBAccess indexData)
         {
             string returnStatus = "Passed";
-
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
             string indexNode = qcSetup.IndexNode;
             string dataName = rule.RuleParameters;
-            string select = "SELECT DATANAME FROM pdo_qc_index ";
-            string query = $" WHERE IndexNode.IsDescendantOf('{indexNode}') = 1 and DATANAME = '{dataName}'";
-            DataTable children = dbConn.GetDataTable(select, query);
-            if (children.Rows.Count == 0) returnStatus = "Failed";
+            IEnumerable<IndexModel> indexModels = Task.Run(() => indexData.GetChildrenWithName(qcSetup.DataConnector, indexNode, dataName)).GetAwaiter().GetResult();
+            if (indexModels.Count() == 0) returnStatus = "Failed";
             return returnStatus;
         }
 
-        public static string Completeness(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
+        public static string Completeness(QcRuleSetup qcSetup, DataTable dt, List<DataAccessDef> accessDefs, IIndexDBAccess indexData)
         {
             string returnStatus = "Passed";
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
@@ -61,7 +61,7 @@ namespace DatabaseManager.Common.Helpers
             return returnStatus;
         }
 
-        public static string Uniqueness(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
+        public static string Uniqueness(QcRuleSetup qcSetup, DataTable dt, List<DataAccessDef> accessDefs, IIndexDBAccess indexData)
         {
             string returnStatus = "Passed";
 
@@ -81,7 +81,7 @@ namespace DatabaseManager.Common.Helpers
             return returnStatus;
         }
 
-        public static string Consistency(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
+        public static string Consistency(QcRuleSetup qcSetup, DataTable dt, List<DataAccessDef> accessDefs, IIndexDBAccess indexData)
         {
             string returnStatus = "Passed";
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
@@ -91,17 +91,14 @@ namespace DatabaseManager.Common.Helpers
             if (Common.CompletenessCheck(strValue) == "Passed")
             {
                 string dataType = rule.DataType;
-                string select = "SELECT DATAKEY FROM pdo_qc_index ";
-                string query = $" WHERE INDEXID = {qcSetup.IndexId}";
-                DataTable index = dbConn.GetDataTable(select, query);
-                if (index.Rows.Count > 0)
+                IndexModel index = Task.Run(() => indexData.GetIndex(qcSetup.IndexId, qcSetup.DataConnector)).GetAwaiter().GetResult();
+                if (index != null)
                 {
-                    query = " where " + index.Rows[0]["DATAKEY"].ToString();
+                    string query = " where " + index.DataKey;
                     DataAccessDef dataAccessDef = accessDefs.First(x => x.DataType == dataType);
-                    select = dataAccessDef.Select;
-                    DbUtilities consistencyConn = new DbUtilities();
-                    consistencyConn.OpenWithConnectionString(qcSetup.ConsistencyConnectorString);
-                    DataTable ct = consistencyConn.GetDataTable(select, query);
+                    string sql = dataAccessDef.Select + query;
+                    IADODataAccess consistencyConn = new ADODataAccess();
+                    DataTable ct = consistencyConn.GetDataTable(sql, qcSetup.ConsistencyConnectorString);
                     Dictionary<string, string> columnTypes = ct.GetColumnTypes();
                     if (ct.Rows.Count > 0)
                     {
@@ -112,14 +109,12 @@ namespace DatabaseManager.Common.Helpers
                             returnStatus = RuleMethodUtilities.ConsistencyCheck(strValue, strRefValue, valueType);
                         }
                     }
-                    consistencyConn.CloseConnection();
                 }
             }
-
             return returnStatus;
         }
 
-        public static string ValidityRange(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
+        public static string ValidityRange(QcRuleSetup qcSetup, DataTable dt, List<DataAccessDef> accessDefs, IIndexDBAccess indexData)
         {
             string returnStatus = "Passed";
 
@@ -153,7 +148,7 @@ namespace DatabaseManager.Common.Helpers
             return returnStatus;
         }
 
-        public static string CurveSpikes(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
+        public static string CurveSpikes(QcRuleSetup qcSetup, DataTable dt, List<DataAccessDef> accessDefs, IIndexDBAccess indexData)
         {
             string returnStatus = "Passed";
             string error = "";
@@ -201,7 +196,7 @@ namespace DatabaseManager.Common.Helpers
             return returnStatus;
         }
 
-        public static string IsNumber(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
+        public static string IsNumber(QcRuleSetup qcSetup, DataTable dt, List<DataAccessDef> accessDefs, IIndexDBAccess indexData)
         {
             string returnStatus = "Passed";
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
@@ -221,7 +216,7 @@ namespace DatabaseManager.Common.Helpers
             return returnStatus;
         }
 
-        public static string StringLength(QcRuleSetup qcSetup, DbUtilities dbConn, DataTable dt, List<DataAccessDef> accessDefs)
+        public static string StringLength(QcRuleSetup qcSetup, DataTable dt, List<DataAccessDef> accessDefs, IIndexDBAccess indexData)
         {
             string returnStatus = "Failed";
             string error = "";

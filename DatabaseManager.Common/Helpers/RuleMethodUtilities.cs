@@ -30,6 +30,11 @@ namespace DatabaseManager.Common.Helpers
             public int Max { get; set; }
         }
 
+        public class ConsistencyParameters
+        {
+            public string Source { get; set; }
+        }
+
         public class MissingObjectsParameters
         {
             public string DataType { get; set; }

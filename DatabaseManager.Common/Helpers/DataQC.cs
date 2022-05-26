@@ -18,6 +18,8 @@ using Microsoft.VisualBasic.FileIO;
 using System.IO;
 using Microsoft.Data.SqlClient;
 using Dapper;
+using DatabaseManager.Common.DBAccess;
+using DatabaseManager.Common.Data;
 
 namespace DatabaseManager.Common.Helpers
 {
@@ -31,6 +33,8 @@ namespace DatabaseManager.Common.Helpers
         private DbUtilities _dbConn;
         private IMapper _mapper;
         private ManageIndexTable manageQCFlags;
+        private readonly IDapperDataAccess _dp;
+        private readonly IIndexDBAccess _indexData;
 
         public DataQC(string azureConnectionString)
         {
@@ -48,6 +52,8 @@ namespace DatabaseManager.Common.Helpers
                 cfg.CreateMap<SourceEntity, ConnectParameters>().ForMember(dest => dest.SourceName, opt => opt.MapFrom(src => src.RowKey));
             });
             _mapper = config.CreateMapper();
+            _dp = new DapperDataAccess();
+            _indexData = new IndexDBAccess(_dp);
         }
 
         public async Task<List<QcResult>> GetResults(string source)
@@ -157,7 +163,8 @@ namespace DatabaseManager.Common.Helpers
             {
                 ConnectParameters connector = await GetConnector(qcParms.DataConnector);
                 RuleModel rule = await GetRuleAndFunctionInfo(qcParms.DataConnector, qcParms.RuleId);
-
+                string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);
                 manageQCFlags = new ManageIndexTable(_accessDefs, connector.ConnectionString, rule.DataType);
@@ -206,6 +213,7 @@ namespace DatabaseManager.Common.Helpers
             qcSetup.DatabasePassword = connector.Password;
             qcSetup.DatabaseServer = connector.DatabaseServer;
             qcSetup.DatabaseUser = connector.User;
+            qcSetup.DataConnector = connector.ConnectionString;
             string ruleFilter = rule.RuleFilter;
             string jsonRules = JsonConvert.SerializeObject(rule);
             qcSetup.RuleObject = jsonRules;
@@ -233,7 +241,7 @@ namespace DatabaseManager.Common.Helpers
                         {
                             Type type = typeof(QCMethods);
                             MethodInfo info = type.GetMethod(rule.RuleFunction);
-                            result = (string)info.Invoke(null, new object[] { qcSetup, dbConn, indexTable, _accessDefs });
+                            result = (string)info.Invoke(null, new object[] { qcSetup, indexTable, _accessDefs, _indexData });
                         }
                         if (result == "Failed")
                         {
@@ -293,8 +301,22 @@ namespace DatabaseManager.Common.Helpers
 
         private async Task<string> GetConsistencySource(string RuleParameters)
         {
+            string error = "";
+            RuleMethodUtilities.ConsistencyParameters parms = new RuleMethodUtilities.ConsistencyParameters();
+            if (!string.IsNullOrEmpty(RuleParameters))
+            {
+                try
+                {
+                    parms =  JsonConvert.DeserializeObject<RuleMethodUtilities.ConsistencyParameters>(RuleParameters);
+                }
+                catch (Exception ex)
+                {
+                    error = $"Bad parameter Json, {ex}";
+                }
+
+            }
             SourceEntity connector = new SourceEntity();
-            connector = await _tableStorage.GetTableRecord<SourceEntity>(container, RuleParameters);
+            connector = await _tableStorage.GetTableRecord<SourceEntity>(container, parms.Source);
             string source = connector.ConnectionString;
             return source;
         }
