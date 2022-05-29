@@ -11,7 +11,7 @@ jobs:
   release:
     name: Release ConsoleTestStuff 
     runs-on: windows-2022
-    needs: build
+    needs: build-hostedserver
     steps:
     - name: Download serverlessUI content
       uses: actions/download-artifact@v2
@@ -65,7 +65,7 @@ jobs:
           path: D:\a\DatabaseManager\DatabaseManager\DatabaseManager.ServerLessClient\bin\Debug\net6.0\publish\
   build-hostedserver:
     runs-on: windows-2022
-    needs: build
+    needs: build-serverlessclient
     steps:
       - uses: actions/checkout@v2
       - name: Setup .NET for HostedServer
