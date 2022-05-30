@@ -9,7 +9,7 @@ on:
   
 jobs:
   release:
-    name: Release ConsoleTestStuff 
+    name: Release DatabaseManager 
     runs-on: windows-2022
     needs: build-hostedserver
     steps:
@@ -21,6 +21,12 @@ jobs:
       uses: thedoctor0/zip-release@master
       with:
         filename: serverlessUI.zip
+    - name: Download hosted server content
+      uses: actions/download-artifact@v2
+      with:
+        name: HostedServer
+    - name: Test hostedserver download
+      run: dir
     - name: Download changelog
       uses: actions/download-artifact@v2
       with:
@@ -45,6 +51,7 @@ jobs:
           name: ChangelogStuff
           path: ./CHANGELOG.md
   build-serverlessclient:
+    name: Build Serverless Client
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v2
@@ -64,6 +71,7 @@ jobs:
           name: ServerlessUI
           path: D:\a\DatabaseManager\DatabaseManager\DatabaseManager.ServerLessClient\bin\Debug\net6.0\publish\
   build-hostedserver:
+    name: Build Hosted Server Database Manager
     runs-on: windows-2022
     needs: build-serverlessclient
     steps:
