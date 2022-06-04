@@ -31,6 +31,7 @@ namespace DatabaseManager.AppFunctions
 
             foreach (var pipe in pipelines)
             {
+                context.SetCustomStatus($"Starting pipe number {pipe.Id} with name {pipe.Name}");
                 if (pipe.Name == "CreateIndex")
                 {
                     response = await context.CallActivityAsync<string>("ManageDataOps_CreateIndex", pipe);
@@ -107,7 +108,7 @@ namespace DatabaseManager.AppFunctions
                 {
                     log.LogInformation($"Artifact {pipe.Name} does not exist");
                 }
-                
+                context.SetCustomStatus($"Completed pipe number {pipe.Id} with name {pipe.Name}");
             }
             log.LogInformation($"RunOrchestrator: All pipelines processed");
             return response;

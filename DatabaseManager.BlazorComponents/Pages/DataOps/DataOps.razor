@@ -104,15 +104,22 @@
             }
             string parmString = JsonConvert.SerializeObject(parms);
             Console.WriteLine($"Pipeline parameters are {parmString}");
+            statusMessage = "Starting";
+            StateHasChanged();
             var result = await dataOps.ProcessPipelineWithStatus(parms);
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < 100; i++)
             {
                 DataOpsStatus status = await dataOps.GetStatus(result.statusQueryGetUri);
                 Console.WriteLine(status.runtimeStatus);
-                statusMessage = status.runtimeStatus;
+                statusMessage = status.runtimeStatus + ": " + status.customStatus;
                 StateHasChanged();
-                if (status.runtimeStatus == "Completed") break;
-                await Task.Delay(10000);
+                if (status.runtimeStatus == "Completed") 
+                {
+                    statusMessage = status.runtimeStatus;
+                    StateHasChanged();
+                    break; 
+                }
+                await Task.Delay(5000);
             }
         }
         catch (Exception ex)
