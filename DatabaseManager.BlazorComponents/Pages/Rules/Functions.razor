@@ -1,6 +1,7 @@
 ﻿@page "/rules/functions"
 @inject SingletonServices singleton
 @inject IRules rf
+@using MudBlazor
 
 <h3>Manage Rule Functions</h3>
 
@@ -8,17 +9,28 @@
     <a class="btn btn-info" href="rules/newfunction">New Function</a>
 </div>
 
-<Table TableItem="RuleFunctions" Items="FunctionList" PageSize="@pageSize" ColumnReorder="true">
-    <Column TableItem="RuleFunctions" Title="Action" Sortable="false">
-        <Template>
-            <a class="btn btn-success" href="/rules/editfunction/@context.Id">Edit</a>
-            <button class="btn btn-danger" @onclick="@(() => Delete(context.Id))">Delete</button>
-        </Template>
-    </Column>
-    <Column TableItem="RuleFunctions" Title="Function Name" Field="@(x => x.FunctionName)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
-    <Column TableItem="RuleFunctions" Title="Function URL" Field="@(x => x.FunctionUrl)" Sortable="true" Filterable="true"></Column>
-    <Pager ShowPageNumber="true" ShowTotalCount="true" />
-</Table>
+<MudTable Items="@FunctionList" Dense="true" Hover="true">
+    <ColGroup>
+        <col style="width:50px;" />
+        <col />
+        <col />
+    </ColGroup>
+    <HeaderContent>
+        <MudTh style="background-color:lightgray">Action</MudTh>
+        <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<RuleFunctions, object>(x=>x.FunctionName)">Function Name</MudTableSortLabel></MudTh>
+        <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<RuleFunctions, object>(x=>x.FunctionUrl)">Function URL</MudTableSortLabel></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>
+            <MudFab @onclick="@(() => Delete(context.Id))" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+        </MudTd>
+        <MudTd DataLabel="Function Name">@context.FunctionName</MudTd>
+        <MudTd DataLabel="Data Key">@context.FunctionUrl</MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
 
 @code {
     List<RuleFunctions> FunctionList;
