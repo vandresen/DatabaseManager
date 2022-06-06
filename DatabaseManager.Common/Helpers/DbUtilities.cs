@@ -111,7 +111,9 @@ namespace DatabaseManager.Common.Helpers
                 }
                 catch (SqlException ex)
                 {
-                    Exception error = new Exception("Sorry! Error getting data: ", ex);
+                    string exceptionText = ex.ToString();
+                    string newError = $"Sorry! Error getting datatable: {exceptionText}";
+                    Exception error = new Exception(newError);
                     throw error;
                 }
             }

@@ -139,9 +139,9 @@ namespace DatabaseManager.AppFunctions
                 ConnectParameters source = await sr.GetSourceParameters(parms.SourceName);
 
                 Indexer index = new Indexer(pipe.StorageAccount);
-                int parentNodes = await index.Initialize(target, source, parms.Taxonomy);
+                int parentNodes = await index.Initialize(target, source, parms.Taxonomy, parms.Filter);
 
-                List<ParentIndexNodes> nodes = await index.IndexParent(parentNodes);
+                List<ParentIndexNodes> nodes = await index.IndexParent(parentNodes, parms.Filter);
 
                 for (int j = 0; j < nodes.Count; j++)
                 {

@@ -25,7 +25,7 @@ namespace DatabaseManager.Common.Helpers
             _azureConnectionString = azureConnectionString;
         }
 
-        public async Task<int> Initialize(ConnectParameters target, ConnectParameters source, string taxonomyFile)
+        public async Task<int> Initialize(ConnectParameters target, ConnectParameters source, string taxonomyFile, string filter)
         {
             string jsonTaxonomy = await _fileStorage.ReadFile("taxonomy", taxonomyFile);
             int parentNodes = 0;
@@ -53,14 +53,14 @@ namespace DatabaseManager.Common.Helpers
             return parentNodes;
         }
 
-        public async Task<List<ParentIndexNodes>> IndexParent(int parentNodes)
+        public async Task<List<ParentIndexNodes>> IndexParent(int parentNodes, string filter)
         {
             List<ParentIndexNodes> nodes = new List<ParentIndexNodes>();
             int nodeId = 0;
             for (int k = 0; k < parentNodes; k++)
             {
                 JToken token = iBuilder.JsonIndexArray[k];
-                int parentCount = await iBuilder.GetObjectCount(token, k);
+                int parentCount = await iBuilder.GetObjectCount(token, k, filter);
                 if (parentCount > 0)
                 {
                     nodeId++;

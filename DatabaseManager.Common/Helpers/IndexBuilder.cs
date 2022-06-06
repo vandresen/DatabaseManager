@@ -72,10 +72,11 @@ namespace DatabaseManager.Common.Helpers
             myIndex.Add(new IndexData { DataName = "QCPROJECT", DataType = "QCPROJECT", IndexNode = "/", QcLocation = null, JsonDataObject = json });
         }
 
-        public async Task<int> GetObjectCount(JToken token, int rowNr)
+        public async Task<int> GetObjectCount(JToken token, int rowNr, string filter)
         {
             string select = "";
             string query = "";
+            if (!string.IsNullOrEmpty(filter)) query = " " + filter;
             int objectCount = 0;
             string parentName = (string)token["DataName"];
             _currentItem = _idxData.Find(x => x.DataName == parentName);

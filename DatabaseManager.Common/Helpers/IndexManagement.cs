@@ -116,8 +116,8 @@ namespace DatabaseManager.Common.Helpers
             ConnectParameters target = await sr.GetSourceParameters(indexParm.TargetName);
             ConnectParameters source = await sr.GetSourceParameters(indexParm.SourceName);
             Indexer index = new Indexer(azureConnectionString);
-            int parentNodes = await index.Initialize(target, source, indexParm.Taxonomy);
-            List<ParentIndexNodes> nodes = await index.IndexParent(parentNodes);
+            int parentNodes = await index.Initialize(target, source, indexParm.Taxonomy, indexParm.Filter);
+            List<ParentIndexNodes> nodes = await index.IndexParent(parentNodes, indexParm.Filter);
             for (int j = 0; j < nodes.Count; j++)
             {
                 ParentIndexNodes node = nodes[j];

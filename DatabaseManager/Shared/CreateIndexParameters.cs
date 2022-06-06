@@ -9,5 +9,6 @@ namespace DatabaseManager.Shared
         public string SourceName { get; set; }
         public string TargetName { get; set; }
         public string Taxonomy { get; set; }
+        public string Filter { get; set; }
     }
 }

@@ -4,6 +4,7 @@
 @inject IDisplayMessage displayMessage
 @inject NavigationManager navigationManager
 @inject DatabaseManager.Common.Services.IDataSources dataSources
+@using MudBlazor
 
 <h2>Create Index</h2>
 
@@ -16,15 +17,20 @@ else
     <GenericSelector Options="taxonomies" Selection="Selected" Label="Choose Taxonomy" />
 }
 
+<div>
+    <MudTextField @bind-Value="SqlText" Label="Filter" Variant="Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+</div>
+<br />
+
 <div class="row">
     <div class="col">
-        <h3>Source Database</h3>
+        <h4>Source Database</h4>
     </div>
     <div class="col">
-        <h3></h3>
+        <h4></h4>
     </div>
     <div class="col">
-        <h3>Target Database</h3>
+        <h4>Target Database</h4>
     </div>
 </div>
 
@@ -58,6 +64,7 @@ else
 @code {
     private List<string> options { get; set; } = new List<string>();
     private string source { get; set; } = "Choose Connector";
+    public string SqlText { get; set; }
     List<string> taxonomies;
     CreateIndexParameters iParameters = new CreateIndexParameters();
     private string statusMessage = "Not started";
@@ -97,6 +104,7 @@ else
         iParameters.Taxonomy = TaxonomyFile;
         iParameters.TargetName = singleton.TargetConnector;
         iParameters.SourceName = source;
+        iParameters.Filter = SqlText;
 
         barValue = 1;
         progress("Starting indexing...");
@@ -112,6 +120,21 @@ else
         }
         catch (Exception ex)
         {
+            bool filterProblem = false;
+            bool noTaxonomySelected = false;
+            string message = ex.Message;
+            if (message.Contains("Cannot find column")) filterProblem = true;
+            if (message.Contains("Error getting datatable") && message.Contains("Invalid column name")) filterProblem = true;
+            if (message.Contains("Error getting datatable") && message.Contains("Incorrect syntax")) filterProblem = true;
+            if (message.Contains("Taxonomy not selected")) noTaxonomySelected = true;
+            if(filterProblem)
+            {
+                await displayMessage.DisplayErrorMessage("Filter syntax error");
+            }
+            else if (noTaxonomySelected)
+            {
+                await displayMessage.DisplayErrorMessage("Please select Taxonomy");
+            }
             progress($"Error indexing: {ex.Message}");
             return;
         }
