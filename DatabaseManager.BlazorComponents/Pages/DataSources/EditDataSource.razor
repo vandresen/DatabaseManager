@@ -42,22 +42,6 @@
             connectParameters.ConnectionString = connectStr;
             await dataSources.UpdateSource(connectParameters);
             navigationManager.NavigateTo("datasources");
-            //string connectStr = Common.CreateDatabaseConnectionString(connectParameters);
-            //connectParameters.ConnectionString = connectStr;
-            //var jsonString = JsonConvert.SerializeObject(connectParameters);
-            //var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
-            //string urlUpdate = settings.BaseUrl + "UpdateDataSource";
-            //using var response = await client.PostAsync(urlUpdate, content);
-            //if (response.IsSuccessStatusCode)
-            //{
-            //    Console.WriteLine("Sucessful updating data source");
-            //}
-            //else
-            //{
-            //    string errorMessage = response.ReasonPhrase;
-            //    Console.WriteLine($"There was an error! {errorMessage}");
-            //}
-            //navigationManager.NavigateTo("datasources");
         }
         catch (Exception ex)
         {

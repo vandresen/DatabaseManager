@@ -1,7 +1,7 @@
 ﻿using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace DatabaseManager.Common.Helpers
+namespace DatabaseManager.BlazorComponents.Helpers
 {
     public class HttpResponseWrapper<T>
     {

@@ -1,14 +1,14 @@
-﻿using Blazored.LocalStorage;
-using DatabaseManager.Common.Extensions;
+﻿using DatabaseManager.BlazorComponents.Extensions;
 using DatabaseManager.Shared;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DatabaseManager.Common.Services
+namespace DatabaseManager.BlazorComponents.Services
 {
-    public class DataOpsServerLess: IDataOps
+    public class DataOpsServerLess : IDataOps
     {
         private readonly IHttpService httpService;
         private readonly string baseUrl;

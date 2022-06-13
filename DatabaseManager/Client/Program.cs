@@ -7,7 +7,7 @@ using MudBlazor.Services;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using DatabaseManager.Common.Services;
+using DatabaseManager.BlazorComponents.Services;
 
 namespace DatabaseManager.Client
 {
@@ -31,7 +31,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IDataSources, DataSourcesClient>();
             services.AddScoped<IDataModelCreate, DataModelCreate>();
             services.AddScoped<IDataIndexer, DataIndexer>();
-            services.AddScoped<IIndexView, IndexView>();
+            services.AddScoped<IIndexView, IndexView >();
             services.AddScoped<IRules, Rules>();
             services.AddScoped<IDataOps, DataOpsClientService>();
             services.AddScoped<IDataQc, DataQc>();

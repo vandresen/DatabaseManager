@@ -1,10 +1,10 @@
 ﻿@page "/"
 @inject IDisplayMessage displayMessage
 @inject HttpClient client
-@inject ICookies cookies
-@inject IDataSources dataSources
+@inject DatabaseManager.BlazorComponents.Services.ICookies cookies
+@inject DatabaseManager.BlazorComponents.Services.IDataSources dataSources
 @inject SingletonServices settings
-@inject IIndexView idxView
+@inject DatabaseManager.BlazorComponents.Services.IIndexView idxView
 @inject NavigationManager navigationManager
 @using MudBlazor
 

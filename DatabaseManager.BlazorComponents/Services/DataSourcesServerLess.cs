@@ -1,11 +1,12 @@
-﻿using DatabaseManager.Common.Extensions;
+﻿using DatabaseManager.BlazorComponents.Extensions;
 using DatabaseManager.Shared;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DatabaseManager.Common.Services
+namespace DatabaseManager.BlazorComponents.Services
 {
     public class DataSourcesServerLess : IDataSources
     {
@@ -41,7 +42,7 @@ namespace DatabaseManager.Common.Services
 
         public async Task<ConnectParameters> GetSource(string Name)
         {
-            string url = baseUrl.BuildFunctionUrl("GetDataSource",$"name={Name}", apiKey);
+            string url = baseUrl.BuildFunctionUrl("GetDataSource", $"name={Name}", apiKey);
             var response = await httpService.Get<ConnectParameters>(url);
             if (!response.Success)
             {

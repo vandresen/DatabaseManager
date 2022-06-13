@@ -1,4 +1,4 @@
-﻿using DatabaseManager.Common.Extensions;
+﻿using DatabaseManager.BlazorComponents.Extensions;
 using DatabaseManager.Shared;
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DatabaseManager.Common.Services
+namespace DatabaseManager.BlazorComponents.Services
 {
     public class ReportEdit : IReportEdit
     {
@@ -28,7 +28,7 @@ namespace DatabaseManager.Common.Services
         public async Task Insert(string source, ReportData reportData)
         {
             throw new NotImplementedException();
-            
+
         }
 
         public async Task Update(string source, ReportData reportData)
