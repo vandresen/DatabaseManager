@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using AutoMapper;
-using DatabaseManager.Common.Entities;
-using DatabaseManager.Common.Helpers;
+﻿using DatabaseManager.Common.Helpers;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -17,19 +15,13 @@ namespace DatabaseManager.Server.Controllers
     {
         private string connectionString;
         private readonly string container = "sources";
-        private readonly ITableStorageServiceCommon tableStorageService;
         private readonly IFileStorageServiceCommon fileStorageService;
-        private readonly IMapper mapper;
 
         public SourceController(IConfiguration configuration,
-            ITableStorageServiceCommon tableStorageService,
-            IMapper mapper,
             IFileStorageServiceCommon fileStorageService)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
-            this.tableStorageService = tableStorageService;
             this.fileStorageService = fileStorageService;
-            this.mapper = mapper;
         }
 
         [HttpGet]

@@ -26,12 +26,10 @@ namespace DatabaseManager.Common.Helpers
     public class DataQC
     {
         private readonly IFileStorageServiceCommon _fileStorage;
-        private readonly ITableStorageServiceCommon _tableStorage;
         private readonly string container = "sources";
         private readonly string _azureConnectionString;
         private List<DataAccessDef> _accessDefs;
         private DbUtilities _dbConn;
-        private IMapper _mapper;
         private ManageIndexTable manageQCFlags;
         private readonly IDapperDataAccess _dp;
         private readonly IIndexDBAccess _indexData;
@@ -43,15 +41,7 @@ namespace DatabaseManager.Common.Helpers
             IConfiguration configuration = builder.Build();
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
             _fileStorage.SetConnectionString(azureConnectionString);
-            _tableStorage = new AzureTableStorageServiceCommon(configuration);
-            _tableStorage.SetConnectionString(azureConnectionString);
-
             _dbConn = new DbUtilities();
-
-            var config = new MapperConfiguration(cfg => {
-                cfg.CreateMap<SourceEntity, ConnectParameters>().ForMember(dest => dest.SourceName, opt => opt.MapFrom(src => src.RowKey));
-            });
-            _mapper = config.CreateMapper();
             _dp = new DapperDataAccess();
             _indexData = new IndexDBAccess(_dp);
         }
@@ -190,18 +180,11 @@ namespace DatabaseManager.Common.Helpers
         {
             if (String.IsNullOrEmpty(connectorStr))
             {
-                Exception error = new Exception($"DataQc: Connection string is not set");
+                Exception error = new Exception($"DataQc: Connector name is not set");
                 throw error;
             }
-            ConnectParameters connector = new ConnectParameters();
-            SourceEntity entity = await _tableStorage.GetTableRecord<SourceEntity>(container, connectorStr);
-            if (entity == null)
-            {
-                Exception error = new Exception($"DataQc: Could not find source connector");
-                throw error;
-            }
-            connector = _mapper.Map<ConnectParameters>(entity);
-
+            Sources so = new Sources(_azureConnectionString);
+            ConnectParameters connector = await so.GetSourceParameters(connectorStr);
             return connector;
         }
 
@@ -315,8 +298,8 @@ namespace DatabaseManager.Common.Helpers
                 }
 
             }
-            SourceEntity connector = new SourceEntity();
-            connector = await _tableStorage.GetTableRecord<SourceEntity>(container, parms.Source);
+            Sources so = new Sources(_azureConnectionString);
+            ConnectParameters connector = await so.GetSourceParameters(parms.Source);
             string source = connector.ConnectionString;
             return source;
         }

@@ -1,6 +1,7 @@
 ﻿@page "/datasources/create/{SourceType}"
 @inject IDataSources dataSources
 @inject NavigationManager navigationManager
+@inject IDisplayMessage displayMessage
 
 <h3>Create Data Connector</h3>
 @if (SourceType == "File")
@@ -27,7 +28,14 @@ else
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            if (ex.Message.Contains("The specified entity already exists"))
+            {
+                await displayMessage.DisplayErrorMessage("A connector with this name already exist, please change name");
+            }
+            else
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
     }
 }

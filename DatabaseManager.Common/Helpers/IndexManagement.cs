@@ -1,7 +1,5 @@
-﻿using AutoMapper;
-using DatabaseManager.Common.Data;
+﻿using DatabaseManager.Common.Data;
 using DatabaseManager.Common.DBAccess;
-using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Extensions.Configuration;
@@ -9,8 +7,6 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
@@ -19,10 +15,8 @@ namespace DatabaseManager.Common.Helpers
     {
         private readonly string azureConnectionString;
         private readonly IFileStorageServiceCommon _fileStorage;
-        private readonly ITableStorageServiceCommon _tableStorage;
         private readonly string taxonomyShare = "taxonomy";
         private DbUtilities _dbConn;
-        private IMapper _mapper;
         private readonly DapperDataAccess _dp;
         private readonly IIndexDBAccess _indexData;
 
@@ -33,15 +27,7 @@ namespace DatabaseManager.Common.Helpers
             IConfiguration configuration = builder.Build();
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
             _fileStorage.SetConnectionString(azureConnectionString);
-            _tableStorage = new AzureTableStorageServiceCommon(configuration);
-            _tableStorage.SetConnectionString(azureConnectionString);
             _dbConn = new DbUtilities();
-
-            var config = new MapperConfiguration(cfg => {
-                cfg.CreateMap<SourceEntity, ConnectParameters>().ForMember(dest => dest.SourceName, opt => opt.MapFrom(src => src.RowKey));
-                cfg.CreateMap<ConnectParameters, SourceEntity>().ForMember(dest => dest.RowKey, opt => opt.MapFrom(src => src.SourceName));
-            });
-            _mapper = config.CreateMapper();
             _dp = new DapperDataAccess();
             _indexData = new IndexDBAccess(_dp);
         }

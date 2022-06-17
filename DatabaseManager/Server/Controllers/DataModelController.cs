@@ -16,20 +16,17 @@ namespace DatabaseManager.Server.Controllers
     public class DataModelController : ControllerBase
     {
         private readonly IFileStorageServiceCommon fileStorageService;
-        private readonly ITableStorageServiceCommon tableStorageService;
         private readonly ILogger<DataModelController> logger;
         private readonly IWebHostEnvironment _env;
         private string connectionString;
         private readonly string _contentRootPath;
         public DataModelController(IConfiguration configuration,
             IFileStorageServiceCommon fileStorageService,
-            ITableStorageServiceCommon tableStorageService,
             ILogger<DataModelController> logger,
             IWebHostEnvironment env)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.fileStorageService = fileStorageService;
-            this.tableStorageService = tableStorageService;
             this.logger = logger;
             _env = env;
             _contentRootPath = _env.ContentRootPath;

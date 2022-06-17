@@ -12,7 +12,6 @@ namespace DatabaseManager.Common.Helpers
     public class DataTransfer
     {
         private readonly IFileStorageServiceCommon _fileStorage;
-        private readonly ITableStorageServiceCommon _tableStorage;
         private readonly IQueueService _queueService;
         private string _azureConnectionString;
         private readonly string infoName = "datatransferinfo";
@@ -24,8 +23,6 @@ namespace DatabaseManager.Common.Helpers
             IConfiguration configuration = builder.Build();
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
             _fileStorage.SetConnectionString(azureConnectionString);
-            _tableStorage = new AzureTableStorageServiceCommon(configuration);
-            _tableStorage.SetConnectionString(azureConnectionString);
             _queueService = new AzureQueueServiceCommon(configuration);
             _queueService.SetConnectionString(azureConnectionString);
             _azureConnectionString = azureConnectionString;

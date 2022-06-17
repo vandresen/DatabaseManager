@@ -22,16 +22,16 @@ namespace DatabaseManager.Common.Helpers
     {
         private readonly string azureConnectionString;
         private readonly IFileStorageServiceCommon _fileStorage;
-        private readonly ITableStorageServiceCommon _tableStorage;
+        private readonly IAzureDataAccess _azureDataTables;
         private readonly IRuleData _ruleData;
         private readonly IFunctionData _functionData;
+        private readonly IPredictionSetData _predictionSetData;
         private readonly IDapperDataAccess _dp;
         private readonly IADODataAccess _db;
         private DbUtilities _dbConn;
         private readonly string container = "sources";
         private readonly string predictionContainer = "predictions";
         private readonly string ruleShare = "rules";
-        private IMapper _mapper;
         private string getSql = "Select Id, DataType, RuleType, RuleParameters, " +
             "RuleKey, RuleName, RuleFunction, DataAttribute, RuleFilter, FailRule, " +
             "PredictionOrder, KeyNumber, Active, RuleDescription, CreatedBy, ModifiedBy, " +
@@ -50,19 +50,14 @@ namespace DatabaseManager.Common.Helpers
             IConfiguration configuration = builder.Build();
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
             _fileStorage.SetConnectionString(azureConnectionString);
-            _tableStorage = new AzureTableStorageServiceCommon(configuration);
-            _tableStorage.SetConnectionString(azureConnectionString);
+            _azureDataTables = new AzureDataTable(configuration);
+            _azureDataTables.SetConnectionString(azureConnectionString);
+            _predictionSetData = new PredictionSetData(_azureDataTables);
             _dp = new DapperDataAccess();
             _db = new ADODataAccess();
             _ruleData = new RuleData(_dp, _db);
             _functionData = new FunctionData(_dp);
             _dbConn = new DbUtilities();
-
-            var config = new MapperConfiguration(cfg => {
-                cfg.CreateMap<SourceEntity, ConnectParameters>().ForMember(dest => dest.SourceName, opt => opt.MapFrom(src => src.RowKey));
-                cfg.CreateMap<ConnectParameters, SourceEntity>().ForMember(dest => dest.RowKey, opt => opt.MapFrom(src => src.SourceName));
-            });
-            _mapper = config.CreateMapper();
         }
 
         public DataAccessDef GetDataAccessDefinition(string dataType)
@@ -177,16 +172,7 @@ namespace DatabaseManager.Common.Helpers
         public async Task<string> GetPredictions()
         {
             string result = "";
-            List<PredictionEntity> predictionEntities = await _tableStorage.GetTableRecords<PredictionEntity>(predictionContainer);
-            List<PredictionSet> predictionSets = new List<PredictionSet>();
-            foreach (PredictionEntity entity in predictionEntities)
-            {
-                predictionSets.Add(new PredictionSet()
-                {
-                    Name = entity.RowKey,
-                    Description = entity.Decsription
-                });
-            }
+            List<PredictionSet> predictionSets = _predictionSetData.GetPredictionDataSets();
             result = JsonConvert.SerializeObject(predictionSets, Formatting.Indented);
             return result;
         }
@@ -237,22 +223,20 @@ namespace DatabaseManager.Common.Helpers
 
         public async Task SavePredictionSet(string name, PredictionSet set)
         {
+            
             List<RuleModel> rules = set.RuleSet;
-            PredictionEntity tmpEntity = await _tableStorage.GetTableRecord<PredictionEntity>(predictionContainer, name);
-            if (tmpEntity != null)
+            List<PredictionSet> tmpPredictionSets = _predictionSetData.GetPredictionDataSets();
+            if(tmpPredictionSets.FirstOrDefault(c => c.Name == set.Name) != null)
             {
                 Exception error = new Exception($"RuleManagement: prediction set already exist");
                 throw error;
             }
+            
             string fileName = name + ".json";
             string json = JsonConvert.SerializeObject(rules, Formatting.Indented);
             string url = await _fileStorage.SaveFileUri(ruleShare, fileName, json);
-            PredictionEntity predictionEntity = new PredictionEntity(name)
-            {
-                RuleUrl = url,
-                Decsription = set.Description
-            };
-            await _tableStorage.SaveTableRecord(predictionContainer, name, predictionEntity);
+            set.RuleUrl = url;
+            _predictionSetData.SavePredictionDataSet(set);
         }
 
         public async Task SaveRulesToDatabase(string ruleString, ConnectParameters connector)
@@ -363,7 +347,7 @@ namespace DatabaseManager.Common.Helpers
 
         public async Task DeletePrediction(string name)
         {
-            await _tableStorage.DeleteTable(predictionContainer, name);
+            _predictionSetData.DeletePredictionDataSet(name);
             string ruleFile = name + ".json";
             await _fileStorage.DeleteFile(ruleShare, ruleFile);
         }

@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using DatabaseManager.Common.Data;
+﻿using DatabaseManager.Common.Data;
 using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Services;
@@ -21,14 +20,12 @@ namespace DatabaseManager.Common.Helpers
     public class Predictions
     {
         private readonly IFileStorageServiceCommon _fileStorage;
-        private readonly ITableStorageServiceCommon _tableStorage;
         private readonly string _azureConnectionString;
         private string databaseConnectionString;
         private readonly string container = "sources";
         private List<DataAccessDef> _accessDefs;
         DataAccessDef _indexAccessDef;
         private DbUtilities _dbConn;
-        private IMapper _mapper;
         private bool syncPredictions;
         private ManageIndexTable manageIndexTable;
         private DataTable indexTable;
@@ -43,15 +40,7 @@ namespace DatabaseManager.Common.Helpers
             IConfiguration configuration = builder.Build();
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
             _fileStorage.SetConnectionString(azureConnectionString);
-            _tableStorage = new AzureTableStorageServiceCommon(configuration);
-            _tableStorage.SetConnectionString(azureConnectionString);
-
             _dbConn = new DbUtilities();
-
-            var config = new MapperConfiguration(cfg => {
-                cfg.CreateMap<SourceEntity, ConnectParameters>().ForMember(dest => dest.SourceName, opt => opt.MapFrom(src => src.RowKey));
-            });
-            _mapper = config.CreateMapper();
             _dp = new DapperDataAccess();
             _indexData = new IndexDBAccess(_dp);
         }
@@ -72,28 +61,6 @@ namespace DatabaseManager.Common.Helpers
             }
             return predictionResults;
         }
-
-        //public async Task<List<DmsIndex>> GetPrediction(string source, int id)
-        //{
-        //    List<DmsIndex> predictionResults = new List<DmsIndex>();
-        //    ConnectParameters connector = await GetConnector(source);
-        //    RuleManagement rules = new RuleManagement(_azureConnectionString);
-        //    string jsonRule = await rules.GetRule(source, id);
-        //    RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(jsonRule);
-        //    string query = $" where QC_STRING like '%{rule.RuleKey};%'";
-        //    IndexAccess idxAccess = new IndexAccess();
-        //    List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(query, connector.ConnectionString);
-        //    foreach (var idxRow in idxResults)
-        //    {
-        //        predictionResults.Add(new DmsIndex()
-        //        {
-        //            Id = idxRow.IndexId,
-        //            DataType = idxRow.DataType,
-        //            JsonData = idxRow.JsonDataObject
-        //        });
-        //    }
-        //    return predictionResults;
-        //}
 
         public async Task ExecutePrediction(PredictionParameters parms)
         {
@@ -467,15 +434,8 @@ namespace DatabaseManager.Common.Helpers
                 Exception error = new Exception($"DataQc: Connection string is not set");
                 throw error;
             }
-            ConnectParameters connector = new ConnectParameters();
-            SourceEntity entity = await _tableStorage.GetTableRecord<SourceEntity>(container, connectorStr);
-            if (entity == null)
-            {
-                Exception error = new Exception($"DataQc: Could not find source connector");
-                throw error;
-            }
-            connector = _mapper.Map<ConnectParameters>(entity);
-
+            Sources so = new Sources(_azureConnectionString);
+            ConnectParameters connector = await so.GetSourceParameters(connectorStr);
             return connector;
         }
 

@@ -11,10 +11,10 @@ namespace DatabaseManager.Common.Helpers
     {
         public AutoMapperProfiles()
         {
-            CreateMap<SourceEntity, ConnectParameters>()
-                .ForMember(dest => dest.SourceName, opt => opt.MapFrom(src => src.RowKey));
-            CreateMap<ConnectParameters, SourceEntity>()
-                .ForMember(dest => dest.RowKey, opt => opt.MapFrom(src => src.SourceName));
+            //CreateMap<SourceEntity, ConnectParameters>()
+            //    .ForMember(dest => dest.SourceName, opt => opt.MapFrom(src => src.RowKey));
+            //CreateMap<ConnectParameters, SourceEntity>()
+            //    .ForMember(dest => dest.RowKey, opt => opt.MapFrom(src => src.SourceName));
         }
     }
 }

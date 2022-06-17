@@ -4,7 +4,6 @@ using DatabaseManager.Common.Extensions;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -55,24 +54,8 @@ namespace DatabaseManager.Common.Helpers
                 Exception error = new Exception($"Azure Connection string is not set");
                 throw error;
             }
-            var builder = new ConfigurationBuilder();
-            IConfiguration configuration = builder.Build();
-            ITableStorageServiceCommon tableStorage = new AzureTableStorageServiceCommon(configuration);
-            tableStorage.SetConnectionString(azureConnectionString);
-
-            ConnectParameters connector = new ConnectParameters();
-            SourceEntity entity = await tableStorage.GetTableRecord<SourceEntity>("sources", connecterSource);
-            if (entity == null)
-            {
-                Exception error = new Exception($"Could not find source connector");
-                throw error;
-            }
-            var config = new MapperConfiguration(cfg => {
-                cfg.CreateMap<SourceEntity, ConnectParameters>().ForMember(dest => dest.SourceName, opt => opt.MapFrom(src => src.RowKey));
-            });
-            IMapper mapper = config.CreateMapper();
-            connector = mapper.Map<ConnectParameters>(entity);
-
+            Sources so = new Sources(azureConnectionString);
+            ConnectParameters connector = await so.GetSourceParameters(connecterSource);
             return connector;
         }
 

@@ -50,10 +50,8 @@
     [Parameter] public ConnectParameters ConnectParameters { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public bool ReadOnlySourceName { get; set; }
-    [Parameter] public string Type { get; set; }
 
     protected override void OnInitialized()
     {
-        ConnectParameters.SourceType = Type;
     }
 }

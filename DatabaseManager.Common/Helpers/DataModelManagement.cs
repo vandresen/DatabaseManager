@@ -20,9 +20,7 @@ namespace DatabaseManager.Common.Helpers
         private readonly string azureConnectionString;
         private readonly string _sqlRootPath;
         private readonly IFileStorageServiceCommon _fileStorage;
-        private readonly ITableStorageServiceCommon _tableStorage;
         private DbUtilities _dbConn;
-        private IMapper _mapper;
 
         public DataModelManagement(string azureConnectionString, string sqlRootPath)
         {
@@ -32,15 +30,7 @@ namespace DatabaseManager.Common.Helpers
             IConfiguration configuration = builder.Build();
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
             _fileStorage.SetConnectionString(azureConnectionString);
-            _tableStorage = new AzureTableStorageServiceCommon(configuration);
-            _tableStorage.SetConnectionString(azureConnectionString);
             _dbConn = new DbUtilities();
-
-            var config = new MapperConfiguration(cfg => {
-                cfg.CreateMap<SourceEntity, ConnectParameters>().ForMember(dest => dest.SourceName, opt => opt.MapFrom(src => src.RowKey));
-                cfg.CreateMap<ConnectParameters, SourceEntity>().ForMember(dest => dest.RowKey, opt => opt.MapFrom(src => src.SourceName));
-            });
-            _mapper = config.CreateMapper();
         }
 
         public async Task DataModelCreate(DataModelParameters dmParameters)
