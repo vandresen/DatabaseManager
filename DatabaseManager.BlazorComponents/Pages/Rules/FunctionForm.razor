@@ -10,8 +10,13 @@
     <div class="form-group">
         <label>Function Type:</label>
         <div>
-            <InputText class="form-control" @bind-Value="@RuleFunctions.FunctionType" />
-            <ValidationMessage For="@(() => RuleFunctions.FunctionType)" />
+            <select class="form-control selectpicker" @bind="RuleFunctions.FunctionType">
+                <option>--select--</option>
+                @foreach (var item in typeOptions)
+                {
+                    <option value="@item.Id">@item.Type</option>
+                }
+            </select>
         </div>
     </div>
     <div class="form-group">
@@ -37,4 +42,15 @@
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public bool ReadOnlyName { get; set; }
     private List<string> FunctionTypeOptions = new List<string> { "None", "Validity", "Predictions"};
+    public List<FunctionTypeOption> typeOptions;
+
+    protected override void OnInitialized()
+    {
+        typeOptions = new List<FunctionTypeOption>()
+        {
+            new FunctionTypeOption(){Id = "", Type = "None"},
+            new FunctionTypeOption(){Id = "V", Type = "Validity"},
+            new FunctionTypeOption(){Id = "P", Type = "Predictions"}
+        };
+    }
 }
