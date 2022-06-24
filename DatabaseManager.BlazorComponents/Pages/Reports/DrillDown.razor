@@ -146,45 +146,22 @@ else
             else { valueType = "text"; }
             Console.WriteLine($"Value type is {valueType}");
         }
-
-        dataIndex = await qc.GetResult(singleton.TargetConnector, Id);
-        if (dataIndex != null)
-        {
-            DmsIndex firstObject = dataIndex.First();
-            string jsonData = firstObject.JsonData;
-            if (string.IsNullOrEmpty(jsonData)) dataDeleted = true;
-        }
-        reportList = new List<ReportData>();
-        foreach (var item in dataIndex)
-        {
-            string key = item.DataKey;
-            string value = "";
-            double number = 0.0;
-            reportList.Add(new ReportData
-            {
-                Id = item.Id,
-                JsonData = item.JsonData,
-                Key = key,
-                TextValue = value,
-                ColumnName = columnName,
-                ColumnType = valueType,
-                RuleKey = ruleModel.RuleKey,
-                DataType = dataType,
-                NumberValue = number
-            });
-        }
+        List<ReportData> reportList = await CreateReportList();
         Console.WriteLine($"Number of failures are {dataIndex.Count}");
     }
 
-    private void ItemHasBeenCommitted(object item)
+    private async void ItemHasBeenCommitted(object item)
     {
         Console.WriteLine($"RowEditCommit event: Changes to Element {((ReportData)item).Key} committed");
-        re.Update(singleton.TargetConnector, (ReportData)item);
+        await re.Update(singleton.TargetConnector, (ReportData)item);
     }
 
     private async Task Delete(int id)
     {
-        await displayMessage.DisplayErrorMessage("Delete not implemented yet");
+        Console.WriteLine($"Delete index id {id}");
+        await re.Delete(singleton.TargetConnector, id);
+        List<ReportData> reportList = await CreateReportList();
+        this.StateHasChanged();
     }
 
     private bool FilterFunc(ReportData item)
@@ -226,6 +203,38 @@ else
         {
             ((ReportData)element).TextValue = backupText;
         }
+    }
+
+    private async Task<List<ReportData>> CreateReportList()
+    {
+        dataIndex = await qc.GetResult(singleton.TargetConnector, Id);
+        if (dataIndex.Count == 0) dataDeleted = true;
+        else if (dataIndex != null )
+        {
+            DmsIndex firstObject = dataIndex.First();
+            string jsonData = firstObject.JsonData;
+            if (string.IsNullOrEmpty(jsonData)) dataDeleted = true;
+        }
+        reportList = new List<ReportData>();
+        foreach (var item in dataIndex)
+        {
+            string key = item.DataKey;
+            string value = "";
+            double number = 0.0;
+            reportList.Add(new ReportData
+            {
+                Id = item.Id,
+                JsonData = item.JsonData,
+                Key = key,
+                TextValue = value,
+                ColumnName = columnName,
+                ColumnType = valueType,
+                RuleKey = ruleModel.RuleKey,
+                DataType = dataType,
+                NumberValue = number
+            });
+        }
+        return reportList;
     }
 
     private class DataAccessDef

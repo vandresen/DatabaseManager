@@ -177,5 +177,28 @@ namespace DatabaseManager.AppFunctions
             log.LogInformation("UpdateReportData: Completed");
             return new OkObjectResult("OK");
         }
+
+        [FunctionName("DeleteReportData")]
+        public static async Task<IActionResult> DeleteIndex(
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("DeleteReportData: Starting");
+            try
+            {
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
+                string source = Common.Helpers.Common.GetQueryString(req, "name");
+                int id = Common.Helpers.Common.GetIntFromWebQuery(req, "id");
+                ReportEditManagement rm = new ReportEditManagement(storageAccount);
+                await rm.DeleteEdits(source, id);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"DeleteReportData: Error deleting report edits: {ex}");
+                return new BadRequestObjectResult($"Error deleting report edits: {ex}");
+            }
+            log.LogInformation("DeleteReportData: Completed");
+            return new OkObjectResult("OK");
+        }
     }
 }

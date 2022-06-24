@@ -20,9 +20,16 @@ namespace DatabaseManager.BlazorComponents.Services
             baseUrl = settings.BaseUrl;
             apiKey = settings.ApiKey;
         }
-        public Task Delete(string source, int id)
+        public async Task Delete(string source, int id)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/ReportEdit/{source}/{id}";
+            else url = baseUrl.BuildFunctionUrl("DeleteReportData", $"name={source}&id={id}", apiKey);
+            Console.WriteLine(url);
+            var response = await httpService.Delete(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
         }
 
         public async Task Insert(string source, ReportData reportData)
@@ -35,6 +42,7 @@ namespace DatabaseManager.BlazorComponents.Services
         {
             if (string.IsNullOrEmpty(baseUrl)) url = $"api/ReportEdit/{source}";
             else url = baseUrl.BuildFunctionUrl("UpdateReportData", $"name={source}", apiKey);
+            Console.WriteLine(url);
             var response = await httpService.Put(url, reportData);
             if (!response.Success)
             {

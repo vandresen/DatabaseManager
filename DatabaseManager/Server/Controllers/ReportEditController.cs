@@ -45,6 +45,23 @@ namespace DatabaseManager.Server.Controllers
             return Ok($"OK");
         }
 
+        [HttpDelete("{source}/{id}")]
+        public async Task<ActionResult> Delete(string source, int id, string rulekey)
+        {
+            try
+            {
+                GetStorageAccount();
+                ReportEditManagement rm = new ReportEditManagement(connectionString);
+                await rm.DeleteEdits(source, id);
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+
+            return NoContent();
+        }
+
         private void GetStorageAccount()
         {
             string tmpConnString = Request.Headers["AzureStorageConnection"];
