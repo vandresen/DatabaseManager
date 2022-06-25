@@ -16,6 +16,7 @@ jobs:
           path: ./CHANGELOG.md
           
   build:
+    name: Build release
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v2
@@ -33,3 +34,25 @@ jobs:
         
       - name: Publish
         run: dotnet publish
+        
+      - name: Upload ServerlessUI Build Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ServerlesUI
+          path: D:\a\DatabaseManager\DatabaseManager\DatabaseManager.ServerLessClient\bin\Debug\net6.0\publish\
+          
+      - name: Upload Hosted Server Build Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: HostedServer
+          path: D:\a\DatabaseManager\DatabaseManager\DatabaseManager\Server\bin\Debug\net6.0\publish\
+          
+  release:
+    name: Release Project
+    runs-on: windows-2022
+    needs: build
+    steps:
+      - name: Download changelog
+        uses: actions/download-artifact@v2
+        with:
+            name: ChangelogStuff
