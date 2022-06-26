@@ -56,3 +56,27 @@ jobs:
         uses: actions/download-artifact@v2
         with:
             name: ChangelogStuff
+      - name: Download site content ServerlesUI
+        uses: actions/download-artifact@v2
+        with:
+          name: ServerlesUI
+          path: serverlesui
+      - name: View ServerlessUI content
+        run: dir serverlesui
+      - name: Archive ServerlessUI content
+        uses: thedoctor0/zip-release@master
+        with:
+          path: serverlesui
+          filename: ServerlessUI.zip
+      - name: Download site content HostedServer
+        uses: actions/download-artifact@v2
+        with:
+          name: HostedServer
+          path: hostedserver
+      - name: View HostedServer content
+        run: dir hostedserver
+      - name: Archive HostedServer content
+        uses: thedoctor0/zip-release@master
+        with:
+          path: hostedserver
+          filename: HostedServer.zip
