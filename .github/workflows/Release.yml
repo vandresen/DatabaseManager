@@ -2,6 +2,10 @@ name: DatabaseManagerRelease
 
 on:
   workflow_dispatch:
+    inputs:
+      versionNumber:
+        description: 'Version number'   
+        required: true
   
 jobs:
   changelog:
@@ -56,6 +60,17 @@ jobs:
         uses: actions/download-artifact@v2
         with:
             name: ChangelogStuff
+            
+      - name: Create release
+        id: create-new-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.event.inputs.versionNumber }}
+          release_name: Release V${{ github.event.inputs.versionNumber }}
+          body_path: "./CHANGELOG.md"
+          
       - name: Download site content ServerlesUI
         uses: actions/download-artifact@v2
         with:
@@ -68,6 +83,16 @@ jobs:
         with:
           path: serverlesui
           filename: ServerlessUI.zip
+      - name: Upload ServerlessUI release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-new-release.outputs.upload_url }}
+          asset_path: ./ServerlessUI.zip
+          asset_name: ServerlessUI-v${{ github.run_number }}.zip
+          asset_content_type: application/zip
+          
       - name: Download site content HostedServer
         uses: actions/download-artifact@v2
         with:
@@ -80,3 +105,12 @@ jobs:
         with:
           path: hostedserver
           filename: HostedServer.zip
+      - name: Upload HostedServer release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-new-release.outputs.upload_url }}
+          asset_path: ./HostedServer.zip
+          asset_name: HostedServer-v${{ github.run_number }}.zip
+          asset_content_type: application/zip
