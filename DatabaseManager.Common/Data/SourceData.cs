@@ -67,7 +67,7 @@ namespace DatabaseManager.Common.Data
             connector.ConnectionString = entity["ConnectionString"].ToString();
             if (entity["DatabaseServer"] != null) connector.DatabaseServer = entity["DatabaseServer"].ToString();
             if (entity["User"] != null) connector.User = entity["User"].ToString();
-            if (entity["Password"] != null) connector.User = entity["User"].ToString();
+            if (entity["Password"] != null) connector.Password = entity["Password"].ToString();
             if (entity["DataType"] != null) connector.DataType = entity["DataType"].ToString();
             if (entity["FileName"] != null) connector.FileName = entity["FileName"].ToString();
             if (entity["CommandTimeOut"] != null) 
