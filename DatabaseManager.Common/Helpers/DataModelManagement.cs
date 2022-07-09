@@ -199,6 +199,7 @@ namespace DatabaseManager.Common.Helpers
             DataAccessDef indexDef = ia.GetDataAccessDefinition();
             BuildGetProcedure(dbConn, type, indexDef);
             BuildGetProcedureWithQcString(dbConn, indexDef);
+            BuildGetProcedureWithAttributeQuery(dbConn, type, "INDEXNODE", indexDef);
         }
 
         private void BuildGetProcedure(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
@@ -249,6 +250,27 @@ namespace DatabaseManager.Common.Helpers
             sqlCommand = sqlCommand + " set @query = '%' + @qcstring + ';%'";
             sqlCommand = sqlCommand + sql;
             sqlCommand = sqlCommand + " WHERE QC_STRING like @query";
+            sqlCommand = sqlCommand + " END";
+            dbConn.SQLExecute(sqlCommand);
+        }
+
+        private void BuildGetProcedureWithAttributeQuery(DbUtilities dbConn, string dataType, string attribute,
+            DataAccessDef accessDef)
+        {
+            string sqlCommand = $"DROP PROCEDURE IF EXISTS spGet{dataType}With{attribute} ";
+            dbConn.SQLExecute(sqlCommand);
+
+            sqlCommand = "";
+            string sql = accessDef.Select;
+
+            sqlCommand = sqlCommand + $"CREATE PROCEDURE spGet{dataType}With{attribute} ";
+            sqlCommand = sqlCommand + " @query VARCHAR(max) ";
+            sqlCommand = sqlCommand + " AS ";
+            sqlCommand = sqlCommand + " BEGIN ";
+            sqlCommand = sqlCommand + " declare @querystring as varchar(max) ";
+            sqlCommand = sqlCommand + " set @querystring = @query ";
+            sqlCommand = sqlCommand + sql;
+            sqlCommand = sqlCommand + $" WHERE {attribute} = @querystring";
             sqlCommand = sqlCommand + " END";
             dbConn.SQLExecute(sqlCommand);
         }

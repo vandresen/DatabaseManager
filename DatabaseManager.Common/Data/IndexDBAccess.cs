@@ -33,6 +33,12 @@ namespace DatabaseManager.Common.Data
             return results.FirstOrDefault();
         }
 
+        public async Task<IndexModel> GetIndexRoot(string connectionString)
+        {
+            var results = await _dp.LoadData<IndexModel, dynamic>("dbo.spGetIndexWithINDEXNODE", new { query = '/' }, connectionString);
+            return results.FirstOrDefault();
+        }
+
         public Task<IEnumerable<IndexModel>> GetIndexesFromSP(string connectionString) =>
             _dp.LoadData<IndexModel, dynamic>("dbo.spGetIndex", new { }, connectionString);
 

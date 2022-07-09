@@ -1,4 +1,5 @@
-﻿using DatabaseManager.Common.Entities;
+﻿using DatabaseManager.Common.Data;
+using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Extensions;
 using DatabaseManager.Shared;
 using Newtonsoft.Json;
@@ -8,12 +9,13 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
 {
     static class PredictionMethods
     {
-        public static PredictionResult DeleteDataObject(QcRuleSetup qcSetup, DbUtilities dbConn)
+        public static PredictionResult DeleteDataObject(QcRuleSetup qcSetup, DbUtilities dbConn, IndexDBAccess idxdata)
         {
             PredictionResult result = new PredictionResult();
 
@@ -24,7 +26,7 @@ namespace DatabaseManager.Common.Helpers
             return result;
         }
 
-        public static PredictionResult PredictFormationOrder(QcRuleSetup qcSetup, DbUtilities dbConn)
+        public static PredictionResult PredictFormationOrder(QcRuleSetup qcSetup, DbUtilities dbConn, IndexDBAccess idxdata)
         {
             List<StratUnits> inv = new List<StratUnits>();
             PredictionResult result = new PredictionResult
@@ -85,7 +87,7 @@ namespace DatabaseManager.Common.Helpers
             return result;
         }
 
-        public static PredictionResult PredictDepthUsingIDW(QcRuleSetup qcSetup, DbUtilities dbConn)
+        public static PredictionResult PredictDepthUsingIDW(QcRuleSetup qcSetup, DbUtilities dbConn, IndexDBAccess idxdata)
         {
             double? depth = null;
             PredictionResult result = new PredictionResult
@@ -115,7 +117,7 @@ namespace DatabaseManager.Common.Helpers
             return result;
         }
 
-        public static PredictionResult PredictDominantLithology(QcRuleSetup qcSetup, DbUtilities dbConn)
+        public static PredictionResult PredictDominantLithology(QcRuleSetup qcSetup, DbUtilities dbConn, IndexDBAccess idxdata)
         {
             PredictionResult result = new PredictionResult
             {
@@ -133,18 +135,17 @@ namespace DatabaseManager.Common.Helpers
             }
             else
             {
-                string select = "SELECT JSONDATAOBJECT from pdo_qc_index";
-                string query = " where IndexNode = '/'";
-                DataTable idx = dbConn.GetDataTable(select, query);
-                if (idx.Rows.Count == 1)
+                IndexModel idxResult = Task.Run(() => idxdata.GetIndexRoot(qcSetup.DataConnector)).GetAwaiter().GetResult();
+                if (idxResult != null)
                 {
-                    string jsondata = idx.Rows[0]["JSONDATAOBJECT"].ToString();
-                    ConnectParameters source = JsonConvert.DeserializeObject<ConnectParameters>(jsondata);
+                    string jsonStringObject = idxResult.JsonDataObject;
+                    IndexRootJson rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonStringObject);
+                    ConnectParameters source = JsonConvert.DeserializeObject<ConnectParameters>(rootJson.Source);
                     List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(source.DataAccessDefinition);
 
                     DataAccessDef logType = accessDefs.First(x => x.DataType == "Log");
-                    select = logType.Select;
-                    query = $" where CURVE_ID = '{curveName}' and UWI = '{uwi}'";
+                    string select = logType.Select;
+                    string query = $" where CURVE_ID = '{curveName}' and UWI = '{uwi}'";
                     DataTable lc = dbConn.GetDataTable(select, query);
                     if (lc.Rows.Count == 1)
                     {
@@ -202,7 +203,7 @@ namespace DatabaseManager.Common.Helpers
             return result;
         }
 
-        public static PredictionResult PredictLogDepthAttributes(QcRuleSetup qcSetup, DbUtilities dbConn)
+        public static PredictionResult PredictLogDepthAttributes(QcRuleSetup qcSetup, DbUtilities dbConn, IndexDBAccess idxdata)
         {
             PredictionResult result = new PredictionResult
             {
@@ -227,7 +228,7 @@ namespace DatabaseManager.Common.Helpers
             return result;
         }
 
-        public static PredictionResult PredictMissingDataObjects(QcRuleSetup qcSetup, DbUtilities dbConn)
+        public static PredictionResult PredictMissingDataObjects(QcRuleSetup qcSetup, DbUtilities dbConn, IndexDBAccess idxdata)
         {
             PredictionResult result = new PredictionResult
             {

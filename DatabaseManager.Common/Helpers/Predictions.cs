@@ -71,7 +71,7 @@ namespace DatabaseManager.Common.Helpers
 
             _dbConn.OpenConnection(connector);
 
-            string sourceConnector = GetSource();
+            string sourceConnector = await GetSource();
             if (parms.DataConnector == sourceConnector) syncPredictions = true;
             else syncPredictions = false;
 
@@ -92,6 +92,7 @@ namespace DatabaseManager.Common.Helpers
             qcSetup.DatabasePassword = connector.Password;
             qcSetup.DatabaseServer = connector.DatabaseServer;
             qcSetup.DatabaseUser = connector.User;
+            qcSetup.DataConnector = connector.ConnectionString;
             string jsonRules = JsonConvert.SerializeObject(rule);
             qcSetup.RuleObject = jsonRules;
             string predictionURL = rule.RuleFunction;
@@ -117,7 +118,7 @@ namespace DatabaseManager.Common.Helpers
                     {
                         Type type = typeof(PredictionMethods);
                         MethodInfo info = type.GetMethod(rule.RuleFunction);
-                        result = (PredictionResult)info.Invoke(null, new object[] { qcSetup, _dbConn });
+                        result = (PredictionResult)info.Invoke(null, new object[] { qcSetup, _dbConn, _indexData });
                     }
                     await ProcessResult(result, rule);
                 }
@@ -289,9 +290,9 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        private void InsertMissingObjectToIndex(PredictionResult result)
+        private async Task InsertMissingObjectToIndex(PredictionResult result)
         {
-            IndexFileData indexdata = GetIndexFileData(result.DataType);
+            IndexFileData indexdata = await GetIndexFileData(result.DataType);
             if (indexdata.DataName != null)
             {
                 JObject dataObject = JObject.Parse(result.DataObject);
@@ -439,34 +440,30 @@ namespace DatabaseManager.Common.Helpers
             return connector;
         }
 
-        private IndexFileData GetIndexFileData(string dataType)
+        private async Task<IndexFileData> GetIndexFileData(string dataType)
         {
             IndexFileData indexdata = new IndexFileData();
-            IndexRootJson rootJson = GetIndexRootData();
+            IndexRootJson rootJson = await GetIndexRootData();
             string taxonomy = rootJson.Taxonomy;
             List<IndexFileData> idxData = GetIndexArray(taxonomy);
             indexdata = idxData.FirstOrDefault(s => s.DataName == dataType);
             return indexdata;
         }
 
-        private IndexRootJson GetIndexRootData()
+        private async Task<IndexRootJson> GetIndexRootData()
         {
             IndexRootJson rootJson = new IndexRootJson();
-            string idxQuery = $" where INDEXNODE = '/'";
-            IndexAccess idxAccess = new IndexAccess();
-            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(idxQuery, databaseConnectionString);
-            if (idxResults.Count > 0)
-            {
-                string jsonStringObject = idxResults[0].JsonDataObject;
-                rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonStringObject);
-            }
+            //IndexAccess idxAccess = new IndexAccess();
+            IndexModel idxResult = await _indexData.GetIndexRoot(databaseConnectionString);
+            string jsonStringObject = idxResult.JsonDataObject;
+            rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonStringObject);
             return rootJson;
         }
 
-        private string GetSource()
+        private async Task<string> GetSource()
         {
             string source = "";
-            IndexRootJson rootJson = GetIndexRootData();
+            IndexRootJson rootJson = await GetIndexRootData();
             string jsonData = rootJson.Source;
             ConnectParameters sourceConn = JsonConvert.DeserializeObject<ConnectParameters>(jsonData);
             source = sourceConn.SourceName;
