@@ -119,7 +119,7 @@ namespace DatabaseManager.AppFunctions
         {
             log.LogInformation($"InitPredictions: Starting");
             List<PredictionCorrection> predictionList = new List<PredictionCorrection>();
-            Predictions predictions = new Predictions(pipe.StorageAccount);
+            Predictions predictions = new Predictions(pipe.StorageAccount, log);
             PredictionParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<PredictionParameters>();
             predictionList = await predictions.GetPredictions(parms.DataConnector);
             log.LogInformation($"Number of predictions are {predictionList.Count}");
@@ -250,7 +250,7 @@ namespace DatabaseManager.AppFunctions
             try
             {
                 log.LogInformation($"Prediction: Starting prediction");
-                Predictions predictions = new Predictions(pipe.StorageAccount);
+                Predictions predictions = new Predictions(pipe.StorageAccount, log);
                 PredictionParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<PredictionParameters>();
                 log.LogInformation($"Prediction: Processing prediction id {parms.PredictionId}");
                 await predictions.ExecutePrediction(parms);

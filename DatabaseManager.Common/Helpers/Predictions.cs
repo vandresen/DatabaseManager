@@ -4,6 +4,7 @@ using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -32,8 +33,9 @@ namespace DatabaseManager.Common.Helpers
         private static HttpClient Client = new HttpClient();
         private readonly DapperDataAccess _dp;
         private readonly IIndexDBAccess _indexData;
+        private readonly ILogger _log;
 
-        public Predictions(string azureConnectionString)
+        public Predictions(string azureConnectionString, ILogger log)
         {
             _azureConnectionString = azureConnectionString;
             var builder = new ConfigurationBuilder();
@@ -43,6 +45,7 @@ namespace DatabaseManager.Common.Helpers
             _dbConn = new DbUtilities();
             _dp = new DapperDataAccess();
             _indexData = new IndexDBAccess(_dp);
+            _log = log;
         }
 
         public async Task<List<PredictionCorrection>> GetPredictions(string source)
@@ -64,6 +67,7 @@ namespace DatabaseManager.Common.Helpers
 
         public async Task ExecutePrediction(PredictionParameters parms)
         {
+            _log.LogInformation($"Setting up for predictions");
             string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
             _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             ConnectParameters connector = await GetConnector(parms.DataConnector);
@@ -80,8 +84,10 @@ namespace DatabaseManager.Common.Helpers
 
             manageIndexTable = new ManageIndexTable(_accessDefs, connector.ConnectionString, rule.DataType, rule.FailRule);
             manageIndexTable.InitQCFlags(false);
+            _log.LogInformation($"Start making predictions");
             await MakePredictions(rule, connector);
             _dbConn.CloseConnection();
+            _log.LogInformation($"Saving qc flags");
             manageIndexTable.SaveQCFlags();
         }
 
@@ -100,15 +106,17 @@ namespace DatabaseManager.Common.Helpers
             bool externalQcMethod = rule.RuleFunction.StartsWith("http");
 
             indexTable = manageIndexTable.GetIndexTable();
+            _log.LogInformation($"Number of prediction object are {indexTable.Rows.Count}");
             foreach (DataRow idxRow in indexTable.Rows)
             {
                 string jsonData = idxRow["JSONDATAOBJECT"].ToString();
                 if (!string.IsNullOrEmpty(jsonData))
                 {
                     qcSetup.IndexId = Convert.ToInt32(idxRow["INDEXID"]);
+                    //_log.LogInformation($"Processing index id {qcSetup.IndexId} ");
                     qcSetup.IndexNode = idxRow["TextIndexNode"].ToString();
                     qcSetup.DataObject = jsonData;
-                    PredictionResult result;
+                    PredictionResult result = new PredictionResult();
                     if (externalQcMethod)
                     {
                         result = ProcessPrediction(qcSetup, predictionURL, rule);
@@ -123,6 +131,7 @@ namespace DatabaseManager.Common.Helpers
                     await ProcessResult(result, rule);
                 }
             }
+            //_log.LogInformation($"Finished process all rows");
         }
 
         private PredictionResult ProcessPrediction(QcRuleSetup qcSetup, string predictionURL, RuleModel rule)
@@ -183,7 +192,7 @@ namespace DatabaseManager.Common.Helpers
             }
             else if (result.SaveType == "Insert")
             {
-                InsertAction(result);
+                await InsertAction(result);
             }
             else if (result.SaveType == "Delete")
             {
@@ -235,9 +244,9 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        private void InsertAction(PredictionResult result)
+        private async Task InsertAction(PredictionResult result)
         {
-            InsertMissingObjectToIndex(result);
+            await InsertMissingObjectToIndex(result);
             if (syncPredictions)
             {
                 InsertMissingObjectToDatabase(result);
@@ -249,7 +258,7 @@ namespace DatabaseManager.Common.Helpers
             IndexModel idxResults= await _indexData.GetIndexFromSP(result.IndexId, databaseConnectionString);
             if (idxResults != null)
             {
-                DeleteChildren(result.IndexId, qcStr);
+                await DeleteChildren(result.IndexId, qcStr);
                 DeleteParent(qcStr, idxResults);
             }
             else

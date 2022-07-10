@@ -22,40 +22,6 @@ namespace DatabaseManager.BlazorComponents.Services
             apiKey = settings.ApiKey;
         }
 
-        public Task ClearQCFlags(string source)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<List<DmsIndex>> GetQcFailures(string source, int id)
-        {
-            if (string.IsNullOrEmpty(baseUrl)) url = $"api/DataQC/{source}/{id}";
-            else url = baseUrl.BuildFunctionUrl("GetDataQcResults", $"name={source}&id={id}", apiKey);
-            var response = await httpService.Get<List<DmsIndex>>(url);
-            if (!response.Success)
-            {
-                throw new ApplicationException(await response.GetBody());
-            }
-            return response.Response;
-        }
-
-        public async Task<List<QcResult>> GetQcResult(string source)
-        {
-            if (string.IsNullOrEmpty(baseUrl)) url = $"api/DataQC/{source}";
-            else url = baseUrl.BuildFunctionUrl("GetDataQcResults", $"name={source}", apiKey);
-            var response = await httpService.Get<List<QcResult>>(url);
-            if (!response.Success)
-            {
-                throw new ApplicationException(await response.GetBody());
-            }
-            return response.Response;
-        }
-
-        public Task ProcessQCRule(DataQCParameters qcParams)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<List<QcResult>> GetResults(string source)
         {
             if (string.IsNullOrEmpty(baseUrl)) url = $"api/dataqc/{source}";
