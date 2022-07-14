@@ -17,6 +17,22 @@ namespace DatabaseManager.Common.DBAccess
             _sqlTimeOut = 1000;
         }
 
+        public void Delete(string table, string connectionString)
+        {
+            SqlConnection conn = null;
+            string storedProcedure = "dbo.spFastDelete";
+            string paramName = "@TableName";
+            using (conn = new SqlConnection(connectionString))
+            {
+                SqlCommand sqlCmd = new SqlCommand(storedProcedure);
+                conn.Open();
+                sqlCmd.Connection = conn;
+                sqlCmd.CommandType = CommandType.StoredProcedure;
+                sqlCmd.Parameters.AddWithValue(paramName, table);
+                sqlCmd.ExecuteNonQuery();
+            }
+        }
+
         public DataTable GetDataTable(string sql, string connectionString)
         {
             SqlConnection conn = null;

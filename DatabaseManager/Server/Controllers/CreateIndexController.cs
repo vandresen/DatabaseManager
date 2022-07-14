@@ -1,19 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using DatabaseManager.Common.Helpers;
+using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using DatabaseManager.Shared;
-using Microsoft.AspNetCore.Hosting;
-using Newtonsoft.Json.Linq;
-using DatabaseManager.Server.Entities;
-using AutoMapper;
 using Microsoft.Extensions.Logging;
-using Microsoft.Azure.Cosmos.Table;
-using DatabaseManager.Common.Helpers;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DatabaseManager.Server.Controllers
 {

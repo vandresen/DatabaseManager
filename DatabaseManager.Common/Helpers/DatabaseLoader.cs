@@ -1,4 +1,5 @@
-﻿using DatabaseManager.Common.Entities;
+﻿using DatabaseManager.Common.DBAccess;
+using DatabaseManager.Common.Entities;
 using DatabaseManager.Shared;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
@@ -54,10 +55,12 @@ namespace DatabaseManager.Common.Helpers
 
         public void DeleteTable(string connectString, string table)
         {
-            DbUtilities dbConn = new DbUtilities();
-            dbConn.OpenWithConnectionString(connectString);
-            dbConn.DBDelete(table);
-            dbConn.CloseConnection();
+            IADODataAccess db = new ADODataAccess();
+            db.Delete(table, connectString);
+            //DbUtilities dbConn = new DbUtilities();
+            //dbConn.OpenWithConnectionString(connectString);
+            //dbConn.DBDelete(table);
+            //dbConn.CloseConnection();
         }
 
         private void ProcessReferenceTables(string table, SqlConnection source, SqlConnection destination)

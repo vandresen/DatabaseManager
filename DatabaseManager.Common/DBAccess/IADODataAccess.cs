@@ -11,5 +11,6 @@ namespace DatabaseManager.Common.DBAccess
     {
         Task InsertWithUDT<T>(string storedProcedure, string parameterName, T collection, string connectionString);
         DataTable GetDataTable(string sql, string connectionString);
+        void Delete(string table, string connectionString);
     }
 }
