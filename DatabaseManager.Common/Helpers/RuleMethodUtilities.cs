@@ -404,5 +404,53 @@ namespace DatabaseManager.Common.Helpers
 
             return json;
         }
+
+        public static string CalculateKey(RuleModel rule, string jsonData)
+        {
+            string uniqKey = "";
+            //string[] keyAttributes = rule.RuleParameters.Split(';');
+            //if (keyAttributes.Length > 0)
+            //{
+            //    foreach (DataRow idxRow in indexTable.Rows)
+            //    {
+            //        string keyText = "";
+            //        string jsonData = idxRow["JSONDATAOBJECT"].ToString();
+            //        if (!string.IsNullOrEmpty(jsonData))
+            //        {
+            //            JObject dataObject = JObject.Parse(jsonData);
+            //            foreach (string key in keyAttributes)
+            //            {
+            //                string function = "";
+            //                string normalizeParameter = "";
+            //                string attribute = key.Trim();
+            //                if (attribute.Substring(0, 1) == "*")
+            //                {
+            //                    //attribute = attribute.Split('(', ')')[1];
+            //                    int start = attribute.IndexOf("(") + 1;
+            //                    int end = attribute.IndexOf(")", start);
+            //                    function = attribute.Substring(0, start - 1);
+            //                    string csv = attribute.Substring(start, end - start);
+            //                    TextFieldParser parser = new TextFieldParser(new StringReader(csv));
+            //                    parser.HasFieldsEnclosedInQuotes = true;
+            //                    parser.SetDelimiters(",");
+            //                    string[] parms = parser.ReadFields();
+            //                    attribute = parms[0];
+            //                    if (parms.Length > 1) normalizeParameter = parms[1];
+            //                }
+            //                string value = dataObject.GetValue(attribute).ToString();
+            //                if (function == "*NORMALIZE") value = value.NormalizeString(normalizeParameter);
+            //                if (function == "*NORMALIZE14") value = value.NormalizeString14();
+            //                keyText = keyText + value;
+            //            }
+            //            if (!string.IsNullOrEmpty(keyText))
+            //            {
+            //                string key = keyText.GetSHA256Hash();
+            //                idxRow["UNIQKEY"] = key;
+            //            }
+            //        }
+            //    }
+            //}
+            return uniqKey;
+        }
     }
 }

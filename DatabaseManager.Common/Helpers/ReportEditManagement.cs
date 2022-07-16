@@ -23,6 +23,7 @@ namespace DatabaseManager.Common.Helpers
         private readonly DapperDataAccess _dp;
         private readonly IFileStorageServiceCommon _fileStorage;
         private readonly IIndexDBAccess _indexData;
+        private readonly IRuleData _ruleData;
 
         public ReportEditManagement()
         {
@@ -40,6 +41,7 @@ namespace DatabaseManager.Common.Helpers
             _fileStorage.SetConnectionString(azureConnectionString);
             _dp = new DapperDataAccess();
             _indexData = new IndexDBAccess(_dp);
+            _ruleData = new RuleData(_dp);
         }
 
         public async Task<string> GetAttributeInfo(string sourceName, string dataType)
@@ -99,6 +101,39 @@ namespace DatabaseManager.Common.Helpers
             else
             {
                 //logger.LogWarning("Cannot find data key during update");
+            }
+        }
+
+        public async Task Merge(string sourceName, ReportData reportData)
+        {
+            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
+            string connectionString = connector.ConnectionString;
+            IndexModel failedObject = await _indexData.GetIndexFromSP(reportData.Id, connectionString);
+            IEnumerable<RuleModel> rules = await _ruleData.GetRulesFromSP(connectionString);
+            IEnumerable<IndexModel> allDuplicates = await _indexData.GetIndexesWithQcStringFromSP(reportData.RuleKey, connector.ConnectionString);
+            List<IndexModel> duplicates = allDuplicates.Where(x => x.UniqKey == failedObject.UniqKey).ToList();
+            await MergeDuplicates(duplicates, failedObject.IndexId, connectionString);
+            //IndexModel idxResults = await _indexData.GetIndexFromSP(id, connector.ConnectionString);
+            //if (idxResults != null)
+            //{
+            //    await DeleteInIndex(id, idxResults.QC_String, connector.ConnectionString);
+            //    if (connector.SourceType == "DataBase") DeleteInDatabase(connector, idxResults);
+            //}
+            //else
+            //{
+            //    //logger.LogWarning("Cannot find data key during update");
+            //}
+        }
+
+        private async Task MergeDuplicates(List<IndexModel> duplicates, int id, string connectionString)
+        {
+            foreach (var duplicate in duplicates)
+            {
+                if (duplicate.IndexId != id)
+                {
+                    string a = duplicate.UniqKey;
+                    IEnumerable<IndexModel> dmsIndex = await _indexData.GetDescendantsFromSP(id, connectionString);
+                }
             }
         }
 

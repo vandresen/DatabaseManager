@@ -1,4 +1,7 @@
-﻿using System;
+﻿using DatabaseManager.Shared;
+using Microsoft.VisualBasic.FileIO;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,6 +12,42 @@ namespace DatabaseManager.Common.Extensions
 {
     public static class UniquenessKeyExtensions
     {
+        public static string GetUniqKey(this string jsonData, RuleModel rule)
+        {
+            string keyText = "";
+            string uniqKey = "";
+            string[] keyAttributes = rule.RuleParameters.Split(';');
+            if (!string.IsNullOrEmpty(jsonData))
+            {
+                JObject dataObject = JObject.Parse(jsonData);
+                foreach (string key in keyAttributes)
+                {
+                    string function = "";
+                    string normalizeParameter = "";
+                    string attribute = key.Trim();
+                    if (attribute.Substring(0, 1) == "*")
+                    {
+                        //attribute = attribute.Split('(', ')')[1];
+                        int start = attribute.IndexOf("(") + 1;
+                        int end = attribute.IndexOf(")", start);
+                        function = attribute.Substring(0, start - 1);
+                        string csv = attribute.Substring(start, end - start);
+                        TextFieldParser parser = new TextFieldParser(new StringReader(csv));
+                        parser.HasFieldsEnclosedInQuotes = true;
+                        parser.SetDelimiters(",");
+                        string[] parms = parser.ReadFields();
+                        attribute = parms[0];
+                        if (parms.Length > 1) normalizeParameter = parms[1];
+                    }
+                    string value = dataObject.GetValue(attribute).ToString();
+                    if (function == "*NORMALIZE") value = value.NormalizeString(normalizeParameter);
+                    if (function == "*NORMALIZE14") value = value.NormalizeString14();
+                    keyText = keyText + value;
+                    if (!string.IsNullOrEmpty(keyText)) uniqKey = keyText.GetSHA256Hash();
+                }
+            }
+            return uniqKey;
+        }
         public static string GetSHA256Hash(this string str)
         {
             StreamWriter sw = null;

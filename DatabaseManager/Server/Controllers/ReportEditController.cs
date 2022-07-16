@@ -45,6 +45,22 @@ namespace DatabaseManager.Server.Controllers
             return Ok($"OK");
         }
 
+        [HttpPut("merge/{source}")]
+        public async Task<ActionResult<string>> MergeIndex(string source, ReportData reportData)
+        {
+            try
+            {
+                GetStorageAccount();
+                ReportEditManagement rm = new ReportEditManagement(connectionString);
+                await rm.Merge(source, reportData);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest();
+            }
+            return Ok($"OK");
+        }
+
         [HttpDelete("{source}/{id}")]
         public async Task<ActionResult> Delete(string source, int id, string rulekey)
         {
