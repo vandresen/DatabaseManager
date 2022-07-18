@@ -128,5 +128,13 @@ namespace DatabaseManager.Common.Extensions
             if (url.EndsWith("&")) url = url.Substring(0, url.Length - 1);
             return url;
         }
+
+        public static string ModifyJson(this string json, string path, string newValue)
+        {
+            JObject dataObject = JObject.Parse(json);
+            dataObject[path] = newValue;
+            string newJson = dataObject.ToString();
+            return newJson;
+        }
     }
 }

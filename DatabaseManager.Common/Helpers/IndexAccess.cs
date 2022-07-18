@@ -14,7 +14,8 @@ namespace DatabaseManager.Common.Helpers
     public class IndexAccess
     {
         private string getSql = "Select IndexId, IndexNode.ToString() AS TextIndexNode, " +
-            "IndexLevel, DataName, DataType, DataKey, QC_String, UniqKey, JsonDataObject " +
+            "IndexLevel, DataName, DataType, DataKey, QC_String, UniqKey, JsonDataObject, " +
+            "Latitude, Longitude " +
             "from pdo_qc_index";
 
         public IndexAccess()

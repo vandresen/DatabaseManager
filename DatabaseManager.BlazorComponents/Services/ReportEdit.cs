@@ -61,5 +61,17 @@ namespace DatabaseManager.BlazorComponents.Services
             }
             return response.Response;
         }
+
+        public async Task Merge(string source, ReportData reportData)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/ReportEdit/merge/{source}";
+            else url = baseUrl.BuildFunctionUrl("MergeReportData", $"name={source}", apiKey);
+            Console.WriteLine(url);
+            var response = await httpService.Put(url, reportData);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
     }
 }

@@ -15,5 +15,7 @@ namespace DatabaseManager.Shared
         public string QC_String { get; set; }
         public string UniqKey { get; set; }
         public string JsonDataObject { get; set; }
+        public Double? Latitude { get; set; }
+        public Double? Longitude { get; set; }
     }
 }

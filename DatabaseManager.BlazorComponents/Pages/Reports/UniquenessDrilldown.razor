@@ -30,18 +30,23 @@ else
         <ColGroup>
             <col style="width:50px;" />
             <col style="width:50px;" />
+            <col style="width:50px;" />
             <col style="width:140px;"/>
             <col />
             <col />
         </ColGroup>
         <HeaderContent>
-            <MudTh style="background-color:lightgray">Actions</MudTh>
+            <MudTh style="background-color:lightgray">Merge</MudTh>
+            <MudTh style="background-color:lightgray">Delete</MudTh>
             <MudTh style="background-color:lightgray">Detail</MudTh>
             <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<ReportData, object>(x=>x.Id)">Index Id</MudTableSortLabel></MudTh>
             <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<ReportData, object>(x=>x.Key)">Data Key</MudTableSortLabel></MudTh>
             <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<ReportData, object>(x=>x.TextValue)">Uniqueness Key</MudTableSortLabel></MudTh>
         </HeaderContent>
         <RowTemplate>
+            <MudTd DataLabel="">
+                <MudFab @onclick="@(()=>Merge(@context.Id))" Color="Color.Tertiary" Icon="@Icons.Material.Filled.Merge" Size="Size.Small" IconSize="Size.Small" />
+            </MudTd>
             <MudTd DataLabel="">
                 <MudFab @onclick="@(()=>Delete(@context.Id))" Color="Color.Secondary" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
             </MudTd>
@@ -114,6 +119,7 @@ else
                     Id = item.Id,
                     JsonData = item.JsonData,
                     Key = key,
+                    RuleKey = ruleModel.RuleKey,
                     TextValue = item.UniqKey
                 });
         }
@@ -125,6 +131,15 @@ else
         Console.WriteLine($"Delete index id {id}");
         await re.Delete(singleton.TargetConnector, id);
         List<ReportData> reportList = await CreateReportList();
+        this.StateHasChanged();
+    }
+
+    private async Task Merge(int id)
+    {
+        Console.WriteLine($"Merge index id {id}");
+        ReportData report = reportList.FirstOrDefault(x => x.Id == id);
+        await re.Merge(singleton.TargetConnector, report);
+        reportList = await CreateReportList();
         this.StateHasChanged();
     }
 

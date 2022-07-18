@@ -13,5 +13,6 @@ namespace DatabaseManager.BlazorComponents.Services
         Task Insert(string source, ReportData reportData);
         Task<AttributeInfo> GetAttributeInfo(string source, string dataType);
         Task Delete(string source, int id);
+        Task Merge(string source, ReportData reportData);
     }
 }

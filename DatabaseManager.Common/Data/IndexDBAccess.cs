@@ -56,5 +56,10 @@ namespace DatabaseManager.Common.Data
 
         public Task UpdateIndex(IndexModel indexModel, string connectionString) =>
             _dp.SaveData("dbo.spUpdateIndex", new {indexModel.IndexId, indexModel.QC_String, indexModel.JsonDataObject}, connectionString);
+
+        public Task InsertSingleIndex(IndexModel indexModel, string parentid, string connectionString)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

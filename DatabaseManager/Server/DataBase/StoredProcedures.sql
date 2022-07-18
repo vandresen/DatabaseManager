@@ -111,7 +111,7 @@ BEGIN
 	SET @indexNode = (Select IndexNode from pdo_qc_index where IndexId = @id)
     Select 
 	INDEXID, IndexNode.ToString() AS TextIndexNode, INDEXLEVEL, 
-	DATANAME, DATATYPE, DATAKEY, QC_STRING, JSONDATAOBJECT 
+	DATANAME, DATATYPE, DATAKEY, QC_STRING, JSONDATAOBJECT, Latitude, Longitude 
 	from pdo_qc_index
 	WHERE IndexNode.IsDescendantOf(@indexNode) = 1
 END
