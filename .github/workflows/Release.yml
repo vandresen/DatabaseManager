@@ -81,7 +81,7 @@ jobs:
       - name: Archive ServerlessUI content
         uses: thedoctor0/zip-release@master
         with:
-          path: serverlesui
+          directory: serverlesui
           filename: ServerlessUI.zip
       - name: Upload ServerlessUI release asset
         uses: actions/upload-release-asset@v1
@@ -103,7 +103,7 @@ jobs:
       - name: Archive HostedServer content
         uses: thedoctor0/zip-release@master
         with:
-          path: hostedserver
+          directory: hostedserver
           filename: HostedServer.zip
       - name: Upload HostedServer release asset
         uses: actions/upload-release-asset@v1
