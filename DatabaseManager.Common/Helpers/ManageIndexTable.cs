@@ -21,13 +21,13 @@ namespace DatabaseManager.Common.Helpers
         private DataTable indexTable;
         private string _connectionString;
         private List<IndexModel> idxList;
-        private IndexAccess idxAccess;
         private readonly IDapperDataAccess _dp;
         private readonly IIndexDBAccess _indexData;
 
         public ManageIndexTable()
         {
             qcFlags = new QcFlags();
+            _indexData = new IndexDBAccess();
         }
 
         public ManageIndexTable(string connectionString)
@@ -41,8 +41,8 @@ namespace DatabaseManager.Common.Helpers
             string dataType = "", string qcRule = "")
         {
             _accessDefs = accessDefs;
-            IndexAccess idxAccess = new IndexAccess();
-            string select = idxAccess.GetSelectSQL();
+            _indexData = new IndexDBAccess();
+            string select = _indexData.GetSelectSQL();
             if (!string.IsNullOrEmpty(dataType))
             {
                 select = select + $" where DATATYPE = '{dataType}'";
@@ -83,14 +83,13 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        public void SaveQCFlagDapper()
+        public async void SaveQCFlagDapper()
         {
-            idxAccess = new IndexAccess();
             foreach (var idx in idxList)
             {
                 idx.QC_String = qcFlags[idx.IndexId];
             }
-            idxAccess.UpdateDataQCFlags(_connectionString, idxList);
+            await _indexData.UpdateIndexes(idxList, _connectionString);
         }
 
         public void SaveQCFlags()

@@ -32,6 +32,7 @@ namespace DatabaseManager.Common.Helpers
         private DbUtilities _dbConn;
         private ManageIndexTable manageQCFlags;
         private readonly IDapperDataAccess _dp;
+        private readonly IADODataAccess _db;
         private readonly IIndexDBAccess _indexData;
 
         public DataQC(string azureConnectionString)
@@ -43,7 +44,8 @@ namespace DatabaseManager.Common.Helpers
             _fileStorage.SetConnectionString(azureConnectionString);
             _dbConn = new DbUtilities();
             _dp = new DapperDataAccess();
-            _indexData = new IndexDBAccess(_dp);
+            _db = new ADODataAccess();
+            _indexData = new IndexDBAccess(_dp, _db);
         }
 
         public async Task<List<QcResult>> GetResults(string source)
@@ -51,13 +53,11 @@ namespace DatabaseManager.Common.Helpers
             List<QcResult> result = new List<QcResult>();
             ConnectParameters connector = await GetConnector(source);
             RuleManagement rules = new RuleManagement(_azureConnectionString);
-            IndexAccess idxAccess = new IndexAccess();
             string jsonString = await rules.GetActiveRules(connector.SourceName);
             result = JsonConvert.DeserializeObject<List<QcResult>>(jsonString);
             foreach (QcResult qcItem in result)
             {
-                string query = $" where QC_STRING like '%{qcItem.RuleKey};%'";
-                qcItem.Failures = idxAccess.IndexCountByQuery(query, connector.ConnectionString);
+                qcItem.Failures = await _indexData.GetCount(connector.ConnectionString, qcItem.RuleKey);
             }
             return result;
         }
@@ -79,13 +79,11 @@ namespace DatabaseManager.Common.Helpers
             List<QcResult> qcResult = new List<QcResult>();
             ConnectParameters connector = await GetConnector(qcParms.DataConnector);
             RuleManagement rules = new RuleManagement(_azureConnectionString);
-            IndexAccess idxAccess = new IndexAccess();
             string jsonString = await rules.GetActiveQCRules(connector.SourceName);
             qcResult = JsonConvert.DeserializeObject<List<QcResult>>(jsonString);
             foreach (QcResult qcItem in qcResult)
             {
-                string query = $" where QC_STRING like '%{qcItem.RuleKey};%'";
-                qcItem.Failures = idxAccess.IndexCountByQuery(query, connector.ConnectionString);
+                qcItem.Failures = await _indexData.GetCount(connector.ConnectionString, qcItem.RuleKey);
             }
             return qcResult;
         }
@@ -112,8 +110,7 @@ namespace DatabaseManager.Common.Helpers
             try
             {
                 ConnectParameters connector = await GetConnector(source);
-                IndexAccess idxAccess = new IndexAccess();
-                idxAccess.ClearAllQCFlags(connector.ConnectionString);
+                _indexData.ClearAllQCFlags(connector.ConnectionString);
             }
             catch (Exception ex)
             {

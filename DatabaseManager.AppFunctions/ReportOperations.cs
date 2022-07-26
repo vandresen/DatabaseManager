@@ -88,7 +88,7 @@ namespace DatabaseManager.AppFunctions
                 DataQCParameters qcParms = new DataQCParameters();
                 qcParms.DataConnector = source;
                 List<QcResult> qcResults = new List<QcResult>();
-                qcResults = await qc.GetQCRules(qcParms);
+                qcResults = await qc.GetResults(qcParms.DataConnector);
                 jsonResult = JsonConvert.SerializeObject(qcResults, Formatting.Indented);
             }
             catch (Exception ex)

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DatabaseManager.Common.Data;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
@@ -21,6 +22,7 @@ namespace DatabaseManager.Common.Helpers
         private readonly string _sqlRootPath;
         private readonly IFileStorageServiceCommon _fileStorage;
         private DbUtilities _dbConn;
+        private readonly IIndexDBAccess _indexData;
 
         public DataModelManagement(string azureConnectionString, string sqlRootPath)
         {
@@ -31,6 +33,7 @@ namespace DatabaseManager.Common.Helpers
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
             _fileStorage.SetConnectionString(azureConnectionString);
             _dbConn = new DbUtilities();
+            _indexData = new IndexDBAccess();
         }
 
         public async Task DataModelCreate(DataModelParameters dmParameters)
@@ -194,9 +197,8 @@ namespace DatabaseManager.Common.Helpers
             BuildGetProcedure(dbConn, type, functionDef);
             BuildGetProcedureWithId(dbConn, type, functionDef);
 
-            IndexAccess ia = new IndexAccess();
             type = "Index";
-            DataAccessDef indexDef = ia.GetDataAccessDefinition();
+            DataAccessDef indexDef = _indexData.GetDataAccessDefinition();
             BuildGetProcedure(dbConn, type, indexDef);
             BuildGetProcedureWithQcString(dbConn, indexDef);
             BuildGetProcedureWithAttributeQuery(dbConn, type, "INDEXNODE", indexDef);

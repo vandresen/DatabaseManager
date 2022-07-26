@@ -41,7 +41,6 @@ namespace DatabaseManager.Server.Controllers
                 DataQC qc = new DataQC(tmpConnString);
                 DataQCParameters qcParms = new DataQCParameters();
                 qcParms.DataConnector = source;
-                //qcResults = await qc.GetQCRules(qcParms);
                 results = await qc.GetResults(source);
             }
             catch (Exception ex)

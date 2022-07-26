@@ -55,12 +55,9 @@ namespace DatabaseManager.Common.Helpers
             RuleManagement rules = new RuleManagement(_azureConnectionString);
             string jsonString = await rules.GetActivePredictionRules(source);
             predictionResults = JsonConvert.DeserializeObject<List<PredictionCorrection>>(jsonString);
-
-            IndexAccess idxAccess = new IndexAccess();
             foreach (PredictionCorrection predItem in predictionResults)
             {
-                string query = $" where QC_STRING like '%{predItem.RuleKey};%'";
-                predItem.NumberOfCorrections = idxAccess.IndexCountByQuery(query, connector.ConnectionString);
+                predItem.NumberOfCorrections = await _indexData.GetCount(connector.ConnectionString, predItem.RuleKey);
             }
             return predictionResults;
         }
@@ -188,7 +185,7 @@ namespace DatabaseManager.Common.Helpers
         {
             if (result.SaveType == "Update")
             {
-                UpdateAction(result, qcStr);
+                await UpdateAction(result, qcStr);
             }
             else if (result.SaveType == "Insert")
             {
@@ -204,12 +201,11 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        private void UpdateAction(PredictionResult result, string qcStr)
+        private async Task UpdateAction(PredictionResult result, string qcStr)
         {
             string idxQuery = $" where INDEXID = {result.IndexId}";
-            IndexAccess idxAccess = new IndexAccess();
-            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(idxQuery, databaseConnectionString);
-            if (idxResults.Count == 1)
+            IndexModel idxResult = await _indexData.GetIndex(result.IndexId, databaseConnectionString);
+            if (idxResult != null)
             {
                 string condition = $"INDEXID={result.IndexId}";
                 var rows = indexTable.Select(condition);
@@ -224,7 +220,7 @@ namespace DatabaseManager.Common.Helpers
                     dataObject["ROW_CHANGED_BY"] = Environment.UserName;
                     jsonDataObject = dataObject.ToString();
                     jsonDataObject = Helpers.Common.SetJsonDataObjectDate(jsonDataObject, "ROW_CHANGED_DATE");
-                    string dataType = idxResults[0].DataType;
+                    string dataType = idxResult.DataType;
                     try
                     {
                         _dbConn.UpdateDataObject(jsonDataObject, dataType);
@@ -313,7 +309,7 @@ namespace DatabaseManager.Common.Helpers
                 string jsonData = result.DataObject;
                 double latitude = -99999.0;
                 double longitude = -99999.0;
-                int nodeId = GeIndextNode(dataType, parentId);
+                int nodeId = await GeIndextNode(dataType, parentId);
                 if (nodeId > 0) _dbConn.InsertIndex(nodeId, dataName, dataType, dataKey, jsonData, latitude, longitude);
             }
         }
@@ -338,17 +334,16 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        private int GeIndextNode(string dataType, int parentid)
+        private async Task<int> GeIndextNode(string dataType, int parentid)
         {
             int nodeid = 0;
             string nodeName = dataType + "s";
             string query = $" where INDEXID = {parentid}";
-            IndexAccess idxAccess = new IndexAccess();
-            List<IndexModel> idxResults = idxAccess.SelectIndexesByQuery(query, databaseConnectionString);
-            if (idxResults.Count == 1)
+            IndexModel idxResult = await _indexData.GetIndex(parentid, databaseConnectionString);
+            if (idxResult != null)
             {
-                string indexNode = idxResults[0].TextIndexNode;
-                int indexLevel = idxResults[0].IndexLevel + 1;
+                string indexNode = idxResult.TextIndexNode;
+                int indexLevel = idxResult.IndexLevel + 1;
                 string strProcedure = $"EXEC spGetNumberOfDescendants '{indexNode}', {indexLevel}";
                 query = "";
                 DataTable idx = _dbConn.GetDataTable(strProcedure, query);

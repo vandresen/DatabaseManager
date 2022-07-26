@@ -33,6 +33,19 @@ namespace DatabaseManager.Common.DBAccess
             }
         }
 
+        public void ExecuteSQL(string sql, string connectionString)
+        {
+            SqlConnection conn = null;
+            using (conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                cmd.CommandTimeout = _sqlTimeOut;
+                cmd.ExecuteNonQuery();
+                conn.Close();
+            }
+        }
+
         public DataTable GetDataTable(string sql, string connectionString)
         {
             SqlConnection conn = null;

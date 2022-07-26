@@ -85,7 +85,9 @@ GO
 CREATE PROC spGetIndexFromId (@id int)
 AS
 BEGIN
-	select * from pdo_qc_index where IndexId = @id
+	select IndexId, IndexNode.ToString() AS TextIndexNode, IndexLevel, DataName, DataType, DataKey, QC_String, UniqKey, JsonDataObject, Latitude, Longitude 
+	from pdo_qc_index 
+	where IndexId = @id
 END
 GO
 
