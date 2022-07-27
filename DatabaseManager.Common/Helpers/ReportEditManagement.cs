@@ -78,9 +78,14 @@ namespace DatabaseManager.Common.Helpers
             {
                 dataObject[reportData.ColumnName] = reportData.NumberValue;
             }
-            else if (reportData.ColumnType == "string")
+            else if (reportData.ColumnType == "text")
             {
                 dataObject[reportData.ColumnName] = reportData.TextValue;
+            }
+            else
+            {
+                Exception error = new Exception($"ReportEditManagement: Column type {reportData.ColumnType} not supported");
+                throw error;
             }
             string remark = dataObject["REMARK"] + $";{reportData.ColumnName} has been manually edited;";
             dataObject["REMARK"] = remark;

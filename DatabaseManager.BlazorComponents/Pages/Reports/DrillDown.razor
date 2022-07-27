@@ -152,8 +152,18 @@ else
 
     private async void ItemHasBeenCommitted(object item)
     {
-        Console.WriteLine($"RowEditCommit event: Changes to Element {((ReportData)item).Key} committed");
-        await re.Update(singleton.TargetConnector, (ReportData)item);
+        try
+        {
+            Console.WriteLine($"RowEditCommit event: Changes to Element {((ReportData)item).Key} committed");
+            await re.Update(singleton.TargetConnector, (ReportData)item);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+            string errorMessage = "Error committing data";
+            if (ex.ToString().Contains("FOREIGN KEY constraint")) errorMessage = errorMessage + ", foreign key constraint";
+            await displayMessage.DisplayErrorMessage(errorMessage);
+        }
     }
 
     private async Task Delete(int id)
@@ -221,6 +231,12 @@ else
             string key = item.DataKey;
             string value = "";
             double number = 0.0;
+            JObject dataObject = JObject.Parse(item.JsonData);
+            value = dataObject[columnName].ToString();
+            if (valueType == "number")
+            {
+                number = value.GetDoubleFromString();
+            }
             reportList.Add(new ReportData
             {
                 Id = item.Id,

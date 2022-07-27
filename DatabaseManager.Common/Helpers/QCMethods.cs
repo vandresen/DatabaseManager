@@ -255,5 +255,60 @@ namespace DatabaseManager.Common.Helpers
             }
             return returnStatus;
         }
+
+        public static string IsEqualTo(QcRuleSetup qcSetup, DataTable dt, List<DataAccessDef> accessDefs, IIndexDBAccess indexData)
+        {
+            string returnStatus = "Passed";
+            string error = "";
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+            IsEqualToParameters parms = new IsEqualToParameters();
+            string[] values = new string[] { "" };
+            if (string.IsNullOrEmpty(rule.RuleParameters))
+            {
+                //log.Warning($"Missing rule parameter");
+            }
+            else
+            {
+                try
+                {
+                    parms = JsonConvert.DeserializeObject<IsEqualToParameters>(rule.RuleParameters);
+                    char delim = ',';
+                    if (!string.IsNullOrEmpty(parms.Delimiter))
+                    {
+                        if (parms.Delimiter.Length == 1)
+                        {
+                            delim = char.Parse(parms.Delimiter);
+                        }
+                    }
+                    if (!string.IsNullOrEmpty(parms.Value))
+                    {
+                        values = parms.Value.Split(delim);
+                    }    
+                }
+                catch (Exception ex)
+                {
+                    error = $"Bad parameter Json, {ex}";
+                }
+            }
+            JObject dataObject = JObject.Parse(qcSetup.DataObject);
+            JToken value = dataObject.GetValue(rule.DataAttribute);
+            if (value == null)
+            {
+                //log.Warning($"Attribute is Null");
+            }
+            else
+            {
+                returnStatus = "Failed";
+                string strValue = value.ToString().Trim();
+                foreach (string item in values)
+                {
+                    if (strValue == item.Trim())
+                    {
+                        returnStatus = "Passed";
+                    }
+                }
+            }
+            return returnStatus;
+        }
     }
 }

@@ -107,6 +107,7 @@ The following validity methods are available:
 * CurveSpikes
 * IsNumber
 * StringLength
+* IsEqualTo
 
 ##### ValidityRange
 Checks that the data attribute is within a minimum and/or maximum value. The
@@ -129,6 +130,13 @@ Arguments:
 * Min: This sets the minimum number of characters for the specified attribute. Default is 20.
 * Max: This sets the maximum number of characters for the specified attribute. Default is 20.
 
+#### IsEqualTo
+Checks that the data attribute is equal to the specified value. If the data attribute is not 
+equal to the specified value, then this rule fails. If entering more than one specified value, 
+values can be separated using a delimiter.
+Arguments:
+* Value: Accepted value(s)
+* Delimiter: A delimiter to separate the accepted values. Default is ,. 
 
 #### Predictions
 Prediction rules use QC rules to make automated predictions for correcting 

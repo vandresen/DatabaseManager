@@ -97,9 +97,12 @@ namespace DatabaseManager.Common.Helpers
 
             ManageIndexTable mit = new ManageIndexTable(connector.ConnectionString);
             List<DmsIndex> indexList = await mit.GetQcOrPredictionsFromIndex(rule.RuleKey);
-            foreach (var index in indexList)
+            if (rule.RuleType == "Uniqueness")
             {
-                index.UniqKey = index.JsonData.GetUniqKey(rule);
+                foreach (var index in indexList)
+                {
+                    index.UniqKey = index.JsonData.GetUniqKey(rule);
+                }
             }
             string result = JsonConvert.SerializeObject(indexList);
             return result;

@@ -30,6 +30,12 @@ namespace DatabaseManager.Common.Helpers
             public int Max { get; set; }
         }
 
+        public class IsEqualToParameters
+        {
+            public string Value { get; set; }
+            public string Delimiter { get; set; }
+        }
+
         public class ConsistencyParameters
         {
             public string Source { get; set; }

@@ -20,5 +20,16 @@ namespace DatabaseManager.BlazorComponents.Extensions
             if (url.EndsWith("&")) url = url.Substring(0, url.Length - 1);
             return url;
         }
+
+        public static double GetDoubleFromString(this string token)
+        {
+            double number = 0.0;
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                double value;
+                if (double.TryParse(token, out value)) number = value;
+            }
+            return number;
+        }
     }
 }
