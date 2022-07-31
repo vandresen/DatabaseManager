@@ -1,4 +1,6 @@
-﻿using DatabaseManager.Common.Services;
+﻿using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
+using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
@@ -14,6 +16,7 @@ namespace DatabaseManager.Common.Helpers
         private readonly IFileStorageServiceCommon _fileStorage;
         private readonly string _azureConnectionString;
         private IndexBuilder iBuilder;
+        private readonly IADODataAccess _db;
 
         public Indexer(string azureConnectionString)
         {
@@ -23,6 +26,7 @@ namespace DatabaseManager.Common.Helpers
             _fileStorage.SetConnectionString(azureConnectionString);
             iBuilder = new IndexBuilder();
             _azureConnectionString = azureConnectionString;
+            _db = new ADODataAccess();
         }
 
         public async Task<int> Initialize(ConnectParameters target, ConnectParameters source, string taxonomyFile, string filter)
@@ -31,7 +35,7 @@ namespace DatabaseManager.Common.Helpers
             int parentNodes = 0;
             if (source.SourceType == "DataBase")
             {
-                iBuilder = new IndexBuilder(new DBDataAccess());
+                iBuilder = new IndexBuilder(new DBDataAccess(_db));
             }
             else
             {

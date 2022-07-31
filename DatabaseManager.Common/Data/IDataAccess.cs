@@ -5,7 +5,7 @@ using System.Data;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DatabaseManager.Common.Services
+namespace DatabaseManager.Common.Data
 {
     public interface IDataAccess
     {

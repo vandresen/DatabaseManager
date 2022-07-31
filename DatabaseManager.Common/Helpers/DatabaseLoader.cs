@@ -57,10 +57,6 @@ namespace DatabaseManager.Common.Helpers
         {
             IADODataAccess db = new ADODataAccess();
             db.Delete(table, connectString);
-            //DbUtilities dbConn = new DbUtilities();
-            //dbConn.OpenWithConnectionString(connectString);
-            //dbConn.DBDelete(table);
-            //dbConn.CloseConnection();
         }
 
         private void ProcessReferenceTables(string table, SqlConnection source, SqlConnection destination)

@@ -1,4 +1,5 @@
-﻿using DatabaseManager.Common.Helpers;
+﻿using DatabaseManager.Common.DBAccess;
+using DatabaseManager.Common.Helpers;
 using DatabaseManager.Shared;
 using System;
 using System.Collections.Generic;
@@ -6,31 +7,32 @@ using System.Data;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DatabaseManager.Common.Services
+namespace DatabaseManager.Common.Data
 {
     public class DBDataAccess : IDataAccess
     {
-        private DbUtilities dbConn;
+        private readonly IADODataAccess _db;
+        private string databaseConnectionString;
 
-        public DBDataAccess()
+        public DBDataAccess(IADODataAccess db)
         {
-            dbConn = new DbUtilities();
+            _db = db;
         }
 
         public void CloseConnection()
         {
-            dbConn.CloseConnection();
         }
 
         public async Task<DataTable> GetDataTable(string select, string query, string dataType)
         {
-            DataTable dt = dbConn.GetDataTable(select, query);
+            string sql = select + query;
+            DataTable dt = _db.GetDataTable(sql, databaseConnectionString);
             return dt;
         }
 
         public void OpenConnection(ConnectParameters source, ConnectParameters target)
         {
-            dbConn.OpenConnection(source);
+            databaseConnectionString = source.ConnectionString;
         }
     }
 }

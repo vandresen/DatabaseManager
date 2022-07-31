@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using DatabaseManager.Common.Data;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Extensions;
 using DatabaseManager.Common.Services;
@@ -180,7 +181,6 @@ namespace DatabaseManager.Common.Helpers
                 {
                     _currentItem.DataTable = await sourceAccess.GetDataTable(select, query, _currentItem.DataName);
                 }
-                //_currentItem.DataTable = dbConn.GetDataTable(select, query); 
             }
         }
 

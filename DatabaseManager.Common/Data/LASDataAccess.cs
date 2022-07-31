@@ -1,4 +1,5 @@
 ﻿using DatabaseManager.Common.Helpers;
+using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Data;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DatabaseManager.Common.Services
+namespace DatabaseManager.Common.Data
 {
     public class LASDataAccess : IDataAccess
     {
