@@ -1,3 +1,4 @@
 New functionality are:
-* New Validity rule called StringLength that will check if the lenght is between min and max set by the user
-* When data transfer from a database then the system will not copy the field and operator tables. These are being populated from the wells transferred. This functionality is hardcoded for now
+* Implemented a new validity rule call IsEqualTo. It will fail if a value is not equal to a list of values.
+* Created a new Report view that shows rules failed by a Uniqueness rule. It also shows the Uniqueness key.
+* Added a button in the new Uniqueness view to merge data object with the same uniqueness key. 
