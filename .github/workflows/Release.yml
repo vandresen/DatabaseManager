@@ -42,7 +42,7 @@ jobs:
       - name: Upload ServerlessUI Build Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ServerlesUI
+          name: ServerlessUI
           path: D:\a\DatabaseManager\DatabaseManager\DatabaseManager.ServerLessClient\bin\Debug\net6.0\publish\
           
       - name: Upload Hosted Server Build Artifact
@@ -71,17 +71,17 @@ jobs:
           release_name: Release V${{ github.event.inputs.versionNumber }}
           body_path: "./CHANGELOG.md"
           
-      - name: Download site content ServerlesUI
+      - name: Download site content ServerlessUI
         uses: actions/download-artifact@v2
         with:
-          name: ServerlesUI
-          path: serverlesui
+          name: ServerlessUI
+          path: serverlessui
       - name: View ServerlessUI content
-        run: dir serverlesui
+        run: dir serverlessui
       - name: Archive ServerlessUI content
         uses: thedoctor0/zip-release@master
         with:
-          directory: serverlesui
+          directory: serverlessui
           filename: ServerlessUI.zip
       - name: Upload ServerlessUI release asset
         uses: actions/upload-release-asset@v1
