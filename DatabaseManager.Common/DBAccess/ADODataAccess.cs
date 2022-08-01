@@ -28,6 +28,7 @@ namespace DatabaseManager.Common.DBAccess
                 conn.Open();
                 sqlCmd.Connection = conn;
                 sqlCmd.CommandType = CommandType.StoredProcedure;
+                sqlCmd.CommandTimeout = _sqlTimeOut;
                 sqlCmd.Parameters.AddWithValue(paramName, table);
                 sqlCmd.ExecuteNonQuery();
             }
@@ -76,6 +77,7 @@ namespace DatabaseManager.Common.DBAccess
                 SqlCommand sqlCmd = new SqlCommand(storedProcedure);
                 conn.Open();
                 sqlCmd.Connection = conn;
+                sqlCmd.CommandTimeout = _sqlTimeOut;
                 sqlCmd.CommandType = CommandType.StoredProcedure;
                 sqlCmd.Parameters.Add(param);
                 sqlCmd.ExecuteNonQuery();
