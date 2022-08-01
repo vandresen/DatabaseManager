@@ -24,6 +24,7 @@ namespace DatabaseManager.Common.Helpers
         private readonly IFileStorageServiceCommon _fileStorage;
         private readonly IAzureDataAccess _azureDataTables;
         private readonly IRuleData _ruleData;
+        private readonly ISystemData _systemData;
         private readonly IFunctionData _functionData;
         private readonly IPredictionSetData _predictionSetData;
         private readonly IDapperDataAccess _dp;
@@ -56,6 +57,7 @@ namespace DatabaseManager.Common.Helpers
             _dp = new DapperDataAccess();
             _db = new ADODataAccess();
             _ruleData = new RuleData(_dp, _db);
+            _systemData = new SystemDBData(_dp);
             _functionData = new FunctionData(_dp);
             _dbConn = new DbUtilities();
         }
@@ -283,7 +285,17 @@ namespace DatabaseManager.Common.Helpers
             else
             {
                 rule.Id = id;
-                UpdateRule(rule, connector.ConnectionString);
+                string userName = await _systemData.GetUserName(connector.ConnectionString);
+                rule.ModifiedBy = userName;
+                string json = JsonConvert.SerializeObject(rule, Formatting.Indented);
+                json = Common.SetJsonDataObjectDate(json, "ModifiedDate");
+                using (IDbConnection cnn = new SqlConnection(connector.ConnectionString))
+                {
+                    var p = new DynamicParameters();
+                    p.Add("@json", json);
+                    string sql = "dbo.spUpdateRules";
+                    int recordsAffected = cnn.Execute(sql, p, commandType: CommandType.StoredProcedure);
+                }
             }
         }
 
@@ -402,21 +414,6 @@ namespace DatabaseManager.Common.Helpers
                 function = functions.FirstOrDefault();
             }
             return function;
-        }
-
-        private void UpdateRule(RuleModel rule, string connectionString)
-        {
-            string userName = CommonDbUtilities.GetUsername(connectionString);
-            rule.ModifiedBy = userName;
-            string json = JsonConvert.SerializeObject(rule, Formatting.Indented);
-            json = Common.SetJsonDataObjectDate(json, "ModifiedDate");
-            using (IDbConnection cnn = new SqlConnection(connectionString))
-            {
-                var p = new DynamicParameters();
-                p.Add("@json", json);
-                string sql = "dbo.spUpdateRules";
-                int recordsAffected = cnn.Execute(sql, p, commandType: CommandType.StoredProcedure);
-            }
         }
 
         private async Task InsertRule(RuleModel rule, string connectionString)
