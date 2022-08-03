@@ -1,5 +1,7 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
+using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Extensions;
 using DatabaseManager.Common.Services;
@@ -34,12 +36,16 @@ namespace DatabaseManager.Common.Helpers
         private readonly IFileStorageServiceCommon fileStorageService;
         private List<dynamic> newCsvRecords = new List<dynamic>();
         private HashSet<string> hashSet = new HashSet<string>();
-        private ColumnProperties attributeProperties;
+        //private ColumnProperties attributeProperties;
+        IEnumerable<TableSchema> attributeProperties;
+        private readonly ISystemData _systemData;
+        private readonly IDapperDataAccess _dp;
 
         public CSVLoader(IFileStorageServiceCommon fileStorageService)
         {
             this.fileStorageService = fileStorageService;
-
+            _dp = new DapperDataAccess();
+            _systemData = new SystemDBData(_dp);
         }
 
         public async Task<DataTable> GetCSVTable(ConnectParameters source, ConnectParameters target, string indexDataType)
@@ -169,11 +175,9 @@ namespace DatabaseManager.Common.Helpers
             Dictionary<string, string> constants = csvAccess.Constants.ToStringDictionary();
             Dictionary<string, string> columnTypes = dt.GetColumnTypes();
 
-            DbUtilities dbConn = new DbUtilities();
-            dbConn.OpenWithConnectionString(connectionString);
             string dataTypeSql = dataAccess.Select;
-            attributeProperties = CommonDbUtilities.GetColumnSchema(dbConn, dataTypeSql);
-            dbConn.CloseConnection();
+            string table = Common.GetTable(dataTypeSql);
+            attributeProperties = await _systemData.GetColumnSchema(connectionString, table);
 
             //Console.WriteLine("Start parsing csv file");
             using (TextReader csvStream = new StringReader(csvText))
@@ -208,10 +212,10 @@ namespace DatabaseManager.Common.Helpers
                             {
                                 string dbAttribute = attributeMappings[item.Key];
                                 string value = item.Value;
-                                string dataProperty = attributeProperties[dbAttribute];
-                                if (dataProperty.Contains("varchar"))
+                                TableSchema dataProperty = attributeProperties.FirstOrDefault(x => x.COLUMN_NAME == dbAttribute);
+                                if (dataProperty.DATA_TYPE.Contains("varchar"))
                                 {
-                                    string numberString = Regex.Match(dataProperty, @"\d+").Value;
+                                    string numberString = Regex.Match(dataProperty.CHARACTER_MAXIMUM_LENGTH, @"\d+").Value;
                                     int maxCharacters = Int32.Parse(numberString);
                                     if (value.Length > maxCharacters)
                                     {
@@ -571,7 +575,6 @@ namespace DatabaseManager.Common.Helpers
             foreach (ReferenceTable refTable in dataTypeRefs)
             {
                 string column = refTable.ReferenceAttribute;
-                string dataProperty = attributeProperties[column];
                 string valueAttribute = refTable.ValueAttribute;
                 if (dt.Columns.Contains(column))
                 {
@@ -626,14 +629,14 @@ namespace DatabaseManager.Common.Helpers
             string comma = "";
             foreach (string colName in columnNames)
             {
-                string dataProperty = attributeProperties[colName];
-                if (dataProperty.Contains("varchar"))
+                TableSchema dataProperty = attributeProperties.FirstOrDefault(x => x.COLUMN_NAME == colName.Trim());
+                if (dataProperty.DATA_TYPE.Contains("varchar"))
                 {
                     updateSql = updateSql + comma + colName + " = B." + colName;
                 }
                 else
                 {
-                    updateSql = updateSql + comma + colName + " = TRY_CAST(B." + colName + " as " + dataProperty + ")";
+                    updateSql = updateSql + comma + colName + " = TRY_CAST(B." + colName + " as " + dataProperty.GetDatabaseAttributeType() + ")";
                 }
                 comma = ",";
             }
@@ -645,15 +648,15 @@ namespace DatabaseManager.Common.Helpers
             comma = "";
             foreach (string colName in columnNames)
             {
-                string dataProperty = attributeProperties[colName];
+                TableSchema dataProperty = attributeProperties.FirstOrDefault(x => x.COLUMN_NAME == colName.Trim());
                 insertSql = insertSql + comma + colName;
-                if (dataProperty.Contains("varchar"))
+                if (dataProperty.DATA_TYPE.Contains("varchar"))
                 {
                     valueSql = valueSql + comma + " B." + colName;
                 }
                 else
                 {
-                    valueSql = valueSql + comma + " TRY_CAST(B." + colName + " as " + dataProperty + ")";
+                    valueSql = valueSql + comma + " TRY_CAST(B." + colName + " as " + dataProperty.GetDatabaseAttributeType() + ")";
                 }
                 comma = ",";
             }

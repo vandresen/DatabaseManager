@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
+using DatabaseManager.Common.Extensions;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Extensions.Configuration;
@@ -23,6 +25,8 @@ namespace DatabaseManager.Common.Helpers
         private readonly IFileStorageServiceCommon _fileStorage;
         private DbUtilities _dbConn;
         private readonly IIndexDBAccess _indexData;
+        private readonly IDapperDataAccess _dp;
+        private readonly ISystemData _systemData;
 
         public DataModelManagement(string azureConnectionString, string sqlRootPath)
         {
@@ -32,8 +36,10 @@ namespace DatabaseManager.Common.Helpers
             IConfiguration configuration = builder.Build();
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
             _fileStorage.SetConnectionString(azureConnectionString);
+            _dp = new DapperDataAccess();
             _dbConn = new DbUtilities();
             _indexData = new IndexDBAccess();
+            _systemData = new SystemDBData(_dp);
         }
 
         public async Task DataModelCreate(DataModelParameters dmParameters)
@@ -100,8 +106,8 @@ namespace DatabaseManager.Common.Helpers
                 }
 
                 await CreateGetStoredProcedure(dbConn);
-                await CreateInsertStoredProcedure(dbConn);
-                await CreateUpdateStoredProcedure(dbConn);
+                await CreateInsertStoredProcedure(dbConn, connector.ConnectionString);
+                await CreateUpdateStoredProcedure(dbConn, connector.ConnectionString);
 
                 dbConn.CloseConnection();
             }
@@ -127,7 +133,7 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        private void CreateUserDefinedTypes(DbUtilities dbConn, ColumnProperties attributeProperties, string sql, string dataType)
+        private void CreateUserDefinedTypes(DbUtilities dbConn, IEnumerable<TableSchema> attributeProperties, string sql, string dataType)
         {
             string[] tableAttributes = Common.GetAttributes(sql);
             string comma = "";
@@ -135,8 +141,8 @@ namespace DatabaseManager.Common.Helpers
             foreach (var word in tableAttributes)
             {
                 string attribute = word.Trim();
-                string dataProperty = attributeProperties[attribute];
-                attributes = attributes + comma + attribute + " " + dataProperty;
+                TableSchema dataProperty = attributeProperties.FirstOrDefault(x => x.COLUMN_NAME == attribute);
+                attributes = attributes + comma + attribute + " " + dataProperty.GetDatabaseAttributeType();
                 comma = ",";
             }
             string sqlCommand = $"CREATE TYPE [dbo].[UDT{dataType}] AS TABLE ( ";
@@ -277,25 +283,26 @@ namespace DatabaseManager.Common.Helpers
             dbConn.SQLExecute(sqlCommand);
         }
 
-        private async Task CreateInsertStoredProcedure(DbUtilities dbConn)
+        private async Task CreateInsertStoredProcedure(DbUtilities dbConn, string connectionString)
         {
             List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
             var dataTypes = accessDefs.Select(s => s.DataType).Where(s => s != "Index").ToList();
             foreach(string dataType in dataTypes)
             {
                 DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
-                BuildInsertProcedure(dbConn, dataType, accessDef);
+                await BuildInsertProcedure(dbConn, dataType, accessDef, connectionString);
             }
             RuleManagement rm = new RuleManagement();
             string type = "Rules";
             DataAccessDef ruleDef = rm.GetDataAccessDefinition(type);
-            BuildInsertWithUDTProcedure(dbConn, type, ruleDef);
+            await BuildInsertWithUDTProcedure(dbConn, type, ruleDef, connectionString);
             type = "Functions";
             DataAccessDef functionDef = rm.GetDataAccessDefinition(type);
-            BuildInsertProcedure(dbConn, type, functionDef);
+            await BuildInsertProcedure(dbConn, type, functionDef, connectionString);
         }
 
-        private void BuildInsertWithUDTProcedure(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
+        private async Task BuildInsertWithUDTProcedure(DbUtilities dbConn, string dataType, 
+            DataAccessDef accessDef, string connectionString)
         {
             string sqlCommand = $"DROP PROCEDURE IF EXISTS spInsert{dataType}; ";
             sqlCommand = sqlCommand + $"DROP TYPE IF EXISTS[dbo].[UDT{dataType}];";
@@ -304,7 +311,7 @@ namespace DatabaseManager.Common.Helpers
             sqlCommand = "";
             string sql = accessDef.Select;
             string table = Common.GetTable(sql);
-            ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(dbConn, sql);
+            IEnumerable<TableSchema> attributeProperties = await _systemData.GetColumnSchema(connectionString, table);
             string[] tableAttributes = Common.GetAttributes(sql);
             tableAttributes = tableAttributes.Where(w => w != "Id").ToArray();
             CreateUserDefinedTypes(dbConn, attributeProperties, sql, dataType);
@@ -324,7 +331,8 @@ namespace DatabaseManager.Common.Helpers
             dbConn.SQLExecute(sqlCommand);
         }
 
-        private void BuildInsertProcedure(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
+        private async Task BuildInsertProcedure(DbUtilities dbConn, string dataType, 
+            DataAccessDef accessDef, string connectionString)
         {
             string comma;
             string attributes;
@@ -337,7 +345,7 @@ namespace DatabaseManager.Common.Helpers
             string[] keys = accessDef.Keys.Split(',');
 
             string table = Common.GetTable(sql);
-            ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(dbConn, sql);
+            IEnumerable<TableSchema> attributeProperties = await _systemData.GetColumnSchema(connectionString, table);
             string[] tableAttributes = Common.GetAttributes(sql);
             tableAttributes = tableAttributes.Where(w => w != "Id").ToArray();
             
@@ -375,8 +383,8 @@ namespace DatabaseManager.Common.Helpers
             foreach (var word in tableAttributes)
             {
                 string attribute = word.Trim();
-                string dataProperty = attributeProperties[attribute];
-                attributes = attributes + comma + attribute + " " + dataProperty +
+                TableSchema dataProperty = attributeProperties.FirstOrDefault(x => x.COLUMN_NAME == attribute);
+                attributes = attributes + comma + attribute + " " + dataProperty.GetDatabaseAttributeType() +
                     " '$." + attribute + "'";
                 comma = ",";
             }
@@ -387,25 +395,26 @@ namespace DatabaseManager.Common.Helpers
             dbConn.SQLExecute(sqlCommand);
         }
 
-        private async Task CreateUpdateStoredProcedure(DbUtilities dbConn)
+        private async Task CreateUpdateStoredProcedure(DbUtilities dbConn, string connectionString)
         {
             List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
             var dataTypes = accessDefs.Select(s => s.DataType).Where(s => s != "Index").ToList();
             foreach (string dataType in dataTypes)
             {
                 DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
-                BuildUpdateProcedure(dbConn, dataType, accessDef);
+                await BuildUpdateProcedure(dbConn, dataType, accessDef, connectionString);
             }
             RuleManagement rm = new RuleManagement();
             string type = "Rules";
             DataAccessDef ruleDef = rm.GetDataAccessDefinition(type);
-            BuildUpdateProcedure(dbConn, type, ruleDef);
+            await BuildUpdateProcedure(dbConn, type, ruleDef, connectionString);
             type = "Functions";
             DataAccessDef functionDef = rm.GetDataAccessDefinition(type);
-            BuildUpdateProcedure(dbConn, type, functionDef);
+            await BuildUpdateProcedure(dbConn, type, functionDef, connectionString);
         }
 
-        private void BuildUpdateProcedure(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
+        private async Task BuildUpdateProcedure(DbUtilities dbConn, string dataType, 
+            DataAccessDef accessDef, string connectionString)
         {
             string comma;
             string attributes;
@@ -417,7 +426,7 @@ namespace DatabaseManager.Common.Helpers
             string[] keys = accessDef.Keys.Split(',');
 
             string table = Common.GetTable(sql);
-            ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(dbConn, sql);
+            IEnumerable<TableSchema> attributeProperties = await _systemData.GetColumnSchema(connectionString, table);
             string[] tableAttributes = Helpers.Common.GetAttributes(sql);
 
             sqlCommand = sqlCommand + $"CREATE PROCEDURE spUpdate{dataType} ";
@@ -443,8 +452,8 @@ namespace DatabaseManager.Common.Helpers
             foreach (var word in tableAttributes)
             {
                 string attribute = word.Trim();
-                string dataProperty = attributeProperties[attribute];
-                attributes = attributes + comma + attribute + " " + dataProperty +
+                TableSchema dataProperty = attributeProperties.FirstOrDefault(x => x.COLUMN_NAME == attribute);
+                attributes = attributes + comma + attribute + " " + dataProperty.GetDatabaseAttributeType() +
                     " '$." + attribute + "'";
                 comma = ",";
             }

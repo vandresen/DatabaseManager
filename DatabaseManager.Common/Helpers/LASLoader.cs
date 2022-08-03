@@ -1,4 +1,6 @@
-﻿using DatabaseManager.Common.Entities;
+﻿using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
+using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Extensions;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
@@ -54,6 +56,8 @@ namespace DatabaseManager.Common.Helpers
         private readonly IFileStorageServiceCommon fileStorageService;
         private JObject lasAccessJson;
         private LASMappings lasMappings = new LASMappings();
+        private readonly ISystemData _systemData;
+        private readonly IDapperDataAccess _dp;
 
         public LASLoader(IFileStorageServiceCommon fileStorageService)
         {
@@ -61,6 +65,8 @@ namespace DatabaseManager.Common.Helpers
             _nullRepresentation = "-999.25";
             _mnemInfo = new List<LASLine>();
             this.fileStorageService = fileStorageService;
+            _dp = new DapperDataAccess();
+            _systemData = new SystemDBData(_dp);
         }
 
         public async Task<List<string>> GetLASFileNames(string catalog)
@@ -91,7 +97,7 @@ namespace DatabaseManager.Common.Helpers
                 lasSections.Add(ls);
 
                 GetVersionInfo(ls.versionInfo);
-                string json = GetHeaderInfo(ls.wellInfo);
+                string json = await GetHeaderInfo(ls.wellInfo, target.ConnectionString);
                 DataRow row = dt.NewRow();
                 JObject jo = JObject.Parse(json);
                 foreach (JProperty property in jo.Properties())
@@ -122,7 +128,7 @@ namespace DatabaseManager.Common.Helpers
             foreach (LASSections ls in lasSections)
             {
                 GetVersionInfo(ls.versionInfo);
-                string json = GetHeaderInfo(ls.wellInfo);
+                string json = await GetHeaderInfo(ls.wellInfo, target.ConnectionString);
                 _logNames = new List<string>();
                 GetCurveInfo(ls.curveInfo);
                 int logCount = _logNames.Count();
@@ -184,7 +190,7 @@ namespace DatabaseManager.Common.Helpers
             _dbUserName = _dbConn.GetUsername();
 
             GetVersionInfo(ls.versionInfo);
-            string json = GetHeaderInfo(ls.wellInfo);
+            string json = await GetHeaderInfo(ls.wellInfo, target.ConnectionString);
             LoadHeader(json);
             GetCurveInfo(ls.curveInfo);
             GetDataInfo(ls.dataInfo);
@@ -497,14 +503,16 @@ namespace DatabaseManager.Common.Helpers
         }
 
 
-        private string GetHeaderInfo(string wellInfo)
+        private async Task<string> GetHeaderInfo(string wellInfo, string connectionString)
         {
             LASHeaderMappings headMap = new LASHeaderMappings();
             DataAccessDef dataType = _dataDef.First(x => x.DataType == "WellBore");
             string input = null;
             Dictionary<string, string> header = new Dictionary<string, string>();
             string[] attributes = Common.GetAttributes(dataType.Select);
-            ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(_dbConn, dataType.Select);
+            string table = Common.GetTable(dataType.Select);
+            IEnumerable<TableSchema> attributeProperties = await _systemData.GetColumnSchema(connectionString, table);
+            //ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(_dbConn, dataType.Select);
             foreach (string attribute in attributes)
             {
                 header.Add(attribute.Trim(), "");
@@ -557,10 +565,11 @@ namespace DatabaseManager.Common.Helpers
             foreach (string item in attributes)
             {
                 string attribute = item.Trim();
-                string attributeType = attributeProperties[attribute];
-                if (attributeType.Contains("nvarchar"))
+                TableSchema dataProperty = attributeProperties.FirstOrDefault(x => x.COLUMN_NAME == attribute);
+                //string attributeType = attributeProperties[attribute];
+                if (dataProperty.DATA_TYPE.Contains("varchar"))
                 {
-                    int? length = Regex.Match(attributeType, @"\d+").Value.GetIntFromString();
+                    int? length = Regex.Match(dataProperty.CHARACTER_MAXIMUM_LENGTH, @"\d+").Value.GetIntFromString();
                     if (length != null) header[attribute] = header[attribute].Truncate(length.GetValueOrDefault());
                 }
             }

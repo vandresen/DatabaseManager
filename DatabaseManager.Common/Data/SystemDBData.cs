@@ -21,9 +21,18 @@ namespace DatabaseManager.Common.Data
             _dp = dp;
         }
 
-        public Task<ColumnProperties> GetColumnSchema(string connectionString, string table)
+        public async Task<IEnumerable<TableSchema>> GetColumnSchema(string connectionString, string table)
         {
-            throw new NotImplementedException();
+            string sql = $"Select COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, NUMERIC_PRECISION, NUMERIC_SCALE" +
+                  " from INFORMATION_SCHEMA.COLUMNS " +
+                  $" where TABLE_NAME = '{table}'";
+            IEnumerable<TableSchema> result = await _dp.ReadData<TableSchema>(sql, connectionString);
+            if (result == null)
+            {
+                throw new ArgumentException("Table does not exist");
+            }
+
+            return result;
         }
 
         public async Task<string> GetUserName(string connectionString)

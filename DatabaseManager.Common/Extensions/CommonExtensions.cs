@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using DatabaseManager.Common.Entities;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -135,6 +136,26 @@ namespace DatabaseManager.Common.Extensions
             dataObject[path] = newValue;
             string newJson = dataObject.ToString();
             return newJson;
+        }
+
+        public static string GetDatabaseAttributeType(this TableSchema attributeProperties)
+        {
+            string attributeType = attributeProperties.DATA_TYPE;
+            if (attributeType == "nvarchar")
+            {
+                //string charLength = dtRows[0]["CHARACTER_MAXIMUM_LENGTH"].ToString();
+                string charLength = attributeProperties.CHARACTER_MAXIMUM_LENGTH;
+                attributeType = attributeType + "(" + charLength + ")";
+            }
+            else if (attributeType == "numeric")
+            {
+                //string numericPrecision = dtRows[0]["NUMERIC_PRECISION"].ToString();
+                //string numericScale = dtRows[0]["NUMERIC_SCALE"].ToString();
+                string numericPrecision = attributeProperties.NUMERIC_PRECISION;
+                string numericScale = attributeProperties.NUMERIC_SCALE;
+                attributeType = attributeType + "(" + numericPrecision + "," + numericScale + ")";
+            }
+            return attributeType;
         }
     }
 }

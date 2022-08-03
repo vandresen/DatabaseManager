@@ -10,6 +10,6 @@ namespace DatabaseManager.Common.Data
     public interface ISystemData
     {
         Task<string> GetUserName(string connectionString);
-        Task<ColumnProperties> GetColumnSchema(string connectionString, string table);
+        Task<IEnumerable<TableSchema>> GetColumnSchema(string connectionString, string table);
     }
 }

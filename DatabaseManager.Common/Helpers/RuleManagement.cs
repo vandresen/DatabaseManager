@@ -214,7 +214,7 @@ namespace DatabaseManager.Common.Helpers
         public async Task SaveRule(string sourceName, RuleModel rule)
         {
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
-            InsertRule(rule, connector.ConnectionString);
+            await InsertRule(rule, connector.ConnectionString);
         }
 
         public async Task SaveFunction(string sourceName, RuleFunctions function)
@@ -419,7 +419,7 @@ namespace DatabaseManager.Common.Helpers
         private async Task InsertRule(RuleModel rule, string connectionString)
         {
             List<RuleModel> rules = new List<RuleModel>();
-            string userName = CommonDbUtilities.GetUsername(connectionString);
+            string userName = await _systemData.GetUserName(connectionString);
             rule.ModifiedBy = userName;
             rule.CreatedBy = userName;
             rule.RuleKey = GetRuleKey(rule, connectionString);
