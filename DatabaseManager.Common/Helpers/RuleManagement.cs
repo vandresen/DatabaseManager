@@ -29,7 +29,6 @@ namespace DatabaseManager.Common.Helpers
         private readonly IPredictionSetData _predictionSetData;
         private readonly IDapperDataAccess _dp;
         private readonly IADODataAccess _db;
-        private DbUtilities _dbConn;
         private readonly string container = "sources";
         private readonly string predictionContainer = "predictions";
         private readonly string ruleShare = "rules";
@@ -59,7 +58,6 @@ namespace DatabaseManager.Common.Helpers
             _ruleData = new RuleData(_dp, _db);
             _systemData = new SystemDBData(_dp);
             _functionData = new FunctionData(_dp);
-            _dbConn = new DbUtilities();
         }
 
         public DataAccessDef GetDataAccessDefinition(string dataType)

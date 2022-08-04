@@ -23,7 +23,6 @@ namespace DatabaseManager.Common.Helpers
         private readonly string azureConnectionString;
         private readonly string _sqlRootPath;
         private readonly IFileStorageServiceCommon _fileStorage;
-        private DbUtilities _dbConn;
         private readonly IIndexDBAccess _indexData;
         private readonly IDapperDataAccess _dp;
         private readonly ISystemData _systemData;
@@ -37,7 +36,6 @@ namespace DatabaseManager.Common.Helpers
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
             _fileStorage.SetConnectionString(azureConnectionString);
             _dp = new DapperDataAccess();
-            _dbConn = new DbUtilities();
             _indexData = new IndexDBAccess();
             _systemData = new SystemDBData(_dp);
         }
