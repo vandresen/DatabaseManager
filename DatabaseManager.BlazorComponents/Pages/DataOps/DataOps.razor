@@ -6,6 +6,16 @@
 
 <h3>Data Ops</h3>
 
+<style> 
+input {
+  padding: 5px 10px 5px 10px;
+  margin: 2px 0;
+  box-sizing: border-box;
+  border: 1px solid black;
+  width: 300px;
+}
+</style>
+
 <p>New Pipeline:</p>
 <p><input @bind="@pipelineName" size="50" /></p>
 <button class="btn btn-primary" @onclick="AddPipeline">Add New Pipeline</button>
