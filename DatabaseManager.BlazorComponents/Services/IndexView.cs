@@ -44,6 +44,30 @@ namespace DatabaseManager.BlazorComponents.Services
             return response.Response;
         }
 
+        public async Task<List<IndexFileData>> GetIndexTaxonomy(string source)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/index/GetIndexTaxonomy/{source}";
+            else url = baseUrl.BuildFunctionUrl("GetIndexTaxonomy", $"name={source}", apiKey);
+            var response = await httpService.Get<List<IndexFileData>>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
+        public async Task<IndexModel> GetSingleIndexItem(string source, int id)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/index/GetSingleIndexItem/{source}/{id}";
+            else url = baseUrl.BuildFunctionUrl("GetSingleIndexItem", $"name={source}&id={id}", apiKey);
+            var response = await httpService.Get<IndexModel>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
         public void InitSettings(SingletonServices settings)
         {
             baseUrl = settings.BaseUrl;

@@ -124,5 +124,64 @@ namespace DatabaseManager.AppFunctions
             log.LogInformation("CreateIndex: Complete");
             return new OkObjectResult("OK");
         }
+
+        [FunctionName("GetIndexTaxonomy")]
+        public static async Task<IActionResult> IndexRootTaxonomy(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("GetIndexTaxonomy: Starting");
+            string responseMessage = "";
+            try
+            {
+                string name = req.Query["name"];
+                if (string.IsNullOrEmpty(name))
+                {
+                    log.LogError("GetIndexTaxonomy: error, source name is missing");
+                    return new BadRequestObjectResult("Error missing source name");
+                }
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
+                IndexManagement im = new IndexManagement(storageAccount);
+                responseMessage = await im.GetIndexTaxonomy(name);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"GetIndexTaxonomy: {ex}");
+                return new BadRequestObjectResult($"Error getting index data: {ex}");
+            }
+
+            log.LogInformation("GetIndexTaxonomy: Complete");
+            return new OkObjectResult(responseMessage);
+        }
+
+        [FunctionName("GetSingleIndexItem")]
+        public static async Task<IActionResult> SingleIndexItem(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("GetSingleIndexItem: Starting");
+            string responseMessage = "";
+            try
+            {
+                string name = req.Query["name"];
+                if (string.IsNullOrEmpty(name))
+                {
+                    log.LogError("GetSingleIndexItem: error, source name is missing");
+                    return new BadRequestObjectResult("Error missing source name");
+                }
+                int id = Common.Helpers.Common.GetIntFromWebQuery(req, "id");
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
+                IndexManagement im = new IndexManagement(storageAccount);
+                responseMessage = await im.GetSingleIndexItem(name, id);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"GetSingleIndexItem: {ex}");
+                return new BadRequestObjectResult($"Error getting index data: {ex}");
+            }
+
+            log.LogInformation("GetSingleIndexItem: Complete");
+            return new OkObjectResult(responseMessage);
+        }
     }
 }

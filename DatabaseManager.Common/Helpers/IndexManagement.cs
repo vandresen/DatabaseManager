@@ -4,6 +4,7 @@ using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -30,6 +31,23 @@ namespace DatabaseManager.Common.Helpers
             _dbConn = new DbUtilities();
             _dp = new DapperDataAccess();
             _indexData = new IndexDBAccess(_dp);
+        }
+
+        public async Task<string> GetIndexTaxonomy(string sourceName)
+        {
+            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
+            IndexModel idx = await _indexData.GetIndexRoot(connector.ConnectionString);
+            IndexRootJson rootJson = JsonConvert.DeserializeObject<IndexRootJson>(idx.JsonDataObject);
+            JArray jArray = new JArray();
+            JArray JsonIndexArray = JArray.Parse(rootJson.Taxonomy);
+            List<IndexFileData> idxData = new List<IndexFileData>();
+            foreach (JToken level in JsonIndexArray)
+            {
+                idxData.Add(ProcessJTokens(level));
+                idxData = ProcessIndexArray(JsonIndexArray, level, idxData);
+            }
+            string result = JsonConvert.SerializeObject(idxData, Formatting.Indented);
+            return result;
         }
 
         public async Task<string> GetTaxonomies()
@@ -91,6 +109,25 @@ namespace DatabaseManager.Common.Helpers
             return result;
         }
 
+        public async Task<string> GetSingleIndexItem(string sourceName, int id)
+        {
+            string result = "[]";
+            ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
+            if (connector.SourceType == "DataBase")
+            {
+                string jsonConnectDef = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                connector.DataAccessDefinition = jsonConnectDef;
+            }
+            else
+            {
+                Exception error = new Exception($"RuleManagement: data source must be a Database type");
+                throw error;
+            }
+            IndexModel dmsIndex = await _indexData.GetIndex(id, connector.ConnectionString);
+            result = JsonConvert.SerializeObject(dmsIndex, Formatting.Indented);
+            return result;
+        }
+
         public async Task CreateIndex(CreateIndexParameters indexParm)
         {
             if (string.IsNullOrEmpty(indexParm.Taxonomy))
@@ -136,6 +173,36 @@ namespace DatabaseManager.Common.Helpers
             }
 
             return qcIndex;
+        }
+
+        private static IndexFileData ProcessJTokens(JToken token)
+        {
+            IndexFileData idxDataObject = new IndexFileData();
+            idxDataObject.DataName = (string)token["DataName"];
+            idxDataObject.NameAttribute = token["NameAttribute"]?.ToString();
+            idxDataObject.LatitudeAttribute = token["LatitudeAttribute"]?.ToString();
+            idxDataObject.LongitudeAttribute = token["LongitudeAttribute"]?.ToString();
+            idxDataObject.ParentKey = token["ParentKey"]?.ToString();
+            if (token["UseParentLocation"] != null) idxDataObject.UseParentLocation = (Boolean)token["UseParentLocation"];
+            if (token["Arrays"] != null)
+            {
+                idxDataObject.Arrays = token["Arrays"];
+            }
+            return idxDataObject;
+        }
+
+        private List<IndexFileData> ProcessIndexArray(JArray JsonIndexArray, JToken parent, List<IndexFileData> idxData)
+        {
+            List<IndexFileData> result = idxData;
+            if (parent["DataObjects"] != null)
+            {
+                foreach (JToken level in parent["DataObjects"])
+                {
+                    result.Add(ProcessJTokens(level));
+                    result = ProcessIndexArray(JsonIndexArray, level, result);
+                }
+            }
+            return result;
         }
     }
 }

@@ -46,5 +46,25 @@ namespace DatabaseManager.Server.Controllers
             string result = await im.GetIndexItem(source, id);
             return result;
         }
+
+        [HttpGet("GetIndexTaxonomy/{source}")]
+        public async Task<ActionResult<string>> GetIndexTaxonomy(string source)
+        {
+            string storageAccount = Request.Headers["AzureStorageConnection"];
+            //string storageAccount = Common.Helpers.Common.GetStorageKey(Request);
+            IndexManagement im = new IndexManagement(storageAccount);
+            string result = await im.GetIndexTaxonomy(source);
+            return result;
+        }
+
+        [HttpGet("GetSingleIndexItem/{source}/{id}")]
+        public async Task<ActionResult<string>> GetSingleIndexItem(string source, int id)
+        {
+            string storageAccount = Request.Headers["AzureStorageConnection"];
+            //string storageAccount = Common.Helpers.Common.GetStorageKey(Request);
+            IndexManagement im = new IndexManagement(storageAccount);
+            string result = await im.GetSingleIndexItem(source, id);
+            return result;
+        }
     }
 }

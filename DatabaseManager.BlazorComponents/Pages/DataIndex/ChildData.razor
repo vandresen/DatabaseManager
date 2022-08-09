@@ -19,7 +19,9 @@
 
 @if(data.Count > 0)
 {    
-    <CreateTableView Data="data" Attributes="@attributes" ChildrenDrillDown="Drilldown" ></CreateTableView>
+    <CreateTableView Data="data" Attributes="@attributes" ChildrenDrillDown="Drilldown" Taxonomy="@taxonomy" ArrayDrillDown="ArrayAction">
+
+    </CreateTableView>
 }
 else
 {
@@ -43,7 +45,7 @@ else
     private string attributes = "";
     private bool refreshButton = false;
     private bool spinner = true;
-
+    IndexFileData taxonomy;
 
     protected override async Task OnInitializedAsync()
     {
@@ -52,8 +54,12 @@ else
             data = new List<JObject>();
             indexData.InitSettings(settings);
             index = await indexData.GetChildren(settings.TargetConnector, Id);
+            List<IndexFileData> taxonomyList = await indexData.GetIndexTaxonomy(settings.TargetConnector);
+            //Console.WriteLine($"Root Taxonomy count: {taxonomyList.Count}");
             DataType = index[0].DataType;
-            Console.WriteLine($"Index count: {index.Count}, dataType {DataType}");
+            //Console.WriteLine($"Index count: {index.Count}, dataType {DataType}");
+            taxonomy = taxonomyList.FirstOrDefault(s => s.DataName == DataType);
+            //Console.WriteLine($"Arrays: {taxonomy.Arrays}");
 
             originalData = CreateDataTable();
             data = originalData;
@@ -66,7 +72,7 @@ else
             {
                 attributes = String.Join(",", AvailableHeaderColumns);
             }
-            Console.WriteLine($"Attributes: {attributes}");
+            //Console.WriteLine($"Attributes: {attributes}");
             selectedColumns = CreateSelectedColumns(attributes);
         }
         catch (Exception ex)
@@ -128,6 +134,13 @@ else
         dynamic data = JObject.Parse(jsonString);
         Console.WriteLine($"Drilldown, id={data.Id}");
         navigationManager.NavigateTo($"/indexdata/{data.Id}");
+    }
+
+    private void ArrayAction(string jsonString)
+    {
+        dynamic data = JObject.Parse(jsonString);
+        Console.WriteLine($"Drilldown, id={data.Id}");
+        navigationManager.NavigateTo($"/arraydatadrilldown/{data.Id}");
     }
 
     private void Refresh()

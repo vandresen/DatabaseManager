@@ -1,0 +1,70 @@
+﻿@page "/arraydatadrilldown/{Id:int}"
+@inject SingletonServices settings
+@inject IIndexView indexData
+@inject NavigationManager nvm
+
+<h3>Array Data Drilldown</h3>
+
+@if (dataTexts == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    @foreach  (var item in dataTexts)
+    {
+        <p>@item</p>
+    }
+}
+
+<button class="btn btn-primary" @onclick="GoToHome">
+    Home Page
+</button>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    public IndexModel index;
+    private List<string> dataTexts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Console.WriteLine($"Fetch data for {Id}");
+            indexData.InitSettings(settings);
+            index = await indexData.GetSingleIndexItem(settings.TargetConnector, Id);
+
+            if (index != null)
+            {
+                string jsonData = index.JsonDataObject;
+                JObject dataObject = JObject.Parse(jsonData);
+                List<IndexFileData> taxonomyList = await indexData.GetIndexTaxonomy(settings.TargetConnector);
+                string dataType = index.DataType;
+                IndexFileData taxonomy = taxonomyList.FirstOrDefault(s => s.DataName == dataType);
+                List<string> arrayColumns = new List<string>();
+                foreach (var item in taxonomy.Arrays)
+                {
+                    var col = item.Value<string>("Attribute");
+                    arrayColumns.Add(col);
+                }
+
+                dataTexts = new List<string>();
+                foreach (var item in arrayColumns)
+                {
+                    string value = dataObject[item].ToString();
+                    string txt = $"{item}: {value}";
+                    dataTexts.Add(txt);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private void GoToHome()
+    {
+        nvm.NavigateTo("/");
+    }
+}

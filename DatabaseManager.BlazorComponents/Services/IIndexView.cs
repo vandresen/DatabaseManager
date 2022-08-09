@@ -12,5 +12,7 @@ namespace DatabaseManager.BlazorComponents.Services
         void InitSettings(SingletonServices settings);
         Task<List<DmsIndex>> GetChildren(string source, int id);
         Task<List<DmsIndex>> GetIndex(string source);
+        Task<IndexModel> GetSingleIndexItem(string source, int id);
+        Task<List<IndexFileData>> GetIndexTaxonomy(string source);
     }
 }
