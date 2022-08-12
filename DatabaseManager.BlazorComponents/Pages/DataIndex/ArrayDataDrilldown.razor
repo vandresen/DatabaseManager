@@ -2,21 +2,56 @@
 @inject SingletonServices settings
 @inject IIndexView indexData
 @inject NavigationManager nvm
+@using MudBlazor
+@using Plotly.Blazor.Traces.ScatterLib
+@using Plotly.Blazor.LayoutLib
 
 <h3>Array Data Drilldown</h3>
 
-@if (dataTexts == null)
+<br />
+<p>Name: @dataName</p>
+
+@if (TooManyArrays)
 {
+    <text>It only support data types with max two arrays</text>
+    <br />
+}
+else if (dataTexts == null)
+{
+    <br/>
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+    <br/>
     <text>Loading...</text>
+    <br />
 }
 else
 {
-    @foreach  (var item in dataTexts)
-    {
-        <p>@item</p>
-    }
+    <MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Primary" >
+        <MudTabPanel Text="Data Table">
+            <MudTable Items="@dataArray" Hover="true" Height="600px" Striped="true" 
+                Bordered="true" Dense="true" FixedHeader="true" Virtualize="true">
+                <ColGroup>
+                    <col style="width:30px;" />
+                    <col style="width:30px;" />
+                </ColGroup>
+                <HeaderContent>
+                    <MudTh style="background-color:lightgray">@header1</MudTh>
+                    <MudTh style="background-color:lightgray">@header2</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel=@header1>@context.Array1</MudTd>
+                    <MudTd DataLabel=@header2>@context.Array2</MudTd>
+                </RowTemplate>
+        </MudTable>
+    </MudTabPanel>
+    <MudTabPanel Text="Chart">
+        <PlotlyChart @bind-Config="config" @bind-Layout="layout" @bind-Data="data" @ref="chart"/>
+    </MudTabPanel>
+</MudTabs>
+    
 }
 
+<br />
 <button class="btn btn-primary" @onclick="GoToHome">
     Home Page
 </button>
@@ -25,6 +60,16 @@ else
     [Parameter] public int Id { get; set; }
     public IndexModel index;
     private List<string> dataTexts;
+    public List<string> headers;
+    private List<DataArray> dataArray;
+    private bool TooManyArrays = false;
+    private string header1 = "1";
+    private string header2 = "2";
+    private string dataName = "";
+    PlotlyChart chart;
+    Config config = new Config();
+    Layout layout = new Layout();
+    IList<ITrace> data = new List<ITrace>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -33,6 +78,7 @@ else
             Console.WriteLine($"Fetch data for {Id}");
             indexData.InitSettings(settings);
             index = await indexData.GetSingleIndexItem(settings.TargetConnector, Id);
+            dataName = index.DataName;
 
             if (index != null)
             {
@@ -41,20 +87,83 @@ else
                 List<IndexFileData> taxonomyList = await indexData.GetIndexTaxonomy(settings.TargetConnector);
                 string dataType = index.DataType;
                 IndexFileData taxonomy = taxonomyList.FirstOrDefault(s => s.DataName == dataType);
-                List<string> arrayColumns = new List<string>();
+                List<string> headers = new List<string>();
                 foreach (var item in taxonomy.Arrays)
                 {
                     var col = item.Value<string>("Attribute");
-                    arrayColumns.Add(col);
+                    headers.Add(col);
                 }
 
-                dataTexts = new List<string>();
-                foreach (var item in arrayColumns)
+                if (headers.Count > 2)
                 {
-                    string value = dataObject[item].ToString();
-                    string txt = $"{item}: {value}";
-                    dataTexts.Add(txt);
+                    TooManyArrays = true;
                 }
+                else
+                {
+                    dataTexts = new List<string>();
+                    foreach (var item in headers)
+                    {
+                        string value = dataObject[item].ToString();
+                        string txt = $"{item}: {value}";
+                        dataTexts.Add(txt);
+                    }
+
+                }
+                header1 = headers[0];
+                header2 = headers[1];
+                double[] array1 = dataObject[headers[0]].ToString().ConvertStringToArray();
+                double[] array2 = dataObject[headers[1]].ToString().ConvertStringToArray();
+                dataArray = new List<DataArray>();
+                for (int i = 0; i < array1.Length; i++)
+                {
+                    dataArray.Add(new DataArray { Array1 = array1[i], Array2 = array2[i] });
+                }
+
+                List<object> x = new List<object>();
+                List<object> y = new List<object>();
+                for (int i = 0; i < array1.Length; i++ )
+                {
+                    double number = array1[i];
+                    x.Add(number);
+                    number = array2[i];
+                    y.Add(number);
+                }
+
+                layout = new Layout
+                {
+                    YAxis = new List<YAxis>
+                    {
+                        new YAxis
+                        {
+                            Title = new Plotly.Blazor.LayoutLib.YAxisLib.Title
+                            {
+                                Text = header2
+                            }
+                        }
+                    },
+                    XAxis = new List<XAxis>
+                    {
+                        new XAxis
+                        {
+                            Title = new Plotly.Blazor.LayoutLib.XAxisLib.Title
+                            {
+                                Text = header1
+                            }
+                        }
+                    }
+                };
+
+
+                data = new List<ITrace>
+                {
+                    new Scatter
+                    {
+                        Name = "ScatterTrace",
+                        Mode = ModeFlag.Lines,
+                        X = x,
+                        Y = y 
+                    }
+                };
             }
         }
         catch (Exception ex)
@@ -66,5 +175,11 @@ else
     private void GoToHome()
     {
         nvm.NavigateTo("/");
+    }
+
+    public class DataArray
+    {
+        public double Array1 { get; set; }
+        public double Array2 { get; set; }
     }
 }
