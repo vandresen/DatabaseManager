@@ -46,6 +46,6 @@
 
     protected override void OnInitialized()
     {
-        ConnectParameters.DataType = "Logs";
+        if (string.IsNullOrEmpty(ConnectParameters.DataType)) ConnectParameters.DataType = "Logs";
     }
 }

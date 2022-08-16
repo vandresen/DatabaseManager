@@ -6,11 +6,11 @@
 <h3>Create Data Connector</h3>
 @if (SourceType == "File")
 {
-    <FileSourceForm ConnectParameters="connectParameters" Type="@SourceType" OnValidSubmit="Create" />
+    <FileSourceForm ConnectParameters="connectParameters" OnValidSubmit="Create" />
 }
 else
 {
-    <DataSourceForm ConnectParameters="connectParameters" Type="@SourceType" OnValidSubmit="Create" />
+    <DataSourceForm ConnectParameters="connectParameters" OnValidSubmit="Create" />
 }
 
 @code {
@@ -19,6 +19,7 @@ else
 
     private async Task Create()
     {
+        connectParameters.SourceType = SourceType;
         string connectStr = Common.CreateDatabaseConnectionString(connectParameters);
         connectParameters.ConnectionString = connectStr;
         try
