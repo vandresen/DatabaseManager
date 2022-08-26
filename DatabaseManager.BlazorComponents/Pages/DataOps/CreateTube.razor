@@ -1,4 +1,5 @@
 ﻿@page "/createtube/{Name}/{TubeType}"
+@using MudBlazor
 @inject NavigationManager navigationManager
 @inject SingletonServices singleton
 @inject IDataOps ops
@@ -7,7 +8,10 @@
 
 <p>Pipeline Name: @Name</p>
 <p>Tube Type: @TubeType</p>
-<p>Priority: <input @bind="priority" type="number" min="1" /></p>
+@*<p>Priority: <input @bind="priority" type="number" min="1" /></p>*@
+<p>
+    <MudNumericField @bind-Value="priority" Label="Priority" Variant="Variant.Outlined" Step="1" Min="0" />
+</p>
 
 @if (TubeType == "CreateIndex")
 {
@@ -43,7 +47,7 @@ else
     string source;
     string target;
     string taxonomy;
-    int priority;
+    int priority = 0;
 
     protected override async Task OnInitializedAsync()
     {

@@ -1,16 +1,35 @@
-﻿<EditForm Model="DataQcParms" OnValidSubmit="OnValidSubmit">
-    <DataAnnotationsValidator />
-    <div class="form-group">
-        <label>Source:</label>
-        <div>
-            <InputText class="form-control" @bind-Value="DataQcParms.DataConnector" />
-            <ValidationMessage For="@(() => DataQcParms.DataConnector)" />
+﻿@using MudBlazor
+@inject IDataSources dataSources
+
+@if (options == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <EditForm Model="DataQcParms" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <MudSelect T="string" Label="Source:" @bind-Value="DataQcParms.DataConnector" Variant="Variant.Outlined">
+                @foreach (var option in options)
+                {
+                    <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                }
+            </MudSelect>
         </div>
-    </div>
-    <button class="btn btn-success" type="submit">Save Changes</button>
-</EditForm>
+        <button class="btn btn-success" type="submit">Save Changes</button>
+    </EditForm>
+}
 
 @code {
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public DataQCParameters DataQcParms { get; set; }
+    List<ConnectParameters> connectParameters;
+    public string[] options { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        connectParameters = await dataSources.GetSources();
+        options = connectParameters.Select(x => x.SourceName).ToArray();
+    }
 }

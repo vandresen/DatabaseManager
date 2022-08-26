@@ -1,11 +1,15 @@
-﻿<EditForm Model="PredictioncParms" OnValidSubmit="OnValidSubmit">
+﻿@using MudBlazor
+@inject IDataSources dataSources
+
+<EditForm Model="PredictioncParms" OnValidSubmit="OnValidSubmit">
     <DataAnnotationsValidator />
     <div class="form-group">
-        <label>Source:</label>
-        <div>
-            <InputText class="form-control" @bind-Value="PredictioncParms.DataConnector" />
-            <ValidationMessage For="@(() => PredictioncParms.DataConnector)" />
-        </div>
+        <MudSelect T="string" Label="Source:" @bind-Value="PredictioncParms.DataConnector" Variant="Variant.Outlined">
+            @foreach (var option in options)
+            {
+                <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+            }
+        </MudSelect>
     </div>
     <button class="btn btn-success" type="submit">Save Changes</button>
 </EditForm>
@@ -13,4 +17,12 @@
 @code {
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public PredictionParameters PredictioncParms { get; set; }
+    List<ConnectParameters> connectParameters;
+    public string[] options { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        connectParameters = await dataSources.GetSources();
+        options = connectParameters.Select(x => x.SourceName).ToArray();
+    }
 }

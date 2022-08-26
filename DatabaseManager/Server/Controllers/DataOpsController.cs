@@ -79,6 +79,7 @@ namespace DatabaseManager.Server.Controllers
                 if (!string.IsNullOrEmpty(dataOpsCode)) url = url + "?code=" + dataOpsCode;
                 logger.LogInformation($"DataOpsController: URL is {url}");
                 HttpResponseMessage response = client.PostAsync(url, content).Result;
+                //HttpResponseMessage response = await client.PostAsync(url, content);
                 using (HttpContent respContent = response.Content)
                 {
                     string result = respContent.ReadAsStringAsync().Result;

@@ -1,4 +1,5 @@
 ﻿@page "/edittube/{Name}/{Id:int}"
+@using MudBlazor
 @inject NavigationManager navigationManager
 @inject IDataOps ops
 
@@ -6,7 +7,9 @@
 
 <p>Pipeline Name: @Name</p>
 <p>Tube Type: @TubeType</p>
-<p>Priority: <input @bind="priority" type="number" min="1" /></p>
+<p>
+    <MudNumericField @bind-Value="priority" Label="Priority" Variant="Variant.Outlined" Step="1" Min="0" />
+</p>
 
 @if (TubeType == "CreateIndex")
 {

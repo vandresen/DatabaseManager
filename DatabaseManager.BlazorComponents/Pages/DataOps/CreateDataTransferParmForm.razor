@@ -1,46 +1,47 @@
-﻿@inject IDataSources dataSources
+﻿@using MudBlazor
+@inject IDataSources dataSources
 
-<EditForm Model="TransferParms" OnValidSubmit="OnValidSubmit">
-    <DataAnnotationsValidator />
-    <div class="form-group">
-        <label>Source:</label>
-        <div>
-            @if (options == null)
+@if (options == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <EditForm Model="TransferParms" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <MudSelect T="string" Label="Source:" @bind-Value="TransferParms.SourceName" Variant="Variant.Outlined">
+                @foreach (var option in options)
                 {
-                    <text>Loading...</text>
+                    <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
                 }
-                else
+            </MudSelect>
+        </div>
+        <div class="form-group">
+            <MudSelect T="string" Label="Target:" @bind-Value="TransferParms.TargetName" Variant="Variant.Outlined">
+                @foreach (var option in options)
                 {
-                    <ConnectorSelector Options="options" SelectedConnector="Selected" />
-                }        
+                    <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                }
+            </MudSelect>
         </div>
-    </div>
-    <div class="form-group">
-        <label>Target:</label>
-        <div>
-            <InputText class="form-control" @bind-Value="TransferParms.TargetName" />
-            <ValidationMessage For="@(() => TransferParms.TargetName)" />
-        </div>
-    </div>
-    <button class="btn btn-success" type="submit">Save Changes</button>
-</EditForm>
+        <button class="btn btn-success" type="submit">Save Changes</button>
+    </EditForm>
+}
 
 @code {
     [Parameter] public TransferParameters TransferParms { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
 
-    List<ConnectParameters> ConnectParameters;
-    private List<string> options { get; set; } = new List<string>();
+    public List<ConnectParameters> connectParameters;
+    public string[] options { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            ConnectParameters = await dataSources.GetSources();
-            foreach (ConnectParameters conn in ConnectParameters)
-            {
-                options.Add(conn.SourceName);
-            }
+            connectParameters = await dataSources.GetSources();
+            options = connectParameters.Select(x => x.SourceName).ToArray();
         }
         catch (Exception ex)
         {
@@ -52,7 +53,7 @@
     {
         TransferParms.SourceName = selectedString;
         Console.WriteLine($"selected source: {selectedString}");
-        ConnectParameters connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
+        ConnectParameters connector = connectParameters.FirstOrDefault(s => s.SourceName == selectedString);
         TransferParms.SourceType = connector.SourceType;
     }
 }

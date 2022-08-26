@@ -1,4 +1,5 @@
 ﻿@inject SingletonServices singleton
+@inject IDataSources dataSources
 
 <div class="form-group">
     <select class="form-control" id="targetlist" @onchange="Selected">
@@ -14,6 +15,18 @@
     [Parameter] public List<string> Options { get; set; }
     [Parameter] public string DefaultSource { get; set; }
     [Parameter] public EventCallback<string> SelectedConnector { get; set; }
+    private List<string> options { get; set; } = new List<string>();
+    List<ConnectParameters> connectParameters;
+
+    protected override async Task OnInitializedAsync()
+    {
+        connectParameters = await dataSources.GetSources();
+        foreach (ConnectParameters conn in connectParameters)
+        {
+            options.Add(conn.SourceName);
+            Console.WriteLine(conn.SourceName);
+        }
+    }
 
     private async Task Selected(ChangeEventArgs e)
     {
