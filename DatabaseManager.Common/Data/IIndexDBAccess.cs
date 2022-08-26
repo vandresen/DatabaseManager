@@ -19,6 +19,7 @@ namespace DatabaseManager.Common.Data
         void ClearAllQCFlags(string connectionString);
         Task<IEnumerable<IndexModel>> GetDescendantsFromSP(int id, string connectionString);
         Task<IEnumerable<DmsIndex>> GetNumberOfDescendantsSP(int id, string connectionString);
+        Task<IEnumerable<DmsIndex>> GetNumberOfDescendantsByIdAndLevel(string indexNode, int level, string connectionString);
         Task<IEnumerable<IndexModel>> GetIndexesFromSP(string connectionString);
         Task<IEnumerable<IndexModel>> GetIndexesWithQcStringFromSP(string qcString, string connectionString);
         Task<IEnumerable<IndexModel>> GetChildrenWithName(string connectionString, string indexNode, string name);

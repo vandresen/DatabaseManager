@@ -112,5 +112,10 @@ namespace DatabaseManager.Common.Data
             int count = await _dp.Count<int, dynamic>(sql, new { query = query}, connectionString);
             return count;
         }
+
+        public Task<IEnumerable<DmsIndex>> GetNumberOfDescendantsByIdAndLevel(string indexNode, int level, 
+            string connectionString) =>
+            _dp.LoadData<DmsIndex, dynamic>("dbo.spGetNumberOfDescendants", 
+                new { indexnode = indexNode, level = level }, connectionString);
     }
 }

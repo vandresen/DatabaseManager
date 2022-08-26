@@ -80,13 +80,8 @@ namespace DatabaseManager.Common.Helpers
                 Exception error = new Exception($"RuleManagement: data source must be a Database type");
                 throw error;
             }
-            _dbConn.OpenConnection(connector);
-            string strProcedure = $"EXEC spGetNumberOfDescendants '/', 1";
-            string query = "";
-            DataTable qc = _dbConn.GetDataTable(strProcedure, query);
-            List<DmsIndex> index = ProcessAllChildren(qc);
-            result = JsonConvert.SerializeObject(index, Formatting.Indented);
-            _dbConn.CloseConnection();
+            IEnumerable<DmsIndex> dmsIndex = await _indexData.GetNumberOfDescendantsByIdAndLevel("/", 1, connector.ConnectionString);
+            result = JsonConvert.SerializeObject(dmsIndex, Formatting.Indented);
             return result;
         }
 
@@ -150,29 +145,6 @@ namespace DatabaseManager.Common.Helpers
                 }
             }
             index.CloseIndex();
-        }
-
-        private List<DmsIndex> ProcessAllChildren(DataTable idx)
-        {
-            List<DmsIndex> qcIndex = new List<DmsIndex>();
-
-            foreach (DataRow idxRow in idx.Rows)
-            {
-                string dataType = idxRow["DATATYPE"].ToString();
-                string indexId = idxRow["INDEXID"].ToString();
-                string jsonData = idxRow["JSONDATAOBJECT"].ToString();
-                int intIndexId = Convert.ToInt32(indexId);
-                int nrOfObjects = Convert.ToInt32(idxRow["NumberOfDataObjects"]);
-                qcIndex.Add(new DmsIndex()
-                {
-                    Id = intIndexId,
-                    DataType = dataType,
-                    NumberOfDataObjects = nrOfObjects,
-                    JsonData = jsonData
-                });
-            }
-
-            return qcIndex;
         }
 
         private static IndexFileData ProcessJTokens(JToken token)

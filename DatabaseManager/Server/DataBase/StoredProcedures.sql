@@ -132,7 +132,7 @@ INTO #MyTemp
 FROM pdo_qc_index 
 WHERE IndexNode.IsDescendantOf(@indexnode) = 1 and INDEXLEVEL = @level
 
-SELECT A.INDEXID, A.DATATYPE, A.JSONDATAOBJECT, ((select count(1) from pdo_qc_index B where B.IndexNode.IsDescendantOf(A.IndexNode) = 1)-1) AS NumberOfDataObjects 
+SELECT A.INDEXID AS Id, A.DATATYPE, A.JSONDATAOBJECT  AS JsonData, ((select count(1) from pdo_qc_index B where B.IndexNode.IsDescendantOf(A.IndexNode) = 1)-1) AS NumberOfDataObjects 
 FROM #MyTemp A
 
 END

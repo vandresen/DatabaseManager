@@ -344,10 +344,9 @@ namespace DatabaseManager.Common.Helpers
             {
                 string indexNode = idxResult.TextIndexNode;
                 int indexLevel = idxResult.IndexLevel + 1;
-                string strProcedure = $"EXEC spGetNumberOfDescendants '{indexNode}', {indexLevel}";
-                query = "";
-                DataTable idx = _dbConn.GetDataTable(strProcedure, query);
-                if (idx.Rows.Count == 1)
+                IEnumerable<DmsIndex> dmsIndex = await _indexData.GetNumberOfDescendantsByIdAndLevel(indexNode,
+                    indexLevel, databaseConnectionString);
+                if (dmsIndex.Count() == 1)
                 {
                     string condition = $"DATANAME={nodeName}";
                     var rows = indexTable.Select(condition);
