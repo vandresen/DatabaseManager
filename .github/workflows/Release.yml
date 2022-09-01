@@ -89,7 +89,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-new-release.outputs.upload_url }}
-          asset_path: ./ServerlessUI.zip
+          asset_path: ./serverlessui/ServerlessUI.zip
           asset_name: ServerlessUI-v${{ github.run_number }}.zip
           asset_content_type: application/zip
           
@@ -111,6 +111,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-new-release.outputs.upload_url }}
-          asset_path: ./HostedServer.zip
+          asset_path: ./hostedserver/HostedServer.zip
           asset_name: HostedServer-v${{ github.run_number }}.zip
           asset_content_type: application/zip
