@@ -1,4 +1,3 @@
 New functionality are:
-* Implemented a new validity rule called IsEqualTo. It will fail if a value to measure is not equal to a list of values.
-* Created a new Report view that shows rules failed by a Uniqueness rule. It also shows the Uniqueness key.
-* Added a button in the new Uniqueness view to merge data object with the same uniqueness key. 
+* A dropdown list for sources are now available when creating and editing devops.
+* Drilldown for arrays such as log curves in the index viewer is now available. This inlcudes table view and line chart view.
