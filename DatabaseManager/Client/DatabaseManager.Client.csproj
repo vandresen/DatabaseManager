@@ -7,10 +7,10 @@
 
   <ItemGroup>
     <PackageReference Include="BlazorTable" Version="1.17.0" />
-    <PackageReference Include="Markdig" Version="0.30.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.7" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.7" />
-    <PackageReference Include="MudBlazor" Version="6.0.11" />
+    <PackageReference Include="Markdig" Version="0.30.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.8" />
+    <PackageReference Include="MudBlazor" Version="6.0.15" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Plotly.Blazor" Version="2.12.0" />
     <PackageReference Include="System.IO" Version="4.3.0" />

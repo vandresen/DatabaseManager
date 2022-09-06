@@ -1,16 +1,15 @@
-﻿using DatabaseManager.Common.Entities;
+﻿using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
+using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Helpers;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
-using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace DatabaseManager.LocalDataTransfer
@@ -18,13 +17,12 @@ namespace DatabaseManager.LocalDataTransfer
     public class DataTransfer
     {
         private readonly ILogger<Worker> _logger;
-        private readonly AppSettings _appSeting;
         private readonly IQueueService _queueService;
         private DbUtilities _dbConn;
         private readonly IFileStorageServiceCommon _fileStorage;
+        private readonly IAzureDataAccess _azureDataTables;
+        private readonly ISourceData _sourceData;
         private ConnectParameters _targetConnector;
-        private TransferParameters _transferParameters;
-        private readonly string container = "sources";
         private readonly string infoQueue = "datatransferinfo";
         private string target;
         private string source;
@@ -52,12 +50,14 @@ namespace DatabaseManager.LocalDataTransfer
         {
             _dbConn = new DbUtilities();
             _logger = logger;
-            _appSeting = appSetting;
             _queueService = queueService;
             var builder = new ConfigurationBuilder();
             IConfiguration configuration = builder.Build();
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
             _fileStorage.SetConnectionString(appSetting.StorageAccount);
+            _azureDataTables = new AzureDataTable(configuration);
+            _azureDataTables.SetConnectionString(appSetting.StorageAccount);
+            _sourceData = new SourceData(_azureDataTables);
         }
 
         public async Task GetTransferConnector(string message)
@@ -65,12 +65,12 @@ namespace DatabaseManager.LocalDataTransfer
             try
             {
                 TransferParameters transParms = JsonConvert.DeserializeObject<TransferParameters>(message);
-                _targetConnector = GetConnectionString(transParms.TargetName);
+                _targetConnector = _sourceData.GetSource(transParms.TargetName);
                 string dataAccessDefinition = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
                 _targetConnector.DataAccessDefinition = dataAccessDefinition;
                 target = _targetConnector.ConnectionString;
                 _logger.LogInformation($"Target connect string: {target}");
-                ConnectParameters sourceConnector = GetConnectionString(transParms.SourceName);
+                ConnectParameters sourceConnector = _sourceData.GetSource(transParms.SourceName);
                 source = sourceConnector.ConnectionString;
                 _logger.LogInformation($"Source connect string: {source}");
                 transferQuery = transParms.TransferQuery;
@@ -328,34 +328,6 @@ namespace DatabaseManager.LocalDataTransfer
             {
                 _dbConn.CloseConnection();
             }
-        }
-
-        private ConnectParameters GetConnectionString(string name)
-        {
-            ConnectParameters connectParms = new ConnectParameters();
-            CloudTable table = GetTableConnect(_appSeting.StorageAccount, container);
-            TableOperation retrieveOperation = TableOperation.Retrieve<SourceEntity>("PPDM", name);
-            TableResult result = table.Execute(retrieveOperation);
-            SourceEntity data = (SourceEntity)result.Result;
-            connectParms.SourceName = name;
-            connectParms.SourceType = data.SourceType;
-            connectParms.Catalog = data.Catalog;
-            connectParms.DatabaseServer = data.DatabaseServer;
-            connectParms.Password = data.Password;
-            connectParms.User = data.User;
-            connectParms.ConnectionString = data.ConnectionString;
-            connectParms.DataType = data.DataType;
-            connectParms.FileName = data.FileName;
-            connectParms.CommandTimeOut = data.CommandTimeOut;
-            return connectParms;
-        }
-
-        private CloudTable GetTableConnect(string connectionString, string tableName)
-        {
-            CloudStorageAccount account = CloudStorageAccount.Parse(connectionString);
-            CloudTableClient client = account.CreateCloudTableClient();
-            CloudTable table = client.GetTableReference(tableName);
-            return table;
         }
     }
 }
