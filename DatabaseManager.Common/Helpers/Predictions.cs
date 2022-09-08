@@ -330,7 +330,9 @@ namespace DatabaseManager.Common.Helpers
             }
             catch (Exception ex)
             {
-                throw;
+                string message = ex.GetBaseException().Message; 
+                Exception error = new Exception($"Predictions: Could not insert {dataType} object, more info: \n {message}");
+                throw error;
             }
         }
 

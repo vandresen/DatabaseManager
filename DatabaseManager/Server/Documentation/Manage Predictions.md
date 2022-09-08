@@ -159,6 +159,8 @@ The following prediction methods comes with the system:
 * DeleteDataObject
 * PredictDepthUsingIDW
 * PredictDominantLithology
+* PredictLogDepthAttributes
+* PredictMissingDataObjects
 
 ##### DeleteDataObject
 This method is used to delete data objects. 
@@ -183,3 +185,12 @@ Any other will be set to Unknown.
 
 If you want to update the PPDM database then you need to insert the above Lithologies into 
 table R_LITHOLOGY.
+
+#### PredictLogDepthAttributes
+This method will calcualte log attributes when the log curve.
+
+#### PredictMissingDataObjects
+This method will insert new data objects into the system.
+
+Example parameter:
+{"DataType": "MarkerPick", "Keys": [{"Key": "UWI", "Value":"!UWI"}, {"Key": "STRAT_UNIT_ID", "Value":"Heebner Shale Member"}, {"Key": "STRAT_NAME_SET_ID", "Value":"UNKNOWN"}, {"Key": "INTERP_ID", "Value":"UNKNOWN"}],"Defaults":[{"Default": "DOMINANT_LITHOLOGY", "Value":"UNKNOWN"}]}

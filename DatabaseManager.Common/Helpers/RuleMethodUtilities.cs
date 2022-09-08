@@ -1,11 +1,15 @@
-﻿using DatabaseManager.Shared;
+﻿using DatabaseManager.Common.Data;
+using DatabaseManager.Common.Entities;
+using DatabaseManager.Shared;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
 {
@@ -318,38 +322,40 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        public static string GetJsonForMissingDataObject(string parameters, DbUtilities dbConn)
+        public static string GetJsonForMissingDataObject(string parameters, DataAccessDef accessDef,
+            IEnumerable<TableSchema> attributeProperties)
         {
-            string json = "";
+            string json = "{}";
             MissingObjectsParameters missingObjectParms = new MissingObjectsParameters();
             missingObjectParms = JsonConvert.DeserializeObject<MissingObjectsParameters>(parameters);
-            string select = "SELECT TOP(1) JSONDATAOBJECT FROM pdo_qc_index";
-            string query = $" WHERE DATATYPE = '{missingObjectParms.DataType}'";
-            DataTable dt = dbConn.GetDataTable(select, query);
-            if (dt.Rows.Count == 1)
+
+            string[] columns = Common.GetAttributes(accessDef.Select);
+            JObject dataObject = JObject.Parse(json);
+            foreach (string column in columns)
             {
-                json = dt.Rows[0]["JSONDATAOBJECT"].ToString();
-                JObject dataObject = JObject.Parse(json);
-                foreach (KeyValuePair<String, JToken> tag in dataObject)
-                {
-                    var tagName = tag.Key;
-                    var variable = tag.Value;
-                    var type = variable.Type;
-                    if (type == JTokenType.Float)
+                    TableSchema tableSchema = attributeProperties.FirstOrDefault(x => x.COLUMN_NAME == column.Trim());
+                    if (tableSchema == null)
                     {
-                        dataObject[tagName] = -99999.0;
+                        break;
                     }
                     else
                     {
-                        dataObject[tagName] = "";
+                        if(tableSchema.DATA_TYPE == "numeric")
+                        {
+                            dataObject[column.Trim()] = -99999.0;
+                        }
+                        else if(tableSchema.DATA_TYPE == "date")
+                        {
+                            dataObject[column.Trim()] = DateTime.Now.ToString("yyyy-MM-dd");
+                        }
+                        else
+                        {
+                            dataObject[column.Trim()] = "";
+                        }
                     }
-                }
-                json = dataObject.ToString();
             }
-            else
-            {
-                json = "Error";
-            }
+            json = dataObject.ToString();
+
             return json;
         }
 
@@ -411,52 +417,15 @@ namespace DatabaseManager.Common.Helpers
             return json;
         }
 
-        public static string CalculateKey(RuleModel rule, string jsonData)
+        public static DataAccessDef GetDataAccessDefintionFromRoot(IndexDBAccess idxdata, string dataConnector, string dataType)
         {
-            string uniqKey = "";
-            //string[] keyAttributes = rule.RuleParameters.Split(';');
-            //if (keyAttributes.Length > 0)
-            //{
-            //    foreach (DataRow idxRow in indexTable.Rows)
-            //    {
-            //        string keyText = "";
-            //        string jsonData = idxRow["JSONDATAOBJECT"].ToString();
-            //        if (!string.IsNullOrEmpty(jsonData))
-            //        {
-            //            JObject dataObject = JObject.Parse(jsonData);
-            //            foreach (string key in keyAttributes)
-            //            {
-            //                string function = "";
-            //                string normalizeParameter = "";
-            //                string attribute = key.Trim();
-            //                if (attribute.Substring(0, 1) == "*")
-            //                {
-            //                    //attribute = attribute.Split('(', ')')[1];
-            //                    int start = attribute.IndexOf("(") + 1;
-            //                    int end = attribute.IndexOf(")", start);
-            //                    function = attribute.Substring(0, start - 1);
-            //                    string csv = attribute.Substring(start, end - start);
-            //                    TextFieldParser parser = new TextFieldParser(new StringReader(csv));
-            //                    parser.HasFieldsEnclosedInQuotes = true;
-            //                    parser.SetDelimiters(",");
-            //                    string[] parms = parser.ReadFields();
-            //                    attribute = parms[0];
-            //                    if (parms.Length > 1) normalizeParameter = parms[1];
-            //                }
-            //                string value = dataObject.GetValue(attribute).ToString();
-            //                if (function == "*NORMALIZE") value = value.NormalizeString(normalizeParameter);
-            //                if (function == "*NORMALIZE14") value = value.NormalizeString14();
-            //                keyText = keyText + value;
-            //            }
-            //            if (!string.IsNullOrEmpty(keyText))
-            //            {
-            //                string key = keyText.GetSHA256Hash();
-            //                idxRow["UNIQKEY"] = key;
-            //            }
-            //        }
-            //    }
-            //}
-            return uniqKey;
+            IndexModel idxResult = Task.Run(() => idxdata.GetIndexRoot(dataConnector)).GetAwaiter().GetResult();
+            string jsonStringObject = idxResult.JsonDataObject;
+            IndexRootJson rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonStringObject);
+            ConnectParameters source = JsonConvert.DeserializeObject<ConnectParameters>(rootJson.Source);
+            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(source.DataAccessDefinition);
+            DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
+            return accessDef;
         }
     }
 }

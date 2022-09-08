@@ -1,4 +1,5 @@
 ﻿using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Extensions;
 using DatabaseManager.Shared;
@@ -8,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -242,7 +244,16 @@ namespace DatabaseManager.Common.Helpers
             {
                 throw new NullReferenceException("Rule parameter is null.");
             }
-            string emptyJson = RuleMethodUtilities.GetJsonForMissingDataObject(rulePar, dbConn);
+
+            DataAccessDef accessDef = RuleMethodUtilities.GetDataAccessDefintionFromRoot(idxdata, qcSetup.DataConnector, dataType);
+            string table = Common.GetTable(accessDef.Select);
+            IDapperDataAccess dp;
+            ISystemData systemData;
+            dp = new DapperDataAccess();
+            systemData = new SystemDBData(dp);
+            IEnumerable<TableSchema> attributeProperties = (IEnumerable<TableSchema>)Task.Run(() => systemData.GetColumnSchema(qcSetup.DataConnector, table)).GetAwaiter().GetResult();
+
+            string emptyJson = RuleMethodUtilities.GetJsonForMissingDataObject(rulePar, accessDef, attributeProperties);
             if (emptyJson == "Error")
             {
                 throw new NullReferenceException("Could not create an empty json data object, maybe you are missing Datatype in parameters");
