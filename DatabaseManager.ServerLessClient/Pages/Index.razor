@@ -82,7 +82,8 @@ else
             client.DefaultRequestHeaders.Remove("azurestorageconnection");
             client.DefaultRequestHeaders.Add("azurestorageconnection", settings.AzureStorage);
 
-            string url = settings.BaseUrl + "GetDataSources" + "?code=" + settings.ApiKey;
+            string url = settings.BaseUrl.BuildFunctionUrl("GetDataSources", $"", settings.ApiKey);
+            //string url = settings.BaseUrl + "GetDataSources" + "?code=" + settings.ApiKey;
             Console.WriteLine(url);
             ConnectParameters = await client.GetFromJsonAsync<List<ConnectParameters>>(url);
             options = new List<string>();

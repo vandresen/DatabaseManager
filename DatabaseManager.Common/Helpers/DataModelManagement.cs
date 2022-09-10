@@ -9,11 +9,15 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static DatabaseManager.Common.Data.SystemDBData;
 
 namespace DatabaseManager.Common.Helpers
 {
@@ -494,6 +498,7 @@ namespace DatabaseManager.Common.Helpers
             {
                 string sql = await ReadDatabaseFile("PpdmModifications.sql");
                 string[] commandText = sql.Split(new string[] { String.Format("{0}GO{0}", Environment.NewLine) }, StringSplitOptions.RemoveEmptyEntries);
+                await PopulateFixedKeys(connector);
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);
                 for (int x = 0; x < commandText.Length; x++)
@@ -603,6 +608,46 @@ namespace DatabaseManager.Common.Helpers
             string accessJson = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
             List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
             return accessDefs;
+        }
+
+        private async Task PopulateFixedKeys(ConnectParameters connector)
+        {
+            string referenceJson = await _fileStorage.ReadFile("connectdefinition", "PPDMReferenceTables.json");
+            List<ReferenceTable> references = JsonConvert.DeserializeObject<List<ReferenceTable>>(referenceJson);
+            foreach (ReferenceTable reference  in references)
+            {
+                if (!string.IsNullOrEmpty(reference.FixedKey))
+                {
+                    string[] fixedKey = reference.FixedKey.Split('=');
+                    string column = fixedKey[0].Trim();
+                    string columnValue = fixedKey[1].Trim();
+                    SystemDBData systemData = new SystemDBData(_dp);
+                    IEnumerable<ForeignKeyInfo> fkInfo = await systemData.GetForeignKeyInfo(connector.ConnectionString, reference.Table, column);
+                    if (fkInfo.Count() == 1)
+                    {
+                        IADODataAccess db = new ADODataAccess();
+                        IDataAccess dbData = new DBDataAccess(db);
+                        dbData.OpenConnection(connector, null);
+                        ForeignKeyInfo info = fkInfo.First();
+                        string select = $"Select * from {info.ReferencedTable} ";
+                        string query = $"where {info.ReferencedColumn} = '{columnValue}'";
+                        DataTable refTable = await dbData.GetDataTable(select, query, "");
+                        if (refTable.Rows.Count == 0)
+                        {
+                            string sql = $"insert into {info.ReferencedTable} ({info.ReferencedColumn}) Values ('{columnValue}')";
+                            db.ExecuteSQL(sql, connector.ConnectionString);
+                        }
+                    }
+                    else
+                    {
+                        throw new NullReferenceException("Serious problems with getting the foreign key info");
+                    }
+                    
+                    
+
+                    
+                }
+            }
         }
     }
 }

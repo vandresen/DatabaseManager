@@ -54,6 +54,7 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<List<ConnectParameters>> GetSources()
         {
             string url = baseUrl.BuildFunctionUrl("GetDataSources", $"", apiKey);
+            Console.WriteLine($"GetSources: url = {url}");
             var response = await httpService.Get<List<ConnectParameters>>(url);
             if (!response.Success)
             {
