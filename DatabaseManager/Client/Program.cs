@@ -8,6 +8,7 @@ using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DatabaseManager.BlazorComponents.Services;
+using Blazored.LocalStorage;
 
 namespace DatabaseManager.Client
 {
@@ -27,6 +28,7 @@ namespace DatabaseManager.Client
         {
             services.AddOptions();
             services.AddSingleton<SingletonServices>();
+            services.AddBlazoredLocalStorage();
             services.AddScoped<IHttpService, HttpService>();
             services.AddScoped<IDataSources, DataSourcesClient>();
             services.AddScoped<IDataModelCreate, DataModelCreate>();

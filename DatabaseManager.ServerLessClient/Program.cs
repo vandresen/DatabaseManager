@@ -40,6 +40,7 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IRules, Rules>();
             services.AddScoped<IReportEdit, ReportEdit>();
             services.AddScoped<IIndexView, IndexView>();
+            services.AddScoped<ICookies, Cookies>();
             services.AddBlazorTable();
             services.AddMudServices();
         }

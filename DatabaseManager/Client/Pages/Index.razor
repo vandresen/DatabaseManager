@@ -74,6 +74,7 @@ else
         {
             Console.WriteLine("Start index page");
 
+            settings.ServerLess = false;
             string currentHeader = "";
             if (client.DefaultRequestHeaders.Contains("AzureStorageConnection"))
             {

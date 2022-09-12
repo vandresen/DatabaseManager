@@ -96,7 +96,7 @@ namespace DatabaseManager.Common.Helpers
             {
                 Status = "Failed"
             };
-            DataTable nb = RuleMethodUtilities.GetNeighbors(dbConn, qcSetup);
+            DataTable nb = RuleMethodUtilities.GetNeighbors(qcSetup);
             if (nb != null)
             {
                 depth = RuleMethodUtilities.CalculateDepthUsingIdw(nb, qcSetup);
@@ -213,7 +213,7 @@ namespace DatabaseManager.Common.Helpers
             };
             JObject dataObject = JObject.Parse(qcSetup.DataObject);
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
-            string jsonLog = RuleMethodUtilities.GetLogCurveDepths(dbConn, qcSetup.DataObject);
+            string jsonLog = RuleMethodUtilities.GetLogCurveDepths(qcSetup.DataObject, qcSetup.DataConnector);
             if (!string.IsNullOrEmpty(jsonLog))
             {
                 JObject logObject = JObject.Parse(jsonLog);

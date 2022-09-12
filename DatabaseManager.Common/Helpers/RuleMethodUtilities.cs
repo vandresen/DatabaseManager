@@ -1,4 +1,5 @@
 ﻿using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Shared;
 using Newtonsoft.Json;
@@ -64,14 +65,15 @@ namespace DatabaseManager.Common.Helpers
             public string Value { get; set; }
         }
 
-        public static DataTable GetNeighbors(DbUtilities dbConn, QcRuleSetup qcSetup)
+        public static DataTable GetNeighbors(QcRuleSetup qcSetup)
         {
             int indexId = qcSetup.IndexId;
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
             string failRule = rule.FailRule;
             string path = $"$.{rule.DataAttribute}";
-            string strProcedure = $"EXEC spGetNeighborsNoFailuresDepth {indexId}, '%{failRule}%', '{path}'";
-            DataTable nb = dbConn.GetDataTable(strProcedure, "");
+            IADODataAccess db = new ADODataAccess();
+            string sql = $"EXEC spGetNeighborsNoFailuresDepth {indexId}, '%{failRule}%', '{path}'";
+            DataTable nb = db.GetDataTable(sql, qcSetup.DataConnector);
             return nb;
         }
 
@@ -290,15 +292,16 @@ namespace DatabaseManager.Common.Helpers
             return smoothValue;
         }
 
-        public static string GetLogCurveDepths(DbUtilities dbConn, string dataObject)
+        public static string GetLogCurveDepths(string dataObject, string connector)
         {
             JObject logObject = JObject.Parse(dataObject);
             string uwi = logObject["UWI"].ToString();
             string curveName = logObject["CURVE_ID"].ToString();
+            IADODataAccess db = new ADODataAccess();
             string select = "select UWI, INDEX_VALUE, MEASURED_VALUE from WELL_LOG_CURVE_VALUE ";
             string query = $"where CURVE_ID = '{curveName}' and UWI = '{uwi}' order by INDEX_VALUE";
-            DataTable lc = dbConn.GetDataTable(select, query);
-            //if (lc.Rows.Count == 0) log.Warning("No log curve values are available");
+            string sql = select + query;
+            DataTable lc = db.GetDataTable(sql, connector);
 
             if (lc.Rows.Count > 0)
             {
