@@ -250,7 +250,7 @@ namespace DatabaseManager.Common.Helpers
         public static string GetStorageKey(HttpRequest req)
         {
             var headers = req.Headers;
-            string storageAccount = headers.FirstOrDefault(x => x.Key == "azurestorageconnection").Value;
+            string storageAccount = headers.FirstOrDefault(x => x.Key.ToLower() == "azurestorageconnection").Value;
             if (string.IsNullOrEmpty(storageAccount))
             {
                 Exception error = new Exception($"Error getting azure storage key");

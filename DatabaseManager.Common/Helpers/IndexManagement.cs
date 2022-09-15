@@ -8,6 +8,8 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
+using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
@@ -31,6 +33,21 @@ namespace DatabaseManager.Common.Helpers
             _dbConn = new DbUtilities();
             _dp = new DapperDataAccess();
             _indexData = new IndexDBAccess(_dp);
+        }
+
+
+        public async Task<string> GetTaxonomyFile(string taxonomyFile)
+        {
+            string jsonTaxonomy = await _fileStorage.ReadFile("taxonomy", taxonomyFile);
+            JArray jArray = new JArray();
+            JArray JsonIndexArray = JArray.Parse(jsonTaxonomy);
+            List<IndexFileDefinition> idxData = new List<IndexFileDefinition>();
+            foreach (JToken level in JsonIndexArray)
+            {
+                idxData.Add(ProcessIndexFileTokens(level));
+            }
+            string result = JsonConvert.SerializeObject(idxData, Formatting.Indented);
+            return result;
         }
 
         public async Task<string> GetIndexTaxonomy(string sourceName)
@@ -145,6 +162,23 @@ namespace DatabaseManager.Common.Helpers
                 }
             }
             index.CloseIndex();
+        }
+
+        private static IndexFileDefinition ProcessIndexFileTokens(JToken token)
+        {
+            IndexFileDefinition idxFileObject = new IndexFileDefinition();
+            idxFileObject.DataName = (string)token["DataName"];
+            idxFileObject.NameAttribute = token["NameAttribute"]?.ToString();
+            idxFileObject.LatitudeAttribute = token["LatitudeAttribute"]?.ToString();
+            idxFileObject.LongitudeAttribute = token["LongitudeAttribute"]?.ToString();
+            idxFileObject.ParentKey = token["ParentKey"]?.ToString();
+            idxFileObject.Select = token["Select"]?.ToString();
+            if (token["UseParentLocation"] != null) idxFileObject.UseParentLocation = (Boolean)token["UseParentLocation"];
+            if (token["DataObjects"] != null)
+            {
+                idxFileObject.DataObjects = token["DataObjects"]?.ToString();
+            }
+            return idxFileObject;
         }
 
         private static IndexFileData ProcessJTokens(JToken token)

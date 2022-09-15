@@ -183,5 +183,28 @@ namespace DatabaseManager.AppFunctions
             log.LogInformation("GetSingleIndexItem: Complete");
             return new OkObjectResult(responseMessage);
         }
+
+        [FunctionName("GetTaxonomyFile")]
+        public static async Task<IActionResult> TaxonomyFile(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("GetTaxonomyFile: Starting");
+            string responseMessage = "";
+            try
+            {
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
+                string name = Common.Helpers.Common.GetQueryString(req, "name");
+                IndexManagement im = new IndexManagement(storageAccount);
+                responseMessage = await im.GetTaxonomyFile(name);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"GetTaxonomyFile: {ex}");
+                return new BadRequestObjectResult($"Error getting taxonomy file data: {ex}");
+            }
+            log.LogInformation("GetTaxonomyFile: Complete");
+            return new OkObjectResult(responseMessage);
+        }
     }
 }

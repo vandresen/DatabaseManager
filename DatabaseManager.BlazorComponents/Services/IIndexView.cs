@@ -14,5 +14,6 @@ namespace DatabaseManager.BlazorComponents.Services
         Task<List<DmsIndex>> GetIndex(string source);
         Task<IndexModel> GetSingleIndexItem(string source, int id);
         Task<List<IndexFileData>> GetIndexTaxonomy(string source);
+        Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName);
     }
 }

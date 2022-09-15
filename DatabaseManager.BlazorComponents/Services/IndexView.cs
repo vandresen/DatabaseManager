@@ -44,6 +44,18 @@ namespace DatabaseManager.BlazorComponents.Services
             return response.Response;
         }
 
+        public async Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/index/GetTaxonomyFile/{fileName}";
+            else url = baseUrl.BuildFunctionUrl("GetTaxonomyFile", $"name={fileName}", apiKey);
+            var response = await httpService.Get<List<IndexFileDefinition>>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
         public async Task<List<IndexFileData>> GetIndexTaxonomy(string source)
         {
             if (string.IsNullOrEmpty(baseUrl)) url = $"api/index/GetIndexTaxonomy/{source}";

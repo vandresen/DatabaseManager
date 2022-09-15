@@ -57,6 +57,23 @@ namespace DatabaseManager.Server.Controllers
             return result;
         }
 
+        [HttpGet("GetTaxonomyFile/{name}")]
+        public async Task<ActionResult<string>> GetTaxonomyFile(string name)
+        {
+            try
+            {
+                string storageAccount = Common.Helpers.Common.GetStorageKey(Request);
+                IndexManagement im = new IndexManagement(storageAccount);
+                string result = await im.GetTaxonomyFile(name);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.ToString());
+            }
+            
+        }
+
         [HttpGet("GetSingleIndexItem/{source}/{id}")]
         public async Task<ActionResult<string>> GetSingleIndexItem(string source, int id)
         {

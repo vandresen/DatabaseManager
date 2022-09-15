@@ -1,0 +1,86 @@
+﻿@inject IIndexView iv
+@inject NavigationManager navigationManager
+@using MudBlazor
+
+<br />
+<TaxonomySelect Selection="Selected"></TaxonomySelect>
+<br />
+
+@if (ifd == null)
+{
+    <text>No taxonomy file selected yet...</text>
+}
+else
+{
+    <MudTable Elevation="25" Items="@ifd" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Data object Name</MudTh>
+            <MudTh>Data name</MudTh>
+            <MudTh>Parent key</MudTh>
+            <MudTh>Latitude attribute</MudTh>
+            <MudTh>Longitude attribute</MudTh>
+            <MudTh>Select statement</MudTh>
+            <MudTh>Use parent location</MudTh>
+            <MudTh>Action</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Data Name">@context.DataName</MudTd>
+            <MudTd DataLabel="Data name">@context.NameAttribute</MudTd>
+            <MudTd DataLabel="Parent key">@context.ParentKey</MudTd>
+            <MudTd DataLabel="Latitude attribute">@context.LatitudeAttribute</MudTd>
+            <MudTd DataLabel="Longitude attribute">@context.LongitudeAttribute</MudTd>
+            <MudTd DataLabel="Select statement">@context.Select</MudTd>
+            <MudTd DataLabel="Use parent location">@context.UseParentLocation</MudTd>
+            <MudTd DataLabel="">
+                @if (!string.IsNullOrEmpty(context.DataObjects))
+                {
+                    <MudFab @onclick="@(() => Drilldown(context))" Color="Color.Info" Icon="@Icons.Material.Filled.MoreHoriz" Size="Size.Small" IconSize="Size.Small" />
+                }                
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+
+@code {
+    List<IndexFileDefinition> ifd;
+
+    private async Task Selected(string selectedString)
+    {
+        string TaxonomyFile = selectedString;
+        Console.WriteLine(TaxonomyFile);
+        ifd = await iv.GetIndexFileDefs(TaxonomyFile);
+        Console.WriteLine($"Def count: {ifd.Count}");
+    }
+
+    private void Drilldown(IndexFileDefinition item)
+    {
+        Console.WriteLine($"Item objects : {item.DataObjects}");
+        JArray jArray = new JArray();
+        JArray JsonIndexArray = JArray.Parse(item.DataObjects);
+        ifd = new List<IndexFileDefinition>();
+        foreach (JToken level in JsonIndexArray)
+        {
+            ifd.Add(ProcessIndexFileTokens(level));
+        }
+        Console.WriteLine($"Number of objects : {ifd.Count}");
+        this.StateHasChanged();
+    }
+
+    private static IndexFileDefinition ProcessIndexFileTokens(JToken token)
+    {
+        IndexFileDefinition idxFileObject = new IndexFileDefinition();
+        idxFileObject.DataName = (string)token["DataName"];
+        idxFileObject.NameAttribute = token["NameAttribute"]?.ToString();
+        idxFileObject.LatitudeAttribute = token["LatitudeAttribute"]?.ToString();
+        idxFileObject.LongitudeAttribute = token["LongitudeAttribute"]?.ToString();
+        idxFileObject.ParentKey = token["ParentKey"]?.ToString();
+        idxFileObject.Select = token["Select"]?.ToString();
+        if (token["UseParentLocation"] != null) idxFileObject.UseParentLocation = (Boolean)token["UseParentLocation"];
+        if (token["DataObjects"] != null)
+        {
+            idxFileObject.DataObjects = token["DataObjects"]?.ToString();
+        }
+        return idxFileObject;
+    }
+}
