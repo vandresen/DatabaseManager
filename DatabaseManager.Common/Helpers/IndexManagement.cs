@@ -39,15 +39,12 @@ namespace DatabaseManager.Common.Helpers
         public async Task<string> GetTaxonomyFile(string taxonomyFile)
         {
             string jsonTaxonomy = await _fileStorage.ReadFile("taxonomy", taxonomyFile);
-            JArray jArray = new JArray();
-            JArray JsonIndexArray = JArray.Parse(jsonTaxonomy);
-            List<IndexFileDefinition> idxData = new List<IndexFileDefinition>();
-            foreach (JToken level in JsonIndexArray)
-            {
-                idxData.Add(ProcessIndexFileTokens(level));
-            }
-            string result = JsonConvert.SerializeObject(idxData, Formatting.Indented);
-            return result;
+            return jsonTaxonomy;
+        }
+
+        public async Task SaveTaxonomyFile(string taxonomyFile, string taxonomyContent)
+        {
+            await _fileStorage.SaveFile("taxonomy", taxonomyFile, taxonomyContent);
         }
 
         public async Task<string> GetIndexTaxonomy(string sourceName)
@@ -174,10 +171,10 @@ namespace DatabaseManager.Common.Helpers
             idxFileObject.ParentKey = token["ParentKey"]?.ToString();
             idxFileObject.Select = token["Select"]?.ToString();
             if (token["UseParentLocation"] != null) idxFileObject.UseParentLocation = (Boolean)token["UseParentLocation"];
-            if (token["DataObjects"] != null)
-            {
-                idxFileObject.DataObjects = token["DataObjects"]?.ToString();
-            }
+            //if (token["DataObjects"] != null)
+            //{
+            //    idxFileObject.DataObjects = token["DataObjects"]?.ToString();
+            //}
             return idxFileObject;
         }
 

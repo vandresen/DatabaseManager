@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using DatabaseManager.Common.Helpers;
 using DatabaseManager.Shared;
+using System.Collections.Generic;
 
 namespace DatabaseManager.AppFunctions
 {
@@ -205,6 +206,38 @@ namespace DatabaseManager.AppFunctions
             }
             log.LogInformation("GetTaxonomyFile: Complete");
             return new OkObjectResult(responseMessage);
+        }
+
+        [FunctionName("SaveTaxonomyFile")]
+        public static async Task<IActionResult> SaveFile(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("SaveTaxonomyFile: Starting");
+
+            string taxonomyContent = await new StreamReader(req.Body).ReadToEndAsync();
+            List<IndexFileDefinition> index = JsonConvert.DeserializeObject<List<IndexFileDefinition>>(taxonomyContent);
+            if (index == null)
+            {
+                log.LogError("SaveTaxonomyFile: error missing taxonomy content");
+                return new BadRequestObjectResult("Error missing taxonomy content");
+            }
+
+            try
+            {
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
+                string name = Common.Helpers.Common.GetQueryString(req, "name");
+                IndexManagement im = new IndexManagement(storageAccount);
+                await im.SaveTaxonomyFile(name, taxonomyContent);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"SaveTaxonomyFile: {ex}");
+                return new BadRequestObjectResult($"Error saving taxonomy file data: {ex}");
+            }
+
+            log.LogInformation("SaveTaxonomyFile: Complete");
+            return new OkObjectResult("OK");
         }
     }
 }

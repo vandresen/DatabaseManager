@@ -10,6 +10,7 @@ namespace DatabaseManager.Shared
 {
     public class IndexFileDefinition
     {
+        public int Id { get; set; }
         public string DataName { get; set; }
 
         public string NameAttribute { get; set; }
@@ -24,6 +25,6 @@ namespace DatabaseManager.Shared
 
         public Boolean UseParentLocation { get; set; }
 
-        public string DataObjects { get; set; }
+        public List<IndexFileDefinition> DataObjects { get; set; }
     }
 }

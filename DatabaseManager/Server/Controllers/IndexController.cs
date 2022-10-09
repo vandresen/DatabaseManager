@@ -2,6 +2,7 @@
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using MudBlazor;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -82,6 +83,23 @@ namespace DatabaseManager.Server.Controllers
             IndexManagement im = new IndexManagement(storageAccount);
             string result = await im.GetSingleIndexItem(source, id);
             return result;
+        }
+
+        [HttpPost("{name}")]
+        public async Task<ActionResult<List<DmsIndex>>> Save(string name, List<IndexFileDefinition> ifd)
+        {
+            try
+            {
+                string storageAccount = Common.Helpers.Common.GetStorageKey(Request);
+                IndexManagement im = new IndexManagement(storageAccount);
+                string json = JsonConvert.SerializeObject(ifd, Formatting.Indented);
+                await im.SaveTaxonomyFile(name, json);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.ToString());
+            }
         }
     }
 }

@@ -18,6 +18,7 @@ namespace DatabaseManager.BlazorComponents.Services
             this.httpService = httpService;
             baseUrl = settings.BaseUrl;
             apiKey = settings.ApiKey;
+            Console.WriteLine($"Init index view: {baseUrl}");
         }
 
         public async Task<List<DmsIndex>> GetChildren(string source, int id)
@@ -34,6 +35,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<List<DmsIndex>> GetIndex(string source)
         {
+            Console.WriteLine($"Get index file defs base url: {baseUrl}");
             if (string.IsNullOrEmpty(baseUrl)) url = $"api/index/{source}";
             else url = baseUrl.BuildFunctionUrl("GetIndexData", $"name={source}", apiKey);
             var response = await httpService.Get<List<DmsIndex>>(url);
@@ -46,14 +48,28 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)
         {
+            Console.WriteLine($"Get index file defs base url: {baseUrl}");
             if (string.IsNullOrEmpty(baseUrl)) url = $"api/index/GetTaxonomyFile/{fileName}";
             else url = baseUrl.BuildFunctionUrl("GetTaxonomyFile", $"name={fileName}", apiKey);
+            Console.WriteLine($"Save index url: {url}");
             var response = await httpService.Get<List<IndexFileDefinition>>(url);
             if (!response.Success)
             {
                 throw new ApplicationException(await response.GetBody());
             }
             return response.Response;
+        }
+
+        public async Task SaveIndexFileDefs(List<IndexFileDefinition> indexDef, string fileName)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/index/{fileName}";
+            else url = baseUrl.BuildFunctionUrl("SaveTaxonomyFile", $"name={fileName}", apiKey);
+            Console.WriteLine($"Save index url: {url}");
+            var response = await httpService.Post(url, indexDef);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
         }
 
         public async Task<List<IndexFileData>> GetIndexTaxonomy(string source)

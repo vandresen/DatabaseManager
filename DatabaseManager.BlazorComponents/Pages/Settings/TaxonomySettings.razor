@@ -1,5 +1,6 @@
 ﻿@inject IIndexView iv
 @inject NavigationManager navigationManager
+@inject SingletonServices settings
 @using MudBlazor
 
 <br />
@@ -12,10 +13,35 @@
 }
 else
 {
+    <MudCard Elevation="25">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">Edit Taxonomy @dataDef.DataName</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudTextField @bind-Value="dataDef.NameAttribute" Label="Data Attribute Key" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <MudTextField @bind-Value="dataDef.ParentKey" Label="Parent Key" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <MudTextField @bind-Value="dataDef.Select" Label="Select" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <br />
+            <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Save">Save</MudButton>
+        </MudCardContent>
+    </MudCard>
+    <br />
     <MudTable Elevation="25" Items="@ifd" Dense="true" Hover="true">
+        <ColGroup>
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col style="width:300px;" />
+        </ColGroup>
         <HeaderContent>
             <MudTh>Data object Name</MudTh>
-            <MudTh>Data name</MudTh>
+            <MudTh>Data attribute key</MudTh>
             <MudTh>Parent key</MudTh>
             <MudTh>Latitude attribute</MudTh>
             <MudTh>Longitude attribute</MudTh>
@@ -32,7 +58,8 @@ else
             <MudTd DataLabel="Select statement">@context.Select</MudTd>
             <MudTd DataLabel="Use parent location">@context.UseParentLocation</MudTd>
             <MudTd DataLabel="">
-                @if (!string.IsNullOrEmpty(context.DataObjects))
+                <MudFab @onclick="@(() => Edit(@context))" Color="Color.Primary" Icon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small" />
+                @if (context.DataObjects != null)
                 {
                     <MudFab @onclick="@(() => Drilldown(context))" Color="Color.Info" Icon="@Icons.Material.Filled.MoreHoriz" Size="Size.Small" IconSize="Size.Small" />
                 }                
@@ -44,43 +71,37 @@ else
 
 @code {
     List<IndexFileDefinition> ifd;
+    List<string> breadCrumb = new List<string>();
+    Dictionary<string, List<IndexFileDefinition>> index = new Dictionary<string, List<IndexFileDefinition>>();
+    private IndexFileDefinition dataDef = new IndexFileDefinition();
+    private List<IndexFileDefinition> original;
+    private string TaxonomyFile;
 
     private async Task Selected(string selectedString)
     {
-        string TaxonomyFile = selectedString;
-        Console.WriteLine(TaxonomyFile);
+        TaxonomyFile = selectedString;
+        iv.InitSettings(settings);
         ifd = await iv.GetIndexFileDefs(TaxonomyFile);
-        Console.WriteLine($"Def count: {ifd.Count}");
+        original = ifd;
     }
 
     private void Drilldown(IndexFileDefinition item)
     {
-        Console.WriteLine($"Item objects : {item.DataObjects}");
         JArray jArray = new JArray();
-        JArray JsonIndexArray = JArray.Parse(item.DataObjects);
-        ifd = new List<IndexFileDefinition>();
-        foreach (JToken level in JsonIndexArray)
-        {
-            ifd.Add(ProcessIndexFileTokens(level));
-        }
-        Console.WriteLine($"Number of objects : {ifd.Count}");
+        ifd = item.DataObjects;
         this.StateHasChanged();
     }
 
-    private static IndexFileDefinition ProcessIndexFileTokens(JToken token)
+    private void Edit(IndexFileDefinition item)
     {
-        IndexFileDefinition idxFileObject = new IndexFileDefinition();
-        idxFileObject.DataName = (string)token["DataName"];
-        idxFileObject.NameAttribute = token["NameAttribute"]?.ToString();
-        idxFileObject.LatitudeAttribute = token["LatitudeAttribute"]?.ToString();
-        idxFileObject.LongitudeAttribute = token["LongitudeAttribute"]?.ToString();
-        idxFileObject.ParentKey = token["ParentKey"]?.ToString();
-        idxFileObject.Select = token["Select"]?.ToString();
-        if (token["UseParentLocation"] != null) idxFileObject.UseParentLocation = (Boolean)token["UseParentLocation"];
-        if (token["DataObjects"] != null)
-        {
-            idxFileObject.DataObjects = token["DataObjects"]?.ToString();
-        }
-        return idxFileObject;
+        Console.WriteLine($"Edit object : {item.DataName}");
+        dataDef = item;
+    }
+
+    private async Task Save()
+    {
+        string saveResult = JsonConvert.SerializeObject(original, Formatting.Indented);
+        Console.WriteLine($"Saved json: {saveResult}");
+        await iv.SaveIndexFileDefs(original, TaxonomyFile);
     }
 }
