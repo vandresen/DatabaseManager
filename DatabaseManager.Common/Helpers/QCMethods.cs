@@ -310,5 +310,47 @@ namespace DatabaseManager.Common.Helpers
             }
             return returnStatus;
         }
+
+        public static string IsGreaterThan(QcRuleSetup qcSetup, DataTable dt, List<DataAccessDef> accessDefs, IIndexDBAccess indexData)
+        {
+            string returnStatus = "Passed";
+            string error = "";
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+            IsGreaterThanParameters parms = new IsGreaterThanParameters();
+            string[] values = new string[] { "" };
+            if (string.IsNullOrEmpty(rule.RuleParameters))
+            {
+                //log.Warning($"Missing rule parameter");
+            }
+            else
+            {
+                try
+                {
+                    parms = JsonConvert.DeserializeObject<IsGreaterThanParameters>(rule.RuleParameters);
+                }
+                catch (Exception ex)
+                {
+                    error = $"Bad parameter Json, {ex}";
+                }
+            }
+            JObject dataObject = JObject.Parse(qcSetup.DataObject);
+            JToken value = dataObject.GetValue(rule.DataAttribute);
+            if (value == null)
+            {
+                //log.Warning($"Attribute is Null");
+            }
+            else
+            {
+                double? number = value.GetNumberFromJToken();
+                if (number != null)
+                {
+                    if (number < parms.Value)
+                    {
+                        returnStatus = "Failed";
+                    }
+                }
+            }
+            return returnStatus;
+        }
     }
 }

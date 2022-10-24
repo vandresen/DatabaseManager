@@ -41,6 +41,11 @@ namespace DatabaseManager.Common.Helpers
             public string Delimiter { get; set; }
         }
 
+        public class IsGreaterThanParameters
+        {
+            public double Value { get; set; }
+        }
+
         public class ConsistencyParameters
         {
             public string Source { get; set; }

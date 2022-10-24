@@ -3,6 +3,7 @@ using DatabaseManager.Common.Data;
 using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Extensions;
+using DatabaseManager.Common.Initializer;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Extensions.Configuration;
@@ -30,6 +31,8 @@ namespace DatabaseManager.Common.Helpers
         private readonly IIndexDBAccess _indexData;
         private readonly IDapperDataAccess _dp;
         private readonly ISystemData _systemData;
+        private readonly IDbInitializer _dbi;
+        private readonly IADODataAccess _db;
 
         public DataModelManagement(string azureConnectionString, string sqlRootPath)
         {
@@ -42,6 +45,8 @@ namespace DatabaseManager.Common.Helpers
             _dp = new DapperDataAccess();
             _indexData = new IndexDBAccess();
             _systemData = new SystemDBData(_dp);
+            _db = new ADODataAccess();
+            _dbi = new DbInitializer(_db);
         }
 
         public async Task DataModelCreate(DataModelParameters dmParameters)
@@ -158,11 +163,12 @@ namespace DatabaseManager.Common.Helpers
             try
             {
                 string sql = await ReadDatabaseFile("DataScienceManagement.sql");
-                string sqlFunctions = await ReadDatabaseFile("InternalRuleFunctions.sql");
+                //string sqlFunctions = await ReadDatabaseFile("InternalRuleFunctions.sql");
                 DbUtilities dbConn = new DbUtilities();
                 dbConn.OpenConnection(connector);
                 dbConn.SQLExecute(sql);
-                dbConn.SQLExecute(sqlFunctions);
+                _dbi.InitializeInternalRuleFunctions(connector.ConnectionString);
+                //dbConn.SQLExecute(sqlFunctions);
                 //CreateSqlSources(dbConn);
                 dbConn.CloseConnection();
 
@@ -625,8 +631,7 @@ namespace DatabaseManager.Common.Helpers
                     IEnumerable<ForeignKeyInfo> fkInfo = await systemData.GetForeignKeyInfo(connector.ConnectionString, reference.Table, column);
                     if (fkInfo.Count() == 1)
                     {
-                        IADODataAccess db = new ADODataAccess();
-                        IDataAccess dbData = new DBDataAccess(db);
+                        IDataAccess dbData = new DBDataAccess(_db);
                         dbData.OpenConnection(connector, null);
                         ForeignKeyInfo info = fkInfo.First();
                         string select = $"Select * from {info.ReferencedTable} ";
@@ -635,7 +640,7 @@ namespace DatabaseManager.Common.Helpers
                         if (refTable.Rows.Count == 0)
                         {
                             string sql = $"insert into {info.ReferencedTable} ({info.ReferencedColumn}) Values ('{columnValue}')";
-                            db.ExecuteSQL(sql, connector.ConnectionString);
+                            _db.ExecuteSQL(sql, connector.ConnectionString);
                         }
                     }
                     else

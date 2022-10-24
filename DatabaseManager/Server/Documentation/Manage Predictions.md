@@ -108,6 +108,7 @@ The following validity methods are available:
 * IsNumber
 * StringLength
 * IsEqualTo
+* IsGreaterThan
 
 ##### ValidityRange
 Checks that the data attribute is within a minimum and/or maximum value. The
@@ -137,6 +138,12 @@ values can be separated using a delimiter.
 Arguments:
 * Value: Accepted value(s)
 * Delimiter: A delimiter to separate the accepted values. Default is ,. 
+
+#### IsGreaterThan
+Checks that the data attribute is greater than the specified value. If it is not 
+greater, then this rule fails.
+Arguments:
+* Value: Greate than value
 
 #### Predictions
 Prediction rules use QC rules to make automated predictions for correcting 
