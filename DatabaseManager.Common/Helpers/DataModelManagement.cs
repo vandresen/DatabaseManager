@@ -162,15 +162,8 @@ namespace DatabaseManager.Common.Helpers
         {
             try
             {
-                string sql = await ReadDatabaseFile("DataScienceManagement.sql");
-                //string sqlFunctions = await ReadDatabaseFile("InternalRuleFunctions.sql");
-                DbUtilities dbConn = new DbUtilities();
-                dbConn.OpenConnection(connector);
-                dbConn.SQLExecute(sql);
+                _dbi.CreateDatabaseManagementTables(connector.ConnectionString);
                 _dbi.InitializeInternalRuleFunctions(connector.ConnectionString);
-                //dbConn.SQLExecute(sqlFunctions);
-                //CreateSqlSources(dbConn);
-                dbConn.CloseConnection();
 
                 string fileName = "WellBore.json";
                 string taxonomy = await ReadDatabaseFile(fileName);

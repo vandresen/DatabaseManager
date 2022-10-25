@@ -23,11 +23,9 @@ The table below shows all the DSM tables that are being created.
 
 | Table Name         | Table Description                         |
 | :----------------- | :---------------------------------------- |
-| pdo_indexes        | Contains all the available index builders |
 | pdo_qc_index       | Index containing all the data necessary to perform qc and predictions |
 | pdo_qc_rules       | Contains all the qc and prediction rules  |
 | pdo_rule_functions | Contains all the micro-service or app functions and internal metods used by the rules |
-| pdo_rule_models    | Containing all the models used in predictions |
 
 \
 This option also created several stored procedures required by DSM. It also copies data definition files to the File Shares 

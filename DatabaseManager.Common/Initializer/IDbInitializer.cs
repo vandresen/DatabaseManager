@@ -8,6 +8,7 @@ namespace DatabaseManager.Common.Initializer
 {
     public interface IDbInitializer
     {
-        public void InitializeInternalRuleFunctions(string connector);
+        public void InitializeInternalRuleFunctions(string connectionString);
+        public void CreateDatabaseManagementTables(string connectionString);
     }
 }
