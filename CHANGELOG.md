@@ -1,2 +1,3 @@
 New functionality are:
-* Settings has been expanded to include viewing of the taxonomy
+* Added editing of taxonomy in settings
+* A new validity rule to check if an attribute is greater than a set value
