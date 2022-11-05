@@ -1,7 +1,8 @@
 ﻿@using MudBlazor
 @inject IDataSources dataSources
+@inject IDataIndexer createIndex
 
-@if (options == null)
+@if (options == null || taxonomies == null)
 {
     <text>Loading...</text>
 }
@@ -26,11 +27,12 @@ else
             </MudSelect>
         </div>
         <div class="form-group">
-            <label>Taxonomy:</label>
-            <div>
-                <InputText class="form-control" @bind-Value="IndexParms.Taxonomy" />
-                <ValidationMessage For="@(() => IndexParms.Taxonomy)" />
-            </div>
+            <MudSelect T="string" Label="Taxonomy:" @bind-Value="IndexParms.Taxonomy" Variant="Variant.Outlined">
+                @foreach (var taxonomy in taxonomies)
+                {
+                    <MudSelectItem T="string" Value="@taxonomy">@taxonomy</MudSelectItem>
+                }
+            </MudSelect>
         </div>
         <button class="btn btn-success" type="submit">Save Changes</button>
     </EditForm>
@@ -41,10 +43,14 @@ else
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     List<ConnectParameters> connectParameters;
     public string[] options { get; set; }
+    List<string> taxonomies;
 
     protected override async Task OnInitializedAsync()
     {
         connectParameters = await dataSources.GetSources();
         options = connectParameters.Select(x => x.SourceName).ToArray();
+        List<IndexFileList> indexFileList = await createIndex.GetTaxonomies();
+        Console.WriteLine($"Number index files are {indexFileList.Count}");
+        taxonomies = indexFileList.Select(s => s.Name).ToList();
     }
 }
