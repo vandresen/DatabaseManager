@@ -11,7 +11,19 @@
         "NameAttribute": "CURVE_ID",
         "Select": "Select UWI, CURVE_ID, NULL_REPRESENTATION, VALUE_COUNT, MAX_INDEX, MIN_INDEX, ROW_CHANGED_DATE, ROW_CHANGED_BY from well_log_curve",
         "ParentKey": "UWI = [UWI]",
-        "UseParentLocation": false
+        "UseParentLocation": false,
+        "Arrays": [
+          {
+            "Attribute": "INDEX_VALUE",
+            "Select": "select STRING_AGG(cast(INDEX_VALUE as NVARCHAR(max)), ', ') WITHIN GROUP (ORDER BY INDEX_VALUE ASC) AS ARRAY from well_log_curve_value",
+            "ParentKey": "UWI = [UWI], CURVE_ID = [CURVE_ID]"
+          },
+          {
+            "Attribute": "MEASURED_VALUE",
+            "Select": "select STRING_AGG(cast(MEASURED_VALUE as NVARCHAR(max)), ', ') WITHIN GROUP (ORDER BY INDEX_VALUE ASC) AS ARRAY from well_log_curve_value",
+            "ParentKey": "UWI = [UWI], CURVE_ID = [CURVE_ID]"
+          }
+        ]
       },
       {
         "DataName": "MarkerPick",
