@@ -312,7 +312,7 @@ namespace DatabaseManager.Common.Helpers
             sqlCommand = "";
             string sql = accessDef.Select;
             string table = Common.GetTable(sql);
-            IEnumerable<TableSchema> attributeProperties = await _systemData.GetColumnSchema(connectionString, table);
+            IEnumerable<TableSchema> attributeProperties = await _systemData.GetColumnInfo(connectionString, table);
             string[] tableAttributes = Common.GetAttributes(sql);
             tableAttributes = tableAttributes.Where(w => w != "Id").ToArray();
             CreateUserDefinedTypes(dbConn, attributeProperties, sql, dataType);
@@ -346,7 +346,7 @@ namespace DatabaseManager.Common.Helpers
             string[] keys = accessDef.Keys.Split(',');
 
             string table = Common.GetTable(sql);
-            IEnumerable<TableSchema> attributeProperties = await _systemData.GetColumnSchema(connectionString, table);
+            IEnumerable<TableSchema> attributeProperties = await _systemData.GetColumnInfo(connectionString, table);
             string[] tableAttributes = Common.GetAttributes(sql);
             tableAttributes = tableAttributes.Where(w => w != "Id").ToArray();
             
@@ -427,7 +427,7 @@ namespace DatabaseManager.Common.Helpers
             string[] keys = accessDef.Keys.Split(',');
 
             string table = Common.GetTable(sql);
-            IEnumerable<TableSchema> attributeProperties = await _systemData.GetColumnSchema(connectionString, table);
+            IEnumerable<TableSchema> attributeProperties = await _systemData.GetColumnInfo(connectionString, table);
             string[] tableAttributes = Helpers.Common.GetAttributes(sql);
 
             sqlCommand = sqlCommand + $"CREATE PROCEDURE spUpdate{dataType} ";

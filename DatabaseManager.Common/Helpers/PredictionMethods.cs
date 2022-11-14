@@ -251,7 +251,7 @@ namespace DatabaseManager.Common.Helpers
             ISystemData systemData;
             dp = new DapperDataAccess();
             systemData = new SystemDBData(dp);
-            IEnumerable<TableSchema> attributeProperties = (IEnumerable<TableSchema>)Task.Run(() => systemData.GetColumnSchema(qcSetup.DataConnector, table)).GetAwaiter().GetResult();
+            IEnumerable<TableSchema> attributeProperties = (IEnumerable<TableSchema>)Task.Run(() => systemData.GetColumnInfo(qcSetup.DataConnector, table)).GetAwaiter().GetResult();
 
             string emptyJson = RuleMethodUtilities.GetJsonForMissingDataObject(rulePar, accessDef, attributeProperties);
             if (emptyJson == "Error")

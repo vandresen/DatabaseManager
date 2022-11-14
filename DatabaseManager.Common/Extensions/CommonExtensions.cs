@@ -140,19 +140,21 @@ namespace DatabaseManager.Common.Extensions
 
         public static string GetDatabaseAttributeType(this TableSchema attributeProperties)
         {
-            string attributeType = attributeProperties.DATA_TYPE;
+            string attributeType = attributeProperties.TYPE_NAME;
+            if(string.IsNullOrEmpty(attributeType))attributeType = attributeProperties.DATA_TYPE;
             if (attributeType == "nvarchar")
             {
-                //string charLength = dtRows[0]["CHARACTER_MAXIMUM_LENGTH"].ToString();
-                string charLength = attributeProperties.CHARACTER_MAXIMUM_LENGTH;
+                string charLength = attributeProperties.PRECISION;
                 attributeType = attributeType + "(" + charLength + ")";
+            }
+            if (attributeType == "int identity")
+            {
+                attributeType = "int";
             }
             else if (attributeType == "numeric")
             {
-                //string numericPrecision = dtRows[0]["NUMERIC_PRECISION"].ToString();
-                //string numericScale = dtRows[0]["NUMERIC_SCALE"].ToString();
-                string numericPrecision = attributeProperties.NUMERIC_PRECISION;
-                string numericScale = attributeProperties.NUMERIC_SCALE;
+                string numericPrecision = attributeProperties.PRECISION;
+                string numericScale = attributeProperties.SCALE;
                 attributeType = attributeType + "(" + numericPrecision + "," + numericScale + ")";
             }
             return attributeType;

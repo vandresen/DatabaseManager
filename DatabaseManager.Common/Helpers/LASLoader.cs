@@ -511,8 +511,7 @@ namespace DatabaseManager.Common.Helpers
             Dictionary<string, string> header = new Dictionary<string, string>();
             string[] attributes = Common.GetAttributes(dataType.Select);
             string table = Common.GetTable(dataType.Select);
-            IEnumerable<TableSchema> attributeProperties = await _systemData.GetColumnSchema(connectionString, table);
-            //ColumnProperties attributeProperties = CommonDbUtilities.GetColumnSchema(_dbConn, dataType.Select);
+            IEnumerable<TableSchema> attributeProperties = await _systemData.GetColumnInfo(connectionString, table);
             foreach (string attribute in attributes)
             {
                 header.Add(attribute.Trim(), "");

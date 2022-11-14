@@ -348,11 +348,11 @@ namespace DatabaseManager.Common.Helpers
                     }
                     else
                     {
-                        if(tableSchema.DATA_TYPE == "numeric")
+                        if(tableSchema.TYPE_NAME == "numeric")
                         {
                             dataObject[column.Trim()] = -99999.0;
                         }
-                        else if(tableSchema.DATA_TYPE == "date")
+                        else if(tableSchema.TYPE_NAME == "datetime")
                         {
                             dataObject[column.Trim()] = DateTime.Now.ToString("yyyy-MM-dd");
                         }

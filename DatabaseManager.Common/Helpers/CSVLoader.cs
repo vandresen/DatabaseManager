@@ -177,7 +177,7 @@ namespace DatabaseManager.Common.Helpers
 
             string dataTypeSql = dataAccess.Select;
             string table = Common.GetTable(dataTypeSql);
-            attributeProperties = await _systemData.GetColumnSchema(connectionString, table);
+            attributeProperties = await _systemData.GetColumnInfo(connectionString, table);
 
             //Console.WriteLine("Start parsing csv file");
             using (TextReader csvStream = new StringReader(csvText))

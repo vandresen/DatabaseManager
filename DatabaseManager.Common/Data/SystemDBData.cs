@@ -1,5 +1,6 @@
 ﻿using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
+using DatabaseManager.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,7 +54,7 @@ namespace DatabaseManager.Common.Data
 
         public async Task<IEnumerable<TableSchema>> GetColumnSchema(string connectionString, string table)
         {
-            string sql = $"Select COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, NUMERIC_PRECISION, NUMERIC_SCALE" +
+            string sql = $"Select TABLE_NAME, COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, NUMERIC_PRECISION, NUMERIC_SCALE" +
                   " from INFORMATION_SCHEMA.COLUMNS " +
                   $" where TABLE_NAME = '{table}'";
             IEnumerable<TableSchema> result = await _dp.ReadData<TableSchema>(sql, connectionString);
@@ -73,5 +74,8 @@ namespace DatabaseManager.Common.Data
             if (userName == null) userName = "UNKNOWN";
             return userName;
         }
+
+        public Task<IEnumerable<TableSchema>> GetColumnInfo(string connectionString, string table) =>
+            _dp.LoadData<TableSchema, dynamic>("dbo.sp_columns", new { TABLE_NAME = table }, connectionString);
     }
 }
