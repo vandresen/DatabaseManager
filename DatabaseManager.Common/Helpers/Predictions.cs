@@ -348,7 +348,7 @@ namespace DatabaseManager.Common.Helpers
                 int indexLevel = idxResult.IndexLevel + 1;
                 IEnumerable<DmsIndex> dmsIndex = await _indexData.GetNumberOfDescendantsByIdAndLevel(indexNode,
                     indexLevel, databaseConnectionString);
-                if (dmsIndex.Count() == 1)
+                if (dmsIndex.Count() > 1)
                 {
                     string condition = $"DATANAME={nodeName}";
                     var rows = indexTable.Select(condition);
