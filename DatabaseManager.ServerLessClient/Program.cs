@@ -1,6 +1,7 @@
 using Blazored.LocalStorage;
 using BlazorTable;
 using DatabaseManager.BlazorComponents.Services;
+using DatabaseManager.ServerLessClient.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,9 @@ namespace DatabaseManager.ServerLessClient
 
             ConfigureServices(builder.Services);
 
+            SD.DataSourceAPIBase = builder.Configuration["ServiceUrls:DataSourceAPI"];
+            SD.DataSourceKey = builder.Configuration["ServiceUrls:DataSourceKey"];
+
             await builder.Build().RunAsync();
         }
 
@@ -29,6 +33,11 @@ namespace DatabaseManager.ServerLessClient
         {
             services.AddSingleton<SingletonServices>();
             services.AddBlazoredLocalStorage();
+
+            services.AddHttpClient<IDataSourceService, DataSourceService>();
+
+            services.AddScoped<IDataSourceService, DataSourceService>();
+
             services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddScoped<IHttpService, HttpService>();
             services.AddScoped<IDataOps, DataOpsServerLess>();

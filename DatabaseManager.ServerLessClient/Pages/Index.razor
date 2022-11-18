@@ -5,6 +5,7 @@
 @inject IDisplayMessage displayMessage
 @inject NavigationManager navigationManager
 @inject IIndexView idxView
+@inject IDataSourceService dataSourceService
 @using MudBlazor
 
 <div class="jumbotron">
@@ -62,7 +63,7 @@ else
 
 
 @code {
-    public List<ConnectParameters> ConnectParameters;
+    public List<ConnectParametersDto> ConnectParameters;
     private List<string> options;
     public List<DmsIndex> index;
     private string indexStatus = "No index available";
@@ -74,21 +75,23 @@ else
         {
             settings.ServerLess = true;
             settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
-            Console.WriteLine($"{settings.AzureStorage}");
             settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
-            Console.WriteLine($"{settings.BaseUrl}");
             settings.ApiKey = await localStorage.GetItemAsync<string>("APIKey");
-            Console.WriteLine($"{settings.ApiKey}");
 
+            ResponseDto response = await dataSourceService.GetAllDataSourcesAsync<ResponseDto>();
+            if (response != null && response.IsSuccess)
+            {
+                ConnectParameters = JsonConvert.DeserializeObject<List<ConnectParametersDto>>(Convert.ToString(response.Result));
+            }
+            else
+            {
+                Console.WriteLine(response.ErrorMessages);
+                await displayMessage.DisplayErrorMessage(" There is a problem accessing data source server");
+            }
             client.DefaultRequestHeaders.Remove("azurestorageconnection");
             client.DefaultRequestHeaders.Add("azurestorageconnection", settings.AzureStorage);
-
-            string url = settings.BaseUrl.BuildFunctionUrl("GetDataSources", $"", settings.ApiKey);
-            //string url = settings.BaseUrl + "GetDataSources" + "?code=" + settings.ApiKey;
-            Console.WriteLine(url);
-            ConnectParameters = await client.GetFromJsonAsync<List<ConnectParameters>>(url);
             options = new List<string>();
-            foreach (ConnectParameters conn in ConnectParameters)
+            foreach (ConnectParametersDto conn in ConnectParameters)
             {
                 if (conn.SourceType != "File") options.Add(conn.SourceName);
             }
@@ -120,7 +123,7 @@ else
         spinner = true;
         indexStatus = "Fetching index";
         StateHasChanged();
-        ConnectParameters connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
+        var connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
         settings.TargetConnector = selectedString;
         settings.DataAccessDefinition = connector.DataAccessDefinition;
         await GetIndexData();
