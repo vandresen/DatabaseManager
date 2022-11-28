@@ -21,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Common", "D
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{EA828F33-3FF9-4D14-9C0E-F36AB7E3C98A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.Services.Datasources", "DatabaseManager.Services.Datasources\DatabaseManager.Services.Datasources.csproj", "{9C98D64B-D730-4B65-9998-1C3E603ECAA4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.Datasources", "DatabaseManager.Services.Datasources\DatabaseManager.Services.Datasources.csproj", "{9C98D64B-D730-4B65-9998-1C3E603ECAA4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
