@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "DatabaseManager.Services.DataConfiguration": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7038",
+      "launchBrowser": false
+    }
+  }
+}
