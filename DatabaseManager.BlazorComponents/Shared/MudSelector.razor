@@ -1,0 +1,21 @@
+﻿@using MudBlazor
+
+@if (Options == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <MudSelect T="string" Label="Choose configuration:" ValueChanged=Selection Variant="Variant.Outlined">
+        @foreach (var option in Options)
+        {
+            <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+        }
+    </MudSelect>
+}
+
+
+@code {
+    [Parameter] public List<string> Options { get; set; }
+    [Parameter] public EventCallback<string> Selection { get; set; }
+}

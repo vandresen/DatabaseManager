@@ -41,6 +41,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IDataTransfer, DataTransferClient>();
             services.AddScoped<IReportEdit, ReportEdit>();
             services.AddScoped<IDisplayMessage, DisplayMessage>();
+            services.AddScoped<IDataConfiguration, DataConfiguration>();
             services.AddBlazorTable();
             services.AddMudServices();
 

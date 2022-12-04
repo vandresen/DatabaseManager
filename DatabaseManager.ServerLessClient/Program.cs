@@ -1,5 +1,6 @@
 using Blazored.LocalStorage;
 using BlazorTable;
+using DatabaseManager.BlazorComponents;
 using DatabaseManager.BlazorComponents.Services;
 using DatabaseManager.ServerLessClient.Services;
 using DatabaseManager.Shared;
@@ -25,6 +26,8 @@ namespace DatabaseManager.ServerLessClient
 
             SD.DataSourceAPIBase = builder.Configuration["ServiceUrls:DataSourceAPI"];
             SD.DataSourceKey = builder.Configuration["ServiceUrls:DataSourceKey"];
+            SD.DataConfigurationAPIBase = builder.Configuration["ServiceUrls:DataConfigurationAPI"];
+            SD.DataConfigurationKey = builder.Configuration["ServiceUrls:DataConfigurationKey"];
 
             await builder.Build().RunAsync();
         }
@@ -50,6 +53,7 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IReportEdit, ReportEdit>();
             services.AddScoped<IIndexView, IndexView>();
             services.AddScoped<ICookies, Cookies>();
+            services.AddScoped<IDataConfiguration, DataConfiguration>();
             services.AddBlazorTable();
             services.AddMudServices();
         }

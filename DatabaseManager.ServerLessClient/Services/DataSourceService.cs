@@ -1,4 +1,5 @@
-﻿using DatabaseManager.ServerLessClient.Models;
+﻿using DatabaseManager.BlazorComponents;
+using DatabaseManager.ServerLessClient.Models;
 using DatabaseManager.Shared;
 using Newtonsoft.Json.Linq;
 using System;
@@ -33,6 +34,7 @@ namespace DatabaseManager.ServerLessClient.Services
             string key = "";
             if (!string.IsNullOrEmpty(SD.DataSourceKey)) key = "?code=" + SD.DataSourceKey;
             string url = SD.DataSourceAPIBase + "/api/GetDataSources" + key;
+            Console.WriteLine($"GetAllDataSources: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,

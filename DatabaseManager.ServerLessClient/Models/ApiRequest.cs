@@ -1,4 +1,4 @@
-﻿using static DatabaseManager.ServerLessClient.SD;
+﻿using static DatabaseManager.BlazorComponents.SD;
 
 namespace DatabaseManager.ServerLessClient.Models
 {

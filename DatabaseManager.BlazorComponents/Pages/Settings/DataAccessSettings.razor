@@ -1,5 +1,48 @@
-﻿<h3>Data Access Settings (Under development)</h3>
+﻿@inject IDataConfiguration dataConfiguration
+@inject IDisplayMessage displayMessage
+@using DatabaseManager.BlazorComponents.Shared
+@using MudBlazor
+
+<br />
+<MudSelector Selection="Selected" Options="files"></MudSelector>
+<br />
+
+<br />
+<MudTextField @bind-Value="content" Label="Content" ReadOnly="true" Variant="Variant.Outlined" />
+<br />
 
 @code {
+    private List<string> files;
+    private string configFile;
+    private string content;
 
+    protected override async Task OnInitializedAsync()
+    {
+        ResponseDto response = await dataConfiguration.GetRecords();
+        if (response != null && response.IsSuccess)
+        {
+            files = JsonConvert.DeserializeObject<List<string>>(Convert.ToString(response.Result));
+        }
+        else
+        {
+            Console.WriteLine(response.ErrorMessages);
+            await displayMessage.DisplayErrorMessage(" There is a problem accessing data configuration server");
+        }
+    }
+
+    private async Task Selected(string selectedString)
+    {
+        configFile = selectedString;
+        ResponseDto response = await dataConfiguration.GetRecord(configFile);
+        if (response != null && response.IsSuccess)
+        {
+            content = Convert.ToString(response.Result);
+            Console.WriteLine(content);
+        }
+        else
+        {
+            Console.WriteLine(response.ErrorMessages);
+            await displayMessage.DisplayErrorMessage(" There is a problem accessing data configuration server");
+        }
+    }
 }
