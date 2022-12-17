@@ -1,0 +1,232 @@
+﻿@using PBL = Plotly.Blazor.LayoutLib
+@using PBT = Plotly.Blazor.Traces
+
+@if (noData)
+{
+    <br />
+    <p>Not enough data points</p>
+}
+else if (DataType == "WellBore")
+{
+    <PlotlyChart style="height: 60vh; min-height: 150px" @bind-Config="config" @bind-Layout="layout" @bind-Data="data" @ref="chart" />
+}
+else
+{
+    <br />
+    <p>No data available for surface view</p>
+}
+
+
+@code {
+    [Parameter] public string DataType { get; set; }
+    [Parameter] public List<DmsIndex> Index { get; set; }
+    private bool noData = false;
+    private List<SurfacePoint> _pointRange;
+
+    PlotlyChart chart;
+    Config config = new Config
+    {
+        Responsive = true//,        
+    };
+
+    Layout layout = new Layout
+    {
+        Title = new PBL.Title
+        {
+            Text = "Surface",
+            Font = new PBL.TitleLib.Font
+                {
+                    Color = "#AAA"
+                }
+        },
+        Legend = new PBL.Legend
+        {
+            Font = new PBL.LegendLib.Font
+            {
+                Color = "#AAA"
+            }
+        },
+        XAxis = new List<PBL.XAxis>
+        {
+            new PBL.XAxis
+            {
+                Title = new PBL.XAxisLib.Title
+                {
+                    Text = "X Location",
+                    Font = new PBL.XAxisLib.TitleLib.Font
+                    {
+                        Color = "#AAA"
+                    }
+                }
+            }
+        },
+        YAxis = new List<PBL.YAxis>
+        {
+            new PBL.YAxis
+            {
+                Title = new PBL.YAxisLib.Title
+                {
+                    Text = "Y Location",
+                    Font = new PBL.YAxisLib.TitleLib.Font
+                    {
+                        Color = "#AAA"
+                    }
+                }
+            }
+        },
+    };
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine($"OnInitialized");
+        _pointRange = new List<SurfacePoint>();
+        foreach (DmsIndex item in Index)
+        {
+            bool use = true;
+            if (!string.IsNullOrEmpty(item.JsonData))
+            {
+                double? lat = item.JsonData.GetNumberFromJson("SURFACE_LATITUDE");
+                double? lon = item.JsonData.GetNumberFromJson("SURFACE_LONGITUDE");
+                double? zValue = item.JsonData.GetNumberFromJson("DEPTH_DATUM_ELEV");
+                if (lat == null || lat == -99999.0) use = false;
+                if (lon == null || lon == -99999.0) use = false;
+                if (zValue == null || zValue == -99999.0) use = false;
+                Console.WriteLine($"Lat = {lat}, Lon = {lon}, z = {zValue}");
+                if (use)
+                {
+                    _pointRange.Add(new SurfacePoint((double)zValue, (double)lat, (double)lon));
+                }
+            }
+        }
+        if (_pointRange.Count < 6) noData = true;
+    }
+
+    IList<ITrace> data = new List<ITrace>
+    {
+        new Surface
+        {
+            Name = "SurfaceTrace",
+
+            X = new List<object>(),
+            Y = new List<object>(),
+            Z = new List<object>(),
+            ColorBar = new PBT.SurfaceLib.ColorBar()
+            {
+                OutlineColor = "#AAA",
+                BorderColor = "#AAA",
+                TickColor = "#AAA",
+                TickFont = new PBT.SurfaceLib.ColorBarLib.TickFont
+                {
+                    Color = "#AAA"
+                }
+            }
+        }
+    };
+
+    private async Task SetData()
+    {
+        Console.WriteLine("Setdata");
+        int interval = 20;
+        var xys = _pointRange.Select(s => s.Coordinates).ToArray();
+
+        double[] xp = new double[xys.Count()];
+        double[] yp = new double[xys.Count()];
+        for (int i = 0; i < xys.Count(); i++)
+        {
+            xp[i] = xys[i][0];
+            yp[i] = xys[i][1];
+        }
+        var xmax = xp.Max();
+        var xmin = xp.Min();
+        var xinc = (xmax - xmin) / interval;
+        var ymax = yp.Max();
+        var ymin = yp.Min();
+        var yinc = (ymax - ymin) / interval;
+        Console.WriteLine($"xmax = {xmax}, xmin = {xmin}, xinc = {xinc}");
+        Console.WriteLine($"ymax = {ymax}, ymin = {ymin}, yinc = {yinc}");
+
+        var maxinc = GetMax(xinc, yinc);
+        int xint = (int)Math.Ceiling((xmax - xmin) / maxinc);
+        int yint = (int)Math.Ceiling((ymax - ymin) / maxinc);
+        ymax = ymin + (maxinc * yint);
+        xmax = xmin + (maxinc * xint);
+
+        var x = LinSpace(xmin, xmax, xint);
+        var y = LinSpace(ymin, ymax, yint);
+
+        var h = data[0] as PBT.Surface;
+        List<object> z = new List<object>();
+
+        IdwInterpolator target = new IdwInterpolator(dimensions: 2);
+        target.AddPointRange(_pointRange);
+
+        for (int i = 0; i < xint; i++)
+        {
+            var zs = new List<object>();
+            for (int j = 0; j < yint; j++)
+            {
+                var result = target.Interpolate(x[i], y[j]);
+                //Console.WriteLine($"Results is {result.Value}");
+                zs.Add(result.Value);
+            }
+            z.Add(zs);
+        }
+
+        h.Y = new List<object>();
+        foreach (var item in y)
+        {
+            h.Y.Add(item);
+        }
+        h.X = new List<object>();
+        foreach (var item in x)
+        {
+            h.X.Add(item);
+        }
+
+        h.Z = z;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Console.WriteLine($"Render view, firstRender = {firstRender}");
+        if (firstRender)
+        {
+            try
+            {
+                if (!noData)
+                {
+                    await SetData();
+                    await chart.NewPlot();
+                }
+            }
+            catch (Exception e)
+            {
+
+            }
+        }
+    }
+
+    private static double GetMax(double first, double second)
+    {
+        return first > second ? first : second;
+    }
+
+    static double[] LinSpace(double StartValue, double EndValue, int numberofpoints)
+    {
+        double[] parameterVals = new double[numberofpoints];
+        double increment = Math.Abs(StartValue - EndValue) / Convert.ToDouble(numberofpoints - 1);
+        int j = 0; //will keep a track of the numbers
+        double nextValue = StartValue;
+        for (int i = 0; i < numberofpoints; i++)
+        {
+            parameterVals.SetValue(nextValue, j);
+            j++;
+            if (j > numberofpoints)
+            {
+                throw new IndexOutOfRangeException();
+            }
+            nextValue = nextValue + increment;
+        }
+        return parameterVals;
+    }
+}

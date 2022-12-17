@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -50,6 +52,23 @@ namespace DatabaseManager.BlazorComponents.Extensions
             }
 
             return output;
+        }
+
+        public static double? GetNumberFromJson(this string json, string attribute)
+        {
+            JObject dataObject = JObject.Parse(json);
+            JToken token = dataObject.GetValue(attribute);
+            double? number = null;
+            if (token != null)
+            {
+                string strNumber = token.ToString();
+                if (!string.IsNullOrWhiteSpace(strNumber))
+                {
+                    double value;
+                    if (double.TryParse(strNumber, out value)) number = value;
+                }
+            }
+            return number;
         }
     }
 }

@@ -2,31 +2,43 @@
 @inject SingletonServices settings
 @inject IIndexView indexData
 @inject NavigationManager navigationManager
+@using MudBlazor
 
 <h3>@DataType</h3>
 
-@if (AvailableHeaderColumns != null)
-{
-    <SelectColumns AvailableColumns="AvailableHeaderColumns" SelectedColumns="selectedColumns" Selections="Selected"></SelectColumns>
-}
+<MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Primary">
+    <MudTabPanel Text="Table View">
+        @if (AvailableHeaderColumns != null)
+        {
+            <SelectColumns AvailableColumns="AvailableHeaderColumns" SelectedColumns="selectedColumns" Selections="Selected"></SelectColumns>
+        }
 
-@if (refreshButton)
-{
-    <br/>
-    <button class="btn btn-primary" @onclick="Refresh">Refresh</button>
-    <br/>
-}
+        @if (refreshButton)
+        {
+            <br />
+            <button class="btn btn-primary" @onclick="Refresh">Refresh</button>
+            <br />
+        }
 
-@if(data.Count > 0)
-{    
-    <CreateTableView Data="data" Attributes="@attributes" ChildrenDrillDown="Drilldown" Taxonomy="@taxonomy" ArrayDrillDown="ArrayAction">
+        @if (data.Count > 0)
+        {
+            <CreateTableView Data="data" Attributes="@attributes" ChildrenDrillDown="Drilldown" Taxonomy="@taxonomy" ArrayDrillDown="ArrayAction">
 
-    </CreateTableView>
-}
-else
-{
-    <p>@message</p>
-}
+            </CreateTableView>
+        }
+        else
+        {
+            <p>@message</p>
+        }
+    </MudTabPanel>
+    <MudTabPanel Text="Surface View">
+        <SurfaceView DataType="@DataType" Index="@index">
+        </SurfaceView>
+    </MudTabPanel>
+    
+</MudTabs>
+
+
 
 @code {
     [Parameter] public int Id { get; set; }
