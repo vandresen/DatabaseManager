@@ -17,13 +17,6 @@ namespace DatabaseManager.Services.Datasources
             builder.Services.AddSingleton(mapper);
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             builder.Services.AddScoped<IDataSourceRepository, DataSourceRepository>();
-            //builder.Services.AddHttpClient();
-
-            //builder.Services.AddSingleton<IMyService>((s) => {
-            //    return new MyService();
-            //});
-
-            //builder.Services.AddSingleton<ILoggerProvider, MyLoggerProvider>();
         }
     }
 }

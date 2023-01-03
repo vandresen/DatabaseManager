@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
@@ -17,11 +18,13 @@ namespace DatabaseManager.Services.Datasources
     public class DataSources
     {
         private readonly IDataSourceRepository _dataSourceRepository;
+        private readonly IConfiguration _configuration;
         protected ResponseDto _response;
 
-        public DataSources(IDataSourceRepository dataSourceRepository)
+        public DataSources(IDataSourceRepository dataSourceRepository, IConfiguration configuration)
         {
             _dataSourceRepository = dataSourceRepository;
+            _configuration = configuration;
             this._response = new ResponseDto();
         }
 
@@ -33,7 +36,10 @@ namespace DatabaseManager.Services.Datasources
             log.LogInformation("GetDataSources: Starting");
             try
             {
-                string storageAccount = req.GetStorageKey();
+                string storageAccount;
+                storageAccount = _configuration.GetConnectionString("AzurestorageConnection");
+                log.LogInformation($"GetDataSources: App settings is {storageAccount}");
+                if (string.IsNullOrEmpty(storageAccount)) storageAccount = req.GetStorageKey();
                 List<ConnectParametersDto> sources = await _dataSourceRepository.GetDataSources(storageAccount);
                 _response.Result = sources;
             }
@@ -57,7 +63,10 @@ namespace DatabaseManager.Services.Datasources
             log.LogInformation("GetDataSource: Starting");
             try
             {
-                string storageAccount = req.GetStorageKey();
+                string storageAccount;
+                storageAccount = _configuration.GetConnectionString("AzurestorageConnection");
+                log.LogInformation($"GetDataSources: App settings is {storageAccount}");
+                if (string.IsNullOrEmpty(storageAccount)) storageAccount = req.GetStorageKey();
                 ConnectParametersDto source = await _dataSourceRepository.GetDataSourceByName(name, storageAccount);
                 _response.Result = source;
             }
@@ -81,7 +90,10 @@ namespace DatabaseManager.Services.Datasources
             log.LogInformation("SaveDataSource: Starting");
             try
             {
-                string storageAccount = req.GetStorageKey();
+                string storageAccount;
+                storageAccount = _configuration.GetConnectionString("AzurestorageConnection");
+                log.LogInformation($"GetDataSources: App settings is {storageAccount}");
+                if (string.IsNullOrEmpty(storageAccount)) storageAccount = req.GetStorageKey();
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
                 ConnectParametersDto connector = JsonConvert.DeserializeObject<ConnectParametersDto>(requestBody);
                 if (connector == null)
@@ -117,7 +129,10 @@ namespace DatabaseManager.Services.Datasources
             log.LogInformation("DeleteDataSource: Starting");
             try
             {
-                string storageAccount = req.GetStorageKey();
+                string storageAccount;
+                storageAccount = _configuration.GetConnectionString("AzurestorageConnection");
+                log.LogInformation($"GetDataSources: App settings is {storageAccount}");
+                if (string.IsNullOrEmpty(storageAccount)) storageAccount = req.GetStorageKey();
                 bool isSuccess = await _dataSourceRepository.DeleteDataSource(name, storageAccount);
                 _response.Result = isSuccess;
             }
