@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "DatabaseManager.Services.Index": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7204",
+      "launchBrowser": false
+    }
+  }
+}
