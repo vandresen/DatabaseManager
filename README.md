@@ -42,3 +42,9 @@ Database Manager requires an azure storage account. You define this with the key
 
 ## API
 The user interface is based on Blazor. An option for you is to build your own user interface but use our Web API. Here is a [Swagger Link](https://petrodataonline.azurewebsites.net/swagger) to the web api 
+
+## Microservices
+Some of the functionality is being converted into microservices. The following microservices are available:
+
+# Data Sources
+This is a CRUD for data sources used by Database Manager. The data sources are stored in a table in Azure storage. You need to define this in the header or a Connectionstring called AzurestorageConnection.
