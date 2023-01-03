@@ -46,5 +46,5 @@ The user interface is based on Blazor. An option for you is to build your own us
 ## Microservices
 Some of the functionality is being converted into microservices. The following microservices are available:
 
-# Data Sources
+### Data Sources
 This is a CRUD for data sources used by Database Manager. The data sources are stored in a table in Azure storage. You need to define this in the header or a Connectionstring called AzurestorageConnection.
