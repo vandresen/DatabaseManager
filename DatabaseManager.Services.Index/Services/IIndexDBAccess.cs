@@ -10,5 +10,6 @@ namespace DatabaseManager.Services.Index.Services
     public interface IIndexDBAccess
     {
         Task<IEnumerable<IndexDto>> GetIndexes(string connectionString);
+        Task<IndexDto> GetIndex(int id, string connectionString);
     }
 }

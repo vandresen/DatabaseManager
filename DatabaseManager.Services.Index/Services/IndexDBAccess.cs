@@ -16,6 +16,12 @@ namespace DatabaseManager.Services.Index.Services
             _dp = dp;
         }
 
+        public async Task<IndexDto> GetIndex(int id, string connectionString)
+        {
+            var results = await _dp.LoadData<IndexDto, dynamic>("dbo.spGetIndexFromId", new { id = id }, connectionString);
+            return results.FirstOrDefault();
+        }
+
         public Task<IEnumerable<IndexDto>> GetIndexes(string connectionString) =>
             _dp.LoadData<IndexDto, dynamic>("dbo.spGetIndex", new { }, connectionString);
     }
