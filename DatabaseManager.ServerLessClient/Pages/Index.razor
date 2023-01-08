@@ -7,6 +7,7 @@
 @inject IIndexView idxView
 @inject IDataSourceService dataSourceService
 @using MudBlazor
+@using DatabaseManager.BlazorComponents;
 
 <div class="jumbotron">
     <h1>Welcome to Database Manager</h1>
@@ -73,6 +74,7 @@ else
     {
         try
         {
+            Console.WriteLine($"SD.DataSourceAPIBase = {SD.DataSourceAPIBase}");
             settings.ServerLess = true;
             settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
             settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");

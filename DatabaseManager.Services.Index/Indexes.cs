@@ -1,39 +1,50 @@
 using System.Net;
-using DatabaseManager.Services.Index.Helpers;
+using DatabaseManager.Services.Index.Extensions;
 using DatabaseManager.Services.Index.Models;
+using DatabaseManager.Services.Index.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace DatabaseManager.Services.Index
 {
     public class Indexes
     {
         private readonly ILogger _logger;
+        private readonly ILoggerFactory loggerFactory;
         private readonly IConfiguration _configuration;
+        private readonly IDataSourceService _ds;
+        private readonly IIndexDBAccess _indexDB;
         protected ResponseDto _response;
 
-        public Indexes(ILoggerFactory loggerFactory, IConfiguration configuration)
+        public Indexes(ILoggerFactory loggerFactory, IConfiguration configuration, 
+            IDataSourceService ds, IIndexDBAccess indexDB)
         {
             _logger = loggerFactory.CreateLogger<Indexes>();
             this._response = new ResponseDto();
+            this.loggerFactory = loggerFactory;
             _configuration = configuration;
+            _ds = ds;
+            _indexDB = indexDB;
             SD.DataSourceAPIBase = _configuration.GetValue<string>("DataSourceAPI");
+            SD.DataSourceKey = _configuration["DataSourceKey"];
         }
 
         [Function("GetIndexes")]
-        public ResponseDto GetIndexes(
+        public async Task<ResponseDto> GetIndexes(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Indexes")] HttpRequestData req)
         {
             _logger.LogInformation("GetIndexes: Starting.");
 
             try
             {
-                var settingOne = _configuration.GetValue<string>("DataSourceAPI");
-                _logger.LogInformation($"GetIndexes: setting is {SD.DataSourceAPIBase}");
-                IndexData idx = new IndexData(_logger);
-                List<IndexDto> indexes = idx.GetIndexes(req);
+                string name = req.GetQuery("Name", true);
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                IEnumerable<IndexDto> idx = await _indexDB.GetIndexes(connectParameter.ConnectionString);
+                _response.Result = idx.ToList();
             }
             catch (Exception ex)
             {
