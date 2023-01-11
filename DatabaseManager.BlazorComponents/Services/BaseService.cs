@@ -1,15 +1,13 @@
-﻿using DatabaseManager.ServerLessClient.Models;
-using System.Threading.Tasks;
-using System.Net.Http.Headers;
-using System.Net.Http;
+﻿using DatabaseManager.BlazorComponents.Models;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using System.Text;
-using DatabaseManager.BlazorComponents.Pages.Settings;
-using DatabaseManager.BlazorComponents;
+using System.Threading.Tasks;
 
-namespace DatabaseManager.ServerLessClient.Services
+namespace DatabaseManager.BlazorComponents.Services
 {
     public class BaseService : IBaseService
     {

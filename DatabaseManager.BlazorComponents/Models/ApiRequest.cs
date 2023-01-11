@@ -1,6 +1,11 @@
-﻿using static DatabaseManager.BlazorComponents.SD;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using static DatabaseManager.BlazorComponents.SD;
 
-namespace DatabaseManager.ServerLessClient.Models
+namespace DatabaseManager.BlazorComponents.Models
 {
     public class ApiRequest
     {

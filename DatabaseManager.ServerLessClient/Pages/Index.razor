@@ -6,6 +6,7 @@
 @inject NavigationManager navigationManager
 @inject IIndexView idxView
 @inject IDataSourceService dataSourceService
+@inject IIndexService idxService
 @using MudBlazor
 @using DatabaseManager.BlazorComponents;
 
@@ -135,11 +136,9 @@ else
     {
         try
         {
-            string url = settings.BaseUrl + 
-            "GetIndexData" + 
-            $"?name={settings.TargetConnector}&code=" + settings.ApiKey;
-            Console.WriteLine(url);
-            index = await client.GetFromJsonAsync<List<DmsIndex>>(url);
+            ResponseDto response = await idxService.GetDmIndexesAsync<ResponseDto>(settings.TargetConnector);
+            //Console.WriteLine(response.IsSuccess);
+            index = JsonConvert.DeserializeObject<List<DmsIndex>>(response.Result.ToString());
         }
         catch (Exception ex)
         {

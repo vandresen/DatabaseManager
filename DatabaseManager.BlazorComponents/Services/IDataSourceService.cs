@@ -1,7 +1,11 @@
-﻿using DatabaseManager.ServerLessClient.Models;
+﻿using DatabaseManager.BlazorComponents.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
-namespace DatabaseManager.ServerLessClient.Services
+namespace DatabaseManager.BlazorComponents.Services
 {
     public interface IDataSourceService : IBaseService
     {

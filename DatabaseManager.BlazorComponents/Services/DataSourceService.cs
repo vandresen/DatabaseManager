@@ -1,12 +1,13 @@
-﻿using DatabaseManager.BlazorComponents;
-using DatabaseManager.ServerLessClient.Models;
+﻿using DatabaseManager.BlazorComponents.Models;
 using DatabaseManager.Shared;
-using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 
-namespace DatabaseManager.ServerLessClient.Services
+namespace DatabaseManager.BlazorComponents.Services
 {
     public class DataSourceService : BaseService, IDataSourceService
     {

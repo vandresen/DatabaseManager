@@ -1,4 +1,10 @@
-﻿namespace DatabaseManager.ServerLessClient.Models
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DatabaseManager.BlazorComponents.Models
 {
     public class ConnectParametersDto
     {

@@ -2,7 +2,6 @@ using Blazored.LocalStorage;
 using BlazorTable;
 using DatabaseManager.BlazorComponents;
 using DatabaseManager.BlazorComponents.Services;
-using DatabaseManager.ServerLessClient.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +25,8 @@ namespace DatabaseManager.ServerLessClient
 
             SD.DataSourceAPIBase = builder.Configuration["ServiceUrls:DataSourceAPI"];
             SD.DataSourceKey = builder.Configuration["ServiceUrls:DataSourceKey"];
+            SD.IndexAPIBase = builder.Configuration["ServiceUrls:IndexAPI"];
+            SD.IndexKey = builder.Configuration["ServiceUrls:IndexKey"];
             SD.DataConfigurationAPIBase = builder.Configuration["ServiceUrls:DataConfigurationAPI"];
             SD.DataConfigurationKey = builder.Configuration["ServiceUrls:DataConfigurationKey"];
 
@@ -38,8 +39,10 @@ namespace DatabaseManager.ServerLessClient
             services.AddBlazoredLocalStorage();
 
             services.AddHttpClient<IDataSourceService, DataSourceService>();
+            services.AddHttpClient<IIndexService, IndexService>();
 
             services.AddScoped<IDataSourceService, DataSourceService>();
+            services.AddScoped<IIndexService, IndexService>();
 
             services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddScoped<IHttpService, HttpService>();
@@ -54,6 +57,7 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IIndexView, IndexView>();
             services.AddScoped<ICookies, Cookies>();
             services.AddScoped<IDataConfiguration, DataConfiguration>();
+            
             services.AddBlazorTable();
             services.AddMudServices();
         }
