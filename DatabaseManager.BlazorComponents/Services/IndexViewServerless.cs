@@ -68,9 +68,19 @@ namespace DatabaseManager.BlazorComponents.Services
             return idxData;
         }
 
-        public Task<IndexModel> GetSingleIndexItem(string source, int id)
+        public async Task<IndexModel> GetSingleIndexItem(string source, int id)
         {
-            throw new NotImplementedException();
+            IndexModel idx = new IndexModel();
+            string url = SD.IndexAPIBase.BuildFunctionUrl($"/api/Indexes/{id}", $"Name={source}", SD.IndexKey);
+            Console.WriteLine($"GetDmIndexesAsync: url = {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                Url = url
+            });
+            string json = response.Result.ToString();
+            idx = JsonConvert.DeserializeObject<IndexModel>(json);
+            return idx;
         }
 
         public void InitSettings(SingletonServices settings)
