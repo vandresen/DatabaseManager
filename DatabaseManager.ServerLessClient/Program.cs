@@ -54,7 +54,7 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IDataQc, DataQc>();
             services.AddScoped<IRules, Rules>();
             services.AddScoped<IReportEdit, ReportEdit>();
-            services.AddScoped<IIndexView, IndexView>();
+            services.AddScoped<IIndexView, IndexViewServerless>();
             services.AddScoped<ICookies, Cookies>();
             services.AddScoped<IDataConfiguration, DataConfiguration>();
             

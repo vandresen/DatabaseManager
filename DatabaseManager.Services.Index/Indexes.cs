@@ -60,18 +60,18 @@ namespace DatabaseManager.Services.Index
         public async Task<ResponseDto> GetDmIndexes(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "DmIndexes")] HttpRequestData req)
         {
-            _logger.LogInformation("GetIndexes: Starting.");
+            _logger.LogInformation("GetDmIndexes: Starting.");
 
             try
             {
                 string name = req.GetQuery("Name", true);
                 string indexNode = req.GetQuery("Node", false);
                 if (string.IsNullOrEmpty(indexNode)) indexNode = "/";
-                int? indeLevel = req.GetQuery("Level", false).GetIntFromString();
-                if (!indeLevel.HasValue) indeLevel = 1;
+                int? indexLevel = req.GetQuery("Level", false).GetIntFromString();
+                if (!indexLevel.HasValue) indexLevel = 1;
                 ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
                 ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
-                IEnumerable<DmIndexDto> idx = await _indexDB.GetDmIndexes(indexNode, (int)indeLevel, connectParameter.ConnectionString);
+                IEnumerable<DmIndexDto> idx = await _indexDB.GetDmIndexes(indexNode, (int)indexLevel, connectParameter.ConnectionString);
                 _response.Result = idx.ToList();
             }
             catch (Exception ex)
@@ -79,7 +79,32 @@ namespace DatabaseManager.Services.Index
                 _response.IsSuccess = false;
                 _response.ErrorMessages
                      = new List<string>() { ex.ToString() };
-                _logger.LogError($"GetIndexes: Error getting indexes: {ex}");
+                _logger.LogError($"GetDmIndexes: Error getting indexes: {ex}");
+            }
+            return _response;
+        }
+
+        [Function("GetDmIndex")]
+        public async Task<ResponseDto> GetDmIndex(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "DmIndex")] HttpRequestData req)
+        {
+            _logger.LogInformation("GetDmIndex: Starting.");
+
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                int? id = req.GetQuery("Id", true).GetIntFromString();
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                IEnumerable<DmIndexDto> idx = await _indexDB.GetDmIndex((int)id, connectParameter.ConnectionString);
+                _response.Result = idx.ToList();
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"GetDmIndex: Error getting indexes: {ex}");
             }
             return _response;
         }

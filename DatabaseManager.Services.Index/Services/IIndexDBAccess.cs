@@ -12,5 +12,6 @@ namespace DatabaseManager.Services.Index.Services
         Task<IEnumerable<IndexDto>> GetIndexes(string connectionString);
         Task<IndexDto> GetIndex(int id, string connectionString);
         Task<IEnumerable<DmIndexDto>> GetDmIndexes(string indexNode, int level, string connectionString);
+        Task<IEnumerable<DmIndexDto>> GetDmIndex(int id, string connectionString);
     }
 }

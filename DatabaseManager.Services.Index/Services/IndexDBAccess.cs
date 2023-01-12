@@ -16,6 +16,10 @@ namespace DatabaseManager.Services.Index.Services
             _dp = dp;
         }
 
+        public Task<IEnumerable<DmIndexDto>> GetDmIndex(int id, string connectionString) =>
+            _dp.LoadData<DmIndexDto, dynamic>("dbo.spGetNumberOfDescendantsById",
+                new { id = id }, connectionString);
+
         public Task<IEnumerable<DmIndexDto>> GetDmIndexes(string indexNode, int level, string connectionString) =>
             _dp.LoadData<DmIndexDto, dynamic>("dbo.spGetNumberOfDescendants",
                 new { indexnode = indexNode, level = level }, connectionString);
