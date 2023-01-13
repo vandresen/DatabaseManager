@@ -7,12 +7,13 @@ PPDM database and Data Science projects. So far this version provides functional
 * Transfer well data from one PPDM database, LAS or csv files to a PPDM database 
 * Create a index for repository
 * Manage data QC and prediction rules
-* Execute QC rules and view result
-* Execute prediction rules and view result
+* Dataops that includes data transfer, indexing data qc and predictions
+* result viewer for data qc issues and predictions
 
 This tool is built for the cloud generation.
 
-## Projects
+## Projects and folders
+* Services - Contains micro services
 * DatabaseManager.Common - Common dll's used by all projects 
 * DatabaseManager.BlazorComponents - Common blazor components that can be used in custom User Interaces
 * DatabaseManager.ServerLessClient - Serverless client using App functions to manage PPDM
@@ -48,3 +49,10 @@ Some of the functionality is being converted into microservices. The following m
 
 ### Data Sources
 This is a CRUD for data sources used by Database Manager. The data sources are stored in a table in Azure storage. You need to define this in the header or a Connectionstring called AzurestorageConnection.
+
+### Data configurations
+This is a CRUD for data configuration files
+
+### Indexer
+This is a CRUD for the data index used by Data Manager.
+
