@@ -1,0 +1,48 @@
+﻿@using MudBlazor
+
+@if(data == null)
+{
+    <p>No data</p>
+}
+else
+{
+    <MudTable Elevation="25" Items="@data" Dense="true" Hover="true">
+        <ColGroup>
+            <col />
+            <col />
+            <col />
+            <col style="width:300px;" />
+        </ColGroup>
+        <HeaderContent>
+            <MudTh>Data Type</MudTh>
+            <MudTh>Mappings</MudTh>
+            <MudTh>Constants</MudTh>
+            <MudTh>Action</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Data Type">@context.Datatype</MudTd>
+            <MudTd DataLabel="Mappings">@context.Mappings</MudTd>
+            <MudTd DataLabel="Constants">@context.Constants</MudTd>
+            <MudTd DataLabel="">
+                @*<MudFab @onclick="@(() => Edit(@context))" Color="Color.Primary" Icon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small" />*@
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    [Parameter] public string Content { get; set; }
+    private List<csvData> data;
+
+    protected override async Task OnInitializedAsync()
+    {
+        data = Newtonsoft.Json.JsonConvert.DeserializeObject<List<csvData>>(Content);
+    }
+
+    private class csvData
+    {
+        public string Datatype { get; set; }
+        public string Mappings { get; set; }
+        public string Constants { get; set; }
+    }
+}

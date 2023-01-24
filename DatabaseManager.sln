@@ -25,7 +25,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.Da
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.DataConfiguration", "DatabaseManager.Services.DataConfiguration\DatabaseManager.Services.DataConfiguration.csproj", "{DF13C120-0DF2-4641-A4A3-88A5A3D8DF86}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.Services.Index", "DatabaseManager.Services.Index\DatabaseManager.Services.Index.csproj", "{C9ABA3C4-FD66-476A-AA3A-CCF210FCD568}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.Index", "DatabaseManager.Services.Index\DatabaseManager.Services.Index.csproj", "{C9ABA3C4-FD66-476A-AA3A-CCF210FCD568}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

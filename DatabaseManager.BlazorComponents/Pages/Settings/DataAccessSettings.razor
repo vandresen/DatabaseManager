@@ -7,13 +7,21 @@
 <MudSelector Selection="Selected" Options="files"></MudSelector>
 <br />
 
-<br />
-<MudTextField @bind-Value="content" Label="Content" ReadOnly="true" Variant="Variant.Outlined" />
-<br />
+@if(configType == "CSV")
+{
+   <CSVSettings Content="@content"></CSVSettings>
+}
+else
+{
+    <br />
+    <MudTextField @bind-Value="content" Label="Content" ReadOnly="true" Variant="Variant.Outlined" />
+    <br />
+}
 
 @code {
     private List<string> files;
     private string configFile;
+    private string configType = "";
     private string content;
 
     protected override async Task OnInitializedAsync()
@@ -34,6 +42,8 @@
     {
         configFile = selectedString;
         ResponseDto response = await dataConfiguration.GetRecord(configFile);
+        if (configFile.StartsWith("CSV")) configType = "CSV";
+        else configType = "";
         if (response != null && response.IsSuccess)
         {
             content = Convert.ToString(response.Result);
