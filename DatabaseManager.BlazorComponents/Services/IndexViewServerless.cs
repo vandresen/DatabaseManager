@@ -1,5 +1,6 @@
 ﻿using DatabaseManager.BlazorComponents.Extensions;
 using DatabaseManager.BlazorComponents.Models;
+using DatabaseManager.BlazorComponents.Pages.Settings;
 using DatabaseManager.Shared;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -9,15 +10,20 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace DatabaseManager.BlazorComponents.Services
 {
     public class IndexViewServerless : BaseService, IIndexView
     {
         private readonly IHttpClientFactory _clientFactory;
+        private readonly string taxonomyShare = "taxonomy";
+        private readonly SingletonServices _settings;
+        private string url;
 
-        public IndexViewServerless(IHttpClientFactory clientFactory) : base(clientFactory)
+        public IndexViewServerless(IHttpClientFactory clientFactory, SingletonServices settings) : base(clientFactory)
         {
+            _settings = settings;
         }
 
         public async Task<List<DmsIndex>> GetChildren(string source, int id)
@@ -39,14 +45,24 @@ namespace DatabaseManager.BlazorComponents.Services
             throw new NotImplementedException();
         }
 
-        public Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)
+        public async Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)
         {
-            throw new NotImplementedException();
+            List<IndexFileDefinition> def = new List<IndexFileDefinition>();
+            if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={taxonomyShare}&name={fileName}";
+            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={taxonomyShare}&name={fileName}", SD.DataConfigurationKey);
+            Console.WriteLine(url);
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                AzureStorage = _settings.AzureStorage,
+                Url = url
+            });
+            def = JsonConvert.DeserializeObject<List<IndexFileDefinition>>(response.Result.ToString());
+            return def;
         }
 
         public async Task<List<IndexFileData>> GetIndexTaxonomy(string source)
         {
-            //List<IndexFileData> data = new List<IndexFileData>();
             string url = SD.IndexAPIBase.BuildFunctionUrl("/api/DmIndexes", $"Name={source}&Node=/&Level=0", SD.IndexKey);
             Console.WriteLine($"GetDmIndexesAsync: url = {url}");
             ResponseDto response =  await this.SendAsync<ResponseDto>(new ApiRequest()
