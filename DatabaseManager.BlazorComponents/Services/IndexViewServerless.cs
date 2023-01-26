@@ -103,9 +103,18 @@ namespace DatabaseManager.BlazorComponents.Services
         {
         }
 
-        public Task SaveIndexFileDefs(List<IndexFileDefinition> indexDef, string fileName)
+        public async Task SaveIndexFileDefs(List<IndexFileDefinition> indexDef, string fileName)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={taxonomyShare}&name={fileName}";
+            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/DataConfiguration", $"folder={taxonomyShare}&name={fileName}", SD.DataConfigurationKey);
+            Console.WriteLine(url);
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.POST,
+                AzureStorage = _settings.AzureStorage,
+                Url = url,
+                Data = indexDef
+            });
         }
 
         private static IndexFileData ProcessJTokens(JToken token)
