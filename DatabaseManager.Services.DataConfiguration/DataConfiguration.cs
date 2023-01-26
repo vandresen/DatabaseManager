@@ -56,5 +56,31 @@ namespace DatabaseManager.Services.DataConfiguration
             _logger.LogInformation("GetDataConfiguration: Complete");
             return _response;
         }
+
+        [Function("DataConfiguration")]
+        public async Task<ResponseDto> SaveConfiguration([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
+        {
+            _logger.LogInformation("SaveConfiguration: Starting");
+
+            try
+            {
+                string storageAccount = req.GetStorageKey();
+                string folder = req.GetQuery("folder", true);
+                string name = req.GetQuery("Name", true);
+                var stringBody = await new StreamReader(req.Body).ReadToEndAsync();
+                _dataRepository.SetConnectionString(storageAccount);
+                await _dataRepository.SaveRecord(folder, name, stringBody);
+                _response.Result = stringBody;
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"SaveConfiguration: Error getting data configuration from folder: {ex}");
+            }
+            _logger.LogInformation("SaveConfiguration: Complete");
+            return _response;
+        }
     }
 }

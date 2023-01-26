@@ -69,9 +69,25 @@ namespace DatabaseManager.Services.DataConfiguration.Repository
             return files;
         }
 
-        public Task SaveRecord(string container, string file)
+        public async Task SaveRecord(string container, string file, string fileContent)
         {
-            throw new NotImplementedException();
+            ShareClient share = new ShareClient(_connectionString, container);
+            if (!share.Exists())
+            {
+                share.Create();
+            }
+            ShareDirectoryClient rootDir = share.GetRootDirectoryClient();
+            ShareFileClient fileClient = rootDir.GetFileClient(file);
+            if (!fileClient.Exists())
+            {
+                fileClient.Create(fileContent.Length);
+            }
+
+            byte[] outBuff = Encoding.ASCII.GetBytes(fileContent);
+            ShareFileOpenWriteOptions options = new ShareFileOpenWriteOptions { MaxSize = outBuff.Length };
+            var stream = await fileClient.OpenWriteAsync(true, 0, options);
+            stream.Write(outBuff, 0, outBuff.Length);
+            stream.Flush();
         }
 
         public void SetConnectionString(string connection)

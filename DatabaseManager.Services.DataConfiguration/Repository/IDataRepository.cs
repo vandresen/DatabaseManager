@@ -12,7 +12,7 @@ namespace DatabaseManager.Services.DataConfiguration.Repository
         void SetConnectionString(string connection);
         Task<List<string>> GetRecords(string container);
         Task<string> GetRecord(string container, string file);
-        Task SaveRecord(string container, string file);
+        Task SaveRecord(string container, string file, string fileContent);
         void Delete(string container, string file);
     }
 }
