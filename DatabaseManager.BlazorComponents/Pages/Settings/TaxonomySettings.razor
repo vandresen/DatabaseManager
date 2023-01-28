@@ -7,19 +7,20 @@
 <TaxonomySelect Selection="Selected"></TaxonomySelect>
 <br />
 
-@if (ifd == null)
+@if (ifdList == null)
 {
     <text>No taxonomy file selected yet...</text>
 }
 else
 {
-    <MudCard Elevation="25">
-        <MudCardHeader>
+    <MudCard Elevation="25" >
+        <MudCardHeader Class="pb-1">
             <CardHeaderContent>
-                <MudText Typo="Typo.h6">Edit Taxonomy @dataDef.DataName</MudText>
+                <MudText Class="pb-1"  Typo="Typo.h6">Edit Taxonomy @dataDef.DataName</MudText>
             </CardHeaderContent>
         </MudCardHeader>
-        <MudCardContent>
+        <MudCardContent Class="pt-1" >
+            <MudTextField @bind-Value="dataDef.DataName" Label="Data object Name" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
             <MudTextField @bind-Value="dataDef.NameAttribute" Label="Data Attribute Key" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
             <MudTextField @bind-Value="dataDef.ParentKey" Label="Parent Key" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
             <MudTextField @bind-Value="dataDef.Select" Label="Select" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
@@ -28,7 +29,7 @@ else
         </MudCardContent>
     </MudCard>
     <br />
-    <MudTable Elevation="25" Items="@ifd" Dense="true" Hover="true">
+    <MudTable Elevation="25" Items="@ifdList" Dense="true" Hover="true">
         <ColGroup>
             <col />
             <col />
@@ -50,8 +51,8 @@ else
             <MudTh>Action</MudTh>
         </HeaderContent>
         <RowTemplate>
-            <MudTd DataLabel="Data Name">@context.DataName</MudTd>
-            <MudTd DataLabel="Data name">@context.NameAttribute</MudTd>
+            <MudTd DataLabel="Data object Name">@context.DataName</MudTd>
+            <MudTd DataLabel="Data attribute key">@context.NameAttribute</MudTd>
             <MudTd DataLabel="Parent key">@context.ParentKey</MudTd>
             <MudTd DataLabel="Latitude attribute">@context.LatitudeAttribute</MudTd>
             <MudTd DataLabel="Longitude attribute">@context.LongitudeAttribute</MudTd>
@@ -70,38 +71,52 @@ else
 
 
 @code {
-    List<IndexFileDefinition> ifd;
+    List<IndexFileDefinition> ifdList;
+    IndexFileDefinition ifd = new IndexFileDefinition();
     List<string> breadCrumb = new List<string>();
     Dictionary<string, List<IndexFileDefinition>> index = new Dictionary<string, List<IndexFileDefinition>>();
     private IndexFileDefinition dataDef = new IndexFileDefinition();
     private List<IndexFileDefinition> original;
     private string TaxonomyFile;
+    bool edit = false;
 
     private async Task Selected(string selectedString)
     {
         TaxonomyFile = selectedString;
         iv.InitSettings(settings);
-        ifd = await iv.GetIndexFileDefs(TaxonomyFile);
-        original = ifd;
+        ifdList = await iv.GetIndexFileDefs(TaxonomyFile);
+        original = ifdList;
     }
 
     private void Drilldown(IndexFileDefinition item)
     {
         JArray jArray = new JArray();
-        ifd = item.DataObjects;
+        ifdList = item.DataObjects;
         this.StateHasChanged();
     }
 
     private void Edit(IndexFileDefinition item)
     {
         Console.WriteLine($"Edit object : {item.DataName}");
+        edit = true;
         dataDef = item;
+    }
+
+    private void NewDatatype()
+    {
+        Console.WriteLine($"New data type");
     }
 
     private async Task Save()
     {
+        if (!edit)
+        {
+            ifdList.Add(dataDef);
+        }
         string saveResult = JsonConvert.SerializeObject(original, Formatting.Indented);
         Console.WriteLine($"Saved json: {saveResult}");
         await iv.SaveIndexFileDefs(original, TaxonomyFile);
+        edit = false;
+        dataDef = new IndexFileDefinition();
     }
 }
