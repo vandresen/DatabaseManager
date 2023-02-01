@@ -1,3 +1,7 @@
 New functionality in this release are:
-* A new tab to view elevation in a surface view when drilling down to wellbores
+* Created a new microservice for index. This service is used by the serverless client
+* The Dataconfiguration microservice was extended to have create and update functionality
+* Created a Rules microservice with get rules functionality so far
+* Asdded a table view for CSV data access in Settings
+* Created functionality to add a datatype to Taxonomy settings
 
