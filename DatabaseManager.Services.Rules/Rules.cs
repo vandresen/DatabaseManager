@@ -40,9 +40,14 @@ namespace DatabaseManager.Services.Rules
             try
             {
                 string name = req.GetQuery("Name", true);
+                int? id = req.GetQuery("Id", false).GetIntFromString();
                 ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                _logger.LogInformation("Rules get: Successfully got the connect info.");
+                IEnumerable<RuleModelDto> rules = Enumerable.Empty<RuleModelDto>();
+                RuleModelDto rule = new RuleModelDto();
                 ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
-                IEnumerable<RuleModelDto> rules = await _ruleDB.GetRules(connectParameter.ConnectionString);
+                if (id == null) rules = await _ruleDB.GetRules(connectParameter.ConnectionString);
+                else rule = await _ruleDB.GetRule((int)id, connectParameter.ConnectionString);
                 _response.Result = rules.ToList();
             }
             catch (Exception ex)

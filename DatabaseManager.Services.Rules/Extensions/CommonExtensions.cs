@@ -33,5 +33,16 @@ namespace DatabaseManager.Services.Rules.Extensions
             if (url.EndsWith("&")) url = url.Substring(0, url.Length - 1);
             return url;
         }
+
+        public static int? GetIntFromString(this string token)
+        {
+            int? number = null;
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                int value;
+                if (int.TryParse(token, out value)) number = value;
+            }
+            return number;
+        }
     }
 }
