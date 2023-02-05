@@ -29,4 +29,31 @@ jobs:
         with:
           name: ServerlessUI
           path: D:\a\DatabaseManager\DatabaseManager\DatabaseManager.ServerLessClient\bin\Debug\net6.0\publish\
+          
+  deploy:
+    needs: build
+    name: Deploy
+    runs-on: windows-2022
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: ServerlessUI
+    - name: Authenticate with Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS  }}
+    - name: Deploy to storage using CLI
+      uses: azure/CLI@v1
+      with:
+        azcliversion: latest
+        inlineScript: | 
+          # show azure account being used
+          az account show
+          # az storage account upload
+          az storage blob upload-batch --account-name ${{ env.BLOB_STORAGE_ACCOUNT_NAME }} -s . -d \$web
+    - name: logout
+      working-directory: .
+      run: |
+        az logout
   
