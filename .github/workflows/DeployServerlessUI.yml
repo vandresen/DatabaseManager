@@ -22,7 +22,7 @@ jobs:
         run: dotnet build --configuration Release --no-restore
         
       - name: Publish
-        run: dotnet publish DatabaseManager.ServerLessClient/DatabaseManager.ServerLessClient.csproj --configuration Release -o ../published_app --no-build
+        run: dotnet publish DatabaseManager.ServerLessClient/DatabaseManager.ServerLessClient.csproj --configuration Release -o ../published_app --no-build --self-contained true
         
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
