@@ -28,7 +28,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ServerlessUI
-          path: published_app/wwwroot
+          path: D:\a\DatabaseManager\published_app\wwwroot
           
   deploy:
     needs: build
