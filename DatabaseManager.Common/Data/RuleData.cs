@@ -28,7 +28,7 @@ namespace DatabaseManager.Common.Data
         public Task<IEnumerable<RuleModel>> GetRulesFromSP(string connectionString) =>
             _dp.LoadData<RuleModel, dynamic>("dbo.spGetRules", new { }, connectionString);
 
-        public async Task<RuleModel?> GetRuleFromSP(int id, string connectionString)
+        public async Task<RuleModel> GetRuleFromSP(int id, string connectionString)
         {
             var results = await _dp.LoadData<RuleModel, dynamic>("dbo.spGetWithIdRules", new { Id = id }, connectionString);
             return results.FirstOrDefault();

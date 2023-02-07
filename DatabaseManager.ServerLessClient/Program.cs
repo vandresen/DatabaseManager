@@ -4,6 +4,7 @@ using DatabaseManager.BlazorComponents;
 using DatabaseManager.BlazorComponents.Services;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor.Services;
 using System;
@@ -22,6 +23,18 @@ namespace DatabaseManager.ServerLessClient
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress), Timeout = TimeSpan.FromMinutes(5) });
 
             ConfigureServices(builder.Services);
+
+            var http = new HttpClient()
+            {
+                BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
+            };
+
+            builder.Services.AddScoped(sp => http);
+
+            using var response = await http.GetAsync("appsettings.json");
+            using var stream = await response.Content.ReadAsStreamAsync();
+
+            builder.Configuration.AddJsonStream(stream);
 
             SD.DataSourceAPIBase = builder.Configuration["ServiceUrls:DataSourceAPI"];
             SD.DataSourceKey = builder.Configuration["ServiceUrls:DataSourceKey"];
