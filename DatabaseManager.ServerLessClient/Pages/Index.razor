@@ -7,6 +7,8 @@
 @inject IIndexView idxView
 @inject IDataSourceService dataSourceService
 @inject IIndexService idxService
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
 @using MudBlazor
 @using DatabaseManager.BlazorComponents;
 
@@ -76,6 +78,8 @@ else
         try
         {
             Console.WriteLine($"SD.DataSourceAPIBase = {SD.DataSourceAPIBase}");
+            Console.WriteLine($"SD.DataConfigurationKey = {SD.DataConfigurationKey}");
+            Console.WriteLine($"IndexAPI = {Configuration["ServiceUrls:IndexAPI"]}");
             settings.ServerLess = true;
             settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
             settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
