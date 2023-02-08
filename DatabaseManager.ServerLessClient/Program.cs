@@ -31,7 +31,7 @@ namespace DatabaseManager.ServerLessClient
 
             builder.Services.AddScoped(sp => http);
 
-            using var response = await http.GetAsync("cars.json");
+            using var response = await http.GetAsync("appsettings.json");
             using var stream = await response.Content.ReadAsStreamAsync();
 
             builder.Configuration.AddJsonStream(stream);
@@ -49,31 +49,31 @@ namespace DatabaseManager.ServerLessClient
 
         private static void ConfigureServices(IServiceCollection services)
         {
-            //services.AddSingleton<SingletonServices>();
-            //services.AddBlazoredLocalStorage();
+            services.AddSingleton<SingletonServices>();
+            services.AddBlazoredLocalStorage();
 
-            //services.AddHttpClient<IDataSourceService, DataSourceService>();
-            //services.AddHttpClient<IIndexService, IndexService>();
+            services.AddHttpClient<IDataSourceService, DataSourceService>();
+            services.AddHttpClient<IIndexService, IndexService>();
 
-            //services.AddScoped<IDataSourceService, DataSourceService>();
-            //services.AddScoped<IIndexService, IndexService>();
+            services.AddScoped<IDataSourceService, DataSourceService>();
+            services.AddScoped<IIndexService, IndexService>();
 
-            //services.AddScoped<IDisplayMessage, DisplayMessage>();
-            //services.AddScoped<IHttpService, HttpService>();
-            //services.AddScoped<IDataOps, DataOpsServerLess>();
-            //services.AddScoped<IDataSources, DataSourcesServerLess>();
-            //services.AddScoped<IDataTransfer, DataTransferServerLess>();
-            //services.AddScoped<IDataModelCreate, DataModelCreate>();
-            //services.AddScoped<IDataIndexer, DataIndexer>();
-            //services.AddScoped<IDataQc, DataQc>();
-            //services.AddScoped<IRules, Rules>();
-            //services.AddScoped<IReportEdit, ReportEdit>();
-            //services.AddScoped<IIndexView, IndexViewServerless>();
-            //services.AddScoped<ICookies, Cookies>();
-            //services.AddScoped<IDataConfiguration, DataConfiguration>();
+            services.AddScoped<IDisplayMessage, DisplayMessage>();
+            services.AddScoped<IHttpService, HttpService>();
+            services.AddScoped<IDataOps, DataOpsServerLess>();
+            services.AddScoped<IDataSources, DataSourcesServerLess>();
+            services.AddScoped<IDataTransfer, DataTransferServerLess>();
+            services.AddScoped<IDataModelCreate, DataModelCreate>();
+            services.AddScoped<IDataIndexer, DataIndexer>();
+            services.AddScoped<IDataQc, DataQc>();
+            services.AddScoped<IRules, Rules>();
+            services.AddScoped<IReportEdit, ReportEdit>();
+            services.AddScoped<IIndexView, IndexViewServerless>();
+            services.AddScoped<ICookies, Cookies>();
+            services.AddScoped<IDataConfiguration, DataConfiguration>();
 
-            //services.AddBlazorTable();
-            //services.AddMudServices();
+            services.AddBlazorTable();
+            services.AddMudServices();
         }
     }
 }
