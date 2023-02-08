@@ -10,8 +10,8 @@
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration Configuration
 @*@using MudBlazor*@
-@*@using DatabaseManager.BlazorComponents;
-*@
+@using DatabaseManager.BlazorComponents;
+
 <div class="jumbotron">
     <h1>Welcome to Database Manager</h1>
     <p class="lead">The tool to manage your PPDM databases</p>
@@ -77,8 +77,8 @@ else
     {
         try
         {
-            //Console.WriteLine($"SD.DataSourceAPIBase = {SD.DataSourceAPIBase}");
-            //Console.WriteLine($"SD.DataConfigurationKey = {SD.DataConfigurationKey}");
+            Console.WriteLine($"SD.DataSourceAPIBase = {SD.DataSourceAPIBase}");
+            Console.WriteLine($"SD.DataConfigurationKey = {SD.DataConfigurationKey}");
             Console.WriteLine($"IndexAPI = {Configuration["size"]}");
             Console.WriteLine($"TestNode = {Configuration["TestNode"]}");
             //settings.ServerLess = true;

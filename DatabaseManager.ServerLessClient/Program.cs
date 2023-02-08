@@ -36,13 +36,12 @@ namespace DatabaseManager.ServerLessClient
 
             builder.Configuration.AddJsonStream(stream);
 
-            //SD.DataSourceAPIBase = builder.Configuration["ServiceUrls:DataSourceAPI"];
-            //SD.DataSourceKey = builder.Configuration["ServiceUrls:DataSourceKey"];
-            //SD.IndexAPIBase = builder.Configuration["ServiceUrls:IndexAPI"];
-            //SD.IndexKey = builder.Configuration["ServiceUrls:IndexKey"];
-            //SD.DataConfigurationAPIBase = builder.Configuration["ServiceUrls:DataConfigurationAPI"];
-            //SD.DataConfigurationKey = builder.Configuration["ServiceUrls:DataConfigurationKey"];
-        
+            SD.DataSourceAPIBase = builder.Configuration["ServiceUrls:DataSourceAPI"];
+            SD.DataSourceKey = builder.Configuration["ServiceUrls:DataSourceKey"];
+            SD.IndexAPIBase = builder.Configuration["ServiceUrls:IndexAPI"];
+            SD.IndexKey = builder.Configuration["ServiceUrls:IndexKey"];
+            SD.DataConfigurationAPIBase = builder.Configuration["ServiceUrls:DataConfigurationAPI"];
+            SD.DataConfigurationKey = builder.Configuration["ServiceUrls:DataConfigurationKey"];
 
             await builder.Build().RunAsync();
         }
