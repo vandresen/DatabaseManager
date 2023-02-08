@@ -17,7 +17,7 @@
     <p class="lead">The tool to manage your PPDM databases</p>
 </div>
 
-<p>Target Database: @settings.TargetConnector</p>
+@*<p>Target Database: @settings.TargetConnector</p>
 
 @if (options == null)
 {
@@ -64,7 +64,7 @@ else
         </RowTemplate>
     </MudTable>
 }
-
+*@
 
 @code {
     public List<ConnectParametersDto> ConnectParameters;
