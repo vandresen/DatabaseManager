@@ -31,7 +31,7 @@ namespace DatabaseManager.ServerLessClient
 
             builder.Services.AddScoped(sp => http);
 
-            using var response = await http.GetAsync("appsettings.json");
+            using var response = await http.GetAsync("cars.json");
             using var stream = await response.Content.ReadAsStreamAsync();
 
             builder.Configuration.AddJsonStream(stream);
