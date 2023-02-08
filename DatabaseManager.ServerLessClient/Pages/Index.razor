@@ -1,15 +1,15 @@
 ﻿@page "/"
-@*@inject ILocalStorageService localStorage
+@inject ILocalStorageService localStorage
 @inject SingletonServices settings
 @inject HttpClient client
 @inject IDisplayMessage displayMessage
 @inject NavigationManager navigationManager
 @inject IIndexView idxView
 @inject IDataSourceService dataSourceService
-@inject IIndexService idxService*@
+@inject IIndexService idxService
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration Configuration
-@*@using MudBlazor*@
+@using MudBlazor
 @using DatabaseManager.BlazorComponents;
 
 <div class="jumbotron">
@@ -17,7 +17,7 @@
     <p class="lead">The tool to manage your PPDM databases</p>
 </div>
 
-@*<p>Target Database: @settings.TargetConnector</p>
+<p>Target Database: @settings.TargetConnector</p>
 
 @if (options == null)
 {
@@ -64,7 +64,7 @@ else
         </RowTemplate>
     </MudTable>
 }
-*@
+
 
 @code {
     public List<ConnectParametersDto> ConnectParameters;
@@ -81,82 +81,82 @@ else
             Console.WriteLine($"SD.DataConfigurationKey = {SD.DataConfigurationKey}");
             Console.WriteLine($"IndexAPI = {Configuration["size"]}");
             Console.WriteLine($"TestNode = {Configuration["TestNode"]}");
-            //settings.ServerLess = true;
-            //settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
-            //settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
-            //settings.ApiKey = await localStorage.GetItemAsync<string>("APIKey");
+            settings.ServerLess = true;
+            settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
+            settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
+            settings.ApiKey = await localStorage.GetItemAsync<string>("APIKey");
 
-            //ResponseDto response = await dataSourceService.GetAllDataSourcesAsync<ResponseDto>();
-            //if (response != null && response.IsSuccess)
-            //{
-            //    ConnectParameters = JsonConvert.DeserializeObject<List<ConnectParametersDto>>(Convert.ToString(response.Result));
-            //}
-            //else
-            //{
-            //    Console.WriteLine(response.ErrorMessages);
-            //    await displayMessage.DisplayErrorMessage(" There is a problem accessing data source server");
-            //}
-            //client.DefaultRequestHeaders.Remove("azurestorageconnection");
-            //client.DefaultRequestHeaders.Add("azurestorageconnection", settings.AzureStorage);
-            //options = new List<string>();
-            //foreach (ConnectParametersDto conn in ConnectParameters)
-            //{
-            //    if (conn.SourceType != "File") options.Add(conn.SourceName);
-            //}
-            //if (!string.IsNullOrEmpty(settings.TargetConnector))
-            //{
-            //    await GetIndexData();
-            //}
+            ResponseDto response = await dataSourceService.GetAllDataSourcesAsync<ResponseDto>();
+            if (response != null && response.IsSuccess)
+            {
+                ConnectParameters = JsonConvert.DeserializeObject<List<ConnectParametersDto>>(Convert.ToString(response.Result));
+            }
+            else
+            {
+                Console.WriteLine(response.ErrorMessages);
+                await displayMessage.DisplayErrorMessage(" There is a problem accessing data source server");
+            }
+            client.DefaultRequestHeaders.Remove("azurestorageconnection");
+            client.DefaultRequestHeaders.Add("azurestorageconnection", settings.AzureStorage);
+            options = new List<string>();
+            foreach (ConnectParametersDto conn in ConnectParameters)
+            {
+                if (conn.SourceType != "File") options.Add(conn.SourceName);
+            }
+            if (!string.IsNullOrEmpty(settings.TargetConnector))
+            {
+                await GetIndexData();
+            }
         }
         catch (Exception ex)
         {
-            //Console.WriteLine(ex.ToString());
-            //if (ex.ToString().Contains("Connection string is not set"))
-            //{
-            //    await displayMessage.DisplayErrorMessage("Azure storage connection string is missing. Use Settings to set it temporary for the session");
-            //}
-            //else if (ex.ToString().Contains("Unauthorized"))
-            //{
-            //    await displayMessage.DisplayErrorMessage("API key may be missing or invalid. Use Settings to set it");
-            //}
-            //else
-            //{
-            //    await displayMessage.DisplayErrorMessage(" There is a problem accessing server");
-            //}
+            Console.WriteLine(ex.ToString());
+            if (ex.ToString().Contains("Connection string is not set"))
+            {
+                await displayMessage.DisplayErrorMessage("Azure storage connection string is missing. Use Settings to set it temporary for the session");
+            }
+            else if (ex.ToString().Contains("Unauthorized"))
+            {
+                await displayMessage.DisplayErrorMessage("API key may be missing or invalid. Use Settings to set it");
+            }
+            else
+            {
+                await displayMessage.DisplayErrorMessage(" There is a problem accessing server");
+            }
         }
     }
 
-    //private async Task Selected(string selectedString)
-    //{
-    //    spinner = true;
-    //    indexStatus = "Fetching index";
-    //    StateHasChanged();
-    //    var connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
-    //    settings.TargetConnector = selectedString;
-    //    settings.DataAccessDefinition = connector.DataAccessDefinition;
-    //    await GetIndexData();
-    //}
+    private async Task Selected(string selectedString)
+    {
+        spinner = true;
+        indexStatus = "Fetching index";
+        StateHasChanged();
+        var connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
+        settings.TargetConnector = selectedString;
+        settings.DataAccessDefinition = connector.DataAccessDefinition;
+        await GetIndexData();
+    }
 
-    //private async Task GetIndexData()
-    //{
-    //    try
-    //    {
-    //        ResponseDto response = await idxService.GetDmIndexesAsync<ResponseDto>(settings.TargetConnector);
-    //        //Console.WriteLine(response.IsSuccess);
-    //        index = JsonConvert.DeserializeObject<List<DmsIndex>>(response.Result.ToString());
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        index = null;
-    //        Console.WriteLine(ex);
-    //        indexStatus = "No index found";
-    //        StateHasChanged();
-    //    }
-    //}
+    private async Task GetIndexData()
+    {
+        try
+        {
+            ResponseDto response = await idxService.GetDmIndexesAsync<ResponseDto>(settings.TargetConnector);
+            //Console.WriteLine(response.IsSuccess);
+            index = JsonConvert.DeserializeObject<List<DmsIndex>>(response.Result.ToString());
+        }
+        catch (Exception ex)
+        {
+            index = null;
+            Console.WriteLine(ex);
+            indexStatus = "No index found";
+            StateHasChanged();
+        }
+    }
 
-    //private void DataTypes(DmsIndex item)
-    //{
-    //    string url = @"/ChildData/" + $"{item.Id}";
-    //    navigationManager.NavigateTo(url);
-    //}
+    private void DataTypes(DmsIndex item)
+    {
+        string url = @"/ChildData/" + $"{item.Id}";
+        navigationManager.NavigateTo(url);
+    }
 }
