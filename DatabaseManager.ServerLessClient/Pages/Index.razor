@@ -1,15 +1,15 @@
 ﻿@page "/"
-@inject ILocalStorageService localStorage
+@*@inject ILocalStorageService localStorage
 @inject SingletonServices settings
 @inject HttpClient client
 @inject IDisplayMessage displayMessage
 @inject NavigationManager navigationManager
 @inject IIndexView idxView
 @inject IDataSourceService dataSourceService
-@inject IIndexService idxService
+@inject IIndexService idxService*@
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration Configuration
-@using MudBlazor
+@*@using MudBlazor*@
 @using DatabaseManager.BlazorComponents;
 
 <div class="jumbotron">
@@ -110,19 +110,19 @@ else
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.ToString());
-            if (ex.ToString().Contains("Connection string is not set"))
-            {
-                await displayMessage.DisplayErrorMessage("Azure storage connection string is missing. Use Settings to set it temporary for the session");
-            }
-            else if (ex.ToString().Contains("Unauthorized"))
-            {
-                await displayMessage.DisplayErrorMessage("API key may be missing or invalid. Use Settings to set it");
-            }
-            else
-            {
-                await displayMessage.DisplayErrorMessage(" There is a problem accessing server");
-            }
+            //Console.WriteLine(ex.ToString());
+            //if (ex.ToString().Contains("Connection string is not set"))
+            //{
+            //    await displayMessage.DisplayErrorMessage("Azure storage connection string is missing. Use Settings to set it temporary for the session");
+            //}
+            //else if (ex.ToString().Contains("Unauthorized"))
+            //{
+            //    await displayMessage.DisplayErrorMessage("API key may be missing or invalid. Use Settings to set it");
+            //}
+            //else
+            //{
+            //    await displayMessage.DisplayErrorMessage(" There is a problem accessing server");
+            //}
         }
     }
 

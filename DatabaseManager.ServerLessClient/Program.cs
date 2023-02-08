@@ -71,7 +71,7 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IIndexView, IndexViewServerless>();
             services.AddScoped<ICookies, Cookies>();
             services.AddScoped<IDataConfiguration, DataConfiguration>();
-            
+
             services.AddBlazorTable();
             services.AddMudServices();
         }
