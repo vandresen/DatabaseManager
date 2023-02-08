@@ -51,7 +51,7 @@ jobs:
           # show azure account being used
           az account show
           # az storage account upload
-          az storage blob upload-batch --account-name ${{ secrets.SERVERLESSUI_BLOB_STORAGE_ACCOUNT_NAME }} -s . -d \$web
+          az storage blob upload-batch --account-name ${{ secrets.SERVERLESSUI_BLOB_STORAGE_ACCOUNT_NAME }} -s . -d \$web --overwrite true
     - name: logout
       working-directory: .
       run: |
