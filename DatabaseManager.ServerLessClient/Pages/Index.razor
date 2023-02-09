@@ -79,8 +79,6 @@ else
         {
             Console.WriteLine($"SD.DataSourceAPIBase = {SD.DataSourceAPIBase}");
             Console.WriteLine($"SD.DataConfigurationKey = {SD.DataConfigurationKey}");
-            Console.WriteLine($"IndexAPI = {Configuration["size"]}");
-            Console.WriteLine($"TestNode = {Configuration["TestNode"]}");
             settings.ServerLess = true;
             settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
             settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");

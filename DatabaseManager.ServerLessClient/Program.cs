@@ -20,23 +20,18 @@ namespace DatabaseManager.ServerLessClient
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("#app");
 
-            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress), Timeout = TimeSpan.FromMinutes(5) });
+            var http = new HttpClient()
+            {
+                BaseAddress = new Uri(builder.HostEnvironment.BaseAddress),
+                Timeout = TimeSpan.FromMinutes(5)
+            };
+            builder.Services.AddScoped(sp => http);
 
+            ConfigureServices(builder.Services);
 
-
-            //var http = new HttpClient()
-            //{
-            //    BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
-            //};
-
-            //builder.Services.AddScoped(sp => http);
-
-            //using var response = await http.GetAsync("appsettings.json");
-            //using var stream = await response.Content.ReadAsStreamAsync();
-
-            //builder.Configuration.AddJsonStream(stream);
-
-            
+            using var response = await http.GetAsync("appsettings.json");
+            using var stream = await response.Content.ReadAsStreamAsync();
+            builder.Configuration.AddJsonStream(stream);
 
             SD.DataSourceAPIBase = builder.Configuration["ServiceUrls:DataSourceAPI"];
             SD.DataSourceKey = builder.Configuration["ServiceUrls:DataSourceKey"];
@@ -44,8 +39,6 @@ namespace DatabaseManager.ServerLessClient
             SD.IndexKey = builder.Configuration["ServiceUrls:IndexKey"];
             SD.DataConfigurationAPIBase = builder.Configuration["ServiceUrls:DataConfigurationAPI"];
             SD.DataConfigurationKey = builder.Configuration["ServiceUrls:DataConfigurationKey"];
-
-            ConfigureServices(builder.Services);
 
             await builder.Build().RunAsync();
         }

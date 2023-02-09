@@ -2,13 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
+	  <Nullable>disable</Nullable>
+	  <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Blazored.LocalStorage" Version="4.2.0" />
     <PackageReference Include="BlazorTable" Version="1.17.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.8" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.8" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.10" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
     <PackageReference Include="MudBlazor" Version="6.0.15" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />

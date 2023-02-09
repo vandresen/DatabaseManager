@@ -16,7 +16,8 @@ namespace DatabaseManager.BlazorComponents.Services
         public HttpService(HttpClient httpClient)
         {
             this.httpClient = httpClient;
-            httpClient.Timeout = TimeSpan.FromSeconds(500);
+            var timeOut = httpClient.Timeout;
+            if (timeOut != TimeSpan.FromMinutes(5)) httpClient.Timeout = TimeSpan.FromSeconds(500);
         }
 
         public async Task<HttpResponseWrapper<T>> Get<T>(string url)
