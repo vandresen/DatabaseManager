@@ -1,4 +1,5 @@
 ﻿using DatabaseManager.BlazorComponents.Models;
+using DatabaseManager.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,8 +12,8 @@ namespace DatabaseManager.BlazorComponents.Services
     {
         Task<T> GetAllDataSourcesAsync<T>();
         Task<T> GetDataSourceByNameAsync<T>(string name);
-        Task<T> CreateDataSourceAsync<T>(ConnectParametersDto connector);
-        Task<T> UpdateDataSourceAsync<T>(ConnectParametersDto connector);
+        Task<T> CreateDataSourceAsync<T>(ConnectParameters connector);
+        Task<T> UpdateDataSourceAsync<T>(ConnectParameters connector);
         Task<T> DeleteDataSourceAsync<T>(string name);
     }
 }

@@ -1,4 +1,6 @@
-﻿using DatabaseManager.BlazorComponents.Models;
+﻿using AutoMapper;
+using DatabaseManager.BlazorComponents.Extensions;
+using DatabaseManager.BlazorComponents.Models;
 using DatabaseManager.Shared;
 using System;
 using System.Collections.Generic;
@@ -6,6 +8,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace DatabaseManager.BlazorComponents.Services
 {
@@ -13,28 +16,43 @@ namespace DatabaseManager.BlazorComponents.Services
     {
         private readonly IHttpClientFactory _clientFactory;
         private readonly SingletonServices _settings;
+        private readonly IMapper _mapper;
 
-        public DataSourceService(IHttpClientFactory clientFactory, SingletonServices settings) : base(clientFactory)
+        public DataSourceService(IHttpClientFactory clientFactory, SingletonServices settings, IMapper mapper) : base(clientFactory)
         {
             _clientFactory = clientFactory;
             _settings = settings;
+            _mapper = mapper;
         }
 
-        public Task<T> CreateDataSourceAsync<T>(ConnectParametersDto connector)
+        public async Task<T> CreateDataSourceAsync<T>(ConnectParameters connector)
         {
-            throw new System.NotImplementedException();
+            string url = SD.DataSourceAPIBase.BuildFunctionUrl($"/api/SaveDataSource", "", SD.DataSourceKey);
+            Console.WriteLine($"CreateDataSourceAsync: url = {url}");
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.POST,
+                AzureStorage = _settings.AzureStorage,
+                Url = url,
+                Data = connector
+            });
         }
 
-        public Task<T> DeleteDataSourceAsync<T>(string name)
+        public async Task<T> DeleteDataSourceAsync<T>(string name)
         {
-            throw new System.NotImplementedException();
+            string url = SD.DataSourceAPIBase.BuildFunctionUrl($"/api/DeleteDataSource/{name}", "", SD.DataSourceKey);
+            Console.WriteLine($"DeleteDataSourceAsync: url = {url}");
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.DELETE,
+                AzureStorage = _settings.AzureStorage,
+                Url = url
+            });
         }
 
         public async Task<T> GetAllDataSourcesAsync<T>()
         {
-            string key = "";
-            if (!string.IsNullOrEmpty(SD.DataSourceKey)) key = "?code=" + SD.DataSourceKey;
-            string url = SD.DataSourceAPIBase + "/api/GetDataSources" + key;
+            string url = SD.DataSourceAPIBase.BuildFunctionUrl($"/api/GetDataSources", "", SD.DataSourceKey);
             Console.WriteLine($"GetAllDataSources: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -44,14 +62,29 @@ namespace DatabaseManager.BlazorComponents.Services
             });
         }
 
-        public Task<T> GetDataSourceByNameAsync<T>(string name)
+        public async Task<T> GetDataSourceByNameAsync<T>(string name)
         {
-            throw new System.NotImplementedException();
+            string url = SD.DataSourceAPIBase.BuildFunctionUrl($"/api/GetDataSource/{name}", "", SD.DataSourceKey);
+            Console.WriteLine($"GetAllDataSources: url = {url}");
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                AzureStorage = _settings.AzureStorage,
+                Url = url
+            });
         }
 
-        public Task<T> UpdateDataSourceAsync<T>(ConnectParametersDto connector)
+        public async Task<T> UpdateDataSourceAsync<T>(ConnectParameters connector)
         {
-            throw new System.NotImplementedException();
+            string url = SD.DataSourceAPIBase.BuildFunctionUrl($"/api/SaveDataSource", "", SD.DataSourceKey);
+            Console.WriteLine($"CreateDataSourceAsync: url = {url}");
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.POST,
+                AzureStorage = _settings.AzureStorage,
+                Url = url,
+                Data = connector
+            });
         }
     }
 }

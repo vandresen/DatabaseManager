@@ -1,3 +1,4 @@
+using AutoMapper;
 using Blazored.LocalStorage;
 using BlazorTable;
 using DatabaseManager.BlazorComponents;
@@ -45,6 +46,9 @@ namespace DatabaseManager.ServerLessClient
 
         private static void ConfigureServices(IServiceCollection services)
         {
+            IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
+            services.AddSingleton(mapper);
+
             services.AddSingleton<SingletonServices>();
             services.AddBlazoredLocalStorage();
 

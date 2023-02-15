@@ -1,5 +1,7 @@
 ﻿using DatabaseManager.BlazorComponents.Extensions;
+using DatabaseManager.BlazorComponents.Models;
 using DatabaseManager.Shared;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,65 +13,67 @@ namespace DatabaseManager.BlazorComponents.Services
     public class DataSourcesServerLess : IDataSources
     {
         private readonly IHttpService httpService;
+        private readonly IDataSourceService _ds;
         private readonly string baseUrl;
         private readonly string apiKey;
 
-        public DataSourcesServerLess(IHttpService httpService, SingletonServices settings)
+        public DataSourcesServerLess(IHttpService httpService, SingletonServices settings, IDataSourceService ds)
         {
             this.httpService = httpService;
+            _ds = ds;
             baseUrl = settings.BaseUrl;
             apiKey = settings.ApiKey;
         }
         public async Task CreateSource(ConnectParameters connectParameters)
         {
-            string url = baseUrl.BuildFunctionUrl("SaveDataSource", $"", apiKey);
-            var response = await httpService.Post(url, connectParameters);
-            if (!response.Success)
+            ResponseDto response = await _ds.CreateDataSourceAsync<ResponseDto>(connectParameters);
+            if (!response.IsSuccess)
             {
-                throw new ApplicationException(await response.GetBody());
+                throw new ApplicationException(String.Join("; ", response.ErrorMessages));
             }
         }
 
         public async Task DeleteSource(string Name)
         {
-            string url = baseUrl.BuildFunctionUrl("DeleteDataSource", $"name={Name}", apiKey);
-            var response = await httpService.Delete(url);
-            if (!response.Success)
+            ResponseDto response = await _ds.DeleteDataSourceAsync<ResponseDto>(Name);
+            if (!response.IsSuccess)
             {
-                throw new ApplicationException(await response.GetBody());
+                throw new ApplicationException(String.Join("; ", response.ErrorMessages));
             }
         }
 
         public async Task<ConnectParameters> GetSource(string Name)
         {
-            string url = baseUrl.BuildFunctionUrl("GetDataSource", $"name={Name}", apiKey);
-            var response = await httpService.Get<ConnectParameters>(url);
-            if (!response.Success)
+            ResponseDto response = await _ds.GetDataSourceByNameAsync<ResponseDto>(Name);
+            if (response.IsSuccess)
             {
-                throw new ApplicationException(await response.GetBody());
+                return JsonConvert.DeserializeObject<ConnectParameters>(Convert.ToString(response.Result));
             }
-            return response.Response;
+            else
+            {
+                throw new ApplicationException(String.Join("; ", response.ErrorMessages));
+            }
         }
 
         public async Task<List<ConnectParameters>> GetSources()
         {
-            string url = baseUrl.BuildFunctionUrl("GetDataSources", $"", apiKey);
-            Console.WriteLine($"GetSources: url = {url}");
-            var response = await httpService.Get<List<ConnectParameters>>(url);
-            if (!response.Success)
-            {
-                throw new ApplicationException(await response.GetBody());
+            ResponseDto response = await _ds.GetAllDataSourcesAsync<ResponseDto>();
+            if(response.IsSuccess) 
+            { 
+                return JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
             }
-            return response.Response;
+            else
+            {
+                throw new ApplicationException(String.Join("; ", response.ErrorMessages));
+            }
         }
 
         public async Task UpdateSource(ConnectParameters connectParameters)
         {
-            string url = baseUrl.BuildFunctionUrl("UpdateDataSource", $"", apiKey);
-            var response = await httpService.Put(url, connectParameters);
-            if (!response.Success)
+            ResponseDto response = await _ds.CreateDataSourceAsync<ResponseDto>(connectParameters);
+            if (!response.IsSuccess)
             {
-                throw new ApplicationException(await response.GetBody());
+                throw new ApplicationException(String.Join("; ", response.ErrorMessages));
             }
         }
     }
