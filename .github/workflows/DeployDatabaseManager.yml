@@ -1,0 +1,31 @@
+name: DeployServerlessUI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build release
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0.x
+          
+      - name: Install dependencies
+        run: dotnet restore
+        
+      - name: Build
+        run: dotnet build Services/DatabaseManager.Services.DatabaseManagement.csproj --configuration Release --no-restore
+        
+      - name: Publish
+        run: dotnet publish Services/DatabaseManager.Services.DatabaseManagement.csproj --configuration Release -o ../published_app --no-build --self-contained true
+        
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ServerlessUI
+          path: D:\a\DatabaseManager\published_app\wwwroot
