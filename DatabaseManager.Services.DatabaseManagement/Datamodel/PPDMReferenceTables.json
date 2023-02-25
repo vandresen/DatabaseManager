@@ -1,0 +1,60 @@
+﻿[
+  {
+    "DataType": "WellBore",
+    "Table": "FIELD",
+    "KeyAttribute": "FIELD_ID",
+    "ValueAttribute": "FIELD_NAME",
+    "ReferenceAttribute": "ASSIGNED_FIELD",
+    "Insert": true
+  },
+  {
+    "DataType": "WellBore",
+    "Table": "BUSINESS_ASSOCIATE",
+    "KeyAttribute": "BUSINESS_ASSOCIATE_ID",
+    "ValueAttribute": "BA_LONG_NAME",
+    "ReferenceAttribute": "OPERATOR",
+    "Insert": true
+  },
+  {
+    "DataType": "WellBore",
+    "Table": "R_WELL_STATUS",
+    "KeyAttribute": "STATUS",
+    "ValueAttribute": "LONG_NAME",
+    "ReferenceAttribute": "CURRENT_STATUS",
+    "FixedKey": "STATUS_TYPE=STATUS",
+    "Insert": false
+  },
+  {
+    "DataType": "WellBore",
+    "Table": "R_WELL_DATUM_TYPE",
+    "KeyAttribute": "WELL_DATUM_TYPE",
+    "ValueAttribute": "LONG_NAME",
+    "ReferenceAttribute": "DEPTH_DATUM",
+    "Insert": true
+  },
+  {
+    "DataType": "MarkerPick",
+    "Table": "STRAT_NAME_SET",
+    "KeyAttribute": "STRAT_NAME_SET_ID",
+    "ValueAttribute": "STRAT_NAME_SET_NAME",
+    "ReferenceAttribute": "STRAT_NAME_SET_ID",
+    "Insert": true
+  },
+  {
+    "DataType": "MarkerPick",
+    "Table": "WELL",
+    "KeyAttribute": "UWI",
+    "ValueAttribute": "UWI",
+    "ReferenceAttribute": "UWI",
+    "Insert": true
+  },
+  {
+    "DataType": "MarkerPick",
+    "Table": "STRAT_UNIT",
+    "KeyAttribute": "STRAT_UNIT_ID",
+    "ValueAttribute": "LONG_NAME",
+    "ReferenceAttribute": "STRAT_UNIT_ID",
+    "FixedKey": "STRAT_NAME_SET_ID=UNKNOWN",
+    "Insert": true
+  }
+]

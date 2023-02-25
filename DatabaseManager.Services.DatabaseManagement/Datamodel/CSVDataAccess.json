@@ -1,0 +1,16 @@
+[
+  {
+    "DataType": "WellBore",
+    "Mappings": "UWI=2; FINAL_TD=22; WELL_NAME=4; SURFACE_LATITUDE=6; SURFACE_LONGITUDE=7; LEASE_NAME=3; DEPTH_DATUM_ELEV=20; DEPTH_DATUM=21; OPERATOR=18; ASSIGNED_FIELD=5; CURRENT_STATUS=37; SPUD_DATE=28; COMPLETION_DATE=29"
+  },
+  {
+    "DataType": "MarkerPick",
+    "Mappings": "UWI=2; STRAT_UNIT_ID=7; PICK_DEPTH=8",
+    "Constants": "STRAT_NAME_SET_ID=UNKNOWN; INTERP_ID=UNKNOWN"
+  },
+  {
+    "DataType": "Production",
+    "Mappings": "PDEN_ID=3",
+    "Constants": "SOURCE=KANSAS; PDEN_SUBTYPE=PDEN_WELL"
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "DataType": "Rules",
+    "Keys": "ID",
+    "Select": "Select Id, DataType, RuleType, RuleParameters, RuleKey, RuleName, RuleFunction, DataAttribute, RuleFilter, FailRule, PredictionOrder, KeyNumber, Active, RuleDescription, CreatedBy, ModifiedBy, CreatedDate, ModifiedDate from pdo_qc_rules"
+  },
+  {
+    "DataType": "Functions",
+    "Keys": "Id",
+    "Select": "Select Id, FunctionName, FunctionUrl, FunctionKey, FunctionType from pdo_rule_functions"
+  },
+  {
+    "DataType": "Index",
+    "Keys": "IndexId",
+    "Select": "Select IndexId, IndexNode.ToString() AS TextIndexNode, IndexLevel, DataName, DataType, DataKey, QC_String, UniqKey, JsonDataObject, Latitude, Longitude from pdo_qc_index"
+  }
+]

@@ -1,0 +1,33 @@
+{
+  "WellMappings": [
+    {
+      "LASMnem": "UWI",
+      "DBMnem": "UWI"
+    },
+    {
+      "LASMnem": "LAT",
+      "DBMnem": "SURFACE_LATITUDE"
+    },
+    {
+      "LASMnem": "LON",
+      "DBMnem": "SURFACE_LONGITUDE"
+    },
+    {
+      "LASMnem": "COMP",
+      "DBMnem": "OPERATOR"
+    },
+    {
+      "LASMnem": "WELL",
+      "DBMnem": "WELL_NAME"
+    },
+    {
+      "LASMnem": "LEAS",
+      "DBMnem": "LEASE_NAME"
+    }
+  ],
+  "AlernativeKeys": 
+  [
+    { "Key": "API" },
+    { "Key": "LEAS, WELL" }
+  ]
+}
