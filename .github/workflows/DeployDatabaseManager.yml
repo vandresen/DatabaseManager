@@ -1,4 +1,4 @@
-name: DeployServerlessUI
+name: DeployDatabaseManager
 
 on:
   workflow_dispatch:
