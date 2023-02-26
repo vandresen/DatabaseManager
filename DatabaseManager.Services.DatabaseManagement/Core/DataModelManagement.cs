@@ -125,7 +125,7 @@ namespace DatabaseManager.Services.DatabaseManagement.Core
         {
             try
             {
-                _logger.LogInformation($"Creating DMS data model");
+                _logger.LogInformation($"Creating DMS data model in database");
                 string connectionString = CreateDatabaseConnectionString();
                 _dbi.CreateDatabaseManagementTables(connectionString);
                 _dbi.InitializeInternalRuleFunctions(connectionString);
