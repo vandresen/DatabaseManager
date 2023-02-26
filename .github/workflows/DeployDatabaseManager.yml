@@ -2,6 +2,9 @@ name: DeployDatabaseManagement
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - 'main/DatabaseManager/DatabaseManager.Services.DatabaseManagement'
   
 env:
   AZURE_FUNCTIONAPP_NAME: 'PetrodataOnlineDataManagement'
