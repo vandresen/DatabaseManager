@@ -616,12 +616,9 @@ namespace DatabaseManager.Services.DatabaseManagement.Core
                     string[] fixedKey = reference.FixedKey.Split('=');
                     string column = fixedKey[0].Trim();
                     string columnValue = fixedKey[1].Trim();
-                    //SystemDBData systemData = new SystemDBData(_dp);
                     IEnumerable<ForeignKeyInfo> fkInfo = await GetForeignKeyInfo(reference.Table, column);
                     if (fkInfo.Count() == 1)
                     {
-                        //IDataAccess dbData = new DBDataAccess(_db);
-                        //dbData.OpenConnection(connector, null);
                         ForeignKeyInfo info = fkInfo.First();
                         string select = $"Select * from {info.ReferencedTable} ";
                         string query = $"where {info.ReferencedColumn} = '{columnValue}'";

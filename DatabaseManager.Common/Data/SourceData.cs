@@ -87,7 +87,7 @@ namespace DatabaseManager.Common.Data
                 { "Catalog", connector.Catalog },
                 { "DatabaseServer", connector.DatabaseServer },
                 { "User", connector.User },
-                { "Password", connector.User },
+                { "Password", connector.Password },
                 { "DataType", connector.DataType },
                 { "FileName", connector.FileName },
                 { "CommandTimeOut", connector.CommandTimeOut },
