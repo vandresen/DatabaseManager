@@ -40,6 +40,8 @@ namespace DatabaseManager.ServerLessClient
             SD.IndexKey = builder.Configuration["ServiceUrls:IndexKey"];
             SD.DataConfigurationAPIBase = builder.Configuration["ServiceUrls:DataConfigurationAPI"];
             SD.DataConfigurationKey = builder.Configuration["ServiceUrls:DataConfigurationKey"];
+            SD.DataModelAPIBase = builder.Configuration["ServiceUrls:DataModelAPI"];
+            SD.DataModelKey = builder.Configuration["ServiceUrls:DataModelKey"];
 
             await builder.Build().RunAsync();
         }
@@ -54,16 +56,18 @@ namespace DatabaseManager.ServerLessClient
 
             services.AddHttpClient<IDataSourceService, DataSourceService>();
             services.AddHttpClient<IIndexService, IndexService>();
+            services.AddHttpClient<IDataModelService, DataModelService>();
 
             services.AddScoped<IDataSourceService, DataSourceService>();
             services.AddScoped<IIndexService, IndexService>();
+            services.AddScoped<IDataModelService, DataModelService>();
 
             services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddScoped<IHttpService, HttpService>();
             services.AddScoped<IDataOps, DataOpsServerLess>();
             services.AddScoped<IDataSources, DataSourcesServerLess>();
             services.AddScoped<IDataTransfer, DataTransferServerLess>();
-            services.AddScoped<IDataModelCreate, DataModelCreate>();
+            services.AddScoped<IDataModelCreate, DataModelCreateServerless>();
             services.AddScoped<IDataIndexer, DataIndexer>();
             services.AddScoped<IDataQc, DataQc>();
             services.AddScoped<IRules, Rules>();

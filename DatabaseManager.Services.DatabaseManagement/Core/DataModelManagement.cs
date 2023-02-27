@@ -102,7 +102,8 @@ namespace DatabaseManager.Services.DatabaseManagement.Core
             {
                 _logger.LogInformation($"Processing file {dmParameters.FileName}");
                 _dbConnectionString = CreateDatabaseConnectionString();
-                string sql = await _embeddedStorage.ReadFile(dmParameters.FileShare, dmParameters.FileName);
+                string fileName = "PpdmModifications.sql";
+                string sql = await _embeddedStorage.ReadFile(dmParameters.FileShare, fileName);
                 string[] commandText = sql.Split(new string[] { String.Format("{0}GO{0}", Environment.NewLine) }, StringSplitOptions.RemoveEmptyEntries);
                 await PopulateFixedKeys();
                 
