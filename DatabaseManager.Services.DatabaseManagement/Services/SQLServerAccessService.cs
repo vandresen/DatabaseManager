@@ -48,7 +48,7 @@ namespace DatabaseManager.Services.DatabaseManagement.Services
             return result;
         }
 
-        public async Task InsertWithUDT<T>(string storedProcedure, string parameterName, T collection, string connectionString)
+        public void InsertWithUDT<T>(string storedProcedure, string parameterName, T collection, string connectionString)
         {
             SqlConnection conn = null;
             SqlParameter param = new SqlParameter();

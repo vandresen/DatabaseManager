@@ -101,7 +101,7 @@ namespace DatabaseManager.Services.DatabaseManagement.Core
             {
                 ruleCollection.Add(rule);
             }
-            await _DbStorage.InsertWithUDT("dbo.spInsertRules", parameterName, ruleCollection, connectionString);
+            _DbStorage.InsertWithUDT("dbo.spInsertRules", parameterName, ruleCollection, connectionString);
         }
     }
 }
