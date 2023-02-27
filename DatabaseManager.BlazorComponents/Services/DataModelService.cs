@@ -23,7 +23,7 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<T> Create<T>(DataModelParameters modelParameters)
         {
             string url = SD.DataModelAPIBase.BuildFunctionUrl($"/api/Create", "", SD.DataModelKey);
-            Console.WriteLine($"CreateDataSourceAsync: url = {url}");
+            Console.WriteLine($"Create data mode: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.POST,
