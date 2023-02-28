@@ -42,6 +42,8 @@ namespace DatabaseManager.ServerLessClient
             SD.DataConfigurationKey = builder.Configuration["ServiceUrls:DataConfigurationKey"];
             SD.DataModelAPIBase = builder.Configuration["ServiceUrls:DataModelAPI"];
             SD.DataModelKey = builder.Configuration["ServiceUrls:DataModelKey"];
+            SD.DataRuleAPIBase = builder.Configuration["ServiceUrls:DataRuleAPI"];
+            SD.DataRuleKey = builder.Configuration["ServiceUrls:DataRuleKey"];
 
             await builder.Build().RunAsync();
         }

@@ -16,6 +16,8 @@ namespace DatabaseManager.BlazorComponents
         public static string DataConfigurationKey { get; set; }
         public static string DataModelAPIBase { get; set; }
         public static string DataModelKey { get; set; }
+        public static string DataRuleAPIBase { get; set; }
+        public static string DataRuleKey { get; set; }
         public enum ApiType
         {
             GET,
