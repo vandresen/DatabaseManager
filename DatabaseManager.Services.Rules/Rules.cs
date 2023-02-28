@@ -55,7 +55,7 @@ namespace DatabaseManager.Services.Rules
                 _response.IsSuccess = false;
                 _response.ErrorMessages
                      = new List<string>() { ex.ToString() };
-                _logger.LogError($"GetIndexes: Error getting indexes: {ex}");
+                _logger.LogError($"Rules get: Error getting rules: {ex}");
             }
             return _response;
         }
@@ -87,6 +87,61 @@ namespace DatabaseManager.Services.Rules
             response.WriteString("Welcome to Azure Functions delete!");
 
             _logger.LogInformation("Rules delete: Complete.");
+            return response;
+        }
+
+        [Function("GetPredictionSet")]
+        public async Task<ResponseDto> GetPredictions(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "PredictionSet")] HttpRequestData req)
+        {
+            _logger.LogInformation("PredictionSets get: Starting.");
+
+            try
+            {
+                var response = req.CreateResponse(HttpStatusCode.OK);
+                response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+
+                response.WriteString("Welcome to Azure Functions get prediction sets!");
+
+                _logger.LogInformation("PredictionSets get: Complete.");
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"PredictionSets: Error getting prediction sets: {ex}");
+            }
+            return _response;
+        }
+
+        [Function("SavePredictionSet")]
+        public HttpResponseData SavePredictionSet(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "PredictionSet")] HttpRequestData req)
+        {
+            _logger.LogInformation("PredictionSet save: Starting.");
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+
+            response.WriteString("Welcome to Azure Functions save!");
+
+            _logger.LogInformation("PredictionSet save: Complete.");
+            return response;
+        }
+
+        [Function("DeletePredictionSet")]
+        public HttpResponseData DeletePredictionSet(
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "PredictionSet")] HttpRequestData req)
+        {
+            _logger.LogInformation("PredictionSet delete: Starting.");
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+
+            response.WriteString("Welcome to Azure Functions delete!");
+
+            _logger.LogInformation("PredictionSet delete: Complete.");
             return response;
         }
     }
