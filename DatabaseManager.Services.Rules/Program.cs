@@ -14,7 +14,7 @@ var host = new HostBuilder()
     {
         services.AddHttpClient<IDataSourceService, DataSourceService>();
         services.AddScoped<IDataSourceService, DataSourceService>();
-        services.AddScoped<IDatabaseAccess, DapperDataAccess>();
+        services.AddScoped<IDatabaseAccess, SQLServerAccess>();
         services.AddScoped<IRuleDBAccess, RuleDBAccess>();
     })
     .Build();

@@ -61,15 +61,33 @@ namespace DatabaseManager.Services.Rules
         }
 
         [Function("SaveRules")]
-        public HttpResponseData SaveRules(
+        public async Task<HttpResponseData> SaveRules(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Rules")] HttpRequestData req)
         {
             _logger.LogInformation("Rules save: Starting.");
 
-            var response = req.CreateResponse(HttpStatusCode.OK);
-            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                string connectionString = connectParameter.CreateDatabaseConnectionString();
 
-            response.WriteString("Welcome to Azure Functions save!");
+                var stringBody = await new StreamReader(req.Body).ReadToEndAsync();
+                RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(Convert.ToString(stringBody));
+                
+                await _ruleDB.CreateUpdateRule(rule, connectParameter.ConnectionString);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"Rules: Error saving rule: {ex}");
+            }
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(_response);
 
             _logger.LogInformation("Rules save: Complete.");
             return response;
@@ -142,6 +160,61 @@ namespace DatabaseManager.Services.Rules
             response.WriteString("Welcome to Azure Functions delete!");
 
             _logger.LogInformation("PredictionSet delete: Complete.");
+            return response;
+        }
+
+        [Function("GetFunction")]
+        public async Task<ResponseDto> GetFunction(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Function")] HttpRequestData req)
+        {
+            _logger.LogInformation("Function get: Starting.");
+
+            try
+            {
+                var response = req.CreateResponse(HttpStatusCode.OK);
+                response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+
+                response.WriteString("Welcome to Azure Functions get Function!");
+
+                _logger.LogInformation("Function get: Complete.");
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"Function: Error getting Function: {ex}");
+            }
+            return _response;
+        }
+
+        [Function("SaveFunction")]
+        public HttpResponseData SaveFunction(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Function")] HttpRequestData req)
+        {
+            _logger.LogInformation("Function save: Starting.");
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+
+            response.WriteString("Welcome to Azure Functions save!");
+
+            _logger.LogInformation("Function save: Complete.");
+            return response;
+        }
+
+        [Function("DeleteFunction")]
+        public HttpResponseData DeleteFunction(
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Function")] HttpRequestData req)
+        {
+            _logger.LogInformation("Function delete: Starting.");
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+
+            response.WriteString("Welcome to Azure Functions delete!");
+
+            _logger.LogInformation("Function delete: Complete.");
             return response;
         }
     }

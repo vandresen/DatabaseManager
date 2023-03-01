@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.Functions.Worker.Http;
+﻿using DatabaseManager.Services.Rules.Models;
+using Microsoft.Azure.Functions.Worker.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,6 +44,41 @@ namespace DatabaseManager.Services.Rules.Extensions
                 if (int.TryParse(token, out value)) number = value;
             }
             return number;
+        }
+
+        public static string CreateDatabaseConnectionString(this ConnectParametersDto connector)
+        {
+            string connectionString = string.Empty;
+            if (String.IsNullOrEmpty(connector.ConnectionString))
+            {
+                string source = $"Source={connector.DatabaseServer};";
+                string database = $"Initial Catalog ={connector.Catalog};";
+                string timeout = "Connection Timeout=120";
+                string persistSecurity = "Persist Security Info=False;";
+                string multipleActive = "MultipleActiveResultSets=True;";
+                string integratedSecurity = "";
+                string user = "";
+                //Encryption is currently not used, more testing later
+                //string encryption = "Encrypt=True;TrustServerCertificate=False;";
+                string encryption = "Encrypt=False;";
+                if (!string.IsNullOrWhiteSpace(connector.User))
+                    user = $"User ID={connector.User};";
+                else
+                    integratedSecurity = "Integrated Security=True;";
+                string password = "";
+                if (!string.IsNullOrWhiteSpace(connector.Password)) password = $"Password={connector.Password};";
+
+                connectionString = "Data " + source + persistSecurity + database +
+                    user + password + integratedSecurity + encryption + multipleActive;
+
+                connectionString = connectionString + timeout;
+            }
+            else
+            {
+                connectionString = connector.ConnectionString;
+            }
+
+            return connectionString;
         }
     }
 }
