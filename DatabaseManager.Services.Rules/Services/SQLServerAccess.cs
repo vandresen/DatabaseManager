@@ -17,9 +17,10 @@ namespace DatabaseManager.Services.Rules.Services
         {
             _sqlTimeOut = 1000;
         }
-        public Task DeleteData<T>(string storedProcedure, T parameters, string connectionString)
+        public async Task DeleteData<T>(string sql, T parameters, string connectionString)
         {
-            throw new NotImplementedException();
+            using IDbConnection cnn = new SqlConnection(connectionString);
+            await cnn.ExecuteAsync(sql, parameters);
         }
 
         public void InsertWithUDT<T>(string storedProcedure, string parameterName, T collection, string connectionString)

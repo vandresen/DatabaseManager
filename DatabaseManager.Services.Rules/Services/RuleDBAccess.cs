@@ -38,9 +38,10 @@ namespace DatabaseManager.Services.Rules.Services
             else await UpdateRule(rule, ruleExist, connectionString);
         }
 
-        public Task<bool> DeleteRule(int id, string connectionString)
+        public async Task DeleteRule(int id, string connectionString)
         {
-            throw new NotImplementedException();
+            string sql = "DELETE FROM pdo_qc_rules WHERE Id = @Id";
+            await _db.DeleteData(sql, new { id }, connectionString);
         }
 
         public Task<RuleModelDto> GetRule(int id, string connectionString)
