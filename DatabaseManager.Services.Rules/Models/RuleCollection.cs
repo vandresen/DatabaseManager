@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.Rules.Models
 {
-    public class RuleCollection : List<RuleModel>, IEnumerable<SqlDataRecord>
+    public class RuleCollection : List<RuleModelDto>, IEnumerable<SqlDataRecord>
     {
         IEnumerator<SqlDataRecord> IEnumerable<SqlDataRecord>.GetEnumerator()
         {
@@ -33,7 +33,7 @@ namespace DatabaseManager.Services.Rules.Models
                 new SqlMetaData("ModifiedDate", SqlDbType.DateTime)
                 );
 
-            foreach (RuleModel rule in this)
+            foreach (RuleModelDto rule in this)
             {
                 sqlRow.SetInt32(0, rule.Id);
                 sqlRow.SetString(1, rule.DataType);

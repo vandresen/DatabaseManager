@@ -1,5 +1,6 @@
 ﻿using DatabaseManager.Services.Rules.Models;
 using Microsoft.Azure.Functions.Worker.Http;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -79,6 +80,15 @@ namespace DatabaseManager.Services.Rules.Extensions
             }
 
             return connectionString;
+        }
+
+        public static string SetJsonDataObjectDate(this string jsonText, string attribute)
+        {
+            string jsonDate = DateTime.Now.ToString("yyyy-MM-dd");
+            JObject dataObject = JObject.Parse(jsonText);
+            dataObject[attribute] = jsonDate;
+            jsonText = dataObject.ToString();
+            return jsonText;
         }
     }
 }

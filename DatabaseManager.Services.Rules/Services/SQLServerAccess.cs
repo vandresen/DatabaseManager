@@ -55,9 +55,10 @@ namespace DatabaseManager.Services.Rules.Services
             return await cnn.QueryAsync<T>(sql);
         }
 
-        public Task SaveData<T>(string storedProcedure, T parameters, string connectionString)
+        public async Task SaveData<T>(string storedProcedure, T parameters, string connectionString)
         {
-            throw new NotImplementedException();
+            using IDbConnection cnn = new SqlConnection(connectionString);
+            await cnn.ExecuteAsync(storedProcedure, parameters, commandType: CommandType.StoredProcedure);
         }
     }
 }

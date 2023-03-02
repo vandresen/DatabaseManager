@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using DatabaseManager.Services.Rules.Extensions;
 using DatabaseManager.Services.Rules.Models;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
@@ -21,7 +22,7 @@ namespace DatabaseManager.Services.Rules.Services
             _db = db;
         }
 
-        public async Task CreateUpdateRule(RuleModel rule, string connectionString)
+        public async Task CreateUpdateRule(RuleModelDto rule, string connectionString)
         {
             IEnumerable<RuleModelDto> rules = await _db.LoadData<RuleModelDto, dynamic>("dbo.spGetRules", new { }, connectionString);
             var ruleExist = rules.FirstOrDefault(m => m.RuleName == rule.RuleName);
@@ -34,7 +35,7 @@ namespace DatabaseManager.Services.Rules.Services
                 await InsertRule(rule, connectionString);
 
             }
-            else UpdateRule(rule, connectionString);
+            else await UpdateRule(rule, ruleExist, connectionString);
         }
 
         public Task<bool> DeleteRule(int id, string connectionString)
@@ -50,9 +51,9 @@ namespace DatabaseManager.Services.Rules.Services
         public Task<IEnumerable<RuleModelDto>> GetRules(string connectionString) =>
             _db.LoadData<RuleModelDto, dynamic>("dbo.spGetRules", new { }, connectionString);
 
-        private async Task InsertRule(RuleModel rule, string connectionString)
+        private async Task InsertRule(RuleModelDto rule, string connectionString)
         {
-            List<RuleModel> rules = new List<RuleModel>();
+            List<RuleModelDto> rules = new List<RuleModelDto>();
             string userName = await GetUserName(connectionString);
             rule.ModifiedBy = userName;
             rule.CreatedBy = userName;
@@ -67,7 +68,7 @@ namespace DatabaseManager.Services.Rules.Services
             _db.InsertWithUDT("dbo.spInsertRules", parameterName, ruleCollection, connectionString);
         }
 
-        private string GetRuleKey(RuleModel rule)
+        private string GetRuleKey(RuleModelDto rule)
         {
             string ruleKey = "";
             string strKey = rule.KeyNumber.ToString();
@@ -76,35 +77,14 @@ namespace DatabaseManager.Services.Rules.Services
             return ruleKey;
         }
 
-        private void UpdateRule(RuleModel rule, string connectionString)
+        private async Task UpdateRule(RuleModelDto rule, RuleModelDto oldRule, string connectionString)
         {
-            //ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, name);
-            //if (connector.SourceType != "DataBase")
-            //{
-            //    Exception error = new Exception($"RuleManagement: data source must be a Database type");
-            //    throw error;
-            //}
-            //RuleModel oldRule = await _ruleData.GetRuleFromSP(id, connector.ConnectionString);
-            //if (oldRule == null)
-            //{
-            //    Exception error = new Exception($"RuleManagement: could not find rule");
-            //    throw error;
-            //}
-            //else
-            //{
-            //    rule.Id = id;
-            //    string userName = await _systemData.GetUserName(connector.ConnectionString);
-            //    rule.ModifiedBy = userName;
-            //    string json = JsonConvert.SerializeObject(rule, Formatting.Indented);
-            //    json = Common.SetJsonDataObjectDate(json, "ModifiedDate");
-            //    using (IDbConnection cnn = new SqlConnection(connector.ConnectionString))
-            //    {
-            //        var p = new DynamicParameters();
-            //        p.Add("@json", json);
-            //        string sql = "dbo.spUpdateRules";
-            //        int recordsAffected = cnn.Execute(sql, p, commandType: CommandType.StoredProcedure);
-            //    }
-            //}
+            rule.Id = oldRule.Id;
+            string userName = await GetUserName(connectionString);
+            rule.ModifiedBy = userName;
+            string json = JsonConvert.SerializeObject(rule, Formatting.Indented);
+            json = json.SetJsonDataObjectDate("ModifiedDate");
+            await _db.SaveData("dbo.spUpdateRules", new { json = json }, connectionString);
         }
 
         private async Task<string> GetUserName(string connectionString)

@@ -72,9 +72,14 @@ namespace DatabaseManager.Services.Rules
                 ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
                 ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
                 string connectionString = connectParameter.CreateDatabaseConnectionString();
+                if (connectParameter.SourceType != "DataBase")
+                {
+                    Exception error = new Exception($"Rules: data source must be a Database type");
+                    throw error;
+                }
 
                 var stringBody = await new StreamReader(req.Body).ReadToEndAsync();
-                RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(Convert.ToString(stringBody));
+                RuleModelDto rule = JsonConvert.DeserializeObject<RuleModelDto>(Convert.ToString(stringBody));
                 
                 await _ruleDB.CreateUpdateRule(rule, connectParameter.ConnectionString);
             }
