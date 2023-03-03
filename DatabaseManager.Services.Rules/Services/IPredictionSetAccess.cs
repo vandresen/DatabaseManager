@@ -9,10 +9,10 @@ namespace DatabaseManager.Services.Rules.Services
 {
     public interface IPredictionSetAccess
     {
-        List<PredictionSet> GetPredictionDataSets();
-        PredictionSet GetPredictionDataSet(string name);
-        void SavePredictionDataSet(PredictionSet predictionSet);
-        void UpdatePredictionDataSet(PredictionSet predictionSet);
-        void DeletePredictionDataSet(string name);
+        List<PredictionSet> GetPredictionDataSets(string connectionsString);
+        PredictionSet GetPredictionDataSet(string name, string connectionsString);
+        void SavePredictionDataSet(PredictionSet predictionSet, string connectionsString);
+        void UpdatePredictionDataSet(PredictionSet predictionSet, string connectionsString);
+        void DeletePredictionDataSet(string name, string connectionsString);
     }
 }

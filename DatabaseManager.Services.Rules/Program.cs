@@ -16,6 +16,9 @@ var host = new HostBuilder()
         services.AddScoped<IDataSourceService, DataSourceService>();
         services.AddScoped<IDatabaseAccess, SQLServerAccess>();
         services.AddScoped<IRuleDBAccess, RuleDBAccess>();
+        services.AddScoped<IFunctionAccess, FunctionAccess>();
+        services.AddScoped<IPredictionSetAccess, PredictionSetAccess>();
+        services.AddScoped<ITableStorageAccess, AzureTableStorageAccess>();
     })
     .Build();
 

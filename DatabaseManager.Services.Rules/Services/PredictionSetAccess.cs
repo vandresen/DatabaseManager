@@ -1,6 +1,10 @@
-﻿using DatabaseManager.Services.Rules.Models;
+﻿using Azure;
+using Azure.Data.Tables;
+using DatabaseManager.Services.Rules.Models;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,29 +13,64 @@ namespace DatabaseManager.Services.Rules.Services
 {
     public class PredictionSetAccess : IPredictionSetAccess
     {
-        public void DeletePredictionDataSet(string name)
+        private readonly ITableStorageAccess _az;
+        private readonly string container = "predictions";
+
+        public PredictionSetAccess(ITableStorageAccess az)
+        {
+            _az = az;
+        }
+
+        public void DeletePredictionDataSet(string name, string connectionsString)
         {
             throw new NotImplementedException();
         }
 
-        public PredictionSet GetPredictionDataSet(string name)
+        public PredictionSet GetPredictionDataSet(string name, string connectionsString)
         {
             throw new NotImplementedException();
         }
 
-        public List<PredictionSet> GetPredictionDataSets()
+        public List<PredictionSet> GetPredictionDataSets(string connectionsString)
+        {
+            _az.SetConnectionString(connectionsString);
+            List<PredictionSet> predictionSets = new List<PredictionSet>();
+            Pageable<TableEntity> entities = _az.GetRecords(container);
+            foreach (TableEntity entity in entities)
+            {
+                PredictionSet predictionSet = MapTableEntityToPredictionSetModel(entity);
+                predictionSets.Add(predictionSet);
+            }
+            return predictionSets;
+        }
+
+        public void SavePredictionDataSet(PredictionSet predictionSet, string connectionsString)
         {
             throw new NotImplementedException();
         }
 
-        public void SavePredictionDataSet(PredictionSet predictionSet)
+        public void UpdatePredictionDataSet(PredictionSet predictionSet, string connectionsString)
         {
             throw new NotImplementedException();
         }
 
-        public void UpdatePredictionDataSet(PredictionSet predictionSet)
+        private PredictionSet MapTableEntityToPredictionSetModel(TableEntity entity)
         {
-            throw new NotImplementedException();
+            PredictionSet predictionSet = new PredictionSet();
+            predictionSet.Name = entity.RowKey;
+            if (entity["Description"] != null) predictionSet.Description = entity["Description"].ToString();
+            if (entity["RuleUrl"] != null) predictionSet.RuleUrl = entity["RuleUrl"].ToString();
+            return predictionSet;
+        }
+
+        private TableEntity MapPredictionSetModelToTableEntity(PredictionSet predictionSet)
+        {
+            var entity = new TableEntity("PPDM", predictionSet.Name)
+            {
+                { "RuleUrl", predictionSet.RuleUrl},
+                { "Description", predictionSet.Description }
+            };
+            return entity;
         }
     }
 }

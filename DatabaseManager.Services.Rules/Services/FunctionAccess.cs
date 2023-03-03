@@ -7,8 +7,11 @@ using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.Rules.Services
 {
-    public interface IFunctionAccess
+    public class FunctionAccess : IFunctionAccess
     {
-        Task<IEnumerable<RuleFunctionsDto>> GetFunctionsFrom(string connectionString);
+        public Task<IEnumerable<RuleFunctionsDto>> GetFunctionsFrom(string connectionString)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

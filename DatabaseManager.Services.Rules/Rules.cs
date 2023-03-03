@@ -18,15 +18,17 @@ namespace DatabaseManager.Services.Rules
         private readonly IConfiguration _configuration;
         private readonly IDataSourceService _ds;
         private readonly IRuleDBAccess _ruleDB;
+        private readonly IPredictionSetAccess _prediction;
 
         public Rules(ILoggerFactory loggerFactory, IConfiguration configuration,
-            IDataSourceService ds, IRuleDBAccess ruleDB)
+            IDataSourceService ds, IRuleDBAccess ruleDB, IPredictionSetAccess prediction)
         {
             _logger = loggerFactory.CreateLogger<Rules>();
             _response = new ResponseDto();
             _configuration = configuration;
             _ds = ds;
             _ruleDB = ruleDB;
+            _prediction = prediction;
             SD.DataSourceAPIBase = _configuration.GetValue<string>("DataSourceAPI");
             SD.DataSourceKey = _configuration["DataSourceKey"];
         }
@@ -138,10 +140,15 @@ namespace DatabaseManager.Services.Rules
             {
                 string azureStorageAccount = req.GetStorageKey();
                 string name = req.GetQuery("Name", false);
-                var response = req.CreateResponse(HttpStatusCode.OK);
-                response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+                if(name == null)
+                {
+                    List<PredictionSet> predictionSets = _prediction.GetPredictionDataSets(azureStorageAccount);
+                    _response.Result = predictionSets;
+                }
+                else
+                {
 
-                response.WriteString("Welcome to Azure Functions get prediction sets!");
+                }
 
                 _logger.LogInformation("PredictionSets get: Complete.");
             }
