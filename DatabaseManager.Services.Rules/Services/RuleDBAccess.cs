@@ -44,9 +44,10 @@ namespace DatabaseManager.Services.Rules.Services
             await _db.DeleteData(sql, new { id }, connectionString);
         }
 
-        public Task<RuleModelDto> GetRule(int id, string connectionString)
+        public async Task<RuleModelDto> GetRule(int id, string connectionString)
         {
-            throw new NotImplementedException();
+            var results = await _db.LoadData<RuleModelDto, dynamic>("dbo.spGetWithIdRules", new { Id = id }, connectionString);
+            return results.FirstOrDefault();
         }
 
         public Task<IEnumerable<RuleModelDto>> GetRules(string connectionString) =>

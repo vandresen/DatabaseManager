@@ -48,9 +48,17 @@ namespace DatabaseManager.Services.Rules
                 IEnumerable<RuleModelDto> rules = Enumerable.Empty<RuleModelDto>();
                 RuleModelDto rule = new RuleModelDto();
                 ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
-                if (id == null) rules = await _ruleDB.GetRules(connectParameter.ConnectionString);
-                else rule = await _ruleDB.GetRule((int)id, connectParameter.ConnectionString);
-                _response.Result = rules.ToList();
+                if (id == null)
+                {
+                    rules = await _ruleDB.GetRules(connectParameter.ConnectionString);
+                    _response.Result = rules.ToList();
+                }
+                else 
+                { 
+                    rule = await _ruleDB.GetRule((int)id, connectParameter.ConnectionString);
+                    _response.Result = rule;
+                }
+                
             }
             catch (Exception ex)
             {
@@ -147,7 +155,8 @@ namespace DatabaseManager.Services.Rules
                 }
                 else
                 {
-
+                    PredictionSet predictionSet = _prediction.GetPredictionDataSet(name, azureStorageAccount);
+                    _response.Result = predictionSet;
                 }
 
                 _logger.LogInformation("PredictionSets get: Complete.");

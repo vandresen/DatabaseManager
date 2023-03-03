@@ -15,6 +15,7 @@ namespace DatabaseManager.Services.Rules.Services
     {
         private readonly ITableStorageAccess _az;
         private readonly string container = "predictions";
+        private readonly string partitionKey = "PPDM";
 
         public PredictionSetAccess(ITableStorageAccess az)
         {
@@ -28,7 +29,10 @@ namespace DatabaseManager.Services.Rules.Services
 
         public PredictionSet GetPredictionDataSet(string name, string connectionsString)
         {
-            throw new NotImplementedException();
+            _az.SetConnectionString(connectionsString);
+            TableEntity entity = _az.GetRecord(container, partitionKey, name);
+            PredictionSet predictionSets = MapTableEntityToPredictionSetModel(entity);
+            return predictionSets;
         }
 
         public List<PredictionSet> GetPredictionDataSets(string connectionsString)
