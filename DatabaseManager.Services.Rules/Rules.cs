@@ -1,3 +1,4 @@
+using System.Data;
 using System.Net;
 using Azure;
 using DatabaseManager.Services.Rules.Extensions;
@@ -172,30 +173,69 @@ namespace DatabaseManager.Services.Rules
         }
 
         [Function("SavePredictionSet")]
-        public HttpResponseData SavePredictionSet(
+        public async Task<HttpResponseData> SavePredictionSet(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "PredictionSet")] HttpRequestData req)
         {
             _logger.LogInformation("PredictionSet save: Starting.");
 
-            var response = req.CreateResponse(HttpStatusCode.OK);
-            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+            try
+            {
+                string azureStorageAccount = req.GetStorageKey();
+                var stringBody = await new StreamReader(req.Body).ReadToEndAsync();
+                if (String.IsNullOrEmpty(stringBody))
+                {
+                    Exception error = new Exception($"PredictionSet save: Body is missing");
+                    throw error;
+                }
+                PredictionSet predictionSet = JsonConvert.DeserializeObject<PredictionSet>(Convert.ToString(stringBody));
+                List<PredictionSet> existingPredictionSets = _prediction.GetPredictionDataSets(azureStorageAccount);
+                var existingPredictionSet = existingPredictionSets.FirstOrDefault(m => m.Name == predictionSet.Name);
+                if (existingPredictionSet == null)
+                {
+                    _prediction.SavePredictionDataSet(predictionSet, azureStorageAccount);
+                }
+                else
+                {
+                    _prediction.UpdatePredictionDataSet(predictionSet, azureStorageAccount);
+                }
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"Rules: Error saving prediction set: {ex}");
+            }
 
-            response.WriteString("Welcome to Azure Functions save!");
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(_response);
 
             _logger.LogInformation("PredictionSet save: Complete.");
             return response;
         }
 
         [Function("DeletePredictionSet")]
-        public HttpResponseData DeletePredictionSet(
+        public async Task<HttpResponseData> DeletePredictionSet(
             [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "PredictionSet")] HttpRequestData req)
         {
             _logger.LogInformation("PredictionSet delete: Starting.");
 
-            var response = req.CreateResponse(HttpStatusCode.OK);
-            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+            try
+            {
+                string azureStorageAccount = req.GetStorageKey();
+                string name = req.GetQuery("Name", true);
+                _prediction.DeletePredictionDataSet(name, azureStorageAccount);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"Rules: Error saving prediction set: {ex}");
+            }
 
-            response.WriteString("Welcome to Azure Functions delete!");
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(_response);
 
             _logger.LogInformation("PredictionSet delete: Complete.");
             return response;

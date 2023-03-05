@@ -24,7 +24,8 @@ namespace DatabaseManager.Services.Rules.Services
 
         public void DeletePredictionDataSet(string name, string connectionsString)
         {
-            throw new NotImplementedException();
+            _az.SetConnectionString(connectionsString);
+            _az.Delete(container, partitionKey, name);
         }
 
         public PredictionSet GetPredictionDataSet(string name, string connectionsString)
@@ -50,12 +51,14 @@ namespace DatabaseManager.Services.Rules.Services
 
         public void SavePredictionDataSet(PredictionSet predictionSet, string connectionsString)
         {
-            throw new NotImplementedException();
+            TableEntity entity = MapPredictionSetModelToTableEntity(predictionSet);
+            _az.SaveRecord(container, entity);
         }
 
         public void UpdatePredictionDataSet(PredictionSet predictionSet, string connectionsString)
         {
-            throw new NotImplementedException();
+            TableEntity entity = MapPredictionSetModelToTableEntity(predictionSet);
+            _az.UpdateRecord(container, entity);
         }
 
         private PredictionSet MapTableEntityToPredictionSetModel(TableEntity entity)
