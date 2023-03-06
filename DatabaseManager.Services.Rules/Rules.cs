@@ -20,9 +20,11 @@ namespace DatabaseManager.Services.Rules
         private readonly IDataSourceService _ds;
         private readonly IRuleDBAccess _ruleDB;
         private readonly IPredictionSetAccess _prediction;
+        private readonly IFunctionAccess _function;
 
         public Rules(ILoggerFactory loggerFactory, IConfiguration configuration,
-            IDataSourceService ds, IRuleDBAccess ruleDB, IPredictionSetAccess prediction)
+            IDataSourceService ds, IRuleDBAccess ruleDB, IPredictionSetAccess prediction,
+            IFunctionAccess function)
         {
             _logger = loggerFactory.CreateLogger<Rules>();
             _response = new ResponseDto();
@@ -30,6 +32,7 @@ namespace DatabaseManager.Services.Rules
             _ds = ds;
             _ruleDB = ruleDB;
             _prediction = prediction;
+            _function = function;
             SD.DataSourceAPIBase = _configuration.GetValue<string>("DataSourceAPI");
             SD.DataSourceKey = _configuration["DataSourceKey"];
         }
@@ -249,11 +252,20 @@ namespace DatabaseManager.Services.Rules
 
             try
             {
-                var response = req.CreateResponse(HttpStatusCode.OK);
-                response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
-
-                response.WriteString("Welcome to Azure Functions get Function!");
-
+                string name = req.GetQuery("Name", true);
+                int? id = req.GetQuery("Id", false).GetIntFromString();
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                if (id == null)
+                {
+                    IEnumerable<RuleFunctionsDto> ruleFunctions = await _function.GetFunctions(connectParameter.ConnectionString);
+                    _response.Result = ruleFunctions.ToList();
+                }
+                else
+                {
+                    RuleFunctionsDto ruleFunction = await _function.GetFunction((int)id, connectParameter.ConnectionString);
+                    _response.Result = ruleFunction;
+                }
                 _logger.LogInformation("Function get: Complete.");
             }
             catch (Exception ex)
@@ -267,30 +279,71 @@ namespace DatabaseManager.Services.Rules
         }
 
         [Function("SaveFunction")]
-        public HttpResponseData SaveFunction(
+        public async Task<HttpResponseData> SaveFunction(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Function")] HttpRequestData req)
         {
             _logger.LogInformation("Function save: Starting.");
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                string connectionString = connectParameter.CreateDatabaseConnectionString();
+                if (connectParameter.SourceType != "DataBase")
+                {
+                    Exception error = new Exception($"Rules: data source must be a Database type");
+                    throw error;
+                }
+
+                var stringBody = await new StreamReader(req.Body).ReadToEndAsync();
+                if (String.IsNullOrEmpty(stringBody))
+                {
+                    Exception error = new Exception($"PredictionSet save: Body is missing");
+                    throw error;
+                }
+                RuleFunctionsDto ruleFunction = JsonConvert.DeserializeObject<RuleFunctionsDto>(Convert.ToString(stringBody));
+
+                await _function.CreateUpdateFunction(ruleFunction, connectionString);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"Rules: Error saving function: {ex}");
+            }
 
             var response = req.CreateResponse(HttpStatusCode.OK);
-            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
-
-            response.WriteString("Welcome to Azure Functions save!");
+            await response.WriteAsJsonAsync(_response);
 
             _logger.LogInformation("Function save: Complete.");
             return response;
         }
 
         [Function("DeleteFunction")]
-        public HttpResponseData DeleteFunction(
+        public async Task<HttpResponseData> DeleteFunction(
             [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Function")] HttpRequestData req)
         {
             _logger.LogInformation("Function delete: Starting.");
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                int id = (int)req.GetQuery("Id", true).GetIntFromString();
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                string connectionString = connectParameter.CreateDatabaseConnectionString();
+                await _function.DeleteFunction(id, connectionString);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"Rules: Error deleting function: {ex}");
+            }
 
             var response = req.CreateResponse(HttpStatusCode.OK);
-            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
-
-            response.WriteString("Welcome to Azure Functions delete!");
+            await response.WriteAsJsonAsync(_response);
 
             _logger.LogInformation("Function delete: Complete.");
             return response;

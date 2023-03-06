@@ -9,6 +9,9 @@ namespace DatabaseManager.Services.Rules.Services
 {
     public interface IFunctionAccess
     {
-        Task<IEnumerable<RuleFunctionsDto>> GetFunctionsFrom(string connectionString);
+        Task<IEnumerable<RuleFunctionsDto>> GetFunctions(string connectionString);
+        Task<RuleFunctionsDto> GetFunction(int id, string connectionString);
+        Task CreateUpdateFunction(RuleFunctionsDto function, string connectionString);
+        Task DeleteFunction(int id, string connectionString);
     }
 }
