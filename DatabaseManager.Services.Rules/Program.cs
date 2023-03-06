@@ -1,3 +1,5 @@
+using AutoMapper;
+using DatabaseManager.Services.Rules;
 using DatabaseManager.Services.Rules.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +14,7 @@ var host = new HostBuilder()
     })
     .ConfigureServices(services =>
     {
+        IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
         services.AddHttpClient<IDataSourceService, DataSourceService>();
         services.AddScoped<IDataSourceService, DataSourceService>();
         services.AddScoped<IDatabaseAccess, SQLServerAccess>();
@@ -19,6 +22,8 @@ var host = new HostBuilder()
         services.AddScoped<IFunctionAccess, FunctionAccess>();
         services.AddScoped<IPredictionSetAccess, PredictionSetAccess>();
         services.AddScoped<ITableStorageAccess, AzureTableStorageAccess>();
+        services.AddSingleton(mapper);
+        services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
     })
     .Build();
 

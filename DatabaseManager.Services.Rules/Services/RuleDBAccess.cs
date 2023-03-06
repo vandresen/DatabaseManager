@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using AutoMapper;
+using Dapper;
 using DatabaseManager.Services.Rules.Extensions;
 using DatabaseManager.Services.Rules.Models;
 using Microsoft.Data.SqlClient;
@@ -16,26 +17,29 @@ namespace DatabaseManager.Services.Rules.Services
     public class RuleDBAccess : IRuleDBAccess
     {
         private readonly IDatabaseAccess _db;
+        private readonly IMapper _mapper;
 
-        public RuleDBAccess(IDatabaseAccess db)
+        public RuleDBAccess(IDatabaseAccess db, IMapper mapper)
         {
             _db = db;
+            _mapper = mapper;
         }
 
         public async Task CreateUpdateRule(RuleModelDto rule, string connectionString)
         {
+            RuleModel newRule = _mapper.Map<RuleModel>(rule);
             IEnumerable<RuleModelDto> rules = await _db.LoadData<RuleModelDto, dynamic>("dbo.spGetRules", new { }, connectionString);
             var ruleExist = rules.FirstOrDefault(m => m.RuleName == rule.RuleName);
             if (ruleExist == null)
             {
                 var rulesWithLastKeyNumber = rules.Where(m => m.RuleType == rule.RuleType).
                     OrderByDescending(x => x.KeyNumber).FirstOrDefault();
-                if (rulesWithLastKeyNumber == null) rule.KeyNumber = 1;
-                else rule.KeyNumber = rulesWithLastKeyNumber.KeyNumber + 1;
-                await InsertRule(rule, connectionString);
+                if (rulesWithLastKeyNumber == null) newRule.KeyNumber = 1;
+                else newRule.KeyNumber = rulesWithLastKeyNumber.KeyNumber + 1;
+                await InsertRule(newRule, connectionString);
 
             }
-            else await UpdateRule(rule, ruleExist, connectionString);
+            else await UpdateRule(newRule, ruleExist, connectionString);
         }
 
         public async Task DeleteRule(int id, string connectionString)
@@ -53,7 +57,7 @@ namespace DatabaseManager.Services.Rules.Services
         public Task<IEnumerable<RuleModelDto>> GetRules(string connectionString) =>
             _db.LoadData<RuleModelDto, dynamic>("dbo.spGetRules", new { }, connectionString);
 
-        private async Task InsertRule(RuleModelDto rule, string connectionString)
+        private async Task InsertRule(RuleModel rule, string connectionString)
         {
             List<RuleModelDto> rules = new List<RuleModelDto>();
             string userName = await GetUserName(connectionString);
@@ -70,7 +74,7 @@ namespace DatabaseManager.Services.Rules.Services
             _db.InsertWithUDT("dbo.spInsertRules", parameterName, ruleCollection, connectionString);
         }
 
-        private string GetRuleKey(RuleModelDto rule)
+        private string GetRuleKey(RuleModel rule)
         {
             string ruleKey = "";
             string strKey = rule.KeyNumber.ToString();
@@ -79,7 +83,7 @@ namespace DatabaseManager.Services.Rules.Services
             return ruleKey;
         }
 
-        private async Task UpdateRule(RuleModelDto rule, RuleModelDto oldRule, string connectionString)
+        private async Task UpdateRule(RuleModel rule, RuleModelDto oldRule, string connectionString)
         {
             rule.Id = oldRule.Id;
             string userName = await GetUserName(connectionString);
