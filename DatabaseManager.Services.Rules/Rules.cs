@@ -348,20 +348,5 @@ namespace DatabaseManager.Services.Rules
             _logger.LogInformation("Function delete: Complete.");
             return response;
         }
-
-        [Function("GetRuleOptions")]
-        public HttpResponseData RuleOptions(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "GetRuleOptions")] HttpRequestData req)
-        {
-            _logger.LogInformation("GetRuleOptions: Starting.");
-
-            var response = req.CreateResponse(HttpStatusCode.OK);
-            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
-
-            response.WriteString("Welcome to Azure GetRuleOptions!");
-
-            _logger.LogInformation("GetRuleOptions: Complete.");
-            return response;
-        }
     }
 }
