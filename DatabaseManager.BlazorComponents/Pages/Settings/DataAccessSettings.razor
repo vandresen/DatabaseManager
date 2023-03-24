@@ -9,7 +9,7 @@
 
 @if(configType == "CSV")
 {
-   <CSVSettings Content="@content"></CSVSettings>
+   <CSVSettings Content="@content" ConfigFile="@configFile"></CSVSettings>
 }
 else
 {
@@ -26,7 +26,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        ResponseDto response = await dataConfiguration.GetRecords();
+        ResponseDto response = await dataConfiguration.GetRecords<ResponseDto>();
         if (response != null && response.IsSuccess)
         {
             files = JsonConvert.DeserializeObject<List<string>>(Convert.ToString(response.Result));
@@ -41,7 +41,7 @@ else
     private async Task Selected(string selectedString)
     {
         configFile = selectedString;
-        ResponseDto response = await dataConfiguration.GetRecord(configFile);
+        ResponseDto response = await dataConfiguration.GetRecord<ResponseDto>(configFile);
         if (configFile.StartsWith("CSV")) configType = "CSV";
         else configType = "";
         if (response != null && response.IsSuccess)

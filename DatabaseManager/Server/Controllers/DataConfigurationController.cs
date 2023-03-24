@@ -8,6 +8,8 @@ using DatabaseManager.Server.Entities;
 using DatabaseManager.Common.Services;
 using Microsoft.Extensions.Configuration;
 using static MudBlazor.CategoryTypes;
+using Azure;
+using System.Reflection.Metadata;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -52,6 +54,61 @@ namespace DatabaseManager.Server.Controllers
                         _response.Result = content;
                     }
                     
+                }
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+            }
+            return _response;
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<object>> save(string folder, string name, object body)
+        {
+            try
+            {
+                if (folder == null || name == null)
+                {
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages
+                     = new List<string>() { "Folder or name is missing" };
+                }
+                if (_response.IsSuccess)
+                {
+                    GetStorageAccount();
+                    string content = Convert.ToString(body);
+                    _fileStorageService.SetConnectionString(_connectionString);
+                    await _fileStorageService.SaveFile(folder, name, content);
+                }
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+            }
+            return _response;
+        }
+
+        [HttpDelete]
+        public async Task<ActionResult<object>> Delete(string folder, string name)
+        {
+            try
+            {
+                if (folder == null || name == null)
+                {
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages
+                     = new List<string>() { "Folder or name is missing" };
+                }
+                if (_response.IsSuccess)
+                {
+                    GetStorageAccount();
+                    _fileStorageService.SetConnectionString(_connectionString);
+                    await _fileStorageService.DeleteFile(folder, name);
                 }
             }
             catch (Exception ex)

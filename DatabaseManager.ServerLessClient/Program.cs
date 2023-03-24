@@ -59,6 +59,7 @@ namespace DatabaseManager.ServerLessClient
             services.AddHttpClient<IDataSourceService, DataSourceService>();
             services.AddHttpClient<IIndexService, IndexService>();
             services.AddHttpClient<IDataModelService, DataModelService>();
+            services.AddHttpClient<IDataConfiguration, DataConfiguration>();
 
             services.AddScoped<IDataSourceService, DataSourceService>();
             services.AddScoped<IIndexService, IndexService>();

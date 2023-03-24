@@ -30,10 +30,22 @@ namespace DatabaseManager.BlazorComponents.Services
         {
             try
             {
-                var client = httpClient.CreateClient("DatabaseManagerAPI");
-                HttpRequestMessage message = new HttpRequestMessage();
+                var httpMethod = new HttpMethod("GET");
+                switch (apiRequest.ApiType)
+                {
+                    case SD.ApiType.POST:
+                        httpMethod = HttpMethod.Post;
+                        break;
+                    case SD.ApiType.PUT:
+                        httpMethod = HttpMethod.Put;
+                        break;
+                    case SD.ApiType.DELETE:
+                        httpMethod = HttpMethod.Delete;
+                        break;
+                }
+                var client = httpClient.CreateClient("DatabaseManager");
+                HttpRequestMessage message = new HttpRequestMessage(httpMethod, apiRequest.Url);
                 message.Headers.Add("Accept", "application/json");
-                message.RequestUri = new Uri(apiRequest.Url);
                 client.DefaultRequestHeaders.Clear();
                 if (apiRequest.Data != null)
                 {
@@ -47,21 +59,6 @@ namespace DatabaseManager.BlazorComponents.Services
                 }
 
                 HttpResponseMessage apiResponse = null;
-                switch (apiRequest.ApiType)
-                {
-                    case SD.ApiType.POST:
-                        message.Method = HttpMethod.Post;
-                        break;
-                    case SD.ApiType.PUT:
-                        message.Method = HttpMethod.Put;
-                        break;
-                    case SD.ApiType.DELETE:
-                        message.Method = HttpMethod.Delete;
-                        break;
-                    default:
-                        message.Method = HttpMethod.Get;
-                        break;
-                }
                 apiResponse = await client.SendAsync(message);
 
                 var apiContent = await apiResponse.Content.ReadAsStringAsync();

@@ -4,49 +4,81 @@ using DatabaseManager.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace DatabaseManager.BlazorComponents.Services
 {
-    public class DataConfiguration : IDataConfiguration
+    public class DataConfiguration : BaseService, IDataConfiguration
     {
-        private readonly IHttpService httpService;
+        private readonly IHttpClientFactory _clientFactory;
+        private readonly SingletonServices _settings;
         private readonly string folder = "connectdefinition";
         private string url;
 
-        public DataConfiguration(IHttpService httpService)
+        public DataConfiguration(IHttpClientFactory clientFactory, SingletonServices settings) : base(clientFactory)
         {
-            this.httpService = httpService;
+            _clientFactory = clientFactory;
+            _settings = settings;
         }
 
-        public async Task<ResponseDto> GetRecord(string name)
+        public async Task<T> DeleteRecord<T>(string name)
         {
             ResponseDto responseDto = new ResponseDto();
             if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={folder}&name={name}";
             else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={folder}&name={name}", SD.DataConfigurationKey);
             Console.WriteLine(url);
-            var response = await httpService.Get<ResponseDto>(url);
-            if (!response.Success)
+            return await this.SendAsync<T>(new ApiRequest()
             {
-                throw new ApplicationException(await response.GetBody());
-            }
-            return response.Response;
+                ApiType = SD.ApiType.DELETE,
+                AzureStorage = _settings.AzureStorage,
+                Url = url
+            });
         }
 
-        public async Task<ResponseDto> GetRecords()
+        public async Task<T> GetRecord<T>(string name)
+        {
+            ResponseDto responseDto = new ResponseDto();
+            if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={folder}&name={name}";
+            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={folder}&name={name}", SD.DataConfigurationKey);
+            Console.WriteLine(url);
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                AzureStorage = _settings.AzureStorage,
+                Url = url
+            });
+        }
+
+        public async Task<T> GetRecords<T>()
         {
             ResponseDto responseDto = new ResponseDto();
             if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={folder}";
             else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={folder}", SD.DataConfigurationKey);
             Console.WriteLine(url);
-            var response = await httpService.Get<ResponseDto>(url);
-            if (!response.Success)
+            return await this.SendAsync<T>(new ApiRequest()
             {
-                throw new ApplicationException(await response.GetBody());
-            }
-            return response.Response;
+                ApiType = SD.ApiType.GET,
+                AzureStorage = _settings.AzureStorage,
+                Url = url
+            });
+        }
+
+        public async Task<T> SaveRecords<T>(string name, object body)
+        {
+            ResponseDto responseDto = new ResponseDto();
+            if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={folder}&name={name}";
+            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/DataConfiguration", $"folder={folder}&name={name}", SD.DataConfigurationKey);
+            Console.WriteLine(url);
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.POST,
+                AzureStorage = _settings.AzureStorage,
+                Url = url,
+                Data= body
+            });
         }
     }
 }

@@ -80,6 +80,7 @@ else
             {
                 Console.WriteLine("Contains azure storage");
                 currentHeader = client.DefaultRequestHeaders.GetValues("AzureStorageConnection").FirstOrDefault();
+                settings.AzureStorage = currentHeader;
             }
             Console.WriteLine(currentHeader);
             CookieParameters cookieParams = await cookies.GetCookie();
@@ -89,6 +90,7 @@ else
                 if (cookieParams.Value != currentHeader)
                 {
                     client.DefaultRequestHeaders.Add("AzureStorageConnection", cookieParams.Value);
+                    settings.AzureStorage = cookieParams.Value;
                 }
             }
             ConnectParameters = await dataSources.GetSources();

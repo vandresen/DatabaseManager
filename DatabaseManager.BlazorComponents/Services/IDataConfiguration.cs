@@ -7,9 +7,11 @@ using System.Threading.Tasks;
 
 namespace DatabaseManager.BlazorComponents.Services
 {
-    public interface IDataConfiguration
+    public interface IDataConfiguration: IBaseService
     {
-        Task<ResponseDto> GetRecords();
-        Task<ResponseDto> GetRecord(string name);
+        Task<T> GetRecords<T>();
+        Task<T> GetRecord<T>(string name);
+        Task<T> SaveRecords<T>(string name, object body);
+        Task<T> DeleteRecord<T>(string name);
     }
 }
