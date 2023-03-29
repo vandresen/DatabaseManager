@@ -70,7 +70,8 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Errors: {ex}");
+            Console.WriteLine($"Errors in Rules.razor: {ex}");
+            await displayMessage.DisplayErrorMessage("Problems getting rules");
         }
     }
 

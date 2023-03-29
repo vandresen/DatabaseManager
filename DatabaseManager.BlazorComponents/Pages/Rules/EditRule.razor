@@ -2,6 +2,8 @@
 @inject IRules rules
 @inject NavigationManager navigationManager
 @inject SingletonServices singleton
+@inject IDataConfiguration dataConfiguration
+@inject IDisplayMessage displayMessage
 
 <h3>Edit Rule</h3>
 
@@ -18,7 +20,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ruleInfo = await rules.GetRuleInfo(singleton.TargetConnector);
+        ruleInfo = await Common.GetRuleInfo(dataConfiguration, displayMessage);
         ruleModel = await rules.GetRule(SourceName, Id);
     }
 

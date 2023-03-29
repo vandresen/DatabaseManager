@@ -56,10 +56,12 @@ namespace DatabaseManager.ServerLessClient
             services.AddSingleton<SingletonServices>();
             services.AddBlazoredLocalStorage();
 
+            services.AddHttpClient();
             services.AddHttpClient<IDataSourceService, DataSourceService>();
             services.AddHttpClient<IIndexService, IndexService>();
             services.AddHttpClient<IDataModelService, DataModelService>();
             services.AddHttpClient<IDataConfiguration, DataConfiguration>();
+            services.AddHttpClient<IRulesService, RulesService>();
 
             services.AddScoped<IDataSourceService, DataSourceService>();
             services.AddScoped<IIndexService, IndexService>();
@@ -73,7 +75,8 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IDataModelCreate, DataModelCreateServerless>();
             services.AddScoped<IDataIndexer, DataIndexer>();
             services.AddScoped<IDataQc, DataQc>();
-            services.AddScoped<IRules, Rules>();
+            services.AddScoped<IRules, RulesServerless>();
+            services.AddScoped<IRulesService, RulesService>();
             services.AddScoped<IReportEdit, ReportEdit>();
             services.AddScoped<IIndexView, IndexViewServerless>();
             services.AddScoped<ICookies, Cookies>();

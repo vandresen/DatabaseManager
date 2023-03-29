@@ -2,6 +2,8 @@
 @inject IRules rules
 @inject SingletonServices singleton
 @inject NavigationManager navigationManager
+@inject IDataConfiguration dataConfiguration
+@inject IDisplayMessage displayMessage
 
 <h3>New @RuleType Rule</h3>
 
@@ -20,7 +22,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ruleInfo = await rules.GetRuleInfo(singleton.TargetConnector);
+        ruleInfo = await Common.GetRuleInfo(dataConfiguration, displayMessage);
         FunctionList = await rules.GetFunctions(singleton.TargetConnector);
         type = RuleType;
         Console.WriteLine($"New Rule: {type}");
