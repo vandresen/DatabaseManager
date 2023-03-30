@@ -10,7 +10,10 @@ PPDM database and Data Science projects. So far this version provides functional
 * Dataops that includes data transfer, indexing data qc and predictions
 * result viewer for data qc issues and predictions
 
-This tool is built for the cloud generation.
+The database is configurable so in practice any database model should work.
+This tool is built for the cloud generation. It has two flavors:
+* A blazor MVC version
+* A serverless version using microservices
 
 ## Projects and folders
 * Services - Contains micro services
@@ -30,8 +33,11 @@ bug fixes or enhancements to the Database Manager source code following the
 usual Github Fork-Pull Request process.
 
 ## Building the software
-The software is based on .NET 6 using Blazor using webassembly. You should use
-Visual Studio 2022 or newer for building this. From Visual Studio you can publish this to Azure or to a local web server. You can also use Azure Devops to build and publish the software.
+The software is based on .NET 6 using Blazor webassembly. You should use
+Visual Studio 2022 or newer for building this. You can also use Azure Devops to build the software.
+
+## Deployment
+One way to publish this is to use the publish option in Visual Studio.
 
 ## Datamodel
 The system does not ship with a data model. You must create a folder in your Azure File Storage called PPDM39. This is where you put the PPDM dll files that
@@ -55,4 +61,7 @@ This is a CRUD for data configuration files
 
 ### Indexer
 This is a CRUD for the data index used by Data Manager.
+
+### Rules
+This is a CRUD for rules, functions and prediction sets
 
