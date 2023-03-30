@@ -195,7 +195,7 @@ namespace DatabaseManager.Services.Rules
                 var existingPredictionSet = existingPredictionSets.FirstOrDefault(m => m.Name == predictionSet.Name);
                 if (existingPredictionSet == null)
                 {
-                    _prediction.SavePredictionDataSet(predictionSet, azureStorageAccount);
+                    await _prediction.SavePredictionDataSet(predictionSet, azureStorageAccount);
                 }
                 else
                 {

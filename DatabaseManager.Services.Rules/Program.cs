@@ -22,6 +22,7 @@ var host = new HostBuilder()
         services.AddScoped<IFunctionAccess, FunctionAccess>();
         services.AddScoped<IPredictionSetAccess, PredictionSetAccess>();
         services.AddScoped<ITableStorageAccess, AzureTableStorageAccess>();
+        services.AddScoped<IFileStorageAccess, AzureFileStorageAccess>();
         services.AddSingleton(mapper);
         services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
     })

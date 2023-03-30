@@ -1,6 +1,7 @@
 ﻿using Azure;
 using Azure.Data.Tables;
 using DatabaseManager.Services.Rules.Models;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,12 +15,15 @@ namespace DatabaseManager.Services.Rules.Services
     public class PredictionSetAccess : IPredictionSetAccess
     {
         private readonly ITableStorageAccess _az;
+        private readonly IFileStorageAccess _af;
         private readonly string container = "predictions";
+        private readonly string ruleShare = "rules";
         private readonly string partitionKey = "PPDM";
 
-        public PredictionSetAccess(ITableStorageAccess az)
+        public PredictionSetAccess(ITableStorageAccess az, IFileStorageAccess af)
         {
             _az = az;
+            _af = af;
         }
 
         public void DeletePredictionDataSet(string name, string connectionsString)
@@ -49,8 +53,14 @@ namespace DatabaseManager.Services.Rules.Services
             return predictionSets;
         }
 
-        public void SavePredictionDataSet(PredictionSet predictionSet, string connectionsString)
+        public async Task SavePredictionDataSet(PredictionSet predictionSet, string connectionsString)
         {
+            _af.SetConnectionString(connectionsString);
+            List<RuleModel> rules = predictionSet.RuleSet;
+            string fileName = predictionSet.Name + ".json";
+            string content = JsonConvert.SerializeObject(rules, Formatting.Indented);
+            string url = await _af.SaveFileUriAsync(ruleShare, fileName, content);
+            predictionSet.RuleUrl = url;
             TableEntity entity = MapPredictionSetModelToTableEntity(predictionSet);
             _az.SaveRecord(container, entity);
         }

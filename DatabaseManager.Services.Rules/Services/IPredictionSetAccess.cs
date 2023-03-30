@@ -11,7 +11,7 @@ namespace DatabaseManager.Services.Rules.Services
     {
         List<PredictionSet> GetPredictionDataSets(string connectionsString);
         PredictionSet GetPredictionDataSet(string name, string connectionsString);
-        void SavePredictionDataSet(PredictionSet predictionSet, string connectionsString);
+        Task SavePredictionDataSet(PredictionSet predictionSet, string connectionsString);
         void UpdatePredictionDataSet(PredictionSet predictionSet, string connectionsString);
         void DeletePredictionDataSet(string name, string connectionsString);
     }
