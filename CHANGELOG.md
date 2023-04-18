@@ -1,6 +1,5 @@
 New functionality in this release are:
-* A new action to deploy the serverless UI in Azure storage
-* The serverless UI was changed to use the new data source microservice
-* Created a new microservice to manage the data models and stored procedures
-* The serverless UI was changed to use the new microservice
+* A new rules microservice
+* Changed serverless UI to use the new rules microservice to manage rules, functions and predoiction sets
+* Added functionality to edit CSV configurations under settings
 
