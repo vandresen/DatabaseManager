@@ -18,3 +18,10 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 6.0.x
+          
+      - name: Build
+        shell: pwsh
+        run: |
+          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet build DatabaseManager.Services.DataTransfer/DatabaseManager.Services.DataTransfer.csproj --configuration Release --output ./output
+          popd
