@@ -21,6 +21,11 @@ namespace DatabaseManager.Services.DataTransfer.Services
             throw new NotImplementedException();
         }
 
+        public void DeleteData(ConnectParametersDto source, string table)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<List<string>> GetContainers(ConnectParametersDto source)
         {
             List<string> files = new List<string>();

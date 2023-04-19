@@ -82,5 +82,48 @@ namespace DatabaseManager.Services.DataTransfer
             }
             return _response;
         }
+
+        [Function("DeleteObject")]
+        public async Task<ResponseDto> DeleteDataObject([HttpTrigger(AuthorizationLevel.Function, "delete")] HttpRequestData req)
+        {
+            _logger.LogInformation("Data transfer Delete Object: Starting.");
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                string table = req.GetQuery("Table", true);
+                //string storageAccount = req.GetStorageKey();
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                if (dsResponse != null && dsResponse.IsSuccess)
+                {
+                    //    List<string> containers = new List<string>();
+                    ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                    if (connectParameter.SourceType == "DataBase")
+                    {
+                        _databaseTransfer.DeleteData(connectParameter, table);
+                    }
+                    else
+                    {
+                        _response.IsSuccess = false;
+                        _response.ErrorMessages = new List<string>() { "This data source does not support delete" };
+                        _logger.LogError($"Data transfer Delete Object: This data source does not support delete");
+                    }
+                    //    _response.Result = containers;
+                }
+                else
+                {
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages = dsResponse.ErrorMessages;
+                    _logger.LogError($"Data transfer Delete Object: could not get data source");
+                }
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"Data transfer Delete Object: Error deleteing data object: {ex}");
+            }
+            return _response;
+        }
     }
 }

@@ -11,5 +11,6 @@ namespace DatabaseManager.Services.DataTransfer.Services
     {
         Task<List<string>> GetContainers(ConnectParametersDto source);
         void CopyData(TransferParameters transParms);
+        void DeleteData(ConnectParametersDto source, string table);
     }
 }
