@@ -1,0 +1,15 @@
+name: DeployRules
+
+on:
+  workflow_dispatch:
+  
+env:
+  AZURE_FUNCTIONAPP_NAME: 'PetrodataOnlineDataTransfer'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' 
+  
+jobs:
+  build:
+    name: Build release
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v3
