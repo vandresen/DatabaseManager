@@ -25,3 +25,10 @@ jobs:
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           dotnet build DatabaseManager.Services.DataTransfer/DatabaseManager.Services.DataTransfer.csproj --configuration Release --output ./output
           popd
+          
+      - name: Deploy to Azure
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+          package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+          publish-profile: ${{ secrets.DATATRANSFER_PROFILE }}
