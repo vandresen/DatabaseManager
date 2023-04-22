@@ -35,8 +35,8 @@ namespace DatabaseManager.Services.DataTransfer.Services
                 using (targetConn = new SqlConnection(targetConnector.ConnectionString)) 
                 {
                     sourceConn.Open();
-                    targetConn.Open();
-                    BulkCopy(sourceConn, targetConn, transferParameters);
+                    //targetConn.Open();
+                    //BulkCopy(sourceConn, targetConn, transferParameters);
                 }
             }
         }
