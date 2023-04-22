@@ -96,7 +96,7 @@ namespace DatabaseManager.Services.DataTransfer.Services
                     SqlBulkCopy bulkData = new SqlBulkCopy(destination);
                     bulkData.DestinationTableName = table;
                     bulkData.BulkCopyTimeout = 1000;
-                    //bulkData.WriteToServer(reader);
+                    bulkData.WriteToServer(reader);
                     bulkData.Close();
                 }
                 catch (SqlException ex)
