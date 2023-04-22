@@ -9,7 +9,7 @@ namespace DatabaseManager.Services.DataTransfer.Services
 {
     public class CSVTransfer : IDataTransfer
     {
-        public void CopyData(TransferParameters transParms)
+        public void CopyData(TransferParameters transferParameters, ConnectParametersDto sourceConnector, ConnectParametersDto targetConnector, string referenceJson)
         {
             throw new NotImplementedException();
         }

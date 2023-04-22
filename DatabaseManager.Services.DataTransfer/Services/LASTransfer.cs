@@ -16,7 +16,7 @@ namespace DatabaseManager.Services.DataTransfer.Services
         {
             _fileStorage = new AzureFileStorageService();
         }
-        public void CopyData(TransferParameters transParms)
+        public void CopyData(TransferParameters transferParameters, ConnectParametersDto sourceConnector, ConnectParametersDto targetConnector, string referenceJson)
         {
             throw new NotImplementedException();
         }

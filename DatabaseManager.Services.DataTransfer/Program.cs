@@ -13,7 +13,9 @@ var host = new HostBuilder()
     .ConfigureServices(services =>
     {
         services.AddHttpClient<IDataSourceService, DataSourceService>();
+        services.AddHttpClient<IConfigurationFileService, ConfigurationFileService>();
         services.AddScoped<IDataSourceService, DataSourceService>();
+        services.AddScoped<IConfigurationFileService, ConfigurationFileService>();
     })
     .Build();
 

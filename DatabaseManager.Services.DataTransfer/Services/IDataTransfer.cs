@@ -10,7 +10,7 @@ namespace DatabaseManager.Services.DataTransfer.Services
     public interface IDataTransfer
     {
         Task<List<string>> GetContainers(ConnectParametersDto source);
-        void CopyData(TransferParameters transParms);
+        void CopyData(TransferParameters transferParameters, ConnectParametersDto sourceConnector, ConnectParametersDto targetConnector, string referenceJson);
         void DeleteData(ConnectParametersDto source, string table);
     }
 }

@@ -38,6 +38,14 @@ namespace DatabaseManager.Services.DataTransfer.Extensions
             return result;
         }
 
+        public static string GetTable(this string select)
+        {
+            select = select.ToUpper();
+            int from = select.IndexOf(" FROM ") + 6;
+            string table = select.Substring(from);
+            return table;
+        }
+
         public static string BuildFunctionUrl(this string url, string function, string query, string apiKey)
         {
             bool buildQuery = false;
