@@ -24,9 +24,33 @@ namespace DatabaseManager.Services.DataTransfer.Services
             return files;
         }
 
-        public Task<string> ReadFile(string fileShare, string fileName)
+        public async Task<string> ReadFile(string fileShare, string fileName)
         {
-            throw new NotImplementedException();
+            string json = "";
+            ShareClient share = new ShareClient(connectionString, fileShare);
+            if (!share.Exists())
+            {
+                Exception error = new Exception($"Fileshare {fileName} does not exist ");
+                throw error;
+            }
+            ShareDirectoryClient directory = share.GetRootDirectoryClient();
+            ShareFileClient file = directory.GetFileClient(fileName);
+            if (file.Exists())
+            {
+                using (Stream fileStream = await file.OpenReadAsync())
+                {
+                    using (StreamReader reader = new StreamReader(fileStream))
+                    {
+                        json = reader.ReadToEnd();
+                    }
+                }
+            }
+            else
+            {
+                Exception error = new Exception($"File {fileName} does not exist in Azure storage ");
+                throw error;
+            }
+            return json;
         }
 
         public void SetConnectionString(string connection)

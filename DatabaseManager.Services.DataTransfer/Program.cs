@@ -16,6 +16,7 @@ var host = new HostBuilder()
         services.AddHttpClient<IConfigurationFileService, ConfigurationFileService>();
         services.AddScoped<IDataSourceService, DataSourceService>();
         services.AddScoped<IConfigurationFileService, ConfigurationFileService>();
+        services.AddScoped<IFileStorageService, AzureFileStorageService>();
     })
     .Build();
 

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net;
 using Azure;
 using DatabaseManager.Services.DataTransfer.Extensions;
@@ -18,21 +19,29 @@ namespace DatabaseManager.Services.DataTransfer
         private readonly IDataSourceService _ds;
         private readonly IConfiguration _configuration;
         private readonly IConfigurationFileService _configurationFile;
+        private readonly IFileStorageService _fileStorage;
+        private readonly string dataAccessDefFolder = "connectdefinition";
         private IDataTransfer _databaseTransfer;
         private IDataTransfer _csvTransfer;
         private IDataTransfer _lasTransfer;
+        private TransferParameters _transParm;
+        private ConnectParametersDto _sourceParm;
+        private ConnectParametersDto _targetParm;
+        private string _referenceJson;
 
         public DataTransfer(ILoggerFactory loggerFactory, IDataSourceService ds,
-            IConfigurationFileService configurationFile, IConfiguration configuration)
+            IConfigurationFileService configurationFile, IConfiguration configuration,
+            IFileStorageService fileStorage)
         {
             _logger = loggerFactory.CreateLogger<DataTransfer>();
             _response = new ResponseDto();
+            _fileStorage = fileStorage;
             _configuration = configuration;
             _configurationFile = configurationFile;
             _ds = ds;
             _databaseTransfer = new DatabaseTransfer();
-            _csvTransfer = new CSVTransfer();
-            _lasTransfer = new LASTransfer();
+            _csvTransfer = new CSVTransfer(_fileStorage);
+            _lasTransfer = new LASTransfer(_fileStorage);
             SD.DataSourceAPIBase = _configuration.GetValue<string>("DataSourceAPI");
             SD.DataSourceKey = _configuration["DataSourceKey"];
             SD.DataConfigurationAPIBase = _configuration["DataConfigurationAPI"];
@@ -134,6 +143,7 @@ namespace DatabaseManager.Services.DataTransfer
             try
             {
                 SD.AzureStorageKey = req.GetStorageKey();
+                _fileStorage.SetConnectionString(SD.AzureStorageKey); 
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
                 TransferParameters transParm = JsonConvert.DeserializeObject<TransferParameters>(requestBody);
                 if (transParm == null)
@@ -166,7 +176,7 @@ namespace DatabaseManager.Services.DataTransfer
                         ConnectParametersDto targetParm = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(targetResponse.Result));
                         targetParm.DataAccessDefinition = Convert.ToString(accessDefResponse.Result);
                         string referenceJson = Convert.ToString(conFileResponse.Result);
-                        _databaseTransfer.CopyData(transParm, sourceParm, targetParm, referenceJson);
+                        await _databaseTransfer.CopyData(transParm, sourceParm, targetParm, referenceJson);
                     }
                     else
                     {
@@ -191,6 +201,106 @@ namespace DatabaseManager.Services.DataTransfer
                 _logger.LogError($"Data transfer copy database object: Error copying data object: {ex}");
             }
             return _response;
+        }
+
+        [Function("CopyLASObject")]
+        public async Task<ResponseDto> CopyLAS([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
+        {
+            _logger.LogInformation("Data transfer copy LAS object: Starting.");
+            try
+            {
+                SD.AzureStorageKey = req.GetStorageKey();
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                await prepare(requestBody);
+                if (_transParm.SourceType == "File" && _sourceParm.DataType == "Logs")
+                {
+                    _sourceParm.DataAccessDefinition = await _fileStorage.ReadFile(dataAccessDefFolder, "LASDataAccess.json");
+                    await _lasTransfer.CopyData(_transParm, _sourceParm, _targetParm, _referenceJson);
+                }
+                else
+                {
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages = new List<string>() { $"This API does not support source type {_transParm.SourceType}" };
+                    _logger.LogError($"Data transfer Copy Object: This API does not support source type {_transParm.SourceType}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"Data transfer copy LAS object: Error copying data object: {ex}");
+            }
+            return _response;
+        }
+
+        [Function("CopyCSVObject")]
+        public async Task<ResponseDto> CopyCSV([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
+        {
+            _logger.LogInformation("Data transfer copy LAS object: Starting.");
+            try
+            {
+                SD.AzureStorageKey = req.GetStorageKey();
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                await prepare(requestBody);
+                if (_transParm.SourceType == "File" && _sourceParm.DataType != "Logs")
+                {
+                    _sourceParm.DataAccessDefinition = await _fileStorage.ReadFile(dataAccessDefFolder, "CSVDataAccess.json");
+                    await _csvTransfer.CopyData(_transParm, _sourceParm, _targetParm, _referenceJson);
+                }
+                else
+                {
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages = new List<string>() { $"This API does not support source type {_transParm.SourceType}" };
+                    _logger.LogError($"Data transfer Copy Object: This API does not support source type {_transParm.SourceType}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"Data transfer copy LAS object: Error copying data object: {ex}");
+            }
+            return _response;
+        }
+
+        private async Task prepare(string requestBody)
+        {
+            _fileStorage.SetConnectionString(SD.AzureStorageKey);
+            _transParm = JsonConvert.DeserializeObject<TransferParameters>(requestBody);
+            if (_transParm == null)
+            {
+                _logger.LogError("TransferData: error missing transfer parameters");
+                Exception error = new Exception($"Data transfer copy database object: Missing transfer parameters");
+                throw error;
+            }
+            if (string.IsNullOrEmpty(_transParm.Table))
+            {
+                _logger.LogError("TransferData: transfer parameter is missing table name");
+                Exception error = new Exception($"Data transfer copy database object: Missing table name in tansfer parameters");
+                throw error;
+            }
+            ResponseDto sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(_transParm.SourceName);
+            ResponseDto targetResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(_transParm.TargetName);
+            bool sourceAccepted = sourceResponse != null && sourceResponse.IsSuccess;
+            bool targetAccepted = sourceResponse != null && sourceResponse.IsSuccess;
+            if (sourceAccepted && targetAccepted)
+            {
+                _sourceParm = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(sourceResponse.Result));
+                _targetParm = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(targetResponse.Result));
+            }
+            else
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages = sourceResponse.ErrorMessages;
+                _response.ErrorMessages = targetResponse.ErrorMessages;
+                _logger.LogError($"Data transfer copy Object: could not get data source");
+                Exception error = new Exception($"Data transfer copy database object: Errors getting Datasource info");
+                throw error;
+            }
+            _targetParm.DataAccessDefinition = await _fileStorage.ReadFile(dataAccessDefFolder, "PPDMDataAccess.json");
+            _referenceJson = await _fileStorage.ReadFile(dataAccessDefFolder, "ReferenceTables.json");
         }
     }
 }

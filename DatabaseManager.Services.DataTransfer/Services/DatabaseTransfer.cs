@@ -23,7 +23,7 @@ namespace DatabaseManager.Services.DataTransfer.Services
 
         }
 
-        public void CopyData(TransferParameters transferParameters, ConnectParametersDto sourceConnector, ConnectParametersDto targetConnector, string referenceJson)
+        public Task CopyData(TransferParameters transferParameters, ConnectParametersDto sourceConnector, ConnectParametersDto targetConnector, string referenceJson)
         {
             _targetConnector = targetConnector;
             _referenceJson = referenceJson;
@@ -39,6 +39,7 @@ namespace DatabaseManager.Services.DataTransfer.Services
                     BulkCopy(sourceConn, targetConn, transferParameters);
                 }
             }
+            return Task.CompletedTask;
         }
 
         public void DeleteData(ConnectParametersDto source, string table)
