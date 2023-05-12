@@ -31,6 +31,13 @@
             <p>@message</p>
         }
     </MudTabPanel>
+
+    <MudTabPanel Text="2D PlotView">
+        <Plot2DView DataType="@DataType" Index="@index">
+        </Plot2DView>
+        @*<TwoDPlotView DataType="@DataType"></TwoDPlotView>*@
+    </MudTabPanel>
+
     <MudTabPanel Text="Surface View">
         <SurfaceView DataType="@DataType" Index="@index">
         </SurfaceView>

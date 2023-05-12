@@ -31,7 +31,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.Ru
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.DatabaseManagement", "DatabaseManager.Services.DatabaseManagement\DatabaseManager.Services.DatabaseManagement.csproj", "{3836D4A4-56CC-4EEB-A6DA-3E4FEC17E1A8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.Services.DataTransfer", "DatabaseManager.Services.DataTransfer\DatabaseManager.Services.DataTransfer.csproj", "{481A8AFF-5BC4-446C-A97C-C1F8E40E3BD0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.DataTransfer", "DatabaseManager.Services.DataTransfer\DatabaseManager.Services.DataTransfer.csproj", "{481A8AFF-5BC4-446C-A97C-C1F8E40E3BD0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
