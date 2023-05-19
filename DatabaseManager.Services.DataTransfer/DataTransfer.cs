@@ -20,6 +20,7 @@ namespace DatabaseManager.Services.DataTransfer
         private readonly IConfiguration _configuration;
         private readonly IConfigurationFileService _configurationFile;
         private readonly IFileStorageService _fileStorage;
+        private readonly IQueueService _queueService;
         private readonly string dataAccessDefFolder = "connectdefinition";
         private IDataTransfer _databaseTransfer;
         private IDataTransfer _csvTransfer;
@@ -29,13 +30,17 @@ namespace DatabaseManager.Services.DataTransfer
         private ConnectParametersDto _targetParm;
         private string _referenceJson;
 
+        private readonly string infoName = "datatransferinfo";
+        private readonly string queueName = "datatransferqueue";
+
         public DataTransfer(ILoggerFactory loggerFactory, IDataSourceService ds,
             IConfigurationFileService configurationFile, IConfiguration configuration,
-            IFileStorageService fileStorage)
+            IFileStorageService fileStorage, IQueueService queueService)
         {
             _logger = loggerFactory.CreateLogger<DataTransfer>();
             _response = new ResponseDto();
             _fileStorage = fileStorage;
+            _queueService = queueService;
             _configuration = configuration;
             _configurationFile = configurationFile;
             _ds = ds;
@@ -189,8 +194,8 @@ namespace DatabaseManager.Services.DataTransfer
                 else
                 {
                     _response.IsSuccess = false;
-                    _response.ErrorMessages = new List<string>() { $"This AP does not support source type {transParm.SourceType}" };
-                    _logger.LogError($"Data transfer Delete Object: This AP does not support source type {transParm.SourceType}");
+                    _response.ErrorMessages = new List<string>() { $"This API does not support source type {transParm.SourceType}" };
+                    _logger.LogError($"Data transfer Delete Object: This API does not support source type {transParm.SourceType}");
                 }
             }
             catch (Exception ex)
@@ -199,6 +204,53 @@ namespace DatabaseManager.Services.DataTransfer
                 _response.ErrorMessages
                      = new List<string>() { ex.ToString() };
                 _logger.LogError($"Data transfer copy database object: Error copying data object: {ex}");
+            }
+            return _response;
+        }
+
+        [Function("CopyRemoteObject")]
+        public async Task<ResponseDto> CopyRemote([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
+        {
+            _logger.LogInformation("Data transfer copy remote database object: Starting.");
+            try
+            {
+                SD.AzureStorageKey = req.GetStorageKey();
+                _fileStorage.SetConnectionString(SD.AzureStorageKey);
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                TransferParameters transParm = JsonConvert.DeserializeObject<TransferParameters>(requestBody);
+                if (transParm == null)
+                {
+                    _logger.LogError("TransferData: error missing transfer parameters");
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages = new List<string>() { "Data transfer copy database object: Missing transfer parameters" };
+                    return _response;
+                }
+                if (string.IsNullOrEmpty(transParm.Table))
+                {
+                    _logger.LogError("TransferData: transfer parameter is missing table name");
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages = new List<string>() { "Data transfer copy database object: Missing table name in tansfer parameters" };
+                    return _response;
+                }
+                if (transParm.SourceType == "DataBase")
+                {
+                    _queueService.SetConnectionString(SD.AzureStorageKey);
+                    string message = JsonConvert.SerializeObject(transParm);
+                    _queueService.InsertMessage(queueName, message);
+                }
+                else
+                {
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages = new List<string>() { $"This API does not support source type {transParm.SourceType}" };
+                    _logger.LogError($"Data transfer Delete Object: This API does not support source type {transParm.SourceType}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"Data remote transfer copy database object: Error copying data object: {ex}");
             }
             return _response;
         }

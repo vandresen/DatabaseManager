@@ -33,6 +33,7 @@ namespace DatabaseManager.LocalDataTransfer
             IConfiguration configuration = builder.Build();
             IQueueService queueService = new AzureQueueServiceCommon(configuration);
             queueService.SetConnectionString(_appSettings.StorageAccount);
+            //_logger.LogInformation($"Storage account is {_appSettings.StorageAccount}", DateTimeOffset.Now);
             while (!stoppingToken.IsCancellationRequested)
             {
                 counter++;

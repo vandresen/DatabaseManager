@@ -62,15 +62,17 @@ namespace DatabaseManager.LocalDataTransfer
 
         public async Task GetTransferConnector(string message)
         {
+            TransferParameters transParms = new TransferParameters();
+            ConnectParameters sourceConnector = new ConnectParameters();
             try
             {
-                TransferParameters transParms = JsonConvert.DeserializeObject<TransferParameters>(message);
+                transParms = JsonConvert.DeserializeObject<TransferParameters>(message);
                 _targetConnector = _sourceData.GetSource(transParms.TargetName);
                 string dataAccessDefinition = await _fileStorage.ReadFile("connectdefinition", "PPDMDataAccess.json");
                 _targetConnector.DataAccessDefinition = dataAccessDefinition;
                 target = _targetConnector.ConnectionString;
                 _logger.LogInformation($"Target connect string: {target}");
-                ConnectParameters sourceConnector = _sourceData.GetSource(transParms.SourceName);
+                sourceConnector = _sourceData.GetSource(transParms.SourceName);
                 source = sourceConnector.ConnectionString;
                 _logger.LogInformation($"Source connect string: {source}");
                 transferQuery = transParms.TransferQuery;
@@ -80,7 +82,8 @@ namespace DatabaseManager.LocalDataTransfer
             }
             catch (Exception ex)
             {
-                _logger.LogInformation($"Error getting connector info {ex.ToString()}");
+                _logger.LogInformation($"Error getting connector info. Either target {transParms.TargetName} " +
+                    $"or source {transParms.SourceName} is bad. More info: {ex.ToString()}");
             }
             
         }

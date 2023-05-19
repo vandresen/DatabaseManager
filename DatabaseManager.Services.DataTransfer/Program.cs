@@ -17,6 +17,7 @@ var host = new HostBuilder()
         services.AddScoped<IDataSourceService, DataSourceService>();
         services.AddScoped<IConfigurationFileService, ConfigurationFileService>();
         services.AddScoped<IFileStorageService, AzureFileStorageService>();
+        services.AddScoped<IQueueService, AzureQueueService>();
     })
     .Build();
 
