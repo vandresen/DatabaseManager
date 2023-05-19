@@ -8,7 +8,7 @@ namespace DatabaseManager.Services.DataTransfer.Services
 {
     public interface IQueueService
     {
-        string GetMessage(string queueName);
+        Task<string> GetMessage(string queueName);
         Task InsertMessage(string queueName, string message);
         void SetConnectionString(string connection);
     }

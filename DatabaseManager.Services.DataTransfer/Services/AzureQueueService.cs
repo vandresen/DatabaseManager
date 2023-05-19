@@ -16,9 +16,17 @@ namespace DatabaseManager.Services.DataTransfer.Services
 
         }
 
-        public string GetMessage(string queueName)
+        public async Task<string> GetMessage(string queueName)
         {
-            throw new NotImplementedException();
+            string message = "";
+            QueueClient queueClient = new QueueClient(_connectionString, queueName);
+            var queueMessage = await queueClient.ReceiveMessageAsync();
+            if (queueMessage.Value != null)
+            {
+                message = queueMessage.Value.MessageText;
+                await queueClient.DeleteMessageAsync(queueMessage.Value.MessageId, queueMessage.Value.PopReceipt);
+            }
+            return message;
         }
 
         public async Task InsertMessage(string queueName, string message)

@@ -225,18 +225,11 @@ namespace DatabaseManager.Services.DataTransfer
                     _response.ErrorMessages = new List<string>() { "Data transfer copy database object: Missing transfer parameters" };
                     return _response;
                 }
-                if (string.IsNullOrEmpty(transParm.Table))
-                {
-                    _logger.LogError("TransferData: transfer parameter is missing table name");
-                    _response.IsSuccess = false;
-                    _response.ErrorMessages = new List<string>() { "Data transfer copy database object: Missing table name in tansfer parameters" };
-                    return _response;
-                }
                 if (transParm.SourceType == "DataBase")
                 {
                     _queueService.SetConnectionString(SD.AzureStorageKey);
                     string message = JsonConvert.SerializeObject(transParm);
-                    _queueService.InsertMessage(queueName, message);
+                    await _queueService.InsertMessage(queueName, message);
                 }
                 else
                 {
@@ -251,6 +244,27 @@ namespace DatabaseManager.Services.DataTransfer
                 _response.ErrorMessages
                      = new List<string>() { ex.ToString() };
                 _logger.LogError($"Data remote transfer copy database object: Error copying data object: {ex}");
+            }
+            return _response;
+        }
+
+        [Function("GetTransferQueueMessage")]
+        public async Task<ResponseDto> GetQueueMessage([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req)
+        {
+            _logger.LogInformation("Data transfer get transfer messages: Starting.");
+            try
+            {
+                SD.AzureStorageKey = req.GetStorageKey();
+                _queueService.SetConnectionString(SD.AzureStorageKey);
+                string message  = await _queueService.GetMessage(infoName);
+                _response.Result = message;
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"Data transfer messages: Error getting message: {ex}");
             }
             return _response;
         }
