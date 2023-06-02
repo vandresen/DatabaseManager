@@ -1,0 +1,65 @@
+﻿@page "/executerules"
+@using MudBlazor
+@inject IDisplayMessage displayMessage
+
+<h3>Execute Rules</h3>
+
+<br />
+
+<MudForm>
+    <MudRadioGroup T="string" SelectedOption="@SelectedOption" SelectedOptionChanged="OnSelectedOptionChanged">
+        <MudRadio Option="@("Data QC")" Color="Color.Primary">Data QC</MudRadio>
+        <MudRadio Option="@("Predictions")" Color="Color.Secondary">Predictions</MudRadio>
+    </MudRadioGroup>
+</MudForm>
+
+<br />
+
+@if (string.IsNullOrEmpty(SelectedOption))
+{
+    <p>Waiting for input</p>
+}
+else
+{
+    <p>Starting @SelectedOption</p>
+}
+
+@code {
+    public string SelectedOption { get; set; }
+
+    private async Task OnSelectedOptionChanged(string option)
+    {
+        SelectedOption = option;
+        if (option == "Data QC")
+        {
+            await ExecuteDataQc();
+        }
+        else if (option == "Predictions")
+        {
+            await ExecutePredictions();
+        }
+        else
+        {
+            Console.WriteLine("Invalid option");
+        }
+    }
+
+    private async Task ExecuteDataQc()
+    {
+        Console.WriteLine("Execute QC rules");
+        await displayMessage.DisplayErrorMessage("Data QC not implemented yet");
+
+        // Clear QC flags
+
+        // get all QC rules
+
+        // QC check each QC rule
+
+        // Close data qc
+    }
+
+    private async Task ExecutePredictions()
+    {
+        await displayMessage.DisplayErrorMessage("Predictions not implemented yet");
+    }
+}
