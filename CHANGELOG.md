@@ -1,3 +1,2 @@
 New functionality in this release are:
-* A new data transfer microservice with functionality to transfer from 
-database, LAS files, CSV file to another database
+* A 2D plotview showing the lat & lon location in well headers in the index
