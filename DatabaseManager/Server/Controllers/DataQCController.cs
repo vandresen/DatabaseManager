@@ -86,38 +86,16 @@ namespace DatabaseManager.Server.Controllers
             return Ok($"OK");
         }
 
-        [HttpPost]
-        public async Task<ActionResult<string>> ExecuteRule(DataQCParameters qcParams)
+        [HttpPost("Close/{source}")]
+        public async Task<ActionResult<string>> CloseQC(string source, List<RuleFailures> failures)
         {
+            if (String.IsNullOrEmpty(source)) return BadRequest();
+
             try
             {
-                List<int> result = new List<int>();
-                if (qcParams == null) return BadRequest();
                 GetStorageAccount();
                 DataQC dq = new DataQC(_connectionString);
-                result = await dq.ExecuteQcRule(qcParams);
-                //fileStorageService.SetConnectionString(tmpConnString);
-                //tableStorageService.SetConnectionString(tmpConnString);
-                //string jsonConnectDef = await fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-                //_accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(jsonConnectDef);
-                //SourceEntity entity = await tableStorageService.GetTableRecord<SourceEntity>(container, qcParams.DataConnector);
-                //ConnectParameters connector = mapper.Map<ConnectParameters>(entity);
-                //DbUtilities dbConn = new DbUtilities();
-                //dbConn.OpenConnection(connector);
-
-                //RuleModel rule = GetRule(dbConn, qcParams.RuleId);
-
-                //manageQCFlags = new ManageIndexTable(_accessDefs, connector.ConnectionString, rule.DataType);
-
-                //if (qcParams.ClearQCFlags)
-                //{
-                //    manageQCFlags.ClearQCFlags(qcParams.ClearQCFlags);
-                //}
-
-                //manageQCFlags.InitQCFlags(qcParams.ClearQCFlags);
-                //await QualityCheckDataType(dbConn, rule, connector);
-                //dbConn.CloseConnection();
-                //manageQCFlags.SaveQCFlags();
+                await dq.CloseDataQC(source, failures);
             }
             catch (Exception ex)
             {
@@ -125,6 +103,29 @@ namespace DatabaseManager.Server.Controllers
             }
 
             return Ok($"OK");
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<DataQCParameters>> ExecuteRule(DataQCParameters qcParams)
+        {
+            DataQCParameters newQcParms = qcParams;
+            try
+            {
+                
+                List<int> result = new List<int>();
+                if (qcParams == null) return BadRequest();
+                GetStorageAccount();
+                DataQC dq = new DataQC(_connectionString);
+                result = await dq.ExecuteQcRule(qcParams);
+                newQcParms.Failures = result;
+                return newQcParms;
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.ToString());
+            }
+
+            //return Ok($"OK");
         }
 
         private void GetStorageAccount()

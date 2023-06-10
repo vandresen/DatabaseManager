@@ -1,6 +1,9 @@
 ﻿@page "/executerules"
 @using MudBlazor
 @inject IDisplayMessage displayMessage
+@inject IDataQc dq
+@inject SingletonServices singleton
+@inject NavigationManager navigationManager
 
 <h3>Execute Rules</h3>
 
@@ -27,6 +30,15 @@ else
 @code {
     public string SelectedOption { get; set; }
 
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(singleton.TargetConnector))
+        {
+            await displayMessage.DisplayErrorMessage("Please select a data connector");
+            navigationManager.NavigateTo("/");
+        }
+    }
+
     private async Task OnSelectedOptionChanged(string option)
     {
         SelectedOption = option;
@@ -46,8 +58,6 @@ else
 
     private async Task ExecuteDataQc()
     {
-        Console.WriteLine("Execute QC rules");
-        await displayMessage.DisplayErrorMessage("Data QC not implemented yet");
 
         // Clear QC flags
 
@@ -56,6 +66,23 @@ else
         // QC check each QC rule
 
         // Close data qc
+
+        DataQCParameters qcParams = new DataQCParameters();
+
+        Console.WriteLine("Start QC Processing");
+        List<QcResult> ResultList = await dq.GetResults(singleton.TargetConnector);
+        Console.WriteLine($"Number of rules = {ResultList.Count}");
+        qcParams.ClearQCFlags = false;
+        qcParams.DataConnector = singleton.TargetConnector;
+        await dq.ClearQCFlags(singleton.TargetConnector);
+        List<RuleFailures> failures = new List<RuleFailures>();
+        foreach (QcResult rule in ResultList)
+        {
+            qcParams.RuleId = rule.Id;
+            DataQCParameters newQcParms = await dq.ProcessQCRule(qcParams);
+            failures.Add(new RuleFailures { RuleId = newQcParms.RuleId, Failures = newQcParms.Failures });
+        }
+        await dq.CloseQC(singleton.TargetConnector, failures);
     }
 
     private async Task ExecutePredictions()

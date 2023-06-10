@@ -46,5 +46,42 @@ namespace DatabaseManager.BlazorComponents.Services
             }
             return response.Response;
         }
+
+        public async Task<DataQCParameters> ProcessQCRule(DataQCParameters qcParams)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = "api/DataQC";
+            else throw new ApplicationException("URL error");
+            Console.WriteLine($"Execure QC URL: {url}");
+            var response = await httpService.Post<DataQCParameters, DataQCParameters>(url, qcParams);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
+
+        public async Task ClearQCFlags(string source)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/DataQC/ClearQCFlags/{source}";
+            else throw new ApplicationException("URL error");
+            Console.WriteLine($"Clear QC flags url: {url}");
+            var response = await httpService.Post(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
+
+        public async Task CloseQC(string source, List<RuleFailures> failures)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/DataQC/Close/{source}";
+            else throw new ApplicationException("URL error");
+            Console.WriteLine($"Close QC url: {url}");
+            var response = await httpService.Post(url, failures);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
     }
 }

@@ -9,6 +9,6 @@ namespace DatabaseManager.Shared
         public string DataConnector { get; set; }
         public int RuleId { get; set; }
         public bool ClearQCFlags { get; set; }
-        public List<RuleFailures> Failures { get; set; }
+        public List<int> Failures { get; set; }
     }
 }
