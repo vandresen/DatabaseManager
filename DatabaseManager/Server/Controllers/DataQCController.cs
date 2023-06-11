@@ -37,10 +37,8 @@ namespace DatabaseManager.Server.Controllers
             List<QcResult> results = new List<QcResult>();
             try
             {
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                DataQC qc = new DataQC(tmpConnString);
-                DataQCParameters qcParms = new DataQCParameters();
-                qcParms.DataConnector = source;
+                GetStorageAccount();
+                DataQC qc = new DataQC(_connectionString);
                 results = await qc.GetResults(source);
             }
             catch (Exception ex)

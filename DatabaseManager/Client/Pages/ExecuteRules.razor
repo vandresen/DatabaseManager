@@ -2,6 +2,7 @@
 @using MudBlazor
 @inject IDisplayMessage displayMessage
 @inject IDataQc dq
+@inject IPrediction pr
 @inject SingletonServices singleton
 @inject NavigationManager navigationManager
 
@@ -18,17 +19,25 @@
 
 <br />
 
-@if (string.IsNullOrEmpty(SelectedOption))
+<MudProgressLinear Color="Color.Primary" Value="@ProgressValue" Class="my-7" />
+
+<div>
+    <p>Current status: @statusMessage</p>
+</div>
+@*@if (string.IsNullOrEmpty(SelectedOption))
 {
     <p>Waiting for input</p>
 }
 else
 {
     <p>Starting @SelectedOption</p>
-}
+}*@
 
 @code {
     public string SelectedOption { get; set; }
+    public int ProgressValue { get; set; }
+
+    private string statusMessage = "Waiting for input";
 
     protected override async Task OnInitializedAsync()
     {
@@ -58,35 +67,60 @@ else
 
     private async Task ExecuteDataQc()
     {
-
-        // Clear QC flags
-
-        // get all QC rules
-
-        // QC check each QC rule
-
-        // Close data qc
-
         DataQCParameters qcParams = new DataQCParameters();
-
         Console.WriteLine("Start QC Processing");
-        List<QcResult> ResultList = await dq.GetResults(singleton.TargetConnector);
-        Console.WriteLine($"Number of rules = {ResultList.Count}");
+        progress("Start QC Processing");
+        ProgressValue = 0;
+        List<QcResult> fullList = await dq.GetResults(singleton.TargetConnector);
+        List<QcResult> resultList = fullList.Where(x => x.RuleType != "Predictions").ToList();
+        Console.WriteLine($"Number of rules = {resultList.Count}");
         qcParams.ClearQCFlags = false;
         qcParams.DataConnector = singleton.TargetConnector;
         await dq.ClearQCFlags(singleton.TargetConnector);
+        ProgressValue = 5;
         List<RuleFailures> failures = new List<RuleFailures>();
-        foreach (QcResult rule in ResultList)
+        int barInt = 90 / resultList.Count;
+        foreach (QcResult rule in resultList)
         {
             qcParams.RuleId = rule.Id;
+            Console.WriteLine($"Executing rule {rule.Id}");
+            progress($"Executing rule {rule.Id}");
+            ProgressValue = ProgressValue + barInt;
             DataQCParameters newQcParms = await dq.ProcessQCRule(qcParams);
+            Console.WriteLine($"Failures is {newQcParms.Failures.Count}");
             failures.Add(new RuleFailures { RuleId = newQcParms.RuleId, Failures = newQcParms.Failures });
         }
         await dq.CloseQC(singleton.TargetConnector, failures);
+        progress("QC Processing Complete");
+        ProgressValue = 100;
     }
 
     private async Task ExecutePredictions()
     {
-        await displayMessage.DisplayErrorMessage("Predictions not implemented yet");
+        Console.WriteLine("Start Prediction Processing");
+        progress("Start Prediction Processing");
+        ProgressValue = 0;
+        List<PredictionCorrection> predictions = await pr.GetResults(singleton.TargetConnector);
+        Console.WriteLine($"Number of predictions = {predictions.Count}");
+        ProgressValue = 5;
+        int barInt = 90 / predictions.Count;
+        foreach (var prediction in predictions)
+        {
+            Console.WriteLine($"Executing rule {prediction.Id}");
+            progress($"Executing rule {prediction.Id}");
+            ProgressValue = ProgressValue + barInt;
+            PredictionParameters parm = new PredictionParameters();
+            parm.DataConnector = singleton.TargetConnector;
+            parm.PredictionId = prediction.Id;
+            await pr.ProcessPrediction(parm);
+        }
+        progress("Prediction Processing Complete");
+        ProgressValue = 100;
+    }
+
+    private void progress(string message)
+    {
+        statusMessage = message;
+        StateHasChanged();
     }
 }

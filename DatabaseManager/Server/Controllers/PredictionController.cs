@@ -14,13 +14,13 @@ namespace DatabaseManager.Server.Controllers
     [ApiController]
     public class PredictionController : ControllerBase
     {
-        private string connectionString;
+        private string _connectionString;
         private readonly ILogger<PredictionController> logger;
 
         public PredictionController(IConfiguration configuration,
             ILogger<PredictionController> logger)
         {
-            connectionString = configuration.GetConnectionString("AzureStorageConnection");
+            _connectionString = configuration.GetConnectionString("AzureStorageConnection");
             this.logger = logger;
         }
 
@@ -30,8 +30,8 @@ namespace DatabaseManager.Server.Controllers
             List<PredictionCorrection> predictionResuls = new List<PredictionCorrection>();
             try
             {
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                Predictions predict = new Predictions(tmpConnString, logger);
+                GetStorageAccount();
+                Predictions predict = new Predictions(_connectionString, logger);
                 predictionResuls = await predict.GetPredictions(source);
             }
             catch (Exception ex)
@@ -48,8 +48,8 @@ namespace DatabaseManager.Server.Controllers
             try
             {
                 if (predictionParams == null) return BadRequest();
-                string tmpConnString = Request.Headers["AzureStorageConnection"];
-                Predictions predict = new Predictions(tmpConnString, logger);
+                GetStorageAccount();
+                Predictions predict = new Predictions(_connectionString, logger);
                 await predict.ExecutePrediction(predictionParams);
             }
             catch (Exception ex)
@@ -58,6 +58,17 @@ namespace DatabaseManager.Server.Controllers
             }
 
             return Ok($"OK");
+        }
+
+        private void GetStorageAccount()
+        {
+            string tmpConnString = Request.Headers["AzureStorageConnection"];
+            if (!string.IsNullOrEmpty(tmpConnString)) _connectionString = tmpConnString;
+            if (string.IsNullOrEmpty(_connectionString))
+            {
+                Exception error = new Exception($"Azure storage key string is not set");
+                throw error;
+            }
         }
     }
 }

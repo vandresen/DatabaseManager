@@ -45,6 +45,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IRules, Rules>();
             services.AddScoped<IDataOps, DataOpsClientService>();
             services.AddScoped<IDataQc, DataQc>();
+            services.AddScoped<IPrediction, Prediction>();
             services.AddScoped<ICookies, Cookies>();
             services.AddScoped<IDataTransfer, DataTransferClient>();
             services.AddScoped<IReportEdit, ReportEdit>();
