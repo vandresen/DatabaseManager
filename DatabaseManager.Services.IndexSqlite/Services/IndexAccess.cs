@@ -4,6 +4,7 @@ using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Data;
+using System.Linq;
 using System.Xml.Linq;
 
 namespace DatabaseManager.Services.IndexSqlite.Services
@@ -16,9 +17,9 @@ namespace DatabaseManager.Services.IndexSqlite.Services
         private readonly IDataSourceService _ds;
         private readonly IFileStorageService _fs;
         private string _table = "pdo_qc_index";
-        private string getSql = "Select IndexId, ParentId, DataName, DataType, DataKey, QC_String, UniqKey, JsonDataObject, " +
-            "Latitude, Longitude " +
-            "from pdo_qc_index";
+        private string _selectAttributes = "IndexId, ParentId, DataName, DataType, DataKey, QC_String, UniqKey, JsonDataObject, " +
+            "Latitude, Longitude";
+        private string getSql;
         private readonly string _databaseFile = @".\mydatabase.db";
         private string _connectionString;
         private List<IndexModel> myIndex;
@@ -37,6 +38,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             _ds = ds;
             _fs = fs;
             _connectionString = @"Data Source=" + _databaseFile;
+            getSql = "Select " + _selectAttributes + " From " + _table;
         }
 
         public void ClearAllQCFlags(string connectionString)
@@ -70,36 +72,61 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             throw new NotImplementedException();
         }
 
-        public async Task<IEnumerable<IndexModel>> GetDescendantsFromSP(int id, string connectionString)
+        public async Task<IEnumerable<IndexModel>> GetDescendants(int id)
         {
             string sql = $"WITH RECURSIVE IndexHierarchy AS (" +
                 " SELECT IndexId, " +
                 "DataName, " +
-                "ParentId, " +
-                "0 AS HierarchyLevel " +
+                "ParentId, " + 
+                "DataType, " +
+                "DataKey, " + 
+                "QC_String, " +
+                "UniqKey," + 
+                "JsonDataObject, " +
+                "Latitude, " +
+                "Longitude, " +
+                "0 AS IndexLevel " +
                 "FROM pdo_qc_index " +
                 $"WHERE ParentId = {id} " +
                 " UNION ALL " +
                 " SELECT e.IndexId, " +
                 " e.DataName, " +
                 " e.ParentId, " +
-                " HierarchyLevel + 1 " +
+                " e.DataType, " +
+                " e.DataKey, " +
+                " e.QC_String, " +
+                " e.UniqKey," +
+                " e.JsonDataObject, " +
+                " e.Latitude, " +
+                " e.Longitude, " +
+                " IndexLevel + 1 " +
                 " FROM pdo_qc_index e, IndexHierarchy ch " +
                 " WHERE e.ParentId = ch.IndexId " +
                 ") " +
-                "SELECT ch.DataName AS employee_first_name, " +
-                " HierarchyLevel AS IndexLevel " +
+                "SELECT ch.DataName, " +
+                " ch.IndexId, " +
+                " ch.ParentId, " +
+                " ch.DataType, " +
+                " ch.DataKey, " +
+                " ch.QC_String, " +
+                " ch.UniqKey," +
+                " ch.JsonDataObject, " +
+                " ch.Latitude, " +
+                " ch.Longitude, " +
+                " IndexLevel " +
                 " FROM IndexHierarchy ch " +
                 " LEFT JOIN pdo_qc_index e " +
                 " ON ch.ParentId = e.IndexId " +
-                " ORDER BY ch.HierarchyLevel, ch.ParentId;";
-            IEnumerable<IndexModel> result = await _id.ReadData<IndexModel>(sql, connectionString);
+                " ORDER BY ch.IndexLevel, ch.ParentId;";
+            IEnumerable<IndexModel> result = await _id.ReadData<IndexModel>(sql, _connectionString);
             return result;
         }
 
-        public Task<IndexModel> GetIndex(int id, string connectionString)
+        public async Task<IndexModel> GetIndex(int id)
         {
-            throw new NotImplementedException();
+            string sql = getSql + $" WHERE IndexId = '{id}'";
+            var results = await _id.ReadData<IndexModel>(sql, _connectionString);
+            return results.FirstOrDefault();
         }
 
         public async Task<IEnumerable<IndexModel>> GetIndexes()
