@@ -1,4 +1,5 @@
 ﻿using NetTopologySuite.Geometries;
+using NetTopologySuite.Operation.Distance3D;
 
 namespace DatabaseManager.Services.IndexSqlite.Models
 {
@@ -16,6 +17,7 @@ namespace DatabaseManager.Services.IndexSqlite.Models
         public string JsonDataObject { get; set; }
         public Double? Latitude { get; set; }
         public Double? Longitude { get; set; }
+        public Double? Distance { get; set; }
         public Geometry Locations { get; set; }
     }
 }

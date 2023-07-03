@@ -146,15 +146,27 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             throw new NotImplementedException();
         }
 
-        public async Task<IEnumerable<IndexModel>> GetIndexNeighbors(string connectionString)
+        public async Task<IEnumerable<IndexModel>> GetNeighbors(int id)
         {
-            double target_longitude = 10.0;
-            double target_latitude = 10.0;
-            string sql = $"SELECT IndexId, DataName, " +
-                $"Distance(Locations, MakePoint({target_longitude}, {target_latitude})) AS distance " +
+            string sql = getSql + $" WHERE IndexId = {id}";
+            var results = await _id.ReadData<IndexModel>(sql, _connectionString);
+            var target = results.FirstOrDefault();
+            if (target == null) 
+            {
+                throw new Exception("Index object does not exist.");
+            }
+            if (target.NoIndexLocation())
+            {
+                throw new Exception("Index object does not have a proper location.");
+            }
+            sql = $"SELECT " +
+                _selectAttributes +
+                $", Distance(Locations, MakePoint({target.Longitude}, {target.Latitude})) AS Distance " +
                 $"FROM {_table} " +
-                "ORDER BY distance";
-            IEnumerable<IndexModel> result = await _id.ReadData<IndexModel>(sql, connectionString);
+                $" WHERE distance IS NOT NULL AND IndexId != {id} " +
+                "ORDER BY Distance " +
+                "LIMIT 24";
+            IEnumerable<IndexModel> result = await _id.ReadData<IndexModel>(sql, _connectionString);
             return result;
         }
 

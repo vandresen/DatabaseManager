@@ -21,6 +21,15 @@ namespace DatabaseManager.Services.IndexSqlite.Helpers
             return (min < x) && (x < max);
         }
 
+        public static bool NoIndexLocation(this IndexModel idx)
+        {
+            if (idx.Latitude == null) return true;
+            if (idx.Latitude == -99999) return true;
+            if (idx.Longitude == null) return true;
+            if (idx.Longitude == -99999) return true;
+            return false;
+        }
+
         public static string ConvertDataRowToJson(this DataRow dataRow, DataTable dt)
         {
             DataTable tmp = new DataTable();

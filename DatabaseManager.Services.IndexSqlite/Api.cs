@@ -16,6 +16,7 @@ namespace DatabaseManager.Services.IndexSqlite
             app.MapPost("/CreateDatabase", CreateIndexDatabase);
             app.MapPost("/BuildIndex", BuildIndex);
             app.MapPost("/GetDescendants/{id}", GetDescendants);
+            app.MapPost("/GetNeighbors/{id}", GetNeighbors);
         }
 
         private static async Task<IResult> GetIndexes(IIndexAccess idxAccess)
@@ -49,6 +50,18 @@ namespace DatabaseManager.Services.IndexSqlite
             try
             {
                 return Results.Ok(await idxAccess.GetDescendants(id));
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
+        }
+
+        private static async Task<IResult> GetNeighbors(int id, IIndexAccess idxAccess)
+        {
+            try
+            {
+                return Results.Ok(await idxAccess.GetNeighbors(id));
             }
             catch (Exception ex)
             {

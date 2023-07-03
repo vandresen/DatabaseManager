@@ -23,7 +23,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
         Task<IEnumerable<IndexModel>> GetIndexes();
         Task<IEnumerable<IndexModel>> GetIndexesWithQcStringFromSP(string qcString, string connectionString);
         Task<IEnumerable<IndexModel>> GetChildrenWithName(string connectionString, string indexNode, string name);
-        Task<IEnumerable<IndexModel>> GetIndexNeighbors(string connectionString);
+        Task<IEnumerable<IndexModel>> GetNeighbors(int id);
         Task<int> GetCount(string connectionString, string query);
         DataAccessDef GetDataAccessDefinition();
         string GetSelectSQL();
