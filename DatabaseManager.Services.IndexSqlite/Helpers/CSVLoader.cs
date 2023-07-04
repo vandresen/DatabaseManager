@@ -36,73 +36,76 @@ namespace DatabaseManager.Services.IndexSqlite.Helpers
         {
             DataTable result = new DataTable();
 
-            dt = new DataTable();
-            string accessJson = await _fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
-            _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
-            string referenceJson = await _fileStorageService.ReadFile("connectdefinition", "PPDMReferenceTables.json");
-            _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(referenceJson);
-            string csvJson = await _fileStorageService.ReadFile("connectdefinition", "CSVDataAccess.json");
-            _csvDef = JsonConvert.DeserializeObject<List<CSVAccessDef>>(csvJson);
-            string csvText = await _fileStorageService.ReadFile(source.Catalog, source.FileName);
-            ppdmModel = await _fileStorageService.ReadFile("ppdm39", "TAB.sql");
-
-            string dataType = source.DataType.Remove(source.DataType.Length - 1, 1);
-            dataAccess = _dataDef.First(x => x.DataType == dataType);
-            tableDataType = dataType;
-
-            CSVAccessDef csvAccess = _csvDef.First(x => x.DataType == dataType);
-            Dictionary<string, int> attributes = csvAccess.Mappings.ToDictionary();
-            Dictionary<string, string> constants = csvAccess.Constants.ToStringDictionary();
-            Dictionary<string, string> columnTypes = dt.GetColumnTypes();
-
-            string dataTypeSql = dataAccess.Select;
-            string table = dataTypeSql.GetTable().ToLower();
-            attributeProperties = Common.GetColumnInfo(table, ppdmModel);
-
-            using (TextReader csvStream = new StringReader(csvText))
+            if (dt.Rows.Count == 0) 
             {
-                var conf = new CsvConfiguration(CultureInfo.InvariantCulture)
-                {
-                    //BadDataFound = null
-                };
-                using (var csv = new CsvReader(csvStream, conf))
-                {
-                    csv.Read();
-                    csv.ReadHeader();
-                    string[] headerRow = csv.HeaderRecord;
-                    var attributeMappings = new Dictionary<string, string>();
-                    foreach (var item in attributes)
-                    {
-                        int colNumber = item.Value;
-                        attributeMappings.Add(headerRow[colNumber], item.Key);
-                    }
+                dt = new DataTable();
+                string accessJson = await _fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
+                _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(accessJson);
+                string referenceJson = await _fileStorageService.ReadFile("connectdefinition", "PPDMReferenceTables.json");
+                _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(referenceJson);
+                string csvJson = await _fileStorageService.ReadFile("connectdefinition", "CSVDataAccess.json");
+                _csvDef = JsonConvert.DeserializeObject<List<CSVAccessDef>>(csvJson);
+                string csvText = await _fileStorageService.ReadFile(source.Catalog, source.FileName);
+                ppdmModel = await _fileStorageService.ReadFile("ppdm39", "TAB.sql");
 
-                    List<dynamic> csvRecords = csv.GetRecords<dynamic>().ToList();
-                    foreach (var row in csvRecords)
+                string dataType = source.DataType.Remove(source.DataType.Length - 1, 1);
+                dataAccess = _dataDef.First(x => x.DataType == dataType);
+                tableDataType = dataType;
+
+                CSVAccessDef csvAccess = _csvDef.First(x => x.DataType == dataType);
+                Dictionary<string, int> attributes = csvAccess.Mappings.ToDictionary();
+                Dictionary<string, string> constants = csvAccess.Constants.ToStringDictionary();
+                Dictionary<string, string> columnTypes = dt.GetColumnTypes();
+
+                string dataTypeSql = dataAccess.Select;
+                string table = dataTypeSql.GetTable().ToLower();
+                attributeProperties = Common.GetColumnInfo(table, ppdmModel);
+
+                using (TextReader csvStream = new StringReader(csvText))
+                {
+                    var conf = new CsvConfiguration(CultureInfo.InvariantCulture)
                     {
-                        DynamicObject newCsvRecord = new DynamicObject();
-                        foreach (var item in row)
+                        //BadDataFound = null
+                    };
+                    using (var csv = new CsvReader(csvStream, conf))
+                    {
+                        csv.Read();
+                        csv.ReadHeader();
+                        string[] headerRow = csv.HeaderRecord;
+                        var attributeMappings = new Dictionary<string, string>();
+                        foreach (var item in attributes)
                         {
-                            if (attributeMappings.ContainsKey(item.Key))
-                            {
-                                string dbAttribute = attributeMappings[item.Key];
-                                string value = item.Value;
-                                TableSchema dataProperty = attributeProperties.FirstOrDefault(x => x.COLUMN_NAME == dbAttribute);
-                                if (dataProperty.DATA_TYPE.ToLower().Contains("varchar"))
-                                {
-                                    string numberString = Regex.Match(dataProperty.CHARACTER_MAXIMUM_LENGTH, @"\d+").Value;
-                                    int maxCharacters = Int32.Parse(numberString);
-                                    if (value.Length > maxCharacters)
-                                    {
-                                        value = value.Substring(0, maxCharacters);
-                                    }
-                                }
-                                newCsvRecord.AddProperty(dbAttribute, value);
-                            }
+                            int colNumber = item.Value;
+                            attributeMappings.Add(headerRow[colNumber], item.Key);
                         }
-                        FixKey(newCsvRecord);
+
+                        List<dynamic> csvRecords = csv.GetRecords<dynamic>().ToList();
+                        foreach (var row in csvRecords)
+                        {
+                            DynamicObject newCsvRecord = new DynamicObject();
+                            foreach (var item in row)
+                            {
+                                if (attributeMappings.ContainsKey(item.Key))
+                                {
+                                    string dbAttribute = attributeMappings[item.Key];
+                                    string value = item.Value;
+                                    TableSchema dataProperty = attributeProperties.FirstOrDefault(x => x.COLUMN_NAME == dbAttribute);
+                                    if (dataProperty.DATA_TYPE.ToLower().Contains("varchar"))
+                                    {
+                                        string numberString = Regex.Match(dataProperty.CHARACTER_MAXIMUM_LENGTH, @"\d+").Value;
+                                        int maxCharacters = Int32.Parse(numberString);
+                                        if (value.Length > maxCharacters)
+                                        {
+                                            value = value.Substring(0, maxCharacters);
+                                        }
+                                    }
+                                    newCsvRecord.AddProperty(dbAttribute, value);
+                                }
+                            }
+                            FixKey(newCsvRecord);
+                        }
+                        dt = DynamicToDT(newCsvRecords);
                     }
-                    dt = DynamicToDT(newCsvRecords);
                 }
             }
 

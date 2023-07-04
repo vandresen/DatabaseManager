@@ -253,9 +253,13 @@ namespace DatabaseManager.Services.IndexSqlite.Services
         {
             ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(idxParms.SourceName);
             ConnectParameters source = JsonConvert.DeserializeObject<ConnectParameters>(Convert.ToString(dsResponse.Result));
-            dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(idxParms.TargetName);
-            ConnectParameters target = JsonConvert.DeserializeObject<ConnectParameters>(Convert.ToString(dsResponse.Result));
-
+            ConnectParameters target = new ConnectParameters();
+            if (!String.IsNullOrEmpty(idxParms.TargetName))
+            {
+                dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(idxParms.TargetName);
+                target = JsonConvert.DeserializeObject<ConnectParameters>(Convert.ToString(dsResponse.Result));
+            }
+            
             _fs.SetConnectionString(idxParms.StorageAccount);
             target.DataAccessDefinition = await _fs.ReadFile("connectdefinition", "PPDMDataAccess.json");
             target.ConnectionString = _connectionString;
@@ -297,7 +301,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                 DataRow dataRow = _currentItem.DataTable.Rows[parentId];
                 _location = GetIndexLocation(dataRow);
                 parentNodeId = parentNodeId + $"{parentId + 1}/";
-                PopulateIndexItem(dataRow, parentNodeId, parentIndexId);
+                await PopulateIndexItem(dataRow, parentNodeId, parentIndexId);
                 parentIndexId = _indexId;
                 await PopulateChildIndex(level, parentId, parentNodeId, parentIndexId);
             }
@@ -330,7 +334,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                             _currentItem = GetIndexData(subLevel);
                             _location = GetIndexLocation(pr);
                             string indexNode = childNodeId + $"{i + 1}/";
-                            PopulateIndexItem(_currentItem.DataTable.Rows[i], indexNode, parentIndexId);
+                            await PopulateIndexItem(_currentItem.DataTable.Rows[i], indexNode, parentIndexId);
                             await PopulateChildIndex(subLevel, i, indexNode, parentIndexId);
                         }
                     }
@@ -338,7 +342,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             }
         }
 
-        private void PopulateIndexItem(DataRow dataRow, string parentNodeId, int parentIndexId)
+        private async Task PopulateIndexItem(DataRow dataRow, string parentNodeId, int parentIndexId)
         {
             double? lat = _location.Latitude;
             double? lon = _location.Longitude;
@@ -348,7 +352,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             string dataKey = GetDataKey(dataRow, keys);
             string jsonData = dataRow.ConvertDataRowToJson(_currentItem.DataTable);
             string qcLocation = GetQcLocation();
-            if (_currentItem.Arrays != null) jsonData = GetArrays(dataRow, jsonData);
+            if (_currentItem.Arrays != null) jsonData = await GetArrays(dataRow, jsonData);
             _indexId++;
             myIndex.Add(new IndexModel
             {
@@ -364,7 +368,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             });
         }
 
-        private string GetArrays(DataRow dataRow, string inJson)
+        private async Task<string> GetArrays(DataRow dataRow, string inJson)
         {
             string outJson = inJson;
             foreach (JToken array in _currentItem.Arrays)
@@ -374,14 +378,14 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                 string parentKeys = array["ParentKey"].ToString();
                 string query = GetParentKey(dataRow, parentKeys);
                 query = " where " + query;
-                //DataTable dt = dbConn.GetDataTable(select, query);
-                //if (dt.Rows.Count == 1)
-                //{
-                //    string result = dt.Rows[0]["ARRAY"].ToString();
-                //    JObject dataObject = JObject.Parse(outJson);
-                //    dataObject[attribute] = result;
-                //    outJson = dataObject.ToString();
-                //}
+                DataTable dt = await _sourceAccess.GetDataTable(select, query, "");
+                if (dt.Rows.Count == 1)
+                {
+                    string result = dt.Rows[0]["ARRAY"].ToString();
+                    JObject dataObject = JObject.Parse(outJson);
+                    dataObject[attribute] = result;
+                    outJson = dataObject.ToString();
+                }
             }
             return outJson;
         }
@@ -510,7 +514,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             _taxonomy = await _fs.ReadFile("taxonomy", idxParms.TaxonomyFile);
             if (source.SourceType == "DataBase")
             {
-                //iBuilder = new IndexBuilder(new DBDataAccess(_db));
+                _sourceAccess = new DBDataAccess();
             }
             else
             {
