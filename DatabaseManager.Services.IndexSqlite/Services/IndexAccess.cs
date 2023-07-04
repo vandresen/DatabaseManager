@@ -517,7 +517,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                 source.ConnectionString = idxParms.StorageAccount;
                 if (source.DataType == "Logs")
                 {
-                    //iBuilder = new IndexBuilder(new LASDataAccess(_fileStorage));
+                    _sourceAccess = new LASDataAccess(_fs);
                 }
                 else
                 {

@@ -1,4 +1,5 @@
 ﻿using Azure.Storage.Files.Shares;
+using Azure.Storage.Files.Shares.Models;
 using System.IO;
 
 namespace DatabaseManager.Services.IndexSqlite.Services
@@ -6,6 +7,23 @@ namespace DatabaseManager.Services.IndexSqlite.Services
     public class AzureFileStorageService : IFileStorageService
     {
         private string connectionString;
+
+        public async Task<List<string>> ListFiles(string fileShare)
+        {
+            List<string> files = new List<string>();
+            ShareClient share = new ShareClient(connectionString, fileShare);
+            if (!share.Exists())
+            {
+                Exception error = new Exception($"Fileshare {fileShare} does not exist ");
+                throw error;
+            }
+            ShareDirectoryClient directory = share.GetRootDirectoryClient();
+            foreach (ShareFileItem item in directory.GetFilesAndDirectories())
+            {
+                files.Add(item.Name);
+            }
+            return files;
+        }
 
         public async Task<string> ReadFile(string fileShare, string fileName)
         {

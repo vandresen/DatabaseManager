@@ -60,13 +60,6 @@ namespace DatabaseManager.Services.IndexSqlite.Helpers
                             Console.WriteLine("Invalid column definition: " + columnDefinition);
                         }
                     }
-
-                    // Print the extracted column names and types
-                    //foreach (ColumnNameAndType column in columns)
-                    //{
-                    //    Console.WriteLine("Column Name: " + column.ColumnName);
-                    //    Console.WriteLine("Column Type: " + column.ColumnType);
-                    //}
                 }
                 else
                 {
@@ -75,8 +68,8 @@ namespace DatabaseManager.Services.IndexSqlite.Helpers
             }
             else
             {
+                throw new Exception($"Could not get column info, no match for table {tableName}.");
             }
-
             return columns;
         }
     }
