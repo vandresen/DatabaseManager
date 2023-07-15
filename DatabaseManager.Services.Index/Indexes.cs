@@ -1,5 +1,6 @@
 using System.Net;
 using DatabaseManager.Services.Index.Extensions;
+using DatabaseManager.Services.Index.Helpers;
 using DatabaseManager.Services.Index.Models;
 using DatabaseManager.Services.Index.Services;
 using Microsoft.Azure.Functions.Worker;
@@ -30,6 +31,51 @@ namespace DatabaseManager.Services.Index
             _indexDB = indexDB;
             SD.DataSourceAPIBase = _configuration.GetValue<string>("DataSourceAPI");
             SD.DataSourceKey = _configuration["DataSourceKey"];
+        }
+
+        [Function("CreateDatabase")]
+        public async Task<ResponseDto> CreateDatabase(
+            [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
+        {
+            _logger.LogInformation("CreateDatabase: Starting.");
+
+            try
+            {
+                var stringBody = await new StreamReader(req.Body).ReadToEndAsync();
+                DataModelParameters parameters = JsonConvert.DeserializeObject<DataModelParameters>(stringBody);
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(parameters.DataConnector);
+                ConnectParametersDto connector = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                
+                await _indexDB.CreateDatabaseIndex(connector.ConnectionString);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"CreateDatabase: Error creating index database: {ex}");
+            }
+            return _response;
+        }
+
+        [Function("BuildIndex")]
+        public async Task<ResponseDto> BuildIndex(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "BuildIndex")] BuildIndexParameters idxParms)
+        {
+            _logger.LogInformation("BuildIndex: Starting.");
+
+            try
+            {
+                //await _indexDB.BuildIndex(idxParms);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"GetIndexes: Error getting indexes: {ex}");
+            }
+            return _response;
         }
 
         [Function("GetIndexes")]
