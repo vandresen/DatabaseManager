@@ -1,13 +1,19 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
+using DatabaseManager.Services.Index.Extensions;
+using DatabaseManager.Services.Index.Models;
+using DatabaseManager.Services.Index.Services;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
-using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
-namespace DatabaseManager.Services.IndexSqlite.Helpers
+namespace DatabaseManager.Services.Index.Helpers
 {
     public class CSVLoader
     {
@@ -28,11 +34,11 @@ namespace DatabaseManager.Services.IndexSqlite.Helpers
             _fileStorageService = fileStorageService;
         }
 
-        public async Task<DataTable> GetCSVTable(ConnectParameters source, ConnectParameters target, string indexDataType)
+        public async Task<DataTable> GetCSVTable(ConnectParametersDto source, ConnectParametersDto target, string indexDataType)
         {
             DataTable result = new DataTable();
 
-            if (dt.Rows.Count == 0) 
+            if (dt.Rows.Count == 0)
             {
                 dt = new DataTable();
                 string accessJson = await _fileStorageService.ReadFile("connectdefinition", "PPDMDataAccess.json");
@@ -257,13 +263,13 @@ namespace DatabaseManager.Services.IndexSqlite.Helpers
             dataAccess = _dataDef.First(x => x.DataType == dataType);
             string dataTypeSql = dataAccess.Select;
             string table = dataTypeSql.GetTable().ToLower();
-            List<TableSchema>  attributes = Common.GetColumnInfo(table, ppdmModel);
+            List<TableSchema> attributes = Common.GetColumnInfo(table, ppdmModel);
             DataTable dt = new DataTable();
             string[] selectAttributes = dataTypeSql.GetSqlSelectAttributes();
             foreach (var item in selectAttributes)
             {
                 TableSchema schema = attributes.Find(obj => obj.COLUMN_NAME == item);
-                if (schema != null) 
+                if (schema != null)
                 {
                     DataColumn column = null;
                     if (schema.DATA_TYPE == "INT")
@@ -294,12 +300,12 @@ namespace DatabaseManager.Services.IndexSqlite.Helpers
             table = table.ToLower();
             List<TableSchema> attributes = Common.GetColumnInfo(table, ppdmModel);
             TableSchema schema = attributes.Find(obj => obj.COLUMN_NAME == key);
-            if( schema != null) 
+            if (schema != null)
             {
                 if (schema.DATA_TYPE.Contains("NVARCHAR"))
                 {
                     int? tmpLenght = schema.CHARACTER_MAXIMUM_LENGTH.GetIntFromString();
-                    if(tmpLenght != null) length = (int)tmpLenght;
+                    if (tmpLenght != null) length = (int)tmpLenght;
                 }
             }
             return length;

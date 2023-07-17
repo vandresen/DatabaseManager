@@ -17,6 +17,7 @@ var host = new HostBuilder()
         services.AddScoped<IDataSourceService, DataSourceService>();
         services.AddScoped<IDapperDataAccess, DapperDataAccess>();
         services.AddScoped<IIndexDBAccess, IndexDBAccess>();
+        services.AddScoped<IFileStorageService, AzureFileStorageService>();
     })
     .Build();
 

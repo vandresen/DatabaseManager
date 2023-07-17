@@ -20,7 +20,7 @@ namespace DatabaseManager.Services.Index.Services
             return fileContent;
         }
 
-        public Task SaveFile(string fileShare, string fileName, string fileContent)
+        public void SetConnectionString(string connection)
         {
             throw new NotImplementedException();
         }

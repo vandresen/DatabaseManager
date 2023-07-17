@@ -43,10 +43,23 @@ namespace DatabaseManager.Services.Index
             {
                 var stringBody = await new StreamReader(req.Body).ReadToEndAsync();
                 DataModelParameters parameters = JsonConvert.DeserializeObject<DataModelParameters>(stringBody);
+                _logger.LogInformation($"CreateDatabase: Data connector is {parameters.DataConnector}");
                 ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(parameters.DataConnector);
-                ConnectParametersDto connector = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                if (dsResponse.IsSuccess) 
+                {
+                    ConnectParametersDto connector = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                    _logger.LogInformation($"CreateDatabase: Connection string is {connector.ConnectionString}");
+                    await _indexDB.CreateDatabaseIndex(connector.ConnectionString);
                 
-                await _indexDB.CreateDatabaseIndex(connector.ConnectionString);
+                }
+                else
+                {
+                    _response.IsSuccess = false;
+                    string newString = $"Createdatabase: Could not get data source {parameters.DataConnector}";
+                    _response.ErrorMessages = dsResponse.ErrorMessages;
+                    _response.ErrorMessages.Insert(0, newString);
+                }
+                
             }
             catch (Exception ex)
             {
@@ -60,13 +73,15 @@ namespace DatabaseManager.Services.Index
 
         [Function("BuildIndex")]
         public async Task<ResponseDto> BuildIndex(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "BuildIndex")] BuildIndexParameters idxParms)
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "BuildIndex")] HttpRequestData req)
         {
             _logger.LogInformation("BuildIndex: Starting.");
 
             try
             {
-                //await _indexDB.BuildIndex(idxParms);
+                var stringBody = await new StreamReader(req.Body).ReadToEndAsync();
+                BuildIndexParameters idxParms = JsonConvert.DeserializeObject<BuildIndexParameters>(stringBody);
+                await _indexDB.BuildIndex(idxParms);
             }
             catch (Exception ex)
             {
