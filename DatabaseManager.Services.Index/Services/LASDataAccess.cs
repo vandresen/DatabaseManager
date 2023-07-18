@@ -9,20 +9,17 @@ using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.Index.Services
 {
-    public class CSVDataAccess : IDataAccess
+    public class LASDataAccess : IDataAccess
     {
         private readonly IFileStorageService fileStorageService;
         private ConnectParametersDto connection;
         private ConnectParametersDto target;
-        private CSVLoader csv;
+        private LASLoader ls;
+        private DataTable wellTable;
 
-        public CSVDataAccess(IFileStorageService fileStorageService)
+        public LASDataAccess(IFileStorageService fileStorageService)
         {
             this.fileStorageService = fileStorageService;
-        }
-        public void CloseConnection()
-        {
-            Console.WriteLine("Close CSV connection");
         }
 
         public Task<T> Count<T, U>(string sql, U parameters, string connectionString)
@@ -43,14 +40,24 @@ namespace DatabaseManager.Services.Index.Services
         public async Task<DataTable> GetDataTable(string select, string query, string dataType)
         {
             DataTable dt = new DataTable();
-            dt = await csv.GetCSVTable(connection, target, dataType);
-            if (!string.IsNullOrEmpty(query))
+            if (dataType == "WellBore")
             {
+                dt = await ls.GetLASWellHeaders(connection, target);
+            }
+            else if (dataType == "Log")
+            {
+                if (wellTable == null)
+                {
+                    wellTable = await ls.GetLASLogHeaders(connection, target);
+                }
                 string condition = query.Replace("where", "");
                 condition = condition.Trim();
-                if (dt.Rows.Count > 0) dt = dt.Select(condition).CopyToDataTable();
+                dt = wellTable.Select(condition).CopyToDataTable();
             }
+            else
+            {
 
+            }
             return dt;
         }
 
@@ -69,7 +76,7 @@ namespace DatabaseManager.Services.Index.Services
             this.connection = source;
             this.target = target;
             fileStorageService.SetConnectionString(connection.ConnectionString);
-            csv = new CSVLoader(fileStorageService);
+            ls = new LASLoader(fileStorageService);
         }
 
         public Task<IEnumerable<T>> ReadData<T>(string sql, string connectionString)

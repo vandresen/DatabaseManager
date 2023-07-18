@@ -51,6 +51,7 @@ namespace DatabaseManager.Services.Index.Services
             {
                 dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(idxParms.TargetName);
                 target = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                _ida.WakeUpDatabase(target.ConnectionString);
             }
 
             _fs.SetConnectionString(idxParms.StorageAccount);
@@ -111,7 +112,7 @@ namespace DatabaseManager.Services.Index.Services
                 source.ConnectionString = idxParms.StorageAccount;
                 if (source.DataType == "Logs")
                 {
-                    //_sourceAccess = new LASDataAccess(_fs);
+                    _sourceAccess = new LASDataAccess(_fs);
                 }
                 else
                 {

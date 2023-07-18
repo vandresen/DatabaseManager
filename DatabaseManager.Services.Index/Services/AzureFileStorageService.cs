@@ -1,4 +1,5 @@
 ﻿using Azure.Storage.Files.Shares;
+using Azure.Storage.Files.Shares.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,6 +40,23 @@ namespace DatabaseManager.Services.Index.Services
                 throw error;
             }
             return json;
+        }
+
+        public async Task<List<string>> ListFiles(string fileShare)
+        {
+            List<string> files = new List<string>();
+            ShareClient share = new ShareClient(connectionString, fileShare);
+            if (!share.Exists())
+            {
+                Exception error = new Exception($"Fileshare {fileShare} does not exist ");
+                throw error;
+            }
+            ShareDirectoryClient directory = share.GetRootDirectoryClient();
+            foreach (ShareFileItem item in directory.GetFilesAndDirectories())
+            {
+                files.Add(item.Name);
+            }
+            return files;
         }
 
         public void SetConnectionString(string connection)

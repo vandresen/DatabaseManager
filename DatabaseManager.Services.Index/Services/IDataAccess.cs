@@ -19,6 +19,7 @@ namespace DatabaseManager.Services.Index.Services
         Task<T> Count<T, U>(string sql, U parameters, string connectionString);
         Task<DataTable> GetDataTable(string select, string query, string dataType);
         void OpenConnection(ConnectParametersDto source, ConnectParametersDto target);
+        void WakeUpDatabase(string connectionString);
         Task InsertWithUDT<T>(string storedProcedure, string parameterName, T collection, string connectionString);
     }
 }

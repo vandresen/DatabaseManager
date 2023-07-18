@@ -9,6 +9,11 @@ namespace DatabaseManager.Services.Index.Services
 {
     public class EmbeddedFileStorageService : IFileStorageService
     {
+        public Task<List<string>> ListFiles(string fileShare)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<string> ReadFile(string fileShare, string fileName)
         {
             Assembly asm = Assembly.GetExecutingAssembly();
