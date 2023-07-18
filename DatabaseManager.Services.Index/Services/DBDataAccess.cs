@@ -43,9 +43,21 @@ namespace DatabaseManager.Services.Index.Services
             }
         }
 
-        public Task<DataTable> GetDataTable(string select, string query, string dataType)
+        public async Task<DataTable> GetDataTable(string select, string query, string dataType)
         {
-            throw new NotImplementedException();
+            SqlConnection conn = null;
+            string sql = select + query;
+            DataTable result = new DataTable();
+            using (conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                cmd.CommandTimeout = _sqlTimeOut;
+                SqlDataReader dr = cmd.ExecuteReader();
+                result.Load(dr);
+                dr.Close();
+            }
+            return result;
         }
 
         public async Task InsertWithUDT<T>(string storedProcedure, string parameterName, T collection, string connectionString)
@@ -73,7 +85,7 @@ namespace DatabaseManager.Services.Index.Services
 
         public void OpenConnection(ConnectParametersDto source, ConnectParametersDto target)
         {
-            throw new NotImplementedException();
+            _connectionString = source.ConnectionString;
         }
 
         public Task<IEnumerable<T>> ReadData<T>(string sql, string connectionString)
@@ -93,12 +105,20 @@ namespace DatabaseManager.Services.Index.Services
 
         public void WakeUpDatabase(string connectionString)
         {
-            SqlConnection conn = null;
-            using (conn = new SqlConnection(connectionString))
+            try
             {
-                conn.Open();
-                conn.Close();
+                SqlConnection conn = null;
+                using (conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    conn.Close();
+                }
             }
+            catch (Exception ex)
+            {
+
+            }
+            
         }
     }
 }

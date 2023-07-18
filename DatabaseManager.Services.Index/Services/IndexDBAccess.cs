@@ -105,7 +105,7 @@ namespace DatabaseManager.Services.Index.Services
             _taxonomy = await _fs.ReadFile("taxonomy", idxParms.TaxonomyFile);
             if (source.SourceType == "DataBase")
             {
-                //_sourceAccess = new DBDataAccess();
+                _sourceAccess = new DBDataAccess();
             }
             else
             {
