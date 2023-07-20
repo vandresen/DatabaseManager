@@ -5,6 +5,7 @@ on:
   
 env:
   AZURE_APP_NAME: 'DatabaseManagerServicesIndexSqlite'
+  AZURE_APP_PACKAGE_PATH: '.' 
   
 jobs:
   build:
@@ -17,3 +18,17 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 6.0.x
+          
+      - name: Build
+        shell: pwsh
+        run: |
+          pushd './${{ env.AZURE_APP_PACKAGE_PATH }}'
+          dotnet build DatabaseManager.Services.Rules/DatabaseManager.Services.IndexSqlite.csproj --configuration Release --output ./output
+          popd
+          
+      - name: Deploy to Azure
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ env.AZURE_APP_NAME }}
+          package: '${{ env.AZURE_APP_PACKAGE_PATH }}/output'
+          publish-profile: ${{ secrets.INDEXSQLITE_PROFILE }}
