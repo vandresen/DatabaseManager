@@ -40,9 +40,26 @@ namespace DatabaseManager.BlazorComponents.Services
             return children;
         }
 
-        public Task<List<DmsIndex>> GetIndex(string source)
+        public async Task<List<DmsIndex>> GetIndex(string source)
         {
-            throw new NotImplementedException();
+            List<DmsIndex> index = new List<DmsIndex>();
+            string baseUrl = SD.IndexAPIBase + "/api/DmIndexes";
+            string url = SD.IndexAPIBase.BuildFunctionUrl("/api/DmIndexes", $"name={source}", SD.IndexKey);
+            Console.WriteLine($"GetIndex: url = {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                Url = url
+            });
+            if(response.IsSuccess) 
+            {
+                index = JsonConvert.DeserializeObject<List<DmsIndex>>(response.Result.ToString());
+            }
+            else
+            {
+                Console.WriteLine($"GetIndex error: {response.ErrorMessages}");
+            }
+            return index;
         }
 
         public async Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)

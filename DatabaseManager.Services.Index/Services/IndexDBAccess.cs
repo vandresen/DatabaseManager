@@ -82,9 +82,14 @@ namespace DatabaseManager.Services.Index.Services
             _dp.LoadData<DmIndexDto, dynamic>("dbo.spGetNumberOfDescendantsById",
                 new { id = id }, connectionString);
 
-        public Task<IEnumerable<DmIndexDto>> GetDmIndexes(string indexNode, int level, string connectionString) =>
-            _dp.LoadData<DmIndexDto, dynamic>("dbo.spGetNumberOfDescendants",
+        public async Task<IEnumerable<DmIndexDto>> GetDmIndexes(string indexNode, int level, string connectionString) 
+        {
+            _ida.WakeUpDatabase(connectionString);
+            IEnumerable<DmIndexDto> result = await _dp.LoadData<DmIndexDto, dynamic>("dbo.spGetNumberOfDescendants",
                 new { indexnode = indexNode, level = level }, connectionString);
+            return result;
+
+        }
 
         public async Task<IndexDto> GetIndex(int id, string connectionString)
         {
@@ -102,10 +107,11 @@ namespace DatabaseManager.Services.Index.Services
 
         private async Task<int> Initialize(ConnectParametersDto target, ConnectParametersDto source, BuildIndexParameters idxParms)
         {
-            _taxonomy = await _fs.ReadFile("taxonomy", idxParms.TaxonomyFile);
+            _taxonomy = await _fs.ReadFile("taxonomy", idxParms.Taxonomy);
             if (source.SourceType == "DataBase")
             {
                 _sourceAccess = new DBDataAccess();
+                _ida.WakeUpDatabase(source.ConnectionString);
             }
             else
             {

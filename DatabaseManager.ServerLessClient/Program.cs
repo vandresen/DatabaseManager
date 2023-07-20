@@ -58,22 +58,21 @@ namespace DatabaseManager.ServerLessClient
 
             services.AddHttpClient();
             services.AddHttpClient<IDataSourceService, DataSourceService>();
-            services.AddHttpClient<IIndexService, IndexService>();
             services.AddHttpClient<IDataModelService, DataModelService>();
             services.AddHttpClient<IDataConfiguration, DataConfiguration>();
             services.AddHttpClient<IRulesService, RulesService>();
+            services.AddHttpClient<IIndexView, IndexViewServerless>();
+            services.AddHttpClient<IDataIndexer, DataIndexerServerLess>();
 
             services.AddScoped<IDataSourceService, DataSourceService>();
-            services.AddScoped<IIndexService, IndexService>();
             services.AddScoped<IDataModelService, DataModelService>();
-
             services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddScoped<IHttpService, HttpService>();
             services.AddScoped<IDataOps, DataOpsServerLess>();
             services.AddScoped<IDataSources, DataSourcesServerLess>();
             services.AddScoped<IDataTransfer, DataTransferServerLess>();
             services.AddScoped<IDataModelCreate, DataModelCreateServerless>();
-            services.AddScoped<IDataIndexer, DataIndexer>();
+            services.AddScoped<IDataIndexer, DataIndexerServerLess>();
             services.AddScoped<IDataQc, DataQc>();
             services.AddScoped<IRules, RulesServerless>();
             services.AddScoped<IRulesService, RulesService>();

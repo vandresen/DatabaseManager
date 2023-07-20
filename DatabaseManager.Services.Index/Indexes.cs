@@ -18,10 +18,11 @@ namespace DatabaseManager.Services.Index
         private readonly IConfiguration _configuration;
         private readonly IDataSourceService _ds;
         private readonly IIndexDBAccess _indexDB;
+        private readonly IFileStorageService _fs;
         protected ResponseDto _response;
 
         public Indexes(ILoggerFactory loggerFactory, IConfiguration configuration, 
-            IDataSourceService ds, IIndexDBAccess indexDB)
+            IDataSourceService ds, IIndexDBAccess indexDB, IFileStorageService fs)
         {
             _logger = loggerFactory.CreateLogger<Indexes>();
             this._response = new ResponseDto();
@@ -29,6 +30,7 @@ namespace DatabaseManager.Services.Index
             _configuration = configuration;
             _ds = ds;
             _indexDB = indexDB;
+            _fs = fs;
             SD.DataSourceAPIBase = _configuration.GetValue<string>("DataSourceAPI");
             SD.DataSourceKey = _configuration["DataSourceKey"];
         }
@@ -90,6 +92,7 @@ namespace DatabaseManager.Services.Index
                      = new List<string>() { ex.ToString() };
                 _logger.LogError($"GetIndexes: Error getting indexes: {ex}");
             }
+            _logger.LogInformation("BuildIndex: Completed.");
             return _response;
         }
 
@@ -142,6 +145,7 @@ namespace DatabaseManager.Services.Index
                      = new List<string>() { ex.ToString() };
                 _logger.LogError($"GetDmIndexes: Error getting indexes: {ex}");
             }
+            _logger.LogInformation("GetDmIndexex: Completed.");
             return _response;
         }
 
@@ -167,6 +171,7 @@ namespace DatabaseManager.Services.Index
                      = new List<string>() { ex.ToString() };
                 _logger.LogError($"GetDmIndex: Error getting indexes: {ex}");
             }
+            _logger.LogInformation("GetDmIndex: Completed.");
             return _response;
         }
 

@@ -105,6 +105,7 @@ else
         iParameters.TargetName = singleton.TargetConnector;
         iParameters.SourceName = source;
         iParameters.Filter = SqlText;
+        iParameters.StorageAccount = singleton.AzureStorage;
 
         barValue = 1;
         progress("Starting indexing...");
