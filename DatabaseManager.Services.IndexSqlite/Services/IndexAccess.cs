@@ -692,5 +692,17 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             }
             return childNode;
         }
+
+        public async Task<IEnumerable<DmsIndex>> GetDmIndexes(int indexId)
+        {
+            string sql = "WITH MyTemp AS (" +
+                "SELECT IndexId, DataType, JsonDataObject " +
+                $"FROM pdo_qc_index where ParentId = {indexId} ) " +
+                "SELECT A.IndexId AS Id, A.DataType, A.JsonDataObject AS JsonData, " +
+                "(select count(1) from pdo_qc_index B where B.ParentId = A.IndexId) AS NumberOfDataObjects " +
+                "FROM MyTemp A";
+            IEnumerable<DmsIndex> result = await _id.ReadData<DmsIndex>(sql, _connectionString);
+            return result;
+        }
     }
 }

@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MudBlazor.Services;
 using System;
 using System.Net.Http;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
 
 namespace DatabaseManager.ServerLessClient
@@ -28,12 +29,15 @@ namespace DatabaseManager.ServerLessClient
             };
             builder.Services.AddScoped(sp => http);
 
-            ConfigureServices(builder.Services);
-
             using var response = await http.GetAsync("appsettings.json");
             using var stream = await response.Content.ReadAsStreamAsync();
             builder.Configuration.AddJsonStream(stream);
+            var config = builder.Configuration.Build();
+            bool sqlite = config.GetValue<bool>("Sqlite");
 
+            ConfigureServices(builder.Services, sqlite);
+
+            SD.Sqlite = sqlite;
             SD.DataSourceAPIBase = builder.Configuration["ServiceUrls:DataSourceAPI"];
             SD.DataSourceKey = builder.Configuration["ServiceUrls:DataSourceKey"];
             SD.IndexAPIBase = builder.Configuration["ServiceUrls:IndexAPI"];
@@ -48,7 +52,7 @@ namespace DatabaseManager.ServerLessClient
             await builder.Build().RunAsync();
         }
 
-        private static void ConfigureServices(IServiceCollection services)
+        private static void ConfigureServices(IServiceCollection services, bool sqlite)
         {
             IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
             services.AddSingleton(mapper);
@@ -61,7 +65,7 @@ namespace DatabaseManager.ServerLessClient
             services.AddHttpClient<IDataModelService, DataModelService>();
             services.AddHttpClient<IDataConfiguration, DataConfiguration>();
             services.AddHttpClient<IRulesService, RulesService>();
-            services.AddHttpClient<IIndexView, IndexViewServerless>();
+            
             services.AddHttpClient<IDataIndexer, DataIndexerServerLess>();
 
             services.AddScoped<IDataSourceService, DataSourceService>();
@@ -77,9 +81,20 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IRules, RulesServerless>();
             services.AddScoped<IRulesService, RulesService>();
             services.AddScoped<IReportEdit, ReportEdit>();
-            services.AddScoped<IIndexView, IndexViewServerless>();
+            
             services.AddScoped<ICookies, Cookies>();
             services.AddScoped<IDataConfiguration, DataConfiguration>();
+
+            if (sqlite)
+            {
+                services.AddHttpClient<IIndexView, IndexViewSqlite>();
+                services.AddScoped<IIndexView, IndexViewSqlite>();
+            }
+            else
+            {
+                services.AddHttpClient<IIndexView, IndexViewServerless>();
+                services.AddScoped<IIndexView, IndexViewServerless>();
+            }
 
             services.AddBlazorTable();
             services.AddMudServices();

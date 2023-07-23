@@ -16,19 +16,22 @@
     <p class="lead">The tool to manage your PPDM databases</p>
 </div>
 
-<p>Target Database: @settings.TargetConnector</p>
+@if (!sqlite)
+{
+    <p>Target Database: @settings.TargetConnector</p>
 
-@if (options == null)
-{
-    <br/>
-    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
-    <br/>
-    <text>Loading...</text>
-    <br/>
-}
-else
-{
-    <GenericSelector Options="options" Selection="Selected" Label="Choose Connector" />
+    @if (options == null)
+    {
+        <br />
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        <br />
+        <text>Loading...</text>
+        <br />
+    }
+    else
+    {
+        <GenericSelector Options="options" Selection="Selected" Label="Choose Connector" />
+    }
 }
 
 @if (index == null)
@@ -71,6 +74,7 @@ else
     public List<DmsIndex> index;
     private string indexStatus = "No index available";
     bool spinner = false;
+    bool sqlite = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -84,27 +88,38 @@ else
             settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
             settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
             settings.ApiKey = await localStorage.GetItemAsync<string>("APIKey");
+            //settings.Sqlite = await localStorage.GetItemAsync<bool>("Sqlite");
+            Console.WriteLine($"Sqlite = {SD.Sqlite}");
+            sqlite = SD.Sqlite;
 
-            ResponseDto response = await dataSourceService.GetAllDataSourcesAsync<ResponseDto>();
-            if (response != null && response.IsSuccess)
+            client.DefaultRequestHeaders.Remove("azurestorageconnection");
+            client.DefaultRequestHeaders.Add("azurestorageconnection", settings.AzureStorage);
+
+            if (sqlite)
             {
-                ConnectParameters = JsonConvert.DeserializeObject<List<ConnectParametersDto>>(Convert.ToString(response.Result));
+                await GetIndexData();
             }
             else
             {
-                Console.WriteLine(response.ErrorMessages);
-                await displayMessage.DisplayErrorMessage(" There is a problem accessing data source server");
-            }
-            client.DefaultRequestHeaders.Remove("azurestorageconnection");
-            client.DefaultRequestHeaders.Add("azurestorageconnection", settings.AzureStorage);
-            options = new List<string>();
-            foreach (ConnectParametersDto conn in ConnectParameters)
-            {
-                if (conn.SourceType != "File") options.Add(conn.SourceName);
-            }
-            if (!string.IsNullOrEmpty(settings.TargetConnector))
-            {
-                await GetIndexData();
+                ResponseDto response = await dataSourceService.GetAllDataSourcesAsync<ResponseDto>();
+                if (response != null && response.IsSuccess)
+                {
+                    ConnectParameters = JsonConvert.DeserializeObject<List<ConnectParametersDto>>(Convert.ToString(response.Result));
+                }
+                else
+                {
+                    Console.WriteLine(response.ErrorMessages);
+                    await displayMessage.DisplayErrorMessage(" There is a problem accessing data source server");
+                }
+                options = new List<string>();
+                foreach (ConnectParametersDto conn in ConnectParameters)
+                {
+                    if (conn.SourceType != "File") options.Add(conn.SourceName);
+                }
+                if (!string.IsNullOrEmpty(settings.TargetConnector))
+                {
+                    await GetIndexData();
+                }
             }
         }
         catch (Exception ex)

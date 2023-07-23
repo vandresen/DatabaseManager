@@ -1,4 +1,5 @@
-﻿using DatabaseManager.Services.IndexSqlite.Services;
+﻿using Azure;
+using DatabaseManager.Services.IndexSqlite.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -15,8 +16,9 @@ namespace DatabaseManager.Services.IndexSqlite
             app.MapGet("/Index/{id}", GetIndex);
             app.MapPost("/CreateDatabase", CreateIndexDatabase);
             app.MapPost("/BuildIndex", BuildIndex);
-            app.MapPost("/GetDescendants/{id}", GetDescendants);
-            app.MapPost("/GetNeighbors/{id}", GetNeighbors);
+            app.MapGet("/GetDescendants/{id}", GetDescendants);
+            app.MapGet("/GetNeighbors/{id}", GetNeighbors);
+            app.MapGet("/DmIndexes", GetDmIndexes);
         }
 
         private static async Task<IResult> GetIndexes(IIndexAccess idxAccess)
@@ -33,16 +35,25 @@ namespace DatabaseManager.Services.IndexSqlite
 
         private static async Task<IResult> GetIndex(int id, IIndexAccess idxAccess)
         {
+            ResponseDto response = new();
             try
             {
                 var results = await idxAccess.GetIndex(id);
-                if (results == null) return Results.NotFound();
-                return Results.Ok(results);
+                if (results == null) 
+                {
+                    string newString = $"GetIndex: Index with id {id} could not be found";
+                    response.ErrorMessages.Insert(0, newString);
+                }
+                response.IsSuccess = true;
+                response.Result = results;
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                response.IsSuccess = false;
+                string newString = $"GetIndex: Could not get Index with id {id}, {ex}";
+                response.ErrorMessages.Insert(0, newString);
             }
+            return Results.Ok(response);
         }
 
         private static async Task<IResult> GetDescendants(int id, IIndexAccess idxAccess)
@@ -94,6 +105,25 @@ namespace DatabaseManager.Services.IndexSqlite
             {
                 return Results.Problem(ex.Message);
             }
+        }
+
+        private static async Task<IResult> GetDmIndexes(int? id, IIndexAccess idxAccess)
+        {
+            ResponseDto response = new();
+            try
+            {
+                if (!id.HasValue) id = 1;
+                var result = await idxAccess.GetDmIndexes((int)id);
+                response.IsSuccess = true;
+                response.Result = result;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"GetDmIndexes: Could not get DM Indexes, {ex}";
+                response.ErrorMessages.Insert(0, newString);
+            }
+            return Results.Ok(response);
         }
     }
 }

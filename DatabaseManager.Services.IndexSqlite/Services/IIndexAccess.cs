@@ -7,6 +7,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
     {
         Task BuildIndex(BuildIndexParameters idxParms);
         Task CreateDatabaseIndex();
+        Task<IEnumerable<DmsIndex>> GetDmIndexes(int indexId);
         Task DeleteIndexes(string connectionString);
         Task DeleteIndex(int id, string connectionString);
         Task<IndexModel> GetIndexFromSP(int id, string connectionString);
