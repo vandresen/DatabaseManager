@@ -1,4 +1,4 @@
-#Release 1.28
+# Release 1.28
 * Added support for the Index sqlite microservice in Serverless GUI. A Sqlite flag in application settings will determine if sqlite is used or not
 
 # Release 1.27
