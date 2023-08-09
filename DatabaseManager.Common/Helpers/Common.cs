@@ -14,12 +14,74 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
 {
     public class Common
     {
+        public static string CreateTempTableSqlFromJson(string json)
+        {
+            string sql = "";
+            JObject jsonObject = JObject.Parse(json);
+            Dictionary<string, Type> columnDefinitions = new Dictionary<string, Type>();
+            foreach (var property in jsonObject.Properties())
+            {
+                JTokenType propertyType = property.Value.Type;
+
+                // Map JSON types to .NET types (you may need to add more cases as needed)
+                Type columnType;
+                switch (propertyType)
+                {
+                    case JTokenType.String:
+                        columnType = typeof(string);
+                        break;
+                    case JTokenType.Integer:
+                        columnType = typeof(int);
+                        break;
+                    case JTokenType.Float:
+                        columnType = typeof(double);
+                        break;
+                    case JTokenType.Boolean:
+                        columnType = typeof(bool);
+                        break;
+                    default:
+                        columnType = typeof(string); // Default to string if the type is not recognized
+                        break;
+                }
+
+                columnDefinitions.Add(property.Name, columnType);
+            }
+
+            // Create the temporary table in the SQL Server database
+            string tempTableName = "#TempTable";
+            string createTableQuery = $"CREATE TABLE {tempTableName} (";
+
+            foreach (var column in columnDefinitions)
+            {
+                createTableQuery += $"{column.Key} {GetSqlDbTypeString(column.Value)}, ";
+            }
+
+            sql = createTableQuery.TrimEnd(',', ' ') + ")";
+
+            return sql;
+        }
+
+        public static string GetSqlDbTypeString(Type dataType)
+        {
+            if (dataType == typeof(string))
+                return "NVARCHAR(100)"; // Adjust the length as needed
+            if (dataType == typeof(int))
+                return "INT";
+            if (dataType == typeof(double))
+                return "FLOAT";
+            if (dataType == typeof(bool))
+                return "BIT";
+
+            return "NVARCHAR(100)"; // Default to NVARCHAR if type is not recognized
+        }
+
         public static string CreateDatabaseConnectionString(ConnectParameters connection)
         {
             string source = $"Source={connection.DatabaseServer};";

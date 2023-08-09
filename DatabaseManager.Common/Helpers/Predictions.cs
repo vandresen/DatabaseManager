@@ -1,20 +1,26 @@
 ﻿using DatabaseManager.Common.Data;
 using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
+using DatabaseManager.Common.Extensions;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace DatabaseManager.Common.Helpers
 {
@@ -27,13 +33,17 @@ namespace DatabaseManager.Common.Helpers
         private List<DataAccessDef> _accessDefs;
         DataAccessDef _indexAccessDef;
         private DbUtilities _dbConn;
+        private IADODataAccess _db;
         private bool syncPredictions;
+        private bool entiretyPrediction;
+        private string entiretyDataName = "";
         private ManageIndexTable manageIndexTable;
         private DataTable indexTable;
         private static HttpClient Client = new HttpClient();
         private readonly DapperDataAccess _dp;
         private readonly IIndexDBAccess _indexData;
         private readonly ILogger _log;
+        private List<ReferenceTable> _references;
 
         public Predictions(string azureConnectionString, ILogger log)
         {
@@ -43,6 +53,8 @@ namespace DatabaseManager.Common.Helpers
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
             _fileStorage.SetConnectionString(azureConnectionString);
             _dbConn = new DbUtilities();
+            _db = new ADODataAccess();
+            
             _dp = new DapperDataAccess();
             _indexData = new IndexDBAccess(_dp);
             _log = log;
@@ -73,8 +85,9 @@ namespace DatabaseManager.Common.Helpers
             _dbConn.OpenConnection(connector);
 
             string sourceConnector = await GetSource();
-            if (parms.DataConnector == sourceConnector) syncPredictions = true;
-            else syncPredictions = false;
+            syncPredictions = false;
+            //if (parms.DataConnector == sourceConnector) syncPredictions = true;
+            //else syncPredictions = false;
 
             RuleManagement rules = new RuleManagement(_azureConnectionString);
             RuleModel rule = await rules.GetRuleAndFunction(parms.DataConnector, parms.PredictionId);
@@ -86,6 +99,299 @@ namespace DatabaseManager.Common.Helpers
             _dbConn.CloseConnection();
             _log.LogInformation($"Saving qc flags");
             manageIndexTable.SaveQCFlags();
+        }
+
+        public async Task SyncPredictions(PredictionParameters parms)
+        {
+            _log.LogInformation($"Setting up for syncing predictions");
+            string referenceJson = await _fileStorage.ReadFile("connectdefinition", "PPDMReferenceTables.json");
+            _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(referenceJson);
+            RuleManagement rules = new RuleManagement(_azureConnectionString);
+            string activeRulesJson = await rules.GetActiveRules(parms.DataConnector);
+            List<RuleModel> activeRules = JsonConvert.DeserializeObject<List<RuleModel>>(activeRulesJson);
+            RuleModel rule = activeRules.FirstOrDefault(x => x.Id == parms.PredictionId);
+            RuleModel qcRule = activeRules.FirstOrDefault(x => x.RuleKey == rule.FailRule);
+            entiretyPrediction = false;
+            if (qcRule != null) 
+            {
+                if (qcRule.RuleType == "Entirety") 
+                { 
+                    entiretyPrediction = true;
+                    JObject ruleParObject = JObject.Parse(rule.RuleParameters);
+                    string entiretyDataType = ruleParObject["DataType"].ToString();
+                    entiretyDataName = qcRule.RuleParameters;
+                }
+            }
+
+            ConnectParameters connector = await GetConnector(parms.DataConnector);
+            IndexModel root = await _indexData.GetIndexRoot(connector.ConnectionString);
+            IndexRootJson rootJson = JsonConvert.DeserializeObject<IndexRootJson>(root.JsonDataObject);
+            ConnectParameters target = JsonConvert.DeserializeObject<ConnectParameters>(rootJson.Source);
+            if (target.SourceType != "DataBase")
+            {
+                _log.LogError($"Target database {target.SourceName} is not a database");
+                Exception error = new Exception($"Target database {target.SourceName} is not a database");
+                throw error;
+            }
+            _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(target.DataAccessDefinition);
+            IEnumerable<IndexModel> indexes = await _indexData.GetIndexesWithQcStringFromSP(rule.RuleKey, connector.ConnectionString);
+            if (indexes.Count() > 0) await SyncObject(indexes, target.ConnectionString);
+        }
+
+        private async Task SyncObject(IEnumerable<IndexModel> indexes, string conncetionString)
+        {
+            string jsonData = indexes.FirstOrDefault()?.JsonDataObject;
+            if (string.IsNullOrEmpty(jsonData))
+            {
+                await SyncObjectDelete(indexes, conncetionString);
+            }
+            else if (entiretyPrediction)
+            {
+                await SyncObjectEntirety(indexes, conncetionString);
+            }
+            else
+            {
+                await SyncObjectUpdateInsert(indexes, conncetionString);
+            }
+        }
+
+        private async Task SyncObjectEntirety(IEnumerable<IndexModel> indexes, string connectionString)
+        {
+            foreach (var index in indexes)
+            {
+                IEnumerable<IndexModel> children = await _indexData.GetDescendantsFromSP(index.IndexId,connectionString);
+                IndexModel newChild = children.FirstOrDefault(x => x.DataName == entiretyDataName);
+                string jsonDataObject = newChild.JsonDataObject;
+                JObject dataObject = JObject.Parse(jsonDataObject);
+                dataObject["ROW_CHANGED_BY"] = Environment.UserName;
+                dataObject["ROW_CREATED_BY"] = Environment.UserName;
+                jsonDataObject = dataObject.ToString();
+                jsonDataObject = Helpers.Common.SetJsonDataObjectDate(jsonDataObject, "ROW_CHANGED_DATE");
+                jsonDataObject = Helpers.Common.SetJsonDataObjectDate(jsonDataObject, "ROW_CREATED_DATE");
+                string dataType = newChild.DataType;
+                string storedProcedure = "dbo.spInsert" + dataType;
+                try
+                {
+                    await _dp.SaveData(storedProcedure, new { json = jsonDataObject }, connectionString);
+                }
+                catch (Exception ex)
+                {
+                    _log.LogInformation($"Sync: Could not insert {dataType} object, more info: {ex}");
+                    Exception error = new Exception($"Sync: Could not insert {dataType} object, more info: \n {ex}");
+                    throw error;
+                }
+            }
+        }
+
+        private async Task SyncObjectUpdateInsert(IEnumerable<IndexModel> indexes, string connectionString)
+        {
+            string json = indexes.FirstOrDefault()?.JsonDataObject;
+            string datatype = indexes.FirstOrDefault()?.DataType;
+            JObject jsonObject = JObject.Parse(json);
+
+            // Extract the JSON properties and their types
+            Dictionary<string, Type> columnDefinitions = new Dictionary<string, Type>();
+
+            foreach (var property in jsonObject.Properties())
+            {
+                JTokenType propertyType = property.Value.Type;
+
+                // Map JSON types to .NET types (you may need to add more cases as needed)
+                Type columnType;
+                switch (propertyType)
+                {
+                    case JTokenType.String:
+                        columnType = typeof(string);
+                        break;
+                    case JTokenType.Integer:
+                        columnType = typeof(int);
+                        break;
+                    case JTokenType.Float:
+                        columnType = typeof(double);
+                        break;
+                    case JTokenType.Boolean:
+                        columnType = typeof(bool);
+                        break;
+                    default:
+                        columnType = typeof(string); // Default to string if the type is not recognized
+                        break;
+                }
+
+                columnDefinitions.Add(property.Name, columnType);
+            }
+
+            // Create the temporary table in the SQL Server database
+            string tempTableName = "#TempTable";
+            string createTableQuery = $"CREATE TABLE {tempTableName} (";
+
+            foreach (var column in columnDefinitions)
+            {
+                createTableQuery += $"{column.Key} {Common.GetSqlDbTypeString(column.Value)}, ";
+            }
+
+            createTableQuery = createTableQuery.TrimEnd(',', ' ') + ")";
+
+            // Convert the JSON to a DataTable
+            DataTable dataTable = new DataTable();
+            foreach (var column in columnDefinitions)
+            {
+                dataTable.Columns.Add(column.Key, column.Value);
+            }
+
+            // Deserialize JSON and insert data into the DataTable
+            foreach (var index in indexes)
+            {
+                json = index.JsonDataObject;
+                jsonObject = JObject.Parse(json);
+                DataRow dataRow = dataTable.NewRow();
+                foreach (var property in jsonObject.Properties())
+                {
+                    dataRow[property.Name] = property.Value.ToObject(columnDefinitions[property.Name]);
+                }
+                dataTable.Rows.Add(dataRow);
+            }
+
+            //string CreateReferenceSql = CreateSqlToLoadReferences(datatype, tempTableName, dataTable);
+            LoadNewReferences(datatype, connectionString, dataTable);
+
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                using (SqlCommand createTableCommand = new SqlCommand(createTableQuery, connection))
+                {
+                    createTableCommand.ExecuteNonQuery();
+                }
+
+                using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection))
+                {
+                    bulkCopy.DestinationTableName = tempTableName;
+                    bulkCopy.WriteToServer(dataTable);
+                }
+
+                string mergeSql = CreateSqlToMerge(dataTable, tempTableName, datatype);
+                using (SqlCommand mergeCommand = new SqlCommand(mergeSql, connection))
+                {
+                    mergeCommand.ExecuteNonQuery();
+                }
+
+                string dropTableQuery = $"DROP TABLE {tempTableName}";
+                using (SqlCommand dropTableCommand = new SqlCommand(dropTableQuery, connection))
+                {
+                    dropTableCommand.ExecuteNonQuery();
+                }
+            }
+        }
+
+        private string CreateSqlToMerge(DataTable dt, string tempTable, string dataType)
+        {
+            string sql = "";
+            DataAccessDef objectAccessDef = _accessDefs.First(x => x.DataType == dataType);
+            string dataTypeSql = objectAccessDef.Select;
+            string table = Common.GetTable(dataTypeSql);
+            string[] columnNames = dt.Columns.Cast<DataColumn>()
+                         .Select(x => x.ColumnName)
+                         .ToArray();
+            string updateSql = "";
+            string comma = "";
+            foreach (string colName in columnNames)
+            {
+                updateSql = updateSql + comma + colName + " = B." + colName;
+                comma = ",";
+            }
+            string insertSql = "";
+            string valueSql = "";
+            comma = "";
+            foreach (string colName in columnNames)
+            {
+                insertSql = insertSql + comma + colName;
+                valueSql = valueSql + comma + " B." + colName;
+                comma = ",";
+            }
+
+            string[] keys = objectAccessDef.Keys.Split(',').Select(k => k.Trim()).ToArray();
+            string and = "";
+            string joinSql = "";
+            foreach (string key in keys)
+            {
+                joinSql = joinSql + and + "A." + key + " = B." + key;
+                and = " AND ";
+            }
+
+            sql = $"MERGE INTO {table} A " +
+                $" USING {tempTable} B " +
+                " ON " + joinSql +
+                " WHEN MATCHED THEN " +
+                " UPDATE " +
+                " SET " + updateSql +
+                " WHEN NOT MATCHED THEN " +
+                " INSERT(" + insertSql + ") " +
+                " VALUES(" + valueSql + "); ";
+            return sql;
+        }
+
+        private void LoadNewReferences(string dataType, string connectionString, DataTable dt)
+        {
+            string insertSql = "";
+            string comma = "";
+            List<ReferenceTable> dataTypeRefs = _references.Where(x => x.DataType == dataType).ToList();
+            foreach (ReferenceTable refTable in dataTypeRefs)
+            {
+                string valueAttribute = refTable.ValueAttribute;
+                var distinctValues = dt.AsEnumerable()
+                    .Select(row => row.Field<string>(refTable.ReferenceAttribute))
+                    .Distinct();
+                foreach (var value in distinctValues)
+                {
+                    string yourCondition = $"{refTable.KeyAttribute} = @Value";
+                    using (SqlConnection connection = new SqlConnection(connectionString))
+                    {
+                        connection.Open();
+                        string insertColumns;
+                        string selectColumns;
+                        //string insertQuery = $"INSERT INTO {refTable.Table} ";
+                        if (valueAttribute == refTable.KeyAttribute)
+                        {
+                            insertColumns = $"{refTable.KeyAttribute}";
+                            selectColumns = $"{value}";
+                        }
+                        else
+                        {
+                            insertColumns = $"{refTable.KeyAttribute}, {valueAttribute}";
+                            selectColumns = $"'{value}', '{value}'";
+                        }
+                        if (!string.IsNullOrEmpty(refTable.FixedKey))
+                        {
+                            string[] fixedKey = refTable.FixedKey.Split('=');
+                            insertColumns = insertColumns + ", " + fixedKey[0];
+                            selectColumns = selectColumns + ", '" + fixedKey[1] + "'";
+                        }
+                        string insertQuery = $"INSERT INTO {refTable.Table} ({insertColumns}) " +
+                                             $"SELECT {selectColumns} " +
+                                             $"WHERE NOT EXISTS (SELECT 1 FROM {refTable.Table} WHERE {yourCondition})";
+                        using (SqlCommand command = new SqlCommand(insertQuery, connection))
+                        {
+                            command.Parameters.AddWithValue("@Value", value);
+                            int rowsAffected = command.ExecuteNonQuery();
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task SyncObjectDelete(IEnumerable<IndexModel> indexes, string conncetionString)
+        {
+            foreach (var index in indexes)
+            {
+                DataAccessDef objectAccessDef = _accessDefs.First(x => x.DataType == index.DataType);
+                string select = objectAccessDef.Select;
+                string dataTable = GetTable(select);
+                string dataQuery = "where " + index.DataKey;
+                string sql = "Delete from " + dataTable + " " + dataQuery;
+                _db.ExecuteSQL(sql, conncetionString);
+            }
+            
         }
 
         private async Task MakePredictions(RuleModel rule, ConnectParameters connector)

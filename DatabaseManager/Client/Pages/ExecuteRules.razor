@@ -24,14 +24,6 @@
 <div>
     <p>Current status: @statusMessage</p>
 </div>
-@*@if (string.IsNullOrEmpty(SelectedOption))
-{
-    <p>Waiting for input</p>
-}
-else
-{
-    <p>Starting @SelectedOption</p>
-}*@
 
 @code {
     public string SelectedOption { get; set; }
