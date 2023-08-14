@@ -156,9 +156,17 @@ namespace DatabaseManager.Common.Helpers
             int to = select.IndexOf("from");
             int length = to - 8;
             string attributes = select.Substring(from, length);
-            string[] words = attributes.Split(',');
-
+            string[] words = attributes.Split(',')
+                .Select(item => item.Trim())
+                .ToArray();
             return words;
+        }
+
+        public static T[] GetArrayFromString<T>(string input)
+        {
+            string[] stringArray = input.Split(',');
+            T[] resultArray = stringArray.Select(item => (T)Convert.ChangeType(item.Trim(), typeof(T))).ToArray();
+            return resultArray;
         }
 
         public static string GetTable(string select)

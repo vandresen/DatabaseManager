@@ -1,8 +1,9 @@
-﻿using DatabaseManager.Common.Helpers;
+﻿using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
+using DatabaseManager.Common.Helpers;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using MudBlazor;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -15,10 +16,14 @@ namespace DatabaseManager.Server.Controllers
     public class IndexController : ControllerBase
     {
         private string connectionString;
+        private readonly DapperDataAccess _dp;
+        private readonly IIndexDBAccess _indexData;
 
         public IndexController(IConfiguration configuration)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
+            _dp = new DapperDataAccess();
+            _indexData = new IndexDBAccess(_dp);
         }
 
         [HttpGet("{source}")]
@@ -45,6 +50,17 @@ namespace DatabaseManager.Server.Controllers
             string storageAccount = Common.Helpers.Common.GetStorageKey(Request);
             IndexManagement im = new IndexManagement(storageAccount);
             string result = await im.GetIndexItem(source, id);
+            return result;
+        }
+
+        [HttpGet("GetIndexRoot/{source}")]
+        public async Task<ActionResult<string>> GetIndexRoot(string source)
+        {
+            string result = "";
+            string storageAccount = Request.Headers["AzureStorageConnection"];
+            ConnectParameters connector = await DatabaseManager.Common.Helpers.Common.GetConnectParameters(storageAccount, source);
+            IndexModel root = await _indexData.GetIndexRoot(connector.ConnectionString);
+            result = JsonConvert.SerializeObject(root);
             return result;
         }
 

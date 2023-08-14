@@ -114,7 +114,7 @@ namespace DatabaseManager.Common.Helpers
                 DataRow dataRow = _currentItem.DataTable.Rows[parentId];
                 _location = GetIndexLocation(dataRow);
                 parentNodeId = parentNodeId + $"{parentId + 1}/";
-                PopulateIndexItem(dataRow, parentNodeId);
+                await PopulateIndexItem(dataRow, parentNodeId);
                 await PopulateChildIndex(level, parentId, parentNodeId);
             }
             catch (Exception ex)
@@ -212,7 +212,7 @@ namespace DatabaseManager.Common.Helpers
             return location;
         }
 
-        private void PopulateIndexItem(DataRow dataRow, string parentNodeId)
+        private async Task PopulateIndexItem(DataRow dataRow, string parentNodeId)
         {
             double? lat = _location.Latitude;
             double? lon = _location.Longitude;
@@ -222,7 +222,7 @@ namespace DatabaseManager.Common.Helpers
             string dataKey = GetDataKey(dataRow, keys);
             string jsonData = Common.ConvertDataRowToJson(dataRow, _currentItem.DataTable);
             string qcLocation = GetQcLocation();
-            if (_currentItem.Arrays != null) jsonData = GetArrays(dataRow, jsonData);
+            if (_currentItem.Arrays != null) jsonData = await GetArrays(dataRow, jsonData);
             myIndex.Add(new IndexData
             {
                 DataName = name,
@@ -236,17 +236,18 @@ namespace DatabaseManager.Common.Helpers
             });
         }
 
-        private string GetArrays(DataRow dataRow, string inJson)
+        private async Task<string> GetArrays(DataRow dataRow, string inJson)
         {
             string outJson = inJson;
             foreach (JToken array in _currentItem.Arrays)
             {
+                string dataType = "";
                 string attribute = array["Attribute"].ToString();
                 string select = array["Select"].ToString();
                 string parentKeys = array["ParentKey"].ToString();
                 string query = GetParentKey(dataRow, parentKeys);
                 query = " where " + query;
-                DataTable dt = dbConn.GetDataTable(select, query);
+                DataTable dt = await sourceAccess.GetDataTable(select, query, dataType);
                 if (dt.Rows.Count == 1)
                 {
                     string result = dt.Rows[0]["ARRAY"].ToString();
@@ -309,7 +310,7 @@ namespace DatabaseManager.Common.Helpers
                             _currentItem = GetIndexData(subLevel);
                             _location = GetIndexLocation(pr);
                             string indexNode = childNodeId + $"{i + 1}/";
-                            PopulateIndexItem(_currentItem.DataTable.Rows[i], indexNode);
+                            await PopulateIndexItem(_currentItem.DataTable.Rows[i], indexNode);
                             await PopulateChildIndex(subLevel, i, indexNode);
                         }
                     }

@@ -1,0 +1,69 @@
+﻿@inject SingletonServices settings
+@inject IDataSources dataSources
+@using MudBlazor
+
+@if (options == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <MudContainer>
+        <MudTextField @bind-Value="@TransferParameters.TransferQuery" Label="Filter" Variant="Variant.Outlined" />
+        <br/>
+        <MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudItem>
+                <MudSelect T="string" Label="Source Database" @bind-Value="@TransferParameters.SourceName" Variant="Variant.Outlined">
+                    @foreach (var option in options)
+                    {
+                        <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem>
+                <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="HandleSubmit">>>></MudButton>
+            </MudItem>
+
+            <MudItem>
+                <MudTextField @bind-Value="@settings.TargetConnector" Label="Target Database" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+        <MudCheckBox Label="Remote" @bind-Checked="@TransferParameters.Remote" />
+    </MudContainer>
+    <br/>
+}
+@code {
+    [Parameter] public TransferParameters TransferParameters { get; set; }
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+    public bool remote { get; set; }
+    private List<string> options { get; set; } = new List<string>();
+    List<ConnectParameters> ConnectParameters;
+    string queryString;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            TransferParameters.TargetName = settings.TargetConnector;
+            ConnectParameters = await dataSources.GetSources();
+            foreach (ConnectParameters conn in ConnectParameters)
+            {
+                options.Add(conn.SourceName);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private void HandleSubmit()
+    {
+        ConnectParameters connector = ConnectParameters.FirstOrDefault(s => s.SourceName == TransferParameters.SourceName);
+        TransferParameters.SourceType = connector.SourceType;
+        Console.WriteLine($"Remote = {TransferParameters.Remote}");
+        Console.WriteLine("Button submit");
+        OnValidSubmit.InvokeAsync();
+    }
+}

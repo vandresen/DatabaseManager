@@ -51,6 +51,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IReportEdit, ReportEdit>();
             services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddScoped<IDataConfiguration, DataConfiguration>();
+            services.AddScoped<ISync, Sync>();
             services.AddBlazorTable();
             services.AddMudServices();
 

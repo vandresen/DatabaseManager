@@ -101,5 +101,17 @@ namespace DatabaseManager.BlazorComponents.Services
             baseUrl = settings.BaseUrl;
             apiKey = settings.ApiKey;
         }
+
+        public async Task<IndexModel> GetIndexroot(string source)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/index/GetIndexRoot/{source}";
+            else url = baseUrl.BuildFunctionUrl("GetIndexRoot", $"name={source}", apiKey);
+            var response = await httpService.Get<IndexModel>(url);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+            return response.Response;
+        }
     }
 }

@@ -6,6 +6,10 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
+using DatabaseManager.BlazorComponents.Models;
+using static MudBlazor.CategoryTypes;
+using DatabaseManager.Common.Data;
+using DatabaseManager.Common.DBAccess;
 
 namespace DatabaseManager.Server.Controllers
 {
@@ -14,46 +18,67 @@ namespace DatabaseManager.Server.Controllers
     public class SyncController : ControllerBase
     {
         private readonly ILogger<SyncController> _logger;
+        
         private string _connectionString;
+        protected ResponseDto _response;
 
         public SyncController(ILogger<SyncController> logger)
         {
             _logger = logger;
+            _response = new ResponseDto();
+            
         }
 
         [HttpGet("{source}")]
-        public async Task<ActionResult<List<PredictionCorrection>>> Get(string source)
+        public async Task<ActionResult<object>> Get(string source)
         {
-            List<PredictionCorrection> predictionResuls = new List<PredictionCorrection>();
             try
             {
                 GetStorageAccount();
-                Predictions predict = new Predictions(_connectionString, _logger);
-                predictionResuls = await predict.GetPredictions(source);
+                ConnectParameters connector = await GetConnector(source);
+                IndexToDatabaseTransfer indexTransfer = new IndexToDatabaseTransfer(_logger, _connectionString);
+                List<string> dataObjects = await indexTransfer.GetDataObjectList(connector);
+                _response.Result = dataObjects;
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.ToString());
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
             }
-            return predictionResuls;
+            return _response;
         }
 
         [HttpPost]
-        public async Task<ActionResult<string>> ExecutePrediction(PredictionParameters predictionParams)
+        public async Task<ActionResult<object>> ExecuteSync(SyncParameters syncParams)
         {
             try
             {
-                if (predictionParams == null) return BadRequest();
+                if (syncParams == null) return BadRequest();
                 GetStorageAccount();
-                Predictions predict = new Predictions(_connectionString, _logger);
-                await predict.SyncPredictions(predictionParams);
+                ConnectParameters sourceConnector = await GetConnector(syncParams.SourceName);
+                ConnectParameters targetConnector = await GetConnector(syncParams.TargetName);
+                if (targetConnector.SourceType != "DataBase")
+                {
+                    string error = $"Target database {targetConnector.SourceName} is not a database";
+                    _logger.LogError(error);
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages
+                         = new List<string>() { error };
+                }
+                else
+                {
+                    IndexToDatabaseTransfer indexTransfer = new IndexToDatabaseTransfer(_logger, _connectionString);
+                    await indexTransfer.TransferDataObject(sourceConnector, targetConnector, syncParams.DataObjectType);
+                }
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.ToString());
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
             }
-
-            return Ok($"OK");
+            return _response;
         }
 
         private void GetStorageAccount()
@@ -66,6 +91,18 @@ namespace DatabaseManager.Server.Controllers
                 Exception error = new Exception($"Azure storage key string is not set");
                 throw error;
             }
+        }
+
+        private async Task<ConnectParameters> GetConnector(string connectorStr)
+        {
+            if (String.IsNullOrEmpty(connectorStr))
+            {
+                Exception error = new Exception($"DataQc: Connection string is not set");
+                throw error;
+            }
+            Sources so = new Sources(_connectionString);
+            ConnectParameters connector = await so.GetSourceParameters(connectorStr);
+            return connector;
         }
     }
 }

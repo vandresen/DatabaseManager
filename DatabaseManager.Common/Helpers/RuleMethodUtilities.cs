@@ -297,37 +297,52 @@ namespace DatabaseManager.Common.Helpers
             return smoothValue;
         }
 
-        public static string GetLogCurveDepths(string dataObject, string connector)
+        public static string GetLogCurveDepths(string dataObject)
         {
             JObject logObject = JObject.Parse(dataObject);
             string uwi = logObject["UWI"].ToString();
             string curveName = logObject["CURVE_ID"].ToString();
-            IADODataAccess db = new ADODataAccess();
-            string select = "select UWI, INDEX_VALUE, MEASURED_VALUE from WELL_LOG_CURVE_VALUE ";
-            string query = $"where CURVE_ID = '{curveName}' and UWI = '{uwi}' order by INDEX_VALUE";
-            string sql = select + query;
-            DataTable lc = db.GetDataTable(sql, connector);
-
-            if (lc.Rows.Count > 0)
+            string indexValues = logObject["INDEX_VALUE"].ToString();
+            if (string.IsNullOrEmpty(indexValues))
             {
-                double[] measuredValue = new double[lc.Rows.Count];
-                double[] indexValue = new double[lc.Rows.Count]; ;
-                for (int j = 0; j < lc.Rows.Count; j++)
-                {
-                    measuredValue[j] = Convert.ToDouble(lc.Rows[j]["MEASURED_VALUE"]);
-                    indexValue[j] = Convert.ToDouble(lc.Rows[j]["INDEX_VALUE"]);
-                }
-
+                return "";
+            }
+            else
+            {
+                double[] indexValue = Common.GetArrayFromString<double>(indexValues);
                 double topDepth = indexValue.Min();
                 logObject["MIN_INDEX"] = topDepth;
                 double bottomDepth = indexValue.Max();
                 logObject["MAX_INDEX"] = bottomDepth;
                 return logObject.ToString();
             }
-            else
-            {
-                return "";
-            }
+
+            //IADODataAccess db = new ADODataAccess();
+            //string select = "select UWI, INDEX_VALUE, MEASURED_VALUE from WELL_LOG_CURVE_VALUE ";
+            //string query = $"where CURVE_ID = '{curveName}' and UWI = '{uwi}' order by INDEX_VALUE";
+            //string sql = select + query;
+            //DataTable lc = db.GetDataTable(sql, connector);
+
+            //if (lc.Rows.Count > 0)
+            //{
+            //    double[] measuredValue = new double[lc.Rows.Count];
+            //    double[] indexValue = new double[lc.Rows.Count]; ;
+            //    for (int j = 0; j < lc.Rows.Count; j++)
+            //    {
+            //        measuredValue[j] = Convert.ToDouble(lc.Rows[j]["MEASURED_VALUE"]);
+            //        indexValue[j] = Convert.ToDouble(lc.Rows[j]["INDEX_VALUE"]);
+            //    }
+
+            //    double topDepth = indexValue.Min();
+            //    logObject["MIN_INDEX"] = topDepth;
+            //    double bottomDepth = indexValue.Max();
+            //    logObject["MAX_INDEX"] = bottomDepth;
+            //    return logObject.ToString();
+            //}
+            //else
+            //{
+            //    return "";
+            //}
         }
 
         public static string GetJsonForMissingDataObject(string parameters, DataAccessDef accessDef,

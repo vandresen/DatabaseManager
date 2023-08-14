@@ -163,5 +163,10 @@ namespace DatabaseManager.BlazorComponents.Services
             }
             return result;
         }
+
+        public Task<IndexModel> GetIndexroot(string source)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

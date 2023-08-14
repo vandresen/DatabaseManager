@@ -1,0 +1,69 @@
+﻿@inject SingletonServices settings
+@inject IDataSources dataSources
+@inject IIndexView idx
+@inject ISync sync
+@inject IDisplayMessage displayMessage
+@using MudBlazor
+
+@if (options == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    
+}
+<MudContainer>
+    <MudGrid Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudItem>
+            <MudTextField @bind-Value="@IndexSource" Label="Index Database" ReadOnly="true" Variant="Variant.Outlined" />
+        </MudItem>
+
+        <MudItem>
+            <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="HandleSubmit">>>></MudButton>
+        </MudItem>
+
+        <MudItem>
+            <MudSelect T="string" Label="Target Database" @bind-Value="@SyncParameters.TargetName" Variant="Variant.Outlined">
+                @foreach (var option in options)
+                {
+                    <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+
+@code {
+    [Parameter] public SyncParameters SyncParameters { get; set; }
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+    private List<string> options { get; set; } = new List<string>();
+    public List<ConnectParameters> connectParameters;
+    public string IndexSource { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            IndexSource = settings.TargetConnector;
+            connectParameters = await dataSources.GetSources();
+            foreach (ConnectParameters conn in connectParameters)
+            {
+                options.Add(conn.SourceName);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+
+    }
+
+    private void HandleSubmit()
+    {
+        SyncParameters.SourceName = IndexSource;
+        Console.WriteLine("Button submit");
+        OnValidSubmit.InvokeAsync();
+    }
+}

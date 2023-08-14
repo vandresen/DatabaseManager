@@ -37,7 +37,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExternalRules", "ExternalRu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PredictGroundElevation", "PredictGroundElevation\PredictGroundElevation.csproj", "{CE27AE2E-5870-4739-A783-58AA96A7168F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.Services.IndexSqlite", "DatabaseManager.Services.IndexSqlite\DatabaseManager.Services.IndexSqlite.csproj", "{9224CD29-132C-4139-AEEC-423AF93515FB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.IndexSqlite", "DatabaseManager.Services.IndexSqlite\DatabaseManager.Services.IndexSqlite.csproj", "{9224CD29-132C-4139-AEEC-423AF93515FB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

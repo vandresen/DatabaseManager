@@ -117,5 +117,12 @@ namespace DatabaseManager.Common.Data
             string connectionString) =>
             _dp.LoadData<DmsIndex, dynamic>("dbo.spGetNumberOfDescendants", 
                 new { indexnode = indexNode, level = level }, connectionString);
+
+        public async Task<IEnumerable<IndexModel>> GetIndexesWithDataType(string connectionString, string dataType)
+        {
+            string sql = getSql + $" WHERE DATATYPE = '{dataType}'";
+            IEnumerable<IndexModel> result = await _dp.ReadData<IndexModel>(sql, connectionString);
+            return result;
+        }
     }
 }

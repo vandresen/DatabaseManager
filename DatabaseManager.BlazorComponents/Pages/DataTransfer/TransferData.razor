@@ -3,6 +3,7 @@
 @inject IDisplayMessage displayMessage
 @inject IDataSources dataSources
 @inject IDataTransfer dataTransfer
+@inject ISync sync
 
 <style> 
 input {
@@ -17,11 +18,20 @@ input {
 <h2>Data Transfer</h2>
 <br />
 
-<TransferParametersForm TransferParameters="transferParameters" OnValidSubmit="StartDatabaseTransfer" />
+<MudTransferParametersForm TransferParameters="transferParameters" OnValidSubmit="StartDatabaseTransfer" />
 
-<div style="margin-top:20px">
+<h2>Index Transfer</h2>
+<br />
+
+<SyncParametersForm SyncParameters="syncParameters" OnValidSubmit="StartDatabaseIndexSync" />
+
+@*<div style="margin-top:20px">
     <ProgressBar ValueNow="barValue" />
-</div>
+</div>*@
+<br />
+
+<h2>Transfer Status</h2>
+<br />
 
 <div>
     <p>Current status: @statusMessage</p>
@@ -33,6 +43,7 @@ input {
     private string jsonString = "";
     private List<TransferParameters> dataObjects;
     TransferParameters transferParameters = new TransferParameters();
+    SyncParameters syncParameters = new();
     public int barValue = 0;
 
     protected async Task StartDatabaseTransfer()
@@ -128,6 +139,34 @@ input {
         }
 
         barValue = 100;
+        progress($"Transfer Complete");
+    }
+
+    protected async Task StartDatabaseIndexSync()
+    {
+        Console.WriteLine("Start index sync");
+        Console.WriteLine($"Target source is {syncParameters.TargetName}");
+        ResponseDto response = await sync.GetDataObjects<ResponseDto>(syncParameters.SourceName);
+        if (response != null && response.IsSuccess)
+        {
+            List<string> dataObjects = JsonConvert.DeserializeObject<List<string>>(Convert.ToString(response.Result));
+            foreach (var dataObject in dataObjects)
+            {
+                syncParameters.DataObjectType = dataObject;
+                Console.WriteLine($"Transferring {dataObject}");
+                progress($"Transferring {dataObject}");
+                response = await sync.TransferIndexObjects<ResponseDto>(syncParameters);
+                if (!response.IsSuccess)
+                {
+                    Console.WriteLine(response.ErrorMessages);
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine(response.ErrorMessages);
+            await displayMessage.DisplayErrorMessage(" There is a problem accessing get data objects");
+        }
         progress($"Transfer Complete");
     }
 

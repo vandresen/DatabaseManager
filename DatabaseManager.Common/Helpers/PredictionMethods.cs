@@ -213,7 +213,7 @@ namespace DatabaseManager.Common.Helpers
             };
             JObject dataObject = JObject.Parse(qcSetup.DataObject);
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
-            string jsonLog = RuleMethodUtilities.GetLogCurveDepths(qcSetup.DataObject, qcSetup.DataConnector);
+            string jsonLog = RuleMethodUtilities.GetLogCurveDepths(qcSetup.DataObject);
             if (!string.IsNullOrEmpty(jsonLog))
             {
                 JObject logObject = JObject.Parse(jsonLog);
