@@ -1,6 +1,7 @@
 ﻿using DatabaseManager.Common.Data;
 using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
+using DatabaseManager.Common.Extensions;
 using DatabaseManager.Shared;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -16,6 +17,8 @@ namespace DatabaseManager.Common.Helpers
 {
     public class RuleMethodUtilities
     {
+        
+
         public class IdwPoint
         {
             public double Distance { get; set; }
@@ -316,33 +319,6 @@ namespace DatabaseManager.Common.Helpers
                 logObject["MAX_INDEX"] = bottomDepth;
                 return logObject.ToString();
             }
-
-            //IADODataAccess db = new ADODataAccess();
-            //string select = "select UWI, INDEX_VALUE, MEASURED_VALUE from WELL_LOG_CURVE_VALUE ";
-            //string query = $"where CURVE_ID = '{curveName}' and UWI = '{uwi}' order by INDEX_VALUE";
-            //string sql = select + query;
-            //DataTable lc = db.GetDataTable(sql, connector);
-
-            //if (lc.Rows.Count > 0)
-            //{
-            //    double[] measuredValue = new double[lc.Rows.Count];
-            //    double[] indexValue = new double[lc.Rows.Count]; ;
-            //    for (int j = 0; j < lc.Rows.Count; j++)
-            //    {
-            //        measuredValue[j] = Convert.ToDouble(lc.Rows[j]["MEASURED_VALUE"]);
-            //        indexValue[j] = Convert.ToDouble(lc.Rows[j]["INDEX_VALUE"]);
-            //    }
-
-            //    double topDepth = indexValue.Min();
-            //    logObject["MIN_INDEX"] = topDepth;
-            //    double bottomDepth = indexValue.Max();
-            //    logObject["MAX_INDEX"] = bottomDepth;
-            //    return logObject.ToString();
-            //}
-            //else
-            //{
-            //    return "";
-            //}
         }
 
         public static string GetJsonForMissingDataObject(string parameters, DataAccessDef accessDef,
@@ -449,6 +425,14 @@ namespace DatabaseManager.Common.Helpers
             List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(source.DataAccessDefinition);
             DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
             return accessDef;
+        }
+
+        public static IndexRootJson GetIndexRoot(IndexDBAccess idxdata, string dataConnector)
+        {
+            IndexModel idxResult = Task.Run(() => idxdata.GetIndexRoot(dataConnector)).GetAwaiter().GetResult();
+            string jsonStringObject = idxResult.JsonDataObject;
+            IndexRootJson rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonStringObject);
+            return rootJson;
         }
     }
 }

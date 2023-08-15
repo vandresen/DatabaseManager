@@ -244,8 +244,9 @@ namespace DatabaseManager.Common.Helpers
             {
                 throw new NullReferenceException("Rule parameter is null.");
             }
-
-            DataAccessDef accessDef = RuleMethodUtilities.GetDataAccessDefintionFromRoot(idxdata, qcSetup.DataConnector, dataType);
+            IndexRootJson rootJson = RuleMethodUtilities.GetIndexRoot(idxdata, qcSetup.DataConnector);
+            DataAccessDef accessDef = rootJson.Source.GetDataAccessDefintionFromSourceJson(dataType);
+            //DataAccessDef accessDef = RuleMethodUtilities.GetDataAccessDefintionFromRoot(idxdata, qcSetup.DataConnector, dataType);
             string table = Common.GetTable(accessDef.Select);
             IDapperDataAccess dp;
             ISystemData systemData;

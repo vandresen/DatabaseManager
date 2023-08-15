@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Linq;
 using System.Net.Http;
@@ -347,7 +348,8 @@ namespace DatabaseManager.Common.Helpers
 
         private async Task InsertMissingObjectToIndex(PredictionResult result)
         {
-            IndexFileData indexdata = await GetIndexFileData(result.DataType);
+            List<IndexFileData> idxData = await GetIndexFileData(result.DataType);
+            IndexFileData indexdata = idxData.FirstOrDefault(s => s.DataName == result.DataType);
             if (indexdata.DataName != null)
             {
                 JObject dataObject = JObject.Parse(result.DataObject);
@@ -357,9 +359,15 @@ namespace DatabaseManager.Common.Helpers
                 string dataKey = GetDataKey(dataObject, dataAccessDef.Keys);
                 int parentId = result.IndexId;
                 string jsonData = result.DataObject;
+                IndexModel idxResult = await _indexData.GetIndex(parentId, databaseConnectionString);
                 double latitude = -99999.0;
                 double longitude = -99999.0;
-                int nodeId = await GeIndextNode(dataType, parentId);
+                if (indexdata.UseParentLocation)
+                {
+                    latitude = (double)idxResult.Latitude;
+                    longitude = (double)idxResult.Longitude;
+                }
+                int nodeId = await GeIndextNode(dataType, idxResult);
                 if (nodeId > 0) _dbConn.InsertIndex(nodeId, dataName, dataType, dataKey, jsonData, latitude, longitude);
             }
         }
@@ -388,12 +396,10 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        private async Task<int> GeIndextNode(string dataType, int parentid)
+        private async Task<int> GeIndextNode(string dataType, IndexModel idxResult)
         {
             int nodeid = 0;
             string nodeName = dataType + "s";
-            string query = $" where INDEXID = {parentid}";
-            IndexModel idxResult = await _indexData.GetIndex(parentid, databaseConnectionString);
             if (idxResult != null)
             {
                 string indexNode = idxResult.TextIndexNode;
@@ -411,7 +417,7 @@ namespace DatabaseManager.Common.Helpers
                 }
                 if (nodeid == 0)
                 {
-                    nodeid = _dbConn.InsertIndex(parentid, nodeName, nodeName, "", "", 0.0, 0.0);
+                    nodeid = _dbConn.InsertIndex(idxResult.IndexId, nodeName, nodeName, "", "", 0.0, 0.0);
                 }
             }
             return nodeid;
@@ -497,14 +503,14 @@ namespace DatabaseManager.Common.Helpers
             return connector;
         }
 
-        private async Task<IndexFileData> GetIndexFileData(string dataType)
+        private async Task<List<IndexFileData>> GetIndexFileData(string dataType)
         {
             IndexFileData indexdata = new IndexFileData();
             IndexRootJson rootJson = await GetIndexRootData();
             string taxonomy = rootJson.Taxonomy;
             List<IndexFileData> idxData = GetIndexArray(taxonomy);
             indexdata = idxData.FirstOrDefault(s => s.DataName == dataType);
-            return indexdata;
+            return idxData;
         }
 
         private async Task<IndexRootJson> GetIndexRootData()

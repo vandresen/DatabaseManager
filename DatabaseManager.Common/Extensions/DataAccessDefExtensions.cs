@@ -1,8 +1,11 @@
 ﻿using DatabaseManager.Common.Entities;
+using DatabaseManager.Shared;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Extensions
 {
@@ -22,6 +25,14 @@ namespace DatabaseManager.Common.Extensions
             string keys = dataDef.Keys;
 
             return keys;
+        }
+
+        public static DataAccessDef GetDataAccessDefintionFromSourceJson(this string dataConnectorJson, string dataType)
+        {
+            ConnectParameters source = JsonConvert.DeserializeObject<ConnectParameters>(dataConnectorJson);
+            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(source.DataAccessDefinition);
+            DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
+            return accessDef;
         }
     }
 }
