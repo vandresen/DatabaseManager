@@ -56,7 +56,9 @@ namespace DatabaseManager.Services.DataTransfer.Extensions
             int to = select.IndexOf("from");
             int length = to - 8;
             string attributes = select.Substring(from, length);
-            string[] words = attributes.Split(',');
+            string[] words = attributes.Split(',')
+                .Select(item => item.Trim())
+                .ToArray();
             return words;
         }
 

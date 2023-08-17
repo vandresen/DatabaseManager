@@ -35,7 +35,7 @@ namespace DatabaseManager.Services.DataTransfer.Services
             return userName;
         }
 
-        private async Task<IEnumerable<T>> ReadData<T>(string sql, string connectionString)
+        public async Task<IEnumerable<T>> ReadData<T>(string sql, string connectionString)
         {
             using IDbConnection cnn = new SqlConnection(connectionString);
             return await cnn.QueryAsync<T>(sql);
@@ -265,5 +265,6 @@ namespace DatabaseManager.Services.DataTransfer.Services
 
             return sql;
         }
+
     }
 }

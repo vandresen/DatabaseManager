@@ -27,7 +27,7 @@ namespace DatabaseManager.BlazorComponents.Services
         {
             ResponseDto responseDto = new ResponseDto();
             if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/Sync/{sourceName}";
-            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl($"/api/Sync/{sourceName}", $"", SD.DataConfigurationKey);
+            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl($"/api/GetIndexDataObjects/{sourceName}", $"", SD.DataConfigurationKey);
             Console.WriteLine(url);
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -41,7 +41,7 @@ namespace DatabaseManager.BlazorComponents.Services
         {
             ResponseDto responseDto = new ResponseDto();
             if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/Sync";
-            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/Sync", $"", SD.DataConfigurationKey);
+            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/CopyIndexObject", $"", SD.DataConfigurationKey);
             Console.WriteLine(url);
             return await this.SendAsync<T>(new ApiRequest()
             {

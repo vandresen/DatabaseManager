@@ -19,5 +19,7 @@ namespace DatabaseManager.Services.DataTransfer.Services
         void ExecuteSQL(string sql, string connectionString);
         Task InsertDataTableToDatabase(string connectionString, DataTable table, List<ReferenceTable> referenceTables,
             DataAccessDef accessDef);
+        Task<IEnumerable<T>> LoadData<T, U>(string storedProcedure, U parameters, string connectionString);
+        Task<IEnumerable<T>> ReadData<T>(string sql, string connectionString);
     }
 }
