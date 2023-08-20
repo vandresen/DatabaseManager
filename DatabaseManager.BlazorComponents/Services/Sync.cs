@@ -26,8 +26,8 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<T> GetDataObjects<T>(string sourceName)
         {
             ResponseDto responseDto = new ResponseDto();
-            if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/Sync/{sourceName}";
-            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl($"/api/GetIndexDataObjects/{sourceName}", $"", SD.DataConfigurationKey);
+            if (string.IsNullOrEmpty(SD.DataTransferAPIBase)) url = $"api/Sync/{sourceName}";
+            else url = SD.DataTransferAPIBase.BuildFunctionUrl($"/GetIndexDataObjects", $"Name={sourceName}", SD.DataTransferKey);
             Console.WriteLine(url);
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -40,8 +40,8 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<T> TransferIndexObjects<T>(object body)
         {
             ResponseDto responseDto = new ResponseDto();
-            if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/Sync";
-            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/CopyIndexObject", $"", SD.DataConfigurationKey);
+            if (string.IsNullOrEmpty(SD.DataTransferAPIBase)) url = $"api/Sync";
+            else url = SD.DataTransferAPIBase.BuildFunctionUrl("/CopyIndexObject", $"", SD.DataTransferKey);
             Console.WriteLine(url);
             return await this.SendAsync<T>(new ApiRequest()
             {

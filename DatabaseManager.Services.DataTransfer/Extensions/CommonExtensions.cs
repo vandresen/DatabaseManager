@@ -205,5 +205,25 @@ namespace DatabaseManager.Services.DataTransfer.Extensions
             }
             return attributeType;
         }
+
+        public static string[] GetSqlSelectAttributes(this string sql)
+        {
+            string sqlSelect = sql.Trim().TrimEnd(';');
+
+            // Extract the substring between "SELECT" and "FROM" keywords
+            int selectIndex = sqlSelect.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
+            int fromIndex = sqlSelect.IndexOf("FROM", StringComparison.OrdinalIgnoreCase);
+            if (selectIndex == -1 || fromIndex == -1)
+            {
+                throw new ArgumentException("Invalid SQL SELECT statement.");
+            }
+
+            string selectSubstring = sqlSelect.Substring(selectIndex + 6, fromIndex - selectIndex - 6).Trim();
+
+            // Split the substring by commas and return the resulting array
+            return selectSubstring.Split(',')
+                .Select(attr => attr.Trim())
+                .ToArray();
+        }
     }
 }

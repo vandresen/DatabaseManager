@@ -260,7 +260,7 @@ namespace DatabaseManager.Services.DataTransfer
                 SD.AzureStorageKey = req.GetStorageKey();
                 _fileStorage.SetConnectionString(SD.AzureStorageKey);
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-                TransferParameters transParm = JsonConvert.DeserializeObject<TransferParameters>(requestBody);
+                SyncParameters transParm = JsonConvert.DeserializeObject<SyncParameters>(requestBody);
                 if (transParm == null)
                 {
                     _logger.LogError("TransferData: error missing transfer parameters");
@@ -268,44 +268,38 @@ namespace DatabaseManager.Services.DataTransfer
                     _response.ErrorMessages = new List<string>() { "Data transfer copy database object: Missing transfer parameters" };
                     return _response;
                 }
-                if (string.IsNullOrEmpty(transParm.Table))
+                if (string.IsNullOrEmpty(transParm.DataObjectType))
                 {
                     _logger.LogError("TransferData: transfer parameter is missing table name");
                     _response.IsSuccess = false;
                     _response.ErrorMessages = new List<string>() { "Data transfer copy database object: Missing table name in tansfer parameters" };
                     return _response;
                 }
-                if (transParm.SourceType == "DataBase")
+                
+                ResponseDto sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.SourceName);
+                ResponseDto targetResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.TargetName);
+                ResponseDto conFileResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("ReferenceTables.json");
+                ResponseDto accessDefResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("PPDMDataAccess.json");
+                bool sourceAccepted = sourceResponse != null && sourceResponse.IsSuccess;
+                bool targetAccepted = sourceResponse != null && sourceResponse.IsSuccess;
+                bool conFileAccepted = conFileResponse != null && conFileResponse.IsSuccess;
+                bool accessDefAccepted = accessDefResponse != null && accessDefResponse.IsSuccess;
+                if (sourceAccepted && targetAccepted && conFileAccepted && accessDefAccepted)
                 {
-                    ResponseDto sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.SourceName);
-                    ResponseDto targetResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.TargetName);
-                    ResponseDto conFileResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("ReferenceTables.json");
-                    ResponseDto accessDefResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("PPDMDataAccess.json");
-                    bool sourceAccepted = sourceResponse != null && sourceResponse.IsSuccess;
-                    bool targetAccepted = sourceResponse != null && sourceResponse.IsSuccess;
-                    bool conFileAccepted = conFileResponse != null && conFileResponse.IsSuccess;
-                    bool accessDefAccepted = accessDefResponse != null && accessDefResponse.IsSuccess;
-                    if (sourceAccepted && targetAccepted && conFileAccepted && accessDefAccepted)
-                    {
-                        ConnectParametersDto sourceParm = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(sourceResponse.Result));
-                        ConnectParametersDto targetParm = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(targetResponse.Result));
-                        targetParm.DataAccessDefinition = Convert.ToString(accessDefResponse.Result);
-                        string referenceJson = Convert.ToString(conFileResponse.Result);
-                        await _indexTransfer.CopyData(transParm, sourceParm, targetParm, referenceJson);
-                    }
-                    else
-                    {
-                        _response.IsSuccess = false;
-                        _response.ErrorMessages = sourceResponse.ErrorMessages;
-                        _response.ErrorMessages = targetResponse.ErrorMessages;
-                        _logger.LogError($"Data transfer copy Index Object: could not get data source");
-                    }
+                    ConnectParametersDto sourceParm = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(sourceResponse.Result));
+                    ConnectParametersDto targetParm = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(targetResponse.Result));
+                    targetParm.DataAccessDefinition = Convert.ToString(accessDefResponse.Result);
+                    string referenceJson = Convert.ToString(conFileResponse.Result);
+                    TransferParameters transfer = new();
+                    transfer.Table = transParm.DataObjectType;
+                    await _indexTransfer.CopyData(transfer, sourceParm, targetParm, referenceJson);
                 }
                 else
                 {
                     _response.IsSuccess = false;
-                    _response.ErrorMessages = new List<string>() { $"This API does not support source type {transParm.SourceType}" };
-                    _logger.LogError($"Data transfer index Object: This API does not support source type {transParm.SourceType}");
+                    _response.ErrorMessages = sourceResponse.ErrorMessages;
+                    _response.ErrorMessages = targetResponse.ErrorMessages;
+                    _logger.LogError($"Data transfer copy Index Object: could not get data source");
                 }
             }
             catch (Exception ex)

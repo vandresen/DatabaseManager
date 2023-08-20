@@ -18,6 +18,8 @@ namespace DatabaseManager.BlazorComponents
         public static string DataModelKey { get; set; }
         public static string DataRuleAPIBase { get; set; }
         public static string DataRuleKey { get; set; }
+        public static string DataTransferAPIBase { get; set; }
+        public static string DataTransferKey { get; set; }
         public static bool Sqlite { get; set; }
         public enum ApiType
         {

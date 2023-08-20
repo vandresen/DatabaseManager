@@ -8,6 +8,7 @@ using DatabaseManager.Services.DataTransfer.Extensions;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using DatabaseManager.Services.DataTransfer.Helpers;
+using System.Text;
 
 namespace DatabaseManager.Services.DataTransfer.Services
 {
@@ -41,8 +42,11 @@ namespace DatabaseManager.Services.DataTransfer.Services
             _objectAccessDef = _accessDefs.FirstOrDefault(x => x.DataType == transferParameters.Table);
 
             IEnumerable<IndexModel> indexes = await GetIndexesWithDataType(transferParameters.Table, sourceConnector.ConnectionString);
-            await SyncObjectDelete(indexes, targetConnector.ConnectionString);
-            await SyncObjectUpdateInsert(indexes, targetConnector.ConnectionString);
+            if (indexes.Count() > 0)
+            {
+                await SyncObjectDelete(indexes, targetConnector.ConnectionString);
+                await SyncObjectUpdateInsert(indexes, targetConnector.ConnectionString);
+            }
         }
 
         public void DeleteData(ConnectParametersDto source, string table)
@@ -96,61 +100,32 @@ namespace DatabaseManager.Services.DataTransfer.Services
 
         private async Task SyncObjectUpdateInsert(IEnumerable<IndexModel> indexes, string connectionString)
         {
-            string json = indexes.FirstOrDefault()?.JsonDataObject;
-            string datatype = indexes.FirstOrDefault()?.DataType;
             string[] attributes = _objectAccessDef.Select.GetAttributes();
-            JObject jsonObject = JObject.Parse(json);
+            string dataModel = await _fileStorage.ReadFile("ppdm39", "TAB.sql");
+            string datatype = indexes.FirstOrDefault()?.DataType;
+            string[] referenceAttributeArray = _references
+                .Where(obj => obj.DataType == datatype)
+                .Select(obj => obj.ReferenceAttribute)
+                .ToArray();
+            DataTable dataTable = Common.NewDataTable(datatype, dataModel, _accessDefs);
 
-            // Extract the JSON properties and their types
-            Dictionary<string, Type> columnDefinitions = new Dictionary<string, Type>();
-            foreach (var property in jsonObject.Properties())
-            {
-                JTokenType propertyType = property.Value.Type;
-                if (attributes.Contains(property.Name))
-                {
-                    Type columnType;
-                    switch (propertyType)
-                    {
-                        case JTokenType.String:
-                            columnType = typeof(string);
-                            break;
-                        case JTokenType.Integer:
-                            columnType = typeof(int);
-                            break;
-                        case JTokenType.Float:
-                            columnType = typeof(double);
-                            break;
-                        case JTokenType.Boolean:
-                            columnType = typeof(bool);
-                            break;
-                        default:
-                            columnType = typeof(string); // Default to string if the type is not recognized
-                            break;
-                    }
-
-                    columnDefinitions.Add(property.Name, columnType);
-                }
-            }
-
-            // Create the temporary table in the SQL Server database
             string tempTableName = "#TempTable";
-            string createTableQuery = $"CREATE TABLE {tempTableName} (";
-
-            foreach (var column in columnDefinitions)
+            StringBuilder createTempTableQuery = new StringBuilder($"CREATE TABLE {tempTableName} (");
+            foreach (DataColumn column in dataTable.Columns)
             {
-                createTableQuery += $"{column.Key} {Common.GetSqlDbTypeString(column.Value)}, ";
+                string columnName = column.ColumnName;
+                string dataType = Common.GetSqlDbTypeString(column.DataType); // Map .NET data types to SQL Server data types
+                string columnDefinition = $"{columnName} {dataType}";
+                createTempTableQuery.Append(columnDefinition).Append(", ");
             }
 
-            createTableQuery = createTableQuery.TrimEnd(',', ' ') + ")";
+            // Remove the trailing comma and space
+            createTempTableQuery.Length -= 2;
+            createTempTableQuery.Append(")");
 
-            // Convert the JSON to a DataTable
-            DataTable dataTable = new DataTable();
-            foreach (var column in columnDefinitions)
-            {
-                dataTable.Columns.Add(column.Key, column.Value);
-            }
+            string json = indexes.FirstOrDefault()?.JsonDataObject; // Delete later
+            JObject jsonObject = JObject.Parse(json); //Delete later
 
-            // Deserialize JSON and insert data into the DataTable
             foreach (var index in indexes)
             {
                 json = index.JsonDataObject;
@@ -164,7 +139,16 @@ namespace DatabaseManager.Services.DataTransfer.Services
                         {
                             if (property.Value.Type != JTokenType.Null)
                             {
-                                dataRow[property.Name] = property.Value.ToObject(columnDefinitions[property.Name]);
+                                DataColumn column = dataRow.Table.Columns[property.Name];
+                                Type dataType = column.DataType;
+                                dataRow[property.Name] = Common.ConvertJsonValueToDataTable(property.Value, dataType);
+                            }
+                            else
+                            {
+                                if(referenceAttributeArray.Contains(property.Name))
+                                {
+                                    dataRow[property.Name] = "UNKNOWN";
+                                }
                             }
                         }
                     }
@@ -172,13 +156,84 @@ namespace DatabaseManager.Services.DataTransfer.Services
                 }
             }
 
+            // Extract the JSON properties and their types
+            //Dictionary<string, Type> columnDefinitions = new Dictionary<string, Type>();
+            //foreach (var property in jsonObject.Properties())
+            //{
+            //    JTokenType propertyType = property.Value.Type;
+            //    if (attributes.Contains(property.Name))
+            //    {
+            //        Type columnType;
+            //        switch (propertyType)
+            //        {
+            //            case JTokenType.String:
+            //                columnType = typeof(string);
+            //                break;
+            //            case JTokenType.Integer:
+            //                columnType = typeof(int);
+            //                break;
+            //            case JTokenType.Float:
+            //                columnType = typeof(double);
+            //                break;
+            //            case JTokenType.Boolean:
+            //                columnType = typeof(bool);
+            //                break;
+            //            default:
+            //                columnType = typeof(string); // Default to string if the type is not recognized
+            //                break;
+            //        }
+
+            //        columnDefinitions.Add(property.Name, columnType);
+            //    }
+            //}
+
+            // Create the temporary table in the SQL Server database
+            //string tempTableName = "#TempTable";
+            //string createTableQuery = $"CREATE TABLE {tempTableName} (";
+
+            //foreach (var column in columnDefinitions)
+            //{
+            //    createTableQuery += $"{column.Key} {Common.GetSqlDbTypeString(column.Value)}, ";
+            //}
+
+            //createTableQuery = createTableQuery.TrimEnd(',', ' ') + ")";
+
+            // Convert the JSON to a DataTable
+            //DataTable dataTable = new DataTable();
+            //foreach (var column in columnDefinitions)
+            //{
+            //    dataTable.Columns.Add(column.Key, column.Value);
+            //}
+
+            // Deserialize JSON and insert data into the DataTable
+            //foreach (var index in indexes)
+            //{
+            //    json = index.JsonDataObject;
+            //    if (!string.IsNullOrEmpty(json))
+            //    {
+            //        jsonObject = JObject.Parse(json);
+            //        DataRow dataRow = dataTable.NewRow();
+            //        foreach (var property in jsonObject.Properties())
+            //        {
+            //            if (attributes.Contains(property.Name))
+            //            {
+            //                if (property.Value.Type != JTokenType.Null)
+            //                {
+            //                    dataRow[property.Name] = property.Value.ToObject(columnDefinitions[property.Name]);
+            //                }
+            //            }
+            //        }
+            //        dataTable.Rows.Add(dataRow);
+            //    }
+            //}
+
             LoadNewReferences(datatype, connectionString, dataTable);
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 connection.Open();
 
-                using (SqlCommand createTableCommand = new SqlCommand(createTableQuery, connection))
+                using (SqlCommand createTableCommand = new SqlCommand(createTempTableQuery.ToString(), connection))
                 {
                     createTableCommand.ExecuteNonQuery();
                 }

@@ -48,6 +48,8 @@ namespace DatabaseManager.ServerLessClient
             SD.DataModelKey = builder.Configuration["ServiceUrls:DataModelKey"];
             SD.DataRuleAPIBase = builder.Configuration["ServiceUrls:DataRuleAPI"];
             SD.DataRuleKey = builder.Configuration["ServiceUrls:DataRuleKey"];
+            SD.DataTransferAPIBase = builder.Configuration["ServiceUrls:DataTransferAPI"];
+            SD.DataTransferKey = builder.Configuration["ServiceUrls:DataTransferKey"];
 
             await builder.Build().RunAsync();
         }
@@ -81,7 +83,8 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IRules, RulesServerless>();
             services.AddScoped<IRulesService, RulesService>();
             services.AddScoped<IReportEdit, ReportEdit>();
-            
+            services.AddScoped<ISync, Sync>();
+
             services.AddScoped<ICookies, Cookies>();
             services.AddScoped<IDataConfiguration, DataConfiguration>();
 
