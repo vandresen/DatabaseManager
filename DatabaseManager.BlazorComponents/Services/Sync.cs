@@ -27,7 +27,7 @@ namespace DatabaseManager.BlazorComponents.Services
         {
             ResponseDto responseDto = new ResponseDto();
             if (string.IsNullOrEmpty(SD.DataTransferAPIBase)) url = $"api/Sync/{sourceName}";
-            else url = SD.DataTransferAPIBase.BuildFunctionUrl($"/GetIndexDataObjects", $"Name={sourceName}", SD.DataTransferKey);
+            else url = SD.DataTransferAPIBase.BuildFunctionUrl($"api/GetIndexDataObjects", $"Name={sourceName}", SD.DataTransferKey);
             Console.WriteLine(url);
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -41,7 +41,7 @@ namespace DatabaseManager.BlazorComponents.Services
         {
             ResponseDto responseDto = new ResponseDto();
             if (string.IsNullOrEmpty(SD.DataTransferAPIBase)) url = $"api/Sync";
-            else url = SD.DataTransferAPIBase.BuildFunctionUrl("/CopyIndexObject", $"", SD.DataTransferKey);
+            else url = SD.DataTransferAPIBase.BuildFunctionUrl("api/CopyIndexObject", $"", SD.DataTransferKey);
             Console.WriteLine(url);
             return await this.SendAsync<T>(new ApiRequest()
             {
