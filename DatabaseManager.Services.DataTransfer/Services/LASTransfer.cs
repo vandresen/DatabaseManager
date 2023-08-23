@@ -490,9 +490,7 @@ namespace DatabaseManager.Services.DataTransfer.Services
                 new SqlConnection(_connectionString))
             {
                 destinationConnection.Open();
-
-                using (SqlBulkCopy bulkCopy =
-                new SqlBulkCopy(destinationConnection.ConnectionString))
+                using (SqlBulkCopy bulkCopy = new SqlBulkCopy(destinationConnection))
                 {
                     bulkCopy.BatchSize = 500;
                     bulkCopy.DestinationTableName = logTable;
