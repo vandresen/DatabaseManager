@@ -26,7 +26,8 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task Create(CreateIndexParameters iParameters)
         {
-            if (string.IsNullOrEmpty(SD.IndexAPIBase)) url = $"api/createindex";
+            if (SD.Sqlite == true) url = SD.IndexAPIBase.BuildFunctionUrl("/BuildIndex", $"", SD.IndexKey);
+            else if (string.IsNullOrEmpty(SD.IndexAPIBase)) url = $"api/createindex";
             else url = SD.IndexAPIBase.BuildFunctionUrl("/api/BuildIndex", $"", SD.IndexKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()

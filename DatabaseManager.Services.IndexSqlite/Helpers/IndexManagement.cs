@@ -5,16 +5,16 @@ namespace DatabaseManager.Services.IndexSqlite.Helpers
 {
     public class IndexManagement
     {
-        private readonly string azureConnectionString;
+        //private readonly string azureConnectionString;
         //private readonly IFileStorageServiceCommon _fileStorage;
-        private readonly string taxonomyShare = "taxonomy";
+        //private readonly string taxonomyShare = "taxonomy";
         //private DbUtilities _dbConn;
         //private readonly DapperDataAccess _dp;
         //private readonly IIndexDBAccess _indexData;
 
-        public IndexManagement(string azureConnectionString)
-        {
-            this.azureConnectionString = azureConnectionString;
+        //public IndexManagement(string azureConnectionString)
+        //{
+            //this.azureConnectionString = azureConnectionString;
             //var builder = new ConfigurationBuilder();
             //IConfiguration configuration = builder.Build();
             //_fileStorage = new AzureFileStorageServiceCommon(configuration);
@@ -22,7 +22,7 @@ namespace DatabaseManager.Services.IndexSqlite.Helpers
             //_dbConn = new DbUtilities();
             //_dp = new DapperDataAccess();
             //_indexData = new IndexDBAccess(_dp);
-        }
+        //}
 
 
         //public async Task<string> GetTaxonomyFile(string taxonomyFile)
@@ -126,13 +126,13 @@ namespace DatabaseManager.Services.IndexSqlite.Helpers
         //    return result;
         //}
 
-        public async Task CreateIndex(BuildIndexParameters indexParm)
-        {
-            if (string.IsNullOrEmpty(indexParm.TaxonomyFile))
-            {
-                Exception error = new Exception($"Taxonomy not selected");
-                throw error;
-            }
+        //public async Task CreateIndex(BuildIndexParameters indexParm)
+        //{
+            //if (string.IsNullOrEmpty(indexParm.Taxonomy))
+            //{
+            //    Exception error = new Exception($"Taxonomy not selected");
+            //    throw error;
+            //}
             //Sources sr = new Sources(azureConnectionString);
             //ConnectParameters target = await sr.GetSourceParameters(indexParm.TargetName);
             //ConnectParameters source = await sr.GetSourceParameters(indexParm.SourceName);
@@ -148,7 +148,7 @@ namespace DatabaseManager.Services.IndexSqlite.Helpers
             //    }
             //}
             //index.CloseIndex();
-        }
+        //}
 
         //private static IndexFileDefinition ProcessIndexFileTokens(JToken token)
         //{

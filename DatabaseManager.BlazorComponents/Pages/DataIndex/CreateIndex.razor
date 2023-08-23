@@ -49,7 +49,7 @@ else
         <button class="btn btn-success" @onclick="StartIndex">Start Indexing >>></button>
     </div>
     <div class="col">
-        <p>Target Database: @singleton.TargetConnector</p>
+        <p>Target Database: @target</p>
     </div>
 </div>
 
@@ -65,6 +65,7 @@ else
     private List<string> options { get; set; } = new List<string>();
     private string source { get; set; } = "Choose Connector";
     public string SqlText { get; set; }
+    public string target { get; set; }
     List<string> taxonomies;
     CreateIndexParameters iParameters = new CreateIndexParameters();
     private string statusMessage = "Not started";
@@ -76,14 +77,25 @@ else
     {
         if (string.IsNullOrEmpty(singleton.TargetConnector))
         {
-            await displayMessage.DisplayErrorMessage("Please select a data connector");
-            navigationManager.NavigateTo("/");
+            if (SD.Sqlite)
+            {
+                target = "SQLite";
+            }
+            else
+            {
+                await displayMessage.DisplayErrorMessage("Please select a data connector");
+                navigationManager.NavigateTo("/");
+            }
+        }
+        else
+        {
+            target = singleton.TargetConnector;
         }
         List<IndexFileList> fileList = await createIndex.GetTaxonomies();
         var files = fileList.Select(s => s.Name);
         taxonomies = files.ToList();
 
-        source = singleton.TargetConnector;
+        if (SD.Sqlite == false) source = singleton.TargetConnector;
 
         connectParameters = await dataSources.GetSources();
         foreach (ConnectParameters conn in connectParameters)

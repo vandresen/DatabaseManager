@@ -95,16 +95,20 @@ namespace DatabaseManager.Services.IndexSqlite
 
         private static async Task<IResult> BuildIndex(BuildIndexParameters idxParms, IIndexAccess idxAccess, IDataSourceService dataSource)
         {
+            ResponseDto response = new();
             try
             {
-                if (string.IsNullOrEmpty(idxParms.TaxonomyFile)) return Results.BadRequest("Taxonomy file is missing");
+                if (string.IsNullOrEmpty(idxParms.Taxonomy)) return Results.BadRequest("Taxonomy file is missing");
                 await idxAccess.BuildIndex(idxParms);
-                return Results.Ok();
+                response.IsSuccess = true;
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                response.IsSuccess = false;
+                string newString = $"BuildIndex: Could not build index, {ex}";
+                response.ErrorMessages.Insert(0, newString);
             }
+            return Results.Ok(response);
         }
 
         private static async Task<IResult> GetDmIndexes(int? id, IIndexAccess idxAccess)

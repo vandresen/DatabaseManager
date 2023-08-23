@@ -511,7 +511,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
 
         private async Task<int> Initialize(ConnectParameters target, ConnectParameters source, BuildIndexParameters idxParms)
         {
-            _taxonomy = await _fs.ReadFile("taxonomy", idxParms.TaxonomyFile);
+            _taxonomy = await _fs.ReadFile("taxonomy", idxParms.Taxonomy);
             if (source.SourceType == "DataBase")
             {
                 _sourceAccess = new DBDataAccess();
