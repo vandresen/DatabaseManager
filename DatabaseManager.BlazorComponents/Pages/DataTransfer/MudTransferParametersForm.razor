@@ -62,6 +62,7 @@ else
     {
         ConnectParameters connector = ConnectParameters.FirstOrDefault(s => s.SourceName == TransferParameters.SourceName);
         TransferParameters.SourceType = connector.SourceType;
+        TransferParameters.SourceDataType = connector.DataType;
         Console.WriteLine($"Remote = {TransferParameters.Remote}");
         Console.WriteLine("Button submit");
         OnValidSubmit.InvokeAsync();

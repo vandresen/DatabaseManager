@@ -212,7 +212,7 @@ namespace DatabaseManager.Services.DataTransfer
                 {
                     ResponseDto sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.SourceName);
                     ResponseDto targetResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.TargetName);
-                    ResponseDto conFileResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("ReferenceTables.json");
+                    ResponseDto conFileResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("PPDMReferenceTables.json");
                     ResponseDto accessDefResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("PPDMDataAccess.json");
                     bool sourceAccepted = sourceResponse != null && sourceResponse.IsSuccess;
                     bool targetAccepted = sourceResponse != null && sourceResponse.IsSuccess;
@@ -278,7 +278,7 @@ namespace DatabaseManager.Services.DataTransfer
                 
                 ResponseDto sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.SourceName);
                 ResponseDto targetResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.TargetName);
-                ResponseDto conFileResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("ReferenceTables.json");
+                ResponseDto conFileResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("PPDMReferenceTables.json");
                 ResponseDto accessDefResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("PPDMDataAccess.json");
                 bool sourceAccepted = sourceResponse != null && sourceResponse.IsSuccess;
                 bool targetAccepted = sourceResponse != null && sourceResponse.IsSuccess;
@@ -454,7 +454,7 @@ namespace DatabaseManager.Services.DataTransfer
             ResponseDto sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(_transParm.SourceName);
             ResponseDto targetResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(_transParm.TargetName);
             bool sourceAccepted = sourceResponse != null && sourceResponse.IsSuccess;
-            bool targetAccepted = sourceResponse != null && sourceResponse.IsSuccess;
+            bool targetAccepted = targetResponse != null && targetResponse.IsSuccess;
             if (sourceAccepted && targetAccepted)
             {
                 _sourceParm = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(sourceResponse.Result));
@@ -470,7 +470,7 @@ namespace DatabaseManager.Services.DataTransfer
                 throw error;
             }
             _targetParm.DataAccessDefinition = await _fileStorage.ReadFile(dataAccessDefFolder, "PPDMDataAccess.json");
-            _referenceJson = await _fileStorage.ReadFile(dataAccessDefFolder, "ReferenceTables.json");
+            _referenceJson = await _fileStorage.ReadFile(dataAccessDefFolder, "PPDMReferenceTables.json");
         }
     }
 }

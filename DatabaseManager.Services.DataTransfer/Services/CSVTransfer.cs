@@ -41,6 +41,7 @@ namespace DatabaseManager.Services.DataTransfer.Services
             _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(targetConnector.DataAccessDefinition);
             _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(referenceJson);
             _csvDef = JsonConvert.DeserializeObject<List<CSVAccessDef>>(sourceConnector.DataAccessDefinition);
+            string dataModel = await _fileStorage.ReadFile("ppdm39", "TAB.sql");
             string csvText = await _fileStorage.ReadFile(sourceConnector.Catalog, sourceConnector.FileName);
             string dataType = sourceConnector.DataType.Remove(sourceConnector.DataType.Length - 1, 1);
             _dataAccess = _dataDef.First(x => x.DataType == dataType);
@@ -52,7 +53,8 @@ namespace DatabaseManager.Services.DataTransfer.Services
 
             string dataTypeSql = _dataAccess.Select;
             string table = dataTypeSql.GetTable();
-            _attributeProperties = await _dbAccess.GetColumnInfo(targetConnector.ConnectionString, table);
+            //_attributeProperties = await _dbAccess.GetColumnInfo(targetConnector.ConnectionString, table);
+            _attributeProperties = Common.GetColumnInfo(table.ToLower(), dataModel);
 
             using (TextReader csvStream = new StringReader(csvText))
             {
@@ -84,7 +86,7 @@ namespace DatabaseManager.Services.DataTransfer.Services
                                 string dbAttribute = attributeMappings[item.Key];
                                 string value = item.Value;
                                 TableSchema dataProperty = _attributeProperties.FirstOrDefault(x => x.COLUMN_NAME == dbAttribute);
-                                if (dataProperty.DATA_TYPE.Contains("varchar"))
+                                if (dataProperty.DATA_TYPE.ToLower().Contains("varchar"))
                                 {
                                     string numberString = Regex.Match(dataProperty.CHARACTER_MAXIMUM_LENGTH, @"\d+").Value;
                                     int maxCharacters = Int32.Parse(numberString);

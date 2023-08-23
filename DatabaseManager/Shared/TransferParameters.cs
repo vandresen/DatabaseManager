@@ -9,6 +9,7 @@ namespace DatabaseManager.Shared
     {
         public string SourceName { get; set; }
         public string SourceType { get; set; }
+        public string SourceDataType { get; set; }
         public string TargetName { get; set; }
         public string TransferQuery { get; set; }
         public string WellListFile { get; set; }

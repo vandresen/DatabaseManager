@@ -47,15 +47,9 @@ namespace DatabaseManager.Services.DataTransfer.Services
             _connectionString = targetConnector.ConnectionString;
             _dataDef = JsonConvert.DeserializeObject<List<DataAccessDef>>(targetConnector.DataAccessDefinition);
             _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(referenceJson);
-            //lasAccessJson = JObject.Parse(await fileStorageService.ReadFile("connectdefinition", "LASDataAccess.json"));
-            //string lasMappingsStr = await fileStorageService.ReadFile("connectdefinition", "LASDataAccess.json");
             _lasMappings = JsonConvert.DeserializeObject<LASMappings>(sourceConnector.DataAccessDefinition);
 
-            //lasSections = new List<LASSections>();
             LASSections ls = await GetLASSections(sourceConnector.Catalog, transferParameters.Table);
-            //lasSections.Add(ls);
-
-            //_dbConn.OpenConnection(target);
             _dbUserName = await _dbAccess.GetUserName(targetConnector.ConnectionString);
 
             GetVersionInfo(ls.versionInfo);
@@ -65,8 +59,6 @@ namespace DatabaseManager.Services.DataTransfer.Services
             GetDataInfo(ls.dataInfo);
             await LoadParameterInfo();
             LoadLogs();
-
-            //_dbConn.CloseConnection();
         }
 
         public void DeleteData(ConnectParametersDto source, string table)
@@ -373,8 +365,10 @@ namespace DatabaseManager.Services.DataTransfer.Services
                         DataTable dtNew = new DataTable();
                         string logParmtable = dataType.Select.GetTable();
                         string sqlQuery = $"select * from {logParmtable} where 0 = 1";
-                        SqlDataAdapter logParmAdapter = new SqlDataAdapter(sqlQuery, _connectionString);
-                        logParmAdapter.Fill(dtNew);
+                        using (SqlDataAdapter logParmAdapter = new SqlDataAdapter(sqlQuery, _connectionString))
+                        {
+                            logParmAdapter.Fill(dtNew);
+                        }
                         int seqNo = 0;
                         StringReader sr = new StringReader(ls.parameterInfo);
                         while ((input = sr.ReadLine()) != null)
@@ -443,9 +437,11 @@ namespace DatabaseManager.Services.DataTransfer.Services
             string select = dataType.Select;
             string logCurvetable = select.GetTable();
             string sqlQuery = $"select * from {logCurvetable} where 0 = 1";
-            SqlDataAdapter logCurveValueAdapter = new SqlDataAdapter(sqlQuery, _connectionString);
-            logCurveValueAdapter.Fill(dtNew);
-
+            using (SqlDataAdapter logCurveValueAdapter = new SqlDataAdapter(sqlQuery, _connectionString))
+            {
+                logCurveValueAdapter.Fill(dtNew);
+            }
+                
             _logCurveList = GetLogCurveList();
             _logList = GetLogList();
 
@@ -454,8 +450,10 @@ namespace DatabaseManager.Services.DataTransfer.Services
             select = dataType.Select;
             string logTable = select.GetTable();
             sqlQuery = $"select * from {logTable} where 0 = 1";
-            SqlDataAdapter logValueAdapter = new SqlDataAdapter(sqlQuery, _connectionString);
-            logValueAdapter.Fill(lgNew);
+            using (SqlDataAdapter logValueAdapter = new SqlDataAdapter(sqlQuery, _connectionString))
+            {
+                logValueAdapter.Fill(lgNew);
+            }
             int logCount = _logNames.Count();
             GetIndexValues();
             for (int k = 1; k < logCount; k++)
