@@ -1,4 +1,5 @@
 ﻿@page "/transferdata"
+@using MudBlazor
 @inject SingletonServices settings
 @inject IDisplayMessage displayMessage
 @inject IDataSources dataSources
@@ -25,17 +26,13 @@ input {
 
 <SyncParametersForm SyncParameters="syncParameters" OnValidSubmit="StartDatabaseIndexSync" />
 
-@*<div style="margin-top:20px">
-    <ProgressBar ValueNow="barValue" />
-</div>*@
 <br />
 
 <h2>Transfer Status</h2>
-<br />
 
-<div>
+<MudProgressLinear Color="Color.Primary" Value="@barValue" Class="my-10" />
+
     <p>Current status: @statusMessage</p>
-</div>
 
 
 @code {
@@ -44,7 +41,7 @@ input {
     private List<TransferParameters> dataObjects;
     TransferParameters transferParameters = new TransferParameters();
     SyncParameters syncParameters = new();
-    public int barValue = 0;
+    public int barValue { get; set; }
 
     protected async Task StartDatabaseTransfer()
     {
