@@ -39,6 +39,8 @@ Visual Studio 2022 or newer for building this. You can also use Azure Devops to 
 ## Deployment
 One way to publish this is to use the publish option in Visual Studio.
 
+Under Releases there is a zip file of the MVC version. This you can unzip on your web server. If you use Azure app service then you can also use Kudos and zip it there.
+
 ## Datamodel
 The system does not ship with a data model. You must create a folder in your Azure File Storage called PPDM39. This is where you put the PPDM dll files that
 you can download from the PPDM web site. In theory you can put any kind of ddl files here, but then you also need to update some of the other configuration

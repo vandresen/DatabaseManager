@@ -1,3 +1,7 @@
+# Release 1.29
+* Under data transfer there is a new option to transfer the index into a database. It will insert new objects and update existing objects
+* Implemented support for using Sqlite when indexing with the serverless user interface
+
 # Release 1.28
 * Added support for the Index sqlite microservice in Serverless GUI. A Sqlite flag in application settings will determine if sqlite is used or not
 
