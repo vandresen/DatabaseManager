@@ -73,5 +73,17 @@ namespace DatabaseManager.BlazorComponents.Services
                 throw new ApplicationException(await response.GetBody());
             }
         }
+
+        public async Task InsertChild(string source, ReportData reportData)
+        {
+            if (string.IsNullOrEmpty(baseUrl)) url = $"api/ReportEdit/{source}";
+            else url = baseUrl.BuildFunctionUrl("InsertChildReportData", $"name={source}", apiKey);
+            Console.WriteLine(url);
+            var response = await httpService.Post(url, reportData);
+            if (!response.Success)
+            {
+                throw new ApplicationException(await response.GetBody());
+            }
+        }
     }
 }

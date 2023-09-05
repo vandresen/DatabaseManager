@@ -25,7 +25,8 @@ namespace DatabaseManager.Common.Helpers
             string returnStatus = "Passed";
             RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
             string indexNode = qcSetup.IndexNode;
-            string dataName = rule.RuleParameters;
+            JObject parameterObject = JObject.Parse(rule.RuleParameters);
+            string dataName = parameterObject.GetValue("Name").ToString();
             IEnumerable<IndexModel> indexModels = Task.Run(() => indexData.GetChildrenWithName(qcSetup.DataConnector, indexNode, dataName)).GetAwaiter().GetResult();
             if (indexModels.Count() == 0) returnStatus = "Failed";
             return returnStatus;

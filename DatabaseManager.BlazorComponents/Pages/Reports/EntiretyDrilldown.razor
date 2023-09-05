@@ -1,0 +1,156 @@
+﻿@page "/entiretydrilldown/{Id:int}"
+@inject IRules rules
+@inject SingletonServices singleton
+@inject IDataQc qc
+@inject IReportEdit re
+@inject IDisplayMessage displayMessage
+@using MudBlazor
+
+<h3>@header</h3>
+
+@if (dataIndex == null)
+{
+    <text>Loading Data...</text>
+}
+else if (dataDeleted)
+{
+    <text>Data has been deleted...</text>
+}
+else
+{
+    <h5>@createButtonDescription</h5>
+
+    <MudTable Items="@reportList" Dense="true" Hover="true">
+            <ColGroup>
+            <col style="width:50px;" />
+                <col style="width:50px;" />
+                <col style="width:50px;" />
+                <col />
+                <col />
+            </ColGroup>
+            <HeaderContent>
+                <MudTh style="background-color:lightgray">Create</MudTh>
+                <MudTh style="background-color:lightgray">Delete</MudTh>
+                <MudTh style="background-color:lightgray">Detail</MudTh>
+                <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<ReportData, object>(x=>x.Id)">Index Id</MudTableSortLabel></MudTh>
+                <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<ReportData, object>(x=>x.Key)">Data Key</MudTableSortLabel></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="">
+                    <MudFab @onclick="@(()=>Create(@context.Id))" Color="Color.Tertiary" Icon="@Icons.Material.Filled.Create" Size="Size.Small" IconSize="Size.Small" />
+                </MudTd>
+                <MudTd DataLabel="">
+                    <MudFab @onclick="@(()=>Delete(@context.Id))" Color="Color.Secondary" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+                </MudTd>
+                <MudTd>
+                    <MudFab @onclick="@(() => ShowBtnPress(context.Id))" Color="Color.Primary" Icon="@((context.ShowDetails == true)? @UnHideIcon : @HideIcon)" Size="Size.Small" IconSize="Size.Small" />
+                </MudTd>
+                <MudTd DataLabel="Index Id">@context.Id</MudTd>
+                <MudTd DataLabel="Data Key">@context.Key</MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+            <ChildRowContent>
+            @if (context.ShowDetails)
+            {
+                        <MudTr>
+                            <td colspan="4">
+                                <MudCard Elevation="0">
+                                    <MudCardContent>
+                                        <MudText>Data Object</MudText>
+                                        <MudText Typo="Typo.body2">@context.JsonData</MudText>
+                                    </MudCardContent>
+                                </MudCard>
+                            </td>
+                        </MudTr>
+            }
+            </ChildRowContent>
+        </MudTable>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    public RuleModel ruleModel;
+    private string header = "";
+    public List<DmsIndex> dataIndex;
+    private bool dataDeleted = false;
+    private List<ReportData> reportList;
+    private string HideIcon = Icons.Material.Filled.Add;
+    private string UnHideIcon = Icons.Material.Filled.HorizontalRule;
+    private string createButtonDescription = "";
+
+    private class EntiretyParms
+    {
+        public string DataType { get; set; }
+        public string Name { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"Rule id = {Id}");
+        ruleModel = await rules.GetRule(singleton.TargetConnector, Id);
+        header = ruleModel.RuleName;
+        try
+        {
+            EntiretyParms parms = JsonConvert.DeserializeObject<EntiretyParms>(ruleModel.RuleParameters);
+            createButtonDescription = "The create button will create ";
+            reportList = await CreateReportList();
+            Console.WriteLine($"Number of failures are {dataIndex.Count}");
+        }
+        catch (Exception)
+        {
+            Console.WriteLine("Not valid rule parameter JSON");
+            await displayMessage.DisplayErrorMessage("This rule has bad parameters, it is not JSON");
+        }
+    }
+
+    private async Task<List<ReportData>> CreateReportList()
+    {
+        dataIndex = await qc.GetResult(singleton.TargetConnector, Id);
+        if (dataIndex.Count == 0) dataDeleted = true;
+        else if (dataIndex != null)
+        {
+            DmsIndex firstObject = dataIndex.First();
+            string jsonData = firstObject.JsonData;
+            if (string.IsNullOrEmpty(jsonData)) dataDeleted = true;
+        }
+        reportList = new List<ReportData>();
+        foreach (var item in dataIndex)
+        {
+            string key = item.DataKey;
+            reportList.Add(new ReportData
+                {
+                    Id = item.Id,
+                    JsonData = item.JsonData,
+                    Key = key,
+                    RuleKey = ruleModel.RuleKey,
+                    TextValue = item.UniqKey
+                });
+        }
+        return reportList;
+    }
+
+    private void ShowBtnPress(int id)
+    {
+        ReportData item = reportList.First(f => f.Id == id);
+        item.ShowDetails = !item.ShowDetails;
+    }
+
+    private async Task Delete(int id)
+    {
+        Console.WriteLine($"Delete index id {id}");
+        await re.Delete(singleton.TargetConnector, id);
+        reportList = await CreateReportList();
+        this.StateHasChanged();
+    }
+
+    private async Task Create(int id)
+    {
+        Console.WriteLine($"Create child for index id {id}");
+        ReportData report = reportList.FirstOrDefault(x => x.Id == id);
+        await re.InsertChild(singleton.TargetConnector, report);
+        reportList = await CreateReportList();
+        this.StateHasChanged();
+    }
+}

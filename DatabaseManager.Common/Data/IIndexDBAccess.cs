@@ -15,7 +15,7 @@ namespace DatabaseManager.Common.Data
         Task<IndexModel> GetIndexRoot(string connectionString);
         Task UpdateIndex(IndexModel indexModel, string connectionString);
         Task UpdateIndexes(List<IndexModel> indexes, string connectionString);
-        Task InsertSingleIndex(IndexModel indexModel, string parentid, string connectionString);
+        Task<int> InsertSingleIndex(IndexModel indexModel, int parentid, string connectionString);
         void ClearAllQCFlags(string connectionString);
         Task<IEnumerable<IndexModel>> GetDescendantsFromSP(int id, string connectionString);
         Task<IEnumerable<DmsIndex>> GetNumberOfDescendantsSP(int id, string connectionString);

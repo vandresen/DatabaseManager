@@ -67,6 +67,10 @@
         {
             navigationManager.NavigateTo($"/uniquenessdrilldown/{id}");
         }
+        else if (ruleType == "Entirety")
+        {
+            navigationManager.NavigateTo($"/entiretydrilldown/{id}");
+        }
         else
         {
             navigationManager.NavigateTo($"/drilldown/{id}");

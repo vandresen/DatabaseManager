@@ -15,7 +15,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static DatabaseManager.Common.Helpers.RuleMethodUtilities;
 
 namespace DatabaseManager.Common.Helpers
 {
@@ -351,6 +353,113 @@ namespace DatabaseManager.Common.Helpers
             }
             int responseInt = tmpId.GetValueOrDefault();
             return responseInt;
+        }
+
+        public static List<TableSchema> GetColumnInfo(string tableName, string dataModel)
+        {
+            List<TableSchema> columns = new();
+
+            string pattern = $"CREATE TABLE {tableName}" + @"[\s\S]*?\);";
+
+            // Find the matching substring
+            Match match = Regex.Match(dataModel, pattern);
+
+            if (match.Success)
+            {
+                string extractedString = match.Value;
+                int startIndex = extractedString.IndexOf('(') + 1;
+                int endIndex = extractedString.LastIndexOf(')');
+
+                if (startIndex >= 0 && endIndex >= 0 && endIndex > startIndex)
+                {
+                    string extractedText = extractedString.Substring(startIndex, endIndex - startIndex);
+                    //string[] columnDefinitions = extractedText.Split(',');
+                    string[] columnDefinitions = Regex.Split(extractedText, @",(?![^()]*\))");
+
+                    foreach (string columnDefinition in columnDefinitions)
+                    {
+                        string[] parts = columnDefinition.Trim().Split(' ');
+
+                        if (parts.Length >= 2)
+                        {
+                            startIndex = parts[1].IndexOf('(') + 1;
+                            endIndex = parts[1].LastIndexOf(')');
+                            if (startIndex >= 0 && endIndex >= 0 && endIndex > startIndex)
+                            {
+                                columns.Add(new TableSchema
+                                {
+                                    COLUMN_NAME = parts[0],
+                                    DATA_TYPE = parts[1].Substring(0, startIndex - 1),
+                                    CHARACTER_MAXIMUM_LENGTH = parts[1].Substring(startIndex, endIndex - startIndex)
+                                });
+
+                            }
+                            else
+                            {
+                                columns.Add(new TableSchema
+                                {
+                                    COLUMN_NAME = parts[0],
+                                    DATA_TYPE = parts[1]
+                                });
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Invalid column definition: " + columnDefinition);
+                        }
+                    }
+                }
+                else
+                {
+                    //Console.WriteLine("Invalid input string");
+                }
+            }
+            else
+            {
+                throw new Exception($"Could not get column info, no match for table {tableName}.");
+            }
+            return columns;
+        }
+
+        public static string CreateJsonForNewDataObject(DataAccessDef accessDef, IEnumerable<TableSchema> attributeProperties)
+        {
+            string json = "{}";
+            string[] columns = Common.GetAttributes(accessDef.Select);
+            JObject dataObject = JObject.Parse(json);
+            foreach (string column in columns)
+            {
+                TableSchema tableSchema = attributeProperties.FirstOrDefault(x => x.COLUMN_NAME == column.Trim());
+                if (tableSchema == null)
+                {
+                    break;
+                }
+                else
+                {
+                    string type = tableSchema.DATA_TYPE.ToLower();
+                    if (type.Contains("numeric"))
+                    {
+                        dataObject[column.Trim()] = -99999.0;
+                    }
+                    else if (type.Contains("date"))
+                    {
+                        dataObject[column.Trim()] = DateTime.Now.ToString("yyyy-MM-dd");
+                    }
+                    else
+                    {
+                        dataObject[column.Trim()] = "";
+                    }
+                }
+            }
+            json = dataObject.ToString();
+
+            return json;
+        }
+
+        public static string UpdateJsonAttribute<T>(string json, string attributeName, T newValue)
+        {
+            JObject jsonObject = JObject.Parse(json);
+            jsonObject[attributeName] = JToken.FromObject(newValue);
+            return jsonObject.ToString(Formatting.None);
         }
     }
 }

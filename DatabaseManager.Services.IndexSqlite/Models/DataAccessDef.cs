@@ -5,5 +5,6 @@
         public string DataType { get; set; }
         public string Select { get; set; }
         public string Keys { get; set; }
+        public string Constants { get; set; }
     }
 }

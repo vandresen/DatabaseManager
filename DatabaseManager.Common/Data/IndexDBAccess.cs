@@ -1,8 +1,11 @@
 ﻿using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Shared;
+using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -88,9 +91,43 @@ namespace DatabaseManager.Common.Data
         public Task UpdateIndex(IndexModel indexModel, string connectionString) =>
             _dp.SaveData("dbo.spUpdateIndex", new {indexModel.IndexId, indexModel.QC_String, indexModel.JsonDataObject}, connectionString);
 
-        public Task InsertSingleIndex(IndexModel indexModel, string parentid, string connectionString)
+        public async Task<int> InsertSingleIndex(IndexModel indexModel, int parentid, string connectionString)
         {
-            throw new NotImplementedException();
+            int id = -1;
+            string sql;
+            Boolean nullLocation = (indexModel.Latitude == -99999.0 | indexModel.Longitude == -99999.0);
+            Boolean zeroLocation = (indexModel.Latitude == 0.0 & indexModel.Longitude == 0.0);
+            if (nullLocation || zeroLocation)
+            {
+                sql = "spAddIndex";
+                var parameters = new
+                {
+                    parentid = parentid,
+                    d_name = indexModel.DataName,
+                    type = indexModel.DataType,
+                    datakey = indexModel.DataKey,
+                    jsondataobject = indexModel.JsonDataObject
+                };
+                id = await _dp.SaveDataScalar<int, dynamic>(sql, parameters, connectionString);
+            }
+
+            else
+            {
+                sql = "spAddIndexWithLocation";
+                var parameters = new
+                {
+                    parentid = parentid,
+                    d_name = indexModel.DataName,
+                    type = indexModel.DataType,
+                    datakey = indexModel.DataKey,
+                    jsondataobject = indexModel.JsonDataObject,
+                    latitude = indexModel.Latitude,
+                    longitude = indexModel.Longitude
+                };
+                id = await _dp.SaveDataScalar<int, dynamic>(sql, parameters, connectionString);
+            }
+            
+            return id;
         }
 
         public async Task UpdateIndexes(List<IndexModel> indexes, string connectionString)

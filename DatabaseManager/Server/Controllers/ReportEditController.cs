@@ -29,6 +29,22 @@ namespace DatabaseManager.Server.Controllers
             return responseMessage;
         }
 
+        [HttpPost("{source}")]
+        public async Task<ActionResult<string>> CreateIndex(string source, ReportData reportData)
+        {
+            try
+            {
+                GetStorageAccount();
+                ReportEditManagement rm = new ReportEditManagement(connectionString);
+                await rm.InsertChild(source, reportData);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.ToString());
+            }
+            return Ok($"OK");
+        }
+
         [HttpPut("{source}")]
         public async Task<ActionResult<string>> UpdateIndex(string source,  ReportData reportData)
         {

@@ -45,5 +45,12 @@ namespace DatabaseManager.Common.DBAccess
             var count = await cnn.ExecuteScalarAsync<T>(sql, parameters);
             return count;
         }
+
+        public async Task<T> SaveDataScalar<T, U>(string storedProcedure, U parameters, string connectionString)
+        {
+            using IDbConnection cnn = new SqlConnection(connectionString);
+            var result = await cnn.ExecuteScalarAsync<T>(storedProcedure, parameters, commandType: CommandType.StoredProcedure);
+            return result;
+        }
     }
 }

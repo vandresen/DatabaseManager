@@ -200,5 +200,29 @@ namespace DatabaseManager.AppFunctions
             log.LogInformation("DeleteReportData: Completed");
             return new OkObjectResult("OK");
         }
+
+        [FunctionName("InsertChildReportData")]
+        public static async Task<IActionResult> InsertChildIndex(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation("InsertChildReportData: Starting");
+            try
+            {
+                string storageAccount = Common.Helpers.Common.GetStorageKey(req);
+                string source = Common.Helpers.Common.GetQueryString(req, "name");
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                ReportData reportData = JsonConvert.DeserializeObject<ReportData>(requestBody);
+                ReportEditManagement rm = new ReportEditManagement(storageAccount);
+                await rm.InsertChild(source, reportData);
+            }
+            catch (Exception ex)
+            {
+                log.LogError($"InsertChildReportData: Error inserting child data: {ex}");
+                return new BadRequestObjectResult($"Error Error inserting child data: {ex}");
+            }
+            log.LogInformation("InsertChildReportData: Completed");
+            return new OkObjectResult("OK");
+        }
     }
 }

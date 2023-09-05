@@ -81,7 +81,8 @@ namespace DatabaseManager.Services.DataTransfer.Helpers
                 if (startIndex >= 0 && endIndex >= 0 && endIndex > startIndex)
                 {
                     string extractedText = extractedString.Substring(startIndex, endIndex - startIndex);
-                    string[] columnDefinitions = extractedText.Split(',');
+                    //string[] columnDefinitions = extractedText.Split(',');
+                    string[] columnDefinitions = Regex.Split(extractedText, @",(?![^()]*\))");
 
                     foreach (string columnDefinition in columnDefinitions)
                     {

@@ -28,9 +28,10 @@ namespace DatabaseManager.Services.Index.Helpers
                 if (startIndex >= 0 && endIndex >= 0 && endIndex > startIndex)
                 {
                     string extractedText = extractedString.Substring(startIndex, endIndex - startIndex);
-                    string splitPattern = @",\n|, ";
-                    string[] columnDefinitions = Regex.Split(extractedText, splitPattern);
+                    //string splitPattern = @",\n|, ";
+                    //string[] columnDefinitions = Regex.Split(extractedText, splitPattern);
                     //string[] columnDefinitions = extractedText.Split(',');
+                    string[] columnDefinitions = Regex.Split(extractedText, @",(?![^()]*\))");
 
                     foreach (string columnDefinition in columnDefinitions)
                     {

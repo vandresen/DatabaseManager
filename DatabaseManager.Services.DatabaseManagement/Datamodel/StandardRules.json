@@ -330,7 +330,7 @@
     "RuleFunction": "Entirety",
     "RuleKey": "E1",
     "KeyNumber": 1,
-    "RuleParameters": "Heebner Shale Member",
+    "RuleParameters": "{\"DataType\": \"MarkerPick\", \"Name\": \"Heebner Shale Member\"}",
     "RuleFilter": null,
     "FailRule": null,
     "PredictionOrder": 0,
