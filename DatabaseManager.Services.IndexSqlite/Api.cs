@@ -19,13 +19,16 @@ namespace DatabaseManager.Services.IndexSqlite
             app.MapGet("/GetDescendants/{id}", GetDescendants);
             app.MapGet("/GetNeighbors/{id}", GetNeighbors);
             app.MapGet("/DmIndexes", GetDmIndexes);
+            app.MapGet("/Project", GetProjects);
+            app.MapPost("/Project", CreateProject);
+            app.MapDelete("/Project", DeleteProject);
         }
 
-        private static async Task<IResult> GetIndexes(IIndexAccess idxAccess)
+        private static async Task<IResult> GetIndexes(string project, IIndexAccess idxAccess)
         {
             try
             {
-                return Results.Ok(await idxAccess.GetIndexes());
+                return Results.Ok(await idxAccess.GetIndexes(project));
             }
             catch (Exception ex)
             {
@@ -33,12 +36,12 @@ namespace DatabaseManager.Services.IndexSqlite
             }
         }
 
-        private static async Task<IResult> GetIndex(int id, IIndexAccess idxAccess)
+        private static async Task<IResult> GetIndex(int id, string project, IIndexAccess idxAccess)
         {
             ResponseDto response = new();
             try
             {
-                var results = await idxAccess.GetIndex(id);
+                var results = await idxAccess.GetIndex(id, project);
                 if (results == null) 
                 {
                     string newString = $"GetIndex: Index with id {id} could not be found";
@@ -56,11 +59,11 @@ namespace DatabaseManager.Services.IndexSqlite
             return Results.Ok(response);
         }
 
-        private static async Task<IResult> GetDescendants(int id, IIndexAccess idxAccess)
+        private static async Task<IResult> GetDescendants(int id, string project, IIndexAccess idxAccess)
         {
             try
             {
-                return Results.Ok(await idxAccess.GetDescendants(id));
+                return Results.Ok(await idxAccess.GetDescendants(id, project));
             }
             catch (Exception ex)
             {
@@ -68,11 +71,11 @@ namespace DatabaseManager.Services.IndexSqlite
             }
         }
 
-        private static async Task<IResult> GetNeighbors(int id, IIndexAccess idxAccess)
+        private static async Task<IResult> GetNeighbors(int id, string project, IIndexAccess idxAccess)
         {
             try
             {
-                return Results.Ok(await idxAccess.GetNeighbors(id));
+                return Results.Ok(await idxAccess.GetNeighbors(id, project));
             }
             catch (Exception ex)
             {
@@ -111,13 +114,14 @@ namespace DatabaseManager.Services.IndexSqlite
             return Results.Ok(response);
         }
 
-        private static async Task<IResult> GetDmIndexes(int? id, IIndexAccess idxAccess)
+        private static async Task<IResult> GetDmIndexes(int? id, string project, IIndexAccess idxAccess)
         {
             ResponseDto response = new();
             try
             {
+                if (string.IsNullOrEmpty(project)) project = "Default";
                 if (!id.HasValue) id = 1;
-                var result = await idxAccess.GetDmIndexes((int)id);
+                var result = await idxAccess.GetDmIndexes((int)id, project);
                 response.IsSuccess = true;
                 response.Result = result;
             }
@@ -125,6 +129,76 @@ namespace DatabaseManager.Services.IndexSqlite
             {
                 response.IsSuccess = false;
                 string newString = $"GetDmIndexes: Could not get DM Indexes, {ex}";
+                response.ErrorMessages.Insert(0, newString);
+            }
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> GetProjects(IIndexAccess idxAccess)
+        {
+            ResponseDto response = new();
+            try
+            {
+                var results = await idxAccess.GetProjects();
+                List<string> projects = new();
+                foreach (var result in results) 
+                {
+                    int indexOfEnd = result.IndexOf("pdo_qc_index");
+
+                    if (indexOfEnd != -1)
+                    {
+                        string startsWith = result.Substring(0, indexOfEnd);
+                        if(string.IsNullOrEmpty(startsWith)) 
+                        { 
+                            projects.Add("Default");
+                        }
+                        else
+                        {
+                            projects.Add(startsWith[..^1]);
+                        }
+                    }
+                }
+                response.IsSuccess = true;
+                response.Result = projects;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"GetProjects: Could not get projects, {ex}";
+                response.ErrorMessages.Insert(0, newString);
+            }
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> CreateProject(string project, IIndexAccess idxAccess)
+        {
+            ResponseDto response = new();
+            try
+            {
+                await idxAccess.CreateProject(project);
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"CreateProject: Could not create project, {ex}";
+                response.ErrorMessages.Insert(0, newString);
+            }
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> DeleteProject(string project, IIndexAccess idxAccess)
+        {
+            ResponseDto response = new();
+            try
+            {
+                await idxAccess.DeleteProject(project);
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"DeleteProject: Could not delete project, {ex}";
                 response.ErrorMessages.Insert(0, newString);
             }
             return Results.Ok(response);

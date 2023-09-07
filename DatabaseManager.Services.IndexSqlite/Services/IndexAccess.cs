@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using System.Data;
 using System.Linq;
 using System.Xml.Linq;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace DatabaseManager.Services.IndexSqlite.Services
 {
@@ -17,6 +18,8 @@ namespace DatabaseManager.Services.IndexSqlite.Services
         private readonly IDataSourceService _ds;
         private readonly IFileStorageService _fs;
         private string _table = "pdo_qc_index";
+        private string _projectTable = "";
+        private string _project;
         private string _selectAttributes = "IndexId, ParentId, DataName, DataType, DataKey, QC_String, UniqKey, JsonDataObject, " +
             "Latitude, Longitude";
         private string getSql;
@@ -51,9 +54,11 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             throw new NotImplementedException();
         }
 
-        public async Task DeleteIndexes(string connectionString)
+        public async Task DeleteIndexes(string connectionString, string project)
         {
-            string sql = $"DELETE FROM {_table}";
+            _project = project;
+            _projectTable = GetProjectTable();
+            string sql = $"DELETE FROM {_projectTable}";
             await _id.DeleteDataSQL<int?>(sql, null, connectionString);
         }
 
@@ -72,8 +77,10 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             throw new NotImplementedException();
         }
 
-        public async Task<IEnumerable<IndexModel>> GetDescendants(int id)
+        public async Task<IEnumerable<IndexModel>> GetDescendants(int id, string project)
         {
+            _project = project;
+            _projectTable = GetProjectTable();
             string sql = $"WITH RECURSIVE IndexHierarchy AS (" +
                 " SELECT IndexId, " +
                 "DataName, " +
@@ -86,7 +93,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                 "Latitude, " +
                 "Longitude, " +
                 "0 AS IndexLevel " +
-                "FROM pdo_qc_index " +
+                $"FROM {_projectTable} " +
                 $"WHERE ParentId = {id} " +
                 " UNION ALL " +
                 " SELECT e.IndexId, " +
@@ -100,7 +107,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                 " e.Latitude, " +
                 " e.Longitude, " +
                 " IndexLevel + 1 " +
-                " FROM pdo_qc_index e, IndexHierarchy ch " +
+                $" FROM {_projectTable} e, IndexHierarchy ch " +
                 " WHERE e.ParentId = ch.IndexId " +
                 ") " +
                 "SELECT ch.DataName, " +
@@ -115,23 +122,27 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                 " ch.Longitude, " +
                 " IndexLevel " +
                 " FROM IndexHierarchy ch " +
-                " LEFT JOIN pdo_qc_index e " +
+                $" LEFT JOIN {_projectTable} e " +
                 " ON ch.ParentId = e.IndexId " +
                 " ORDER BY ch.IndexLevel, ch.ParentId;";
             IEnumerable<IndexModel> result = await _id.ReadData<IndexModel>(sql, _connectionString);
             return result;
         }
 
-        public async Task<IndexModel> GetIndex(int id)
+        public async Task<IndexModel> GetIndex(int id, string project)
         {
-            string sql = getSql + $" WHERE IndexId = '{id}'";
+            _project = project;
+            _projectTable = GetProjectTable();
+            string sql = getSql.Replace(_table, _projectTable) + $" WHERE IndexId = '{id}'";
             var results = await _id.ReadData<IndexModel>(sql, _connectionString);
             return results.FirstOrDefault();
         }
 
-        public async Task<IEnumerable<IndexModel>> GetIndexes()
+        public async Task<IEnumerable<IndexModel>> GetIndexes(string project)
         {
-            //string sql = $"SELECT IndexId, DataName, ST_ASBinary(Locations) as geometry FROM {_table}";
+            _project = project;
+            _projectTable = GetProjectTable();
+            string sql = getSql.Replace(_table, _projectTable);
             IEnumerable<IndexModel> result = await _id.ReadData<IndexModel>(getSql, _connectionString);
             return result;
         }
@@ -146,9 +157,11 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             throw new NotImplementedException();
         }
 
-        public async Task<IEnumerable<IndexModel>> GetNeighbors(int id)
+        public async Task<IEnumerable<IndexModel>> GetNeighbors(int id, string project)
         {
-            string sql = getSql + $" WHERE IndexId = {id}";
+            _project = project;
+            _projectTable = GetProjectTable();
+            string sql = getSql.Replace(_table, _projectTable) + $" WHERE IndexId = {id}";
             var results = await _id.ReadData<IndexModel>(sql, _connectionString);
             var target = results.FirstOrDefault();
             if (target == null) 
@@ -162,7 +175,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             sql = $"SELECT " +
                 _selectAttributes +
                 $", Distance(Locations, MakePoint({target.Longitude}, {target.Latitude})) AS Distance " +
-                $"FROM {_table} " +
+                $"FROM {_projectTable} " +
                 $" WHERE distance IS NOT NULL AND IndexId != {id} " +
                 "ORDER BY Distance " +
                 "LIMIT 24";
@@ -223,17 +236,21 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             await _id.ExecuteSQL(sql, _connectionString);
         }
 
-        public async Task InsertSingleIndex(IndexModel indexModel, int parentid, string connectionString)
+        public async Task InsertSingleIndex(IndexModel indexModel, int parentid, string connectionString, string project)
         {
-            string sql = $"INSERT INTO {_table} " +
+            _project = project;
+            _projectTable = GetProjectTable();
+            string sql = $"INSERT INTO {_projectTable} " +
                 "(IndexId, DataName, DataType, JsonDataObject, ParentId, Locations) " +
                 "VALUES(@IndexId, @DataName, @DataType, @JsonDataObject, @ParentId, MakePoint(@Longitude, @Latitude, 4326))";
             await _id.SaveDataSQL(sql, indexModel, connectionString);
         }
 
-        public async Task InsertIndexes(List<IndexModel> indexModel, int parentid, string connectionString)
+        public async Task InsertIndexes(List<IndexModel> indexModel, int parentid, string connectionString, string project)
         {
-            string sql = $"INSERT INTO {_table} " +
+            _project = project;
+            _projectTable = GetProjectTable();
+            string sql = $"INSERT INTO {_projectTable} " +
                 "(IndexId, DataName, DataType, JsonDataObject, ParentId, Latitude, Longitude, Locations) " +
                 "VALUES(@IndexId, @DataName, @DataType, @JsonDataObject, @ParentId, @Latitude, @Longitude, MakePoint(@Longitude, @Latitude, 4326))";
             await _id.SaveDataSQL(sql, indexModel, connectionString);
@@ -251,6 +268,8 @@ namespace DatabaseManager.Services.IndexSqlite.Services
 
         public async Task BuildIndex(BuildIndexParameters idxParms)
         {
+            _project = idxParms.Project;
+            _projectTable = GetProjectTable();
             ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(idxParms.SourceName);
             ConnectParameters source = JsonConvert.DeserializeObject<ConnectParameters>(Convert.ToString(dsResponse.Result));
             ConnectParameters target = new ConnectParameters();
@@ -275,7 +294,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                     await IndexChildren(j, i, node.ParentNodeId, node.ParentId);
                 }
             }
-            await InsertIndexes(myIndex, 0, _connectionString);
+            await InsertIndexes(myIndex, 0, _connectionString, _project);
         }
 
         private async Task IndexChildren(int topId, int parentId, string parentNodeId, int parentIndexId)
@@ -529,7 +548,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                 }
             }
             InitializeIndex(target, source);
-            await DeleteIndexes(target.ConnectionString);
+            await DeleteIndexes(target.ConnectionString, _project);
             CreateRoot(source);
             return JsonIndexArray.Count;
         }
@@ -597,7 +616,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             }
         }
 
-        public async Task<List<ParentIndexNodes>> IndexParent(int parentNodes, string filter)
+        private async Task<List<ParentIndexNodes>> IndexParent(int parentNodes, string filter)
         {
             List<ParentIndexNodes> nodes = new List<ParentIndexNodes>();
             int nodeId = 0;
@@ -622,7 +641,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             return nodes;
         }
 
-        public async Task<int> GetObjectCount(JToken token, int rowNr, string filter)
+        private async Task<int> GetObjectCount(JToken token, int rowNr, string filter)
         {
             string select = "";
             string query = "";
@@ -642,7 +661,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             return objectCount;
         }
 
-        public void CreateParentNodeIndex(string nodeId, int parentId)
+        private void CreateParentNodeIndex(string nodeId, int parentId)
         {
             string parentNodeName = _currentItem.DataName + "s";
             int parentCount = _currentItem.DataTable.Rows.Count;
@@ -693,16 +712,47 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             return childNode;
         }
 
-        public async Task<IEnumerable<DmsIndex>> GetDmIndexes(int indexId)
+        public async Task<IEnumerable<DmsIndex>> GetDmIndexes(int indexId, string project)
         {
+            _project = project;
+            _projectTable = GetProjectTable();
             string sql = "WITH MyTemp AS (" +
                 "SELECT IndexId, DataType, JsonDataObject " +
-                $"FROM pdo_qc_index where ParentId = {indexId} ) " +
+                $"FROM {_projectTable} where ParentId = {indexId} ) " +
                 "SELECT A.IndexId AS Id, A.DataType, A.JsonDataObject AS JsonData, " +
-                "(select count(1) from pdo_qc_index B where B.ParentId = A.IndexId) AS NumberOfDataObjects " +
+                $"(select count(1) from {_projectTable} B where B.ParentId = A.IndexId) AS NumberOfDataObjects " +
                 "FROM MyTemp A";
             IEnumerable<DmsIndex> result = await _id.ReadData<DmsIndex>(sql, _connectionString);
             return result;
+        }
+
+        public async Task<List<string>> GetProjects()
+        {
+            string sql = $"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%{_table}'";
+            IEnumerable<string> result = await _id.ReadData<string>(sql, _connectionString);
+            return result.ToList();
+        }
+
+        public async Task CreateProject(string project)
+        {
+            string newTableName = project + "_" + _table;
+            string sql = $"CREATE TABLE {newTableName} AS SELECT * FROM {_table} WHERE 1 = 0";
+            await _id.ExecuteSQL(sql, _connectionString);
+        }
+
+        public async Task DeleteProject(string project)
+        {
+            string tableName = project + "_" + _table;
+            string sql = $"DROP TABLE IF EXISTS {tableName}";
+            await _id.ExecuteSQL(sql, _connectionString);
+        }
+
+        private string GetProjectTable()
+        {
+            if (string.IsNullOrEmpty(_project)) _project = "Default";
+            if (_project == "Default") _projectTable = _table;
+            else _projectTable = _project + "_" + _table;
+            return _projectTable;
         }
     }
 }
