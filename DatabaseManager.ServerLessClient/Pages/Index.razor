@@ -16,7 +16,22 @@
     <p class="lead">The tool to manage your PPDM databases</p>
 </div>
 
-@if (!sqlite)
+@if (sqlite)
+{
+    @if (projects == null)
+    {
+        <br />
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        <br />
+        <text>Loading...</text>
+        <br />
+    }
+    else
+    {
+        <GenericSelector Options="projects" Selection="SelectedProject" Label="Choose Project" />
+    }
+}
+else
 {
     <p>Target Database: @settings.TargetConnector</p>
 
@@ -70,6 +85,7 @@ else
 
 @code {
     public List<ConnectParametersDto> ConnectParameters;
+    private List<string> projects;
     private List<string> options;
     public List<DmsIndex> index;
     private string indexStatus = "No index available";
@@ -88,7 +104,6 @@ else
             settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
             settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
             settings.ApiKey = await localStorage.GetItemAsync<string>("APIKey");
-            //settings.Sqlite = await localStorage.GetItemAsync<bool>("Sqlite");
             Console.WriteLine($"Sqlite = {SD.Sqlite}");
             sqlite = SD.Sqlite;
 
@@ -97,6 +112,8 @@ else
 
             if (sqlite)
             {
+                projects = await idxView.GetIndexProjects();
+                settings.Project = "Default";
                 await GetIndexData();
             }
             else
@@ -151,11 +168,22 @@ else
         await GetIndexData();
     }
 
+    private async Task SelectedProject(string selectedString)
+    {
+        Console.WriteLine($"Selected project is {selectedString}");
+        settings.Project = selectedString;
+        spinner = true;
+        indexStatus = "Fetching index";
+        StateHasChanged();
+        await GetIndexData();
+    }
+
     private async Task GetIndexData()
     {
         try
         {
-            index = await idxView.GetIndex(settings.TargetConnector);
+            if (sqlite) index = await idxView.GetIndex(settings.Project);
+            else index = await idxView.GetIndex(settings.TargetConnector);
         }
         catch (Exception ex)
         {

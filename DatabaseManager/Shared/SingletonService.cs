@@ -13,6 +13,6 @@ namespace DatabaseManager.Shared
         public string ApiKey { get; set; }
         public bool ServerLess { get; set; }
         public int HttpTimeOut = 500;
-        //public bool Sqlite { get; set; }
+        public string Project { get; set; }
     }
 }

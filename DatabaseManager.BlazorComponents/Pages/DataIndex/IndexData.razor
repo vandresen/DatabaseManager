@@ -40,14 +40,17 @@ else
 @code {
     [Parameter] public int Id { get; set; }
     public List<DmsIndex> index;
+    private string indexSource;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             Console.WriteLine($"Fetch data for {Id}");
+            if (SD.Sqlite) indexSource = settings.Project;
+            else indexSource = settings.TargetConnector;
             idxData.InitSettings(settings);
-            index = await idxData.GetChildren(settings.TargetConnector, Id);
+            index = await idxData.GetChildren(indexSource, Id);
             Console.WriteLine($"Number of objects {index.Count}");
         }
         catch (Exception ex)

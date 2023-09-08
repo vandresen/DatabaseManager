@@ -143,7 +143,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             _project = project;
             _projectTable = GetProjectTable();
             string sql = getSql.Replace(_table, _projectTable);
-            IEnumerable<IndexModel> result = await _id.ReadData<IndexModel>(getSql, _connectionString);
+            IEnumerable<IndexModel> result = await _id.ReadData<IndexModel>(sql, _connectionString);
             return result;
         }
 

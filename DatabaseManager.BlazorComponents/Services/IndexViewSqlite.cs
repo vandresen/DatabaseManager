@@ -21,10 +21,10 @@ namespace DatabaseManager.BlazorComponents.Services
             _clientFactory = clientFactory;
         }
 
-        public async Task<List<DmsIndex>> GetChildren(string source, int id)
+        public async Task<List<DmsIndex>> GetChildren(string project, int id)
         {
             List<DmsIndex> children = new List<DmsIndex>();
-            string url = SD.IndexAPIBase.BuildFunctionUrl("/DmIndexes", $"id={id}", SD.IndexKey);
+            string url = SD.IndexAPIBase.BuildFunctionUrl("/DmIndexes", $"id={id}&project={project}", SD.IndexKey);
             Console.WriteLine($"GetChildren: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -35,10 +35,10 @@ namespace DatabaseManager.BlazorComponents.Services
             return children;
         }
 
-        public async Task<List<DmsIndex>> GetIndex(string source)
+        public async Task<List<DmsIndex>> GetIndex(string project)
         {
             List<DmsIndex> index = new List<DmsIndex>();
-            string url = SD.IndexAPIBase.BuildFunctionUrl("/DmIndexes", $"", SD.IndexKey);
+            string url = SD.IndexAPIBase.BuildFunctionUrl("/DmIndexes", $"project={project}", SD.IndexKey);
             Console.WriteLine($"GetIndex: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -61,10 +61,10 @@ namespace DatabaseManager.BlazorComponents.Services
             throw new NotImplementedException();
         }
 
-        public async Task<List<IndexFileData>> GetIndexTaxonomy(string source)
+        public async Task<List<IndexFileData>> GetIndexTaxonomy(string project)
         {
             List<IndexFileData> idxData = new List<IndexFileData>();
-            string url = SD.IndexAPIBase.BuildFunctionUrl($"/Index/1", "", SD.IndexKey);
+            string url = SD.IndexAPIBase.BuildFunctionUrl($"/Index/1", $"project={project}", SD.IndexKey);
             Console.WriteLine($"GetDmIndexesAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
