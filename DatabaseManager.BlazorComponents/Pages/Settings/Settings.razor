@@ -46,6 +46,12 @@
     <MudTabPanel Text="Data Access">
         <DataAccessSettings></DataAccessSettings>
     </MudTabPanel>
+    @if (SD.Sqlite)
+    {
+        <MudTabPanel Text="Manage Projects">
+            <ManageProjects></ManageProjects>
+        </MudTabPanel>
+    }
 </MudTabs>
 
 @code {

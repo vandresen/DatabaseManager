@@ -17,5 +17,8 @@ namespace DatabaseManager.BlazorComponents.Services
         Task<List<IndexFileData>> GetIndexTaxonomy(string source);
         Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName);
         Task SaveIndexFileDefs(List<IndexFileDefinition> indexDef, string fileName);
+        Task<List<string>> GetIndexProjects();
+        Task CreateProject(string project);
+        Task DeleteProject(string project);
     }
 }

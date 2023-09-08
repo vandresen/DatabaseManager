@@ -175,8 +175,17 @@ namespace DatabaseManager.Services.IndexSqlite
             ResponseDto response = new();
             try
             {
-                await idxAccess.CreateProject(project);
-                response.IsSuccess = true;
+                if (string.IsNullOrEmpty(project) == true)
+                {
+                    string newString = $"CreateProject: Project name is missing";
+                    response.ErrorMessages.Insert(0, newString);
+                    response.IsSuccess = false;
+                }
+                else
+                {
+                    await idxAccess.CreateProject(project);
+                    response.IsSuccess = true;
+                }
             }
             catch (Exception ex)
             {

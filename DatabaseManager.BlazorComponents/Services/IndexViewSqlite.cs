@@ -133,5 +133,49 @@ namespace DatabaseManager.BlazorComponents.Services
         {
             throw new NotImplementedException();
         }
+
+        public async Task<List<string>> GetIndexProjects()
+        {
+            List<string> projects = new List<string>();
+            string url = SD.IndexAPIBase.BuildFunctionUrl("/Project", $"", SD.IndexKey);
+            Console.WriteLine($"GetIndexProject: url = {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                Url = url
+            });
+            projects = JsonConvert.DeserializeObject<List<string>>(response.Result.ToString());
+            return projects;
+        }
+
+        public async Task CreateProject(string project)
+        {
+            string url = SD.IndexAPIBase.BuildFunctionUrl("/Project", $"project={project}", SD.IndexKey);
+            Console.WriteLine($"GetIndexProject: url = {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.POST,
+                Url = url
+            });
+            if (!response.IsSuccess)
+            {
+                throw new Exception($"Error creating index: {response.ErrorMessages}");
+            }
+        }
+
+        public async Task DeleteProject(string project)
+        {
+            string url = SD.IndexAPIBase.BuildFunctionUrl("/Project", $"project={project}", SD.IndexKey);
+            Console.WriteLine($"DeleteProject: url = {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.DELETE,
+                Url = url
+            });
+            if (!response.IsSuccess)
+            {
+                throw new Exception($"Error deleting index: {response.ErrorMessages}");
+            }
+        }
     }
 }

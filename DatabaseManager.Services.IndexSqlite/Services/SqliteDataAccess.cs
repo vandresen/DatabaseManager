@@ -2,6 +2,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Data;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace DatabaseManager.Services.IndexSqlite.Services
 {
@@ -33,9 +34,12 @@ namespace DatabaseManager.Services.IndexSqlite.Services
 
         public async Task ExecuteSQL(string sql, string connectionString)
         {
+            
             using IDbConnection cnn = new SqliteConnection(connectionString);
+            cnn.Open();
             SpatialiteLoader.Load((System.Data.Common.DbConnection)cnn);
             await cnn.ExecuteAsync(sql);
+            cnn.Close();
         }
 
         public Task<DataTable> GetDataTable(string select, string query, string dataType)

@@ -22,6 +22,7 @@ namespace DatabaseManager.BlazorComponents.Services
         public DataIndexerServerLess(IHttpClientFactory clientFactory, SingletonServices settings) : base(clientFactory)
         {
             _settings = settings;
+            _clientFactory = clientFactory;
         }
 
         public async Task Create(CreateIndexParameters iParameters)
