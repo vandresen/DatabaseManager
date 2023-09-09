@@ -30,7 +30,14 @@ else
         <h4></h4>
     </div>
     <div class="col">
-        <h4>Target Database</h4>
+        @if (SD.Sqlite)
+        {
+            <h4>Target Project</h4>
+        }
+        else
+        {
+            <h4>Target Database</h4>
+        }
     </div>
 </div>
 
@@ -79,7 +86,7 @@ else
         {
             if (SD.Sqlite)
             {
-                target = "SQLite";
+                target = singleton.Project;
             }
             else
             {
@@ -118,6 +125,7 @@ else
         iParameters.SourceName = source;
         iParameters.Filter = SqlText;
         iParameters.StorageAccount = singleton.AzureStorage;
+        if (SD.Sqlite) iParameters.Project = singleton.Project;
 
         barValue = 1;
         progress("Starting indexing...");

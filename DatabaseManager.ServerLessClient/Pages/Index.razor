@@ -18,6 +18,7 @@
 
 @if (sqlite)
 {
+    <p>Project: @settings.Project</p>
     @if (projects == null)
     {
         <br />
@@ -113,7 +114,7 @@ else
             if (sqlite)
             {
                 projects = await idxView.GetIndexProjects();
-                settings.Project = "Default";
+                if (string.IsNullOrEmpty(settings.Project) == true) settings.Project = "Default";
                 await GetIndexData();
             }
             else
