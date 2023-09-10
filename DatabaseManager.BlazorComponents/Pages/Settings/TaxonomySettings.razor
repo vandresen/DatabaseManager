@@ -1,6 +1,7 @@
 ﻿@inject IIndexView iv
 @inject NavigationManager navigationManager
 @inject SingletonServices settings
+@inject IDisplayMessage displayMessage
 @using MudBlazor
 
 <br />
@@ -60,6 +61,7 @@ else
             <MudTd DataLabel="Use parent location">@context.UseParentLocation</MudTd>
             <MudTd DataLabel="">
                 <MudFab @onclick="@(() => Edit(@context))" Color="Color.Primary" Icon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small" />
+                <MudFab @onclick="@(() => Delete(@context))" Color="Color.Secondary" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
                 @if (context.DataObjects != null)
                 {
                     <MudFab @onclick="@(() => Drilldown(context))" Color="Color.Info" Icon="@Icons.Material.Filled.MoreHoriz" Size="Size.Small" IconSize="Size.Small" />
@@ -69,11 +71,9 @@ else
     </MudTable>
 }
 
-
 @code {
     List<IndexFileDefinition> ifdList;
     IndexFileDefinition ifd = new IndexFileDefinition();
-    List<string> breadCrumb = new List<string>();
     Dictionary<string, List<IndexFileDefinition>> index = new Dictionary<string, List<IndexFileDefinition>>();
     private IndexFileDefinition dataDef = new IndexFileDefinition();
     private List<IndexFileDefinition> original;
@@ -85,7 +85,15 @@ else
         TaxonomyFile = selectedString;
         iv.InitSettings(settings);
         ifdList = await iv.GetIndexFileDefs(TaxonomyFile);
-        original = ifdList;
+        bool allNullAttributes = ifdList.All(obj => obj.DataName == null);
+        if (allNullAttributes)
+        {
+            await displayMessage.DisplayErrorMessage("Looks like a bad taxonomy file");
+        }
+        else
+        {
+            original = ifdList;
+        }
     }
 
     private void Drilldown(IndexFileDefinition item)
@@ -102,9 +110,28 @@ else
         dataDef = item;
     }
 
-    private void NewDatatype()
+    private async Task Delete(IndexFileDefinition item)
     {
-        Console.WriteLine($"New data type");
+        Console.WriteLine($"Delete object : {item.DataName}");
+        item.DataName = "Delete";
+        RemoveNodes(original);
+        await iv.SaveIndexFileDefs(original, TaxonomyFile);
+    }
+
+    private void RemoveNodes(List<IndexFileDefinition> nodes)
+    {
+        for (int i = nodes.Count - 1; i >= 0; i--)
+        {
+            IndexFileDefinition node = nodes[i];
+            if (node.DataName == "Delete")
+            {
+                nodes.RemoveAt(i);
+            }
+            else if (node.DataObjects != null && node.DataObjects.Count > 0)
+            {
+                RemoveNodes(node.DataObjects);
+            }
+        }
     }
 
     private async Task Save()

@@ -15,10 +15,14 @@ namespace DatabaseManager.BlazorComponents.Services
     public class IndexViewSqlite : BaseService, IIndexView
     {
         private readonly IHttpClientFactory _clientFactory;
+        private readonly SingletonServices _settings;
+        private readonly string taxonomyShare = "taxonomy";
+        private string url;
 
-        public IndexViewSqlite(IHttpClientFactory clientFactory) : base(clientFactory)
+        public IndexViewSqlite(IHttpClientFactory clientFactory, SingletonServices settings) : base(clientFactory)
         {
             _clientFactory = clientFactory;
+            _settings = settings;
         }
 
         public async Task<List<DmsIndex>> GetChildren(string project, int id)
@@ -56,15 +60,26 @@ namespace DatabaseManager.BlazorComponents.Services
             return index;
         }
 
-        public Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)
+        public async Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)
         {
-            throw new NotImplementedException();
+            List<IndexFileDefinition> def = new List<IndexFileDefinition>();
+            if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={taxonomyShare}&name={fileName}";
+            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={taxonomyShare}&name={fileName}", SD.DataConfigurationKey);
+            Console.WriteLine(url);
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                AzureStorage = _settings.AzureStorage,
+                Url = url
+            });
+            def = JsonConvert.DeserializeObject<List<IndexFileDefinition>>(response.Result.ToString());
+            return def;
         }
 
         public async Task<List<IndexFileData>> GetIndexTaxonomy(string project)
         {
             List<IndexFileData> idxData = new List<IndexFileData>();
-            string url = SD.IndexAPIBase.BuildFunctionUrl($"/Index/1", $"project={project}", SD.IndexKey);
+            url = SD.IndexAPIBase.BuildFunctionUrl($"/Index/1", $"project={project}", SD.IndexKey);
             Console.WriteLine($"GetDmIndexesAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -150,7 +165,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task CreateProject(string project)
         {
-            string url = SD.IndexAPIBase.BuildFunctionUrl("/Project", $"project={project}", SD.IndexKey);
+            url = SD.IndexAPIBase.BuildFunctionUrl("/Project", $"project={project}", SD.IndexKey);
             Console.WriteLine($"GetIndexProject: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -165,7 +180,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task DeleteProject(string project)
         {
-            string url = SD.IndexAPIBase.BuildFunctionUrl("/Project", $"project={project}", SD.IndexKey);
+            url = SD.IndexAPIBase.BuildFunctionUrl("/Project", $"project={project}", SD.IndexKey);
             Console.WriteLine($"DeleteProject: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {

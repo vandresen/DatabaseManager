@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -11,6 +12,7 @@ namespace DatabaseManager.Shared
     public class IndexFileDefinition
     {
         public int Id { get; set; }
+
         public string DataName { get; set; }
 
         public string NameAttribute { get; set; }
