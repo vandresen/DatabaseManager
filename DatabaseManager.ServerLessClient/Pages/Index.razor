@@ -83,7 +83,6 @@ else
     </MudTable>
 }
 
-
 @code {
     public List<ConnectParametersDto> ConnectParameters;
     private List<string> projects;
@@ -100,7 +99,7 @@ else
             Console.WriteLine($"SD.DataTransferAPIBase = {SD.DataTransferAPIBase}");
             Console.WriteLine($"SD.DataTransferKey = {SD.DataTransferKey}");
             Console.WriteLine($"SD.DataModelAPI = {SD.DataModelAPIBase}");
-            Console.WriteLine($"SD.DataRuleAPI = {SD.DataRuleAPIBase}");
+            Console.WriteLine($"SD.EsriKey = {SD.EsriKey}");
             settings.ServerLess = true;
             settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
             settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");

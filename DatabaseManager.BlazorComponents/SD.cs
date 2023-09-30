@@ -21,6 +21,7 @@ namespace DatabaseManager.BlazorComponents
         public static string DataTransferAPIBase { get; set; }
         public static string DataTransferKey { get; set; }
         public static bool Sqlite { get; set; }
+        public static string EsriKey { get; set; }
         public enum ApiType
         {
             GET,

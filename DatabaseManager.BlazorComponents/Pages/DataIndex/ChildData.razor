@@ -41,10 +41,17 @@
         <SurfaceView DataType="@DataType" Index="@index">
         </SurfaceView>
     </MudTabPanel>
+
+    @if (basemap)
+    {
+        <MudTabPanel Text="Basemap View">
+            <BasemapView Index="@index">
+            </BasemapView>
+        </MudTabPanel>
+    }
+    
     
 </MudTabs>
-
-
 
 @code {
     [Parameter] public int Id { get; set; }
@@ -63,6 +70,7 @@
     private string attributes = "";
     private bool refreshButton = false;
     private bool spinner = true;
+    private bool basemap = false;
     IndexFileData taxonomy;
     private string indexSource;
 
@@ -72,15 +80,16 @@
         {
             data = new List<JObject>();
             indexData.InitSettings(settings);
+            if (!string.IsNullOrEmpty(SD.EsriKey)) basemap = true;
             if (SD.Sqlite) indexSource = settings.Project;
             else indexSource = settings.TargetConnector;
             index = await indexData.GetChildren(indexSource, Id);
             List<IndexFileData> taxonomyList = await indexData.GetIndexTaxonomy(indexSource);
             //Console.WriteLine($"Root Taxonomy count: {taxonomyList.Count}");
             DataType = index[0].DataType;
+            if (DataType != "WellBore") basemap = false;
             //Console.WriteLine($"Index count: {index.Count}, dataType {DataType}");
             taxonomy = taxonomyList.FirstOrDefault(s => s.DataName == DataType);
-            //Console.WriteLine($"Arrays: {taxonomy.Arrays}");
 
             originalData = CreateDataTable();
             data = originalData;
@@ -93,7 +102,6 @@
             {
                 attributes = String.Join(",", AvailableHeaderColumns);
             }
-            //Console.WriteLine($"Attributes: {attributes}");
             selectedColumns = CreateSelectedColumns(attributes);
         }
         catch (Exception ex)

@@ -1,0 +1,100 @@
+﻿@* @inject IConfiguration config *@
+@using System.Threading
+
+<br />
+<button disabled="@_generating" class="btn btn-primary" @onclick="AddGraphicsToLayer">Add wells to map</button>
+<br />
+
+@if (_plotReady)
+{
+    <MapView Style="height: 600px; width: 100%;" GraphicSerializationChunkSize="200">
+        <Extent Ymin="@_ymin" Xmin="@_xmin" Ymax="@_ymax" Xmax="@_xmax">
+            <SpatialReference Wkid="4326" />
+        </Extent>
+        <Map ArcGISDefaultBasemap="arcgis-topographic">
+            <GraphicsLayer @ref="_graphicsLayer" />
+        </Map>
+    </MapView>
+}
+
+@code {
+    [Parameter] public List<DmsIndex> Index { get; set; }
+    private GraphicsLayer? _graphicsLayer;
+    private readonly List<Graphic> _graphics = new();
+    private bool _generating;
+    private bool _plotReady = false;
+    private readonly Random _random = new();
+    private CancellationTokenSource _cts = new();
+    private double _xmin;
+    private double _xmax;
+    private double _ymin;
+    private double _ymax;
+
+    protected override void OnInitialized()
+    {
+        SetGraphics();
+    }
+
+    private void SetGraphics()
+    {
+        _graphics.Clear();
+
+        _xmin = 180.0;
+        _xmax = -180.0;
+        _ymax = -99.99;
+        _ymin = 99.99;
+        foreach (var idx in Index)
+        {
+            bool use = true;
+            if (!string.IsNullOrEmpty(idx.JsonData))
+            {
+                double? lat = idx.JsonData.GetNumberFromJson("SURFACE_LATITUDE");
+                double? lon = idx.JsonData.GetNumberFromJson("SURFACE_LONGITUDE");
+                string title = idx.JsonData.GetStringFromJson("UWI");
+                if (lat == null || lat == -99999.0) use = false;
+                if (lon == null || lon == -99999.0) use = false;
+                Console.WriteLine($"Lat = {lat}, Lon = {lon}");
+                if (use)
+                {
+                    if (lat > _ymax) _ymax = (double)lat;
+                    if (lat < _ymin) _ymin = (double)lat;
+                    Point point = new Point(lon, lat);
+                    if (lon > _xmax) _xmax = (double)lon;
+                    if (lon < _xmin) _xmin = (double)lon;
+
+                    SimpleMarkerSymbol symbol = new SimpleMarkerSymbol(new Outline(new MapColor("green")),
+                        new MapColor("red"), 10);
+
+                    string content = "Vidar";
+                    Console.WriteLine(content);
+                    PopupTemplate popup = new PopupTemplate(title, "Field: {ASSIGNED_FIELD}<br/>Operator: {OPERATOR}", new[] { "*" });
+
+                    Dictionary<string, object> jsonDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(idx.JsonData);
+                    AttributesDictionary attributes = new AttributesDictionary(jsonDictionary);
+
+                    Graphic graphic = new Graphic(point, symbol, popup, attributes);
+                    _graphics.Add(graphic);
+                }
+                _xmin = _xmin - 0.001;
+                _xmax = _xmax + 0.001;
+                _ymin = _ymin - 0.001;
+                _ymax = _ymax + 0.001;
+            }
+        }
+        _plotReady = true;
+    }
+
+    private async Task AddGraphicsToLayer()
+    {
+        _generating = true;
+        StateHasChanged();
+        _cts.Cancel();
+        _cts = new CancellationTokenSource();
+        await _graphicsLayer!.Add(_graphics, _cts.Token);
+        await InvokeAsync(() =>
+        {
+            _generating = false;
+            StateHasChanged();
+        });
+    }
+}

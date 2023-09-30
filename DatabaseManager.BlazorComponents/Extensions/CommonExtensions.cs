@@ -70,5 +70,17 @@ namespace DatabaseManager.BlazorComponents.Extensions
             }
             return number;
         }
+
+        public static string GetStringFromJson(this string json, string attribute)
+        {
+            JObject dataObject = JObject.Parse(json);
+            JToken token = dataObject.GetValue(attribute);
+            string result = "";
+            if (token != null)
+            {
+                result = token.ToString();
+            }
+            return result;
+        }
     }
 }

@@ -4,6 +4,7 @@ using BlazorTable;
 using DatabaseManager.BlazorComponents;
 using DatabaseManager.BlazorComponents.Services;
 using DatabaseManager.Shared;
+using dymaptic.GeoBlazor.Core;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,6 +35,10 @@ namespace DatabaseManager.ServerLessClient
             builder.Configuration.AddJsonStream(stream);
             var config = builder.Configuration.Build();
             bool sqlite = config.GetValue<bool>("Sqlite");
+            if (!string.IsNullOrEmpty(config["ArcGISApiKey"]))
+            {
+                SD.EsriKey = builder.Configuration["ArcGISApiKey"];
+            }
 
             ConfigureServices(builder.Services, sqlite);
 
@@ -101,6 +106,7 @@ namespace DatabaseManager.ServerLessClient
 
             services.AddBlazorTable();
             services.AddMudServices();
+            services.AddGeoBlazor();
         }
     }
 }
