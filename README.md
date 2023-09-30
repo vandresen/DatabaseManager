@@ -13,7 +13,27 @@ PPDM database, Data Quality and Data Science projects. So far this version provi
 The database is configurable so in practice any database model should work.
 This tool is built for the cloud generation. It has two flavors:
 * A blazor MVC version
-* A serverless version using microservices
+* A serverless client version using microservices
+
+## Serverless client
+The serverless client requires an appsettings.json file that has the foolowing keys:
+
+Sqlite: This is true or false. If true then you will be using the Sqlite microservices versions
+ArcGISApiKey: This is a key that you will get from Esri in order to get the basemap tab to work.
+ServiceUrls: These are the keys and API endpoints for all the services used by the serverless client such as:
+
+DataSourceAPI
+DataSourceKey
+IndexAPI
+IndexKey
+DataConfigurationAPI
+DataConfigurationKey
+DataModelAPI
+DataModelKey
+DataRuleAPI
+DataRuleKey
+DataTransferAPI
+DataTransferKey
 
 ## Projects and folders
 * Services - Contains micro services
