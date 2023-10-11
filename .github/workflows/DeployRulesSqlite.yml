@@ -2,3 +2,19 @@ name: DeployRulesSqlite
 
 on:
   workflow_dispatch:
+
+env:
+  AZURE_FUNCTIONAPP_NAME: 'PetrodataOnlineRulesSqlite'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' 
+  
+jobs:
+  build:
+    name: Build release
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0.x
