@@ -1,0 +1,4 @@
+name: DeployRulesSqlite
+
+on:
+  workflow_dispatch:
