@@ -1,8 +1,11 @@
 ﻿using DatabaseManager.Services.Index.Extensions;
 using DatabaseManager.Services.Index.Helpers;
 using DatabaseManager.Services.Index.Models;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Polly;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -27,6 +30,7 @@ namespace DatabaseManager.Services.Index.Services
         private readonly IDapperDataAccess _dp;
         private readonly IDataSourceService _ds;
         private readonly IFileStorageService _fs;
+        private readonly ILogger _log;
         private string _connectionString;
         private string _table = "pdo_qc_index";
         private string getSql = "Select IndexId, IndexNode.ToString() AS TextIndexNode, " +
@@ -34,11 +38,13 @@ namespace DatabaseManager.Services.Index.Services
             "Latitude, Longitude " +
             "from pdo_qc_index";
 
-        public IndexDBAccess(IDapperDataAccess dp, IDataSourceService ds, IFileStorageService fs)
+        public IndexDBAccess(IDapperDataAccess dp, IDataSourceService ds, 
+            IFileStorageService fs, ILogger<IndexDBAccess> log)
         {
             _dp = dp;
             _ds = ds;
             _fs = fs;
+            _log = log;
             _ida = new DBDataAccess();
         }
 
@@ -84,7 +90,15 @@ namespace DatabaseManager.Services.Index.Services
 
         public async Task<IEnumerable<DmIndexDto>> GetDmIndexes(string indexNode, int level, string connectionString) 
         {
-            _ida.WakeUpDatabase(connectionString);
+            _log.LogInformation("Start GetDMIndexes");
+            var retryPolicy = Policy
+                .Handle<SqlException>()
+                .Retry(
+                retryCount: 3,
+                onRetry: (e, i) => _log.LogInformation("Retrying due to " + e.Message + " Retry " + i + " next.")
+                );
+            retryPolicy.Execute(() => _ida.WakeUpDatabase(connectionString));
+            //_ida.WakeUpDatabase(connectionString);
             IEnumerable<DmIndexDto> result = await _dp.LoadData<DmIndexDto, dynamic>("dbo.spGetNumberOfDescendants",
                 new { indexnode = indexNode, level = level }, connectionString);
             return result;
@@ -111,7 +125,13 @@ namespace DatabaseManager.Services.Index.Services
             if (source.SourceType == "DataBase")
             {
                 _sourceAccess = new DBDataAccess();
-                _ida.WakeUpDatabase(source.ConnectionString);
+                var retryPolicy = Policy
+                .Handle<SqlException>()
+                .Retry(
+                retryCount: 3,
+                onRetry: (e, i) => _log.LogInformation("Retrying due to " + e.Message + " Retry " + i + " next.")
+                );
+                retryPolicy.Execute(() => _ida.WakeUpDatabase(source.ConnectionString));
             }
             else
             {

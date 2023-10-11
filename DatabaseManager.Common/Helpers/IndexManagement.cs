@@ -2,14 +2,14 @@
 using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Polly;
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Diagnostics;
-using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
@@ -17,11 +17,13 @@ namespace DatabaseManager.Common.Helpers
     public class IndexManagement
     {
         private readonly string azureConnectionString;
+        private readonly ILogger _log;
         private readonly IFileStorageServiceCommon _fileStorage;
         private readonly string taxonomyShare = "taxonomy";
         private DbUtilities _dbConn;
         private readonly DapperDataAccess _dp;
         private readonly IIndexDBAccess _indexData;
+        private readonly IDatabaseAccess _ida;
 
         public IndexManagement(string azureConnectionString)
         {
@@ -33,6 +35,21 @@ namespace DatabaseManager.Common.Helpers
             _dbConn = new DbUtilities();
             _dp = new DapperDataAccess();
             _indexData = new IndexDBAccess(_dp);
+            _ida = new DatabaseAccess();
+        }
+
+        public IndexManagement(string azureConnectionString, ILogger log)
+        {
+            this.azureConnectionString = azureConnectionString;
+            _log = log;
+            var builder = new ConfigurationBuilder();
+            IConfiguration configuration = builder.Build();
+            _fileStorage = new AzureFileStorageServiceCommon(configuration);
+            _fileStorage.SetConnectionString(azureConnectionString);
+            _dbConn = new DbUtilities();
+            _dp = new DapperDataAccess();
+            _indexData = new IndexDBAccess(_dp);
+            _ida = new DatabaseAccess();
         }
 
 
@@ -94,6 +111,14 @@ namespace DatabaseManager.Common.Helpers
                 Exception error = new Exception($"RuleManagement: data source must be a Database type");
                 throw error;
             }
+            // Wake up serverless database
+            //var retryPolicy = Policy
+            //    .Handle<SqlException>()
+            //    .Retry(
+            //    retryCount: 3,
+            //    onRetry: (e, i) => _log.LogInformation("Retrying due to " + e.Message + " Retry " + i + " next.")
+            //    );
+            //retryPolicy.Execute(() => _ida.WakeUpDatabase(connector.ConnectionString));
             IEnumerable<DmsIndex> dmsIndex = await _indexData.GetNumberOfDescendantsByIdAndLevel("/", 1, connector.ConnectionString);
             result = JsonConvert.SerializeObject(dmsIndex, Formatting.Indented);
             return result;

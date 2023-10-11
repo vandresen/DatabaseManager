@@ -135,6 +135,7 @@ namespace DatabaseManager.Services.Index
                 if (!indexLevel.HasValue) indexLevel = 1;
                 ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
                 ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                // Wake up serverless database
                 IEnumerable<DmIndexDto> idx = await _indexDB.GetDmIndexes(indexNode, (int)indexLevel, connectParameter.ConnectionString);
                 _response.Result = idx.ToList();
             }

@@ -3,7 +3,9 @@ using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Helpers;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Mvc;
+//using Microsoft.Build.Framework;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -18,12 +20,14 @@ namespace DatabaseManager.Server.Controllers
         private string connectionString;
         private readonly DapperDataAccess _dp;
         private readonly IIndexDBAccess _indexData;
+        private readonly ILogger<IndexController> _log;
 
-        public IndexController(IConfiguration configuration)
+        public IndexController(IConfiguration configuration, ILogger<IndexController> log)
         {
             connectionString = configuration.GetConnectionString("AzureStorageConnection");
             _dp = new DapperDataAccess();
             _indexData = new IndexDBAccess(_dp);
+            _log = log;
         }
 
         [HttpGet("{source}")]
@@ -32,6 +36,7 @@ namespace DatabaseManager.Server.Controllers
             
             try
             {
+                _log.LogInformation("Start Get Index");
                 string storageAccount = Common.Helpers.Common.GetStorageKey(Request);
                 IndexManagement im = new IndexManagement(storageAccount);
                 string responseMessage = await im.GetIndexData(source);

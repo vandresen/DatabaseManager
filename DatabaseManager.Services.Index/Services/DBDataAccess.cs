@@ -105,20 +105,12 @@ namespace DatabaseManager.Services.Index.Services
 
         public void WakeUpDatabase(string connectionString)
         {
-            try
+            SqlConnection conn = null;
+            using (conn = new SqlConnection(connectionString))
             {
-                SqlConnection conn = null;
-                using (conn = new SqlConnection(connectionString))
-                {
-                    conn.Open();
-                    conn.Close();
-                }
+                conn.Open();
+                conn.Close();
             }
-            catch (Exception ex)
-            {
-
-            }
-            
         }
     }
 }
