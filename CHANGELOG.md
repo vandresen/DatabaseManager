@@ -1,3 +1,8 @@
+# Release 1.30
+* Added support for DQM projects in a sqlite database
+* Added functionality to delete when editing Taxonomy
+* Added a new tab for basemaps using Arcgis. This only work for the serverless client for the time being
+
 # Release 1.29
 * Under data transfer there is a new option to transfer the index into a database. It will insert new objects and update existing objects
 * Implemented support for using Sqlite when indexing with the serverless user interface
