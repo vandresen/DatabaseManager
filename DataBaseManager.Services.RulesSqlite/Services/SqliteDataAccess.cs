@@ -1,20 +1,11 @@
 ﻿using Dapper;
 using Microsoft.Data.Sqlite;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.RulesSqlite.Services
 {
     public class SqliteDataAccess : IDataAccess
     {
-        public SqliteDataAccess()
-        {
-        }
-
         public async Task ExecuteSQL(string sql, string connectionString)
         {
             using IDbConnection cnn = new SqliteConnection(connectionString);

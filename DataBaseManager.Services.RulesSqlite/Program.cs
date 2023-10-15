@@ -1,20 +1,48 @@
 using AutoMapper;
 using DatabaseManager.Services.RulesSqlite;
 using DatabaseManager.Services.RulesSqlite.Services;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.AzureAppServices;
 
-var host = new HostBuilder()
-    .ConfigureFunctionsWorkerDefaults()
-    .ConfigureServices(services =>
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.AddAzureWebAppDiagnostics();
+builder.Services.Configure<AzureBlobLoggerOptions>(options =>
+{
+    options.BlobName = "log.txt";
+});
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
+builder.Services.AddSingleton(mapper);
+builder.Services.AddSingleton<IRuleAccess, RuleAccess>();
+builder.Services.AddSingleton<IDataAccess, SqliteDataAccess>();
+builder.Services.AddSingleton<IFunctionAccess, FunctionAccess>();
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MyCorsPolicy", builder =>
     {
-        IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
-        services.AddScoped<IRuleAccess, RuleAccess>();
-        services.AddScoped<IFunctionAccess, FunctionAccess>();
-        services.AddScoped<IDataAccess, SqliteDataAccess>();
-        services.AddSingleton(mapper);
-        services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-    })
-    .Build();
+        builder.WithOrigins("https://localhost:44343") // Replace with the correct origin of your Blazor app.
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
 
-host.Run();
+var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("MyCorsPolicy");
+}
+
+app.UseHttpsRedirection();
+
+app.ConfigureApi();
+
+app.Run();

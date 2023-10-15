@@ -1,10 +1,5 @@
 ﻿using AutoMapper;
 using DatabaseManager.Services.RulesSqlite.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.RulesSqlite
 {

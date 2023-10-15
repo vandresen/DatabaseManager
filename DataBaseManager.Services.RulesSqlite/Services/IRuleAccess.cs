@@ -1,5 +1,4 @@
 ﻿using DatabaseManager.Services.RulesSqlite.Models;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.RulesSqlite.Services
 {

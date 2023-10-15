@@ -1,16 +1,9 @@
-﻿using System;
-using System.IO;
-using System.Reflection;
-using System.Threading.Tasks;
+﻿using System.Reflection;
 
 namespace DatabaseManager.Services.RulesSqlite.Services
 {
     public class EmbeddedFileStorage : IFileStorage
     {
-        public EmbeddedFileStorage()
-        {
-        }
-
         public async Task<string> ReadFile(string fileShare, string fileName)
         {
             Assembly asm = Assembly.GetExecutingAssembly();

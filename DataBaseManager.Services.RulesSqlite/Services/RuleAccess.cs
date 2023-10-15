@@ -1,9 +1,7 @@
 ﻿using AutoMapper;
 using DatabaseManager.Services.RulesSqlite.Models;
 using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.RulesSqlite.Services
 {
@@ -31,10 +29,13 @@ namespace DatabaseManager.Services.RulesSqlite.Services
             _mapper = mapper;
             _getSql = "Select " + _selectAttributes + " From " + _table;
         }
+
         public async Task CreateDatabaseRules()
         {
+            _log.LogInformation("Start creating Sqlite database");
             if (!System.IO.File.Exists(_databaseFile))
             {
+                _log.LogInformation("Sqlite database does not exist, will create");
                 using (SqliteConnection connection = new SqliteConnection($"Data Source={_databaseFile}"))
                 {
                     connection.Open();
@@ -82,13 +83,35 @@ namespace DatabaseManager.Services.RulesSqlite.Services
                 "FunctionKey TEXT" +
                 ");";
             await _id.ExecuteSQL(sql, _connectionString);
+            _log.LogInformation("Sqlite database creation complete");
+        }
+
+        public async Task CreateUpdateRule(RuleModelDto rule, string connectionString)
+        {
+            RuleModel newRule = _mapper.Map<RuleModel>(rule);
+            IEnumerable<RuleModelDto> rules = await _id.ReadData<RuleModelDto>(_getSql, connectionString);
+            var ruleExist = rules.FirstOrDefault(m => m.RuleName == rule.RuleName);
+            if (ruleExist == null)
+            {
+                var rulesWithLastKeyNumber = rules.Where(m => m.RuleType == rule.RuleType).
+                    OrderByDescending(x => x.KeyNumber).FirstOrDefault();
+                if (rulesWithLastKeyNumber == null) newRule.KeyNumber = 1;
+                else newRule.KeyNumber = rulesWithLastKeyNumber.KeyNumber + 1;
+                await InsertRule(newRule, connectionString);
+            }
+            else 
+            { 
+                await UpdateRule(newRule, ruleExist, connectionString); 
+            }
         }
 
         public async Task InitializeStandardRules()
         {
+            _log.LogInformation("Start initialize standard rules in Sqlite database");
             await InitializeInternalRuleFunctions();
             string fileName = "StandardRules.json";
             string ruleString = await _embeddedStorage.ReadFile("", fileName);
+            _log.LogInformation("Save standard rules to Sqlite database");
             await SaveRulesToDatabase(ruleString);
         }
 
@@ -115,7 +138,7 @@ namespace DatabaseManager.Services.RulesSqlite.Services
             }
             foreach (var function in ruleFunctions)
             {
-                //await InsertFunction(function, connectionString);
+                await _fa.CreateUpdateFunction(function, _connectionString);
             }
         }
 
@@ -172,23 +195,6 @@ namespace DatabaseManager.Services.RulesSqlite.Services
             await _id.ExecuteSQL(sql, _connectionString);
         }
 
-        public async Task CreateUpdateRule(RuleModelDto rule, string connectionString)
-        {
-            RuleModel newRule = _mapper.Map<RuleModel>(rule);
-            IEnumerable<RuleModelDto> rules = await _id.ReadData<RuleModelDto>(_getSql, connectionString);
-            var ruleExist = rules.FirstOrDefault(m => m.RuleName == rule.RuleName);
-            if (ruleExist == null)
-            {
-                var rulesWithLastKeyNumber = rules.Where(m => m.RuleType == rule.RuleType).
-                    OrderByDescending(x => x.KeyNumber).FirstOrDefault();
-                if (rulesWithLastKeyNumber == null) newRule.KeyNumber = 1;
-                else newRule.KeyNumber = rulesWithLastKeyNumber.KeyNumber + 1;
-                await InsertRule(newRule, connectionString);
-
-            }
-            //else await UpdateRule(newRule, ruleExist, connectionString);
-        }
-
         private async Task InsertRule(RuleModel rule, string connectionString)
         {
             List<RuleModelDto> rules = new List<RuleModelDto>();
@@ -199,12 +205,6 @@ namespace DatabaseManager.Services.RulesSqlite.Services
                 "(DataType, RuleType, RuleParameters, RuleKey, RuleName, RuleFunction, DataAttribute, RuleFilter, FailRule, PredictionOrder, KeyNumber, Active, RuleDescription, CreatedDate, ModifiedDate) " +
                 "VALUES(@DataType, @RuleType, @RuleParameters, @RuleKey, @RuleName, @RuleFunction, @DataAttribute, @RuleFilter, @FailRule, @PredictionOrder, @KeyNumber, @Active, @RuleDescription, @CreatedDate, @ModifiedDate)";
             await _id.InsertUpdateData(sql, rule, connectionString);
-            //string parameterName = "rules";
-            //RuleCollection ruleCollection = new RuleCollection
-            //{
-            //    rule
-            //};
-            //_db.InsertWithUDT("dbo.spInsertRules", parameterName, ruleCollection, connectionString);
         }
 
         private string GetRuleKey(RuleModel rule)
@@ -214,6 +214,18 @@ namespace DatabaseManager.Services.RulesSqlite.Services
             RuleTypeDictionary rt = new RuleTypeDictionary();
             ruleKey = rt[rule.RuleType] + strKey;
             return ruleKey;
+        }
+
+        private async Task UpdateRule(RuleModel rule, RuleModelDto oldRule, string connectionString)
+        {
+            rule.Id = oldRule.Id;
+            rule.ModifiedDate = DateTime.Now;
+            string sql = $"UPDATE {_table} SET " +
+                "DataType = @DataType, RuleType = @RuleType, RuleParameters = @RuleParameters, RuleKey = @RuleKey, " +
+                "RuleName = @RuleName, RuleFunction = @RuleFunction, DataAttribute = @DataAttribute, RuleFilter = @RuleFilter, " +
+                "FailRule = @FailRule, PredictionOrder = @PredictionOrder, KeyNumber = @KeyNumber, Active = @Active, " +
+                "RuleDescription = @RuleDescription, CreatedDate = @CreatedDate, ModifiedDate = @ModifiedDate " +
+                "WHERE Id = {rule.Id}";
         }
     }
 }
