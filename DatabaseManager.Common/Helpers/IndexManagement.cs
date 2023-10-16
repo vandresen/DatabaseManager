@@ -112,13 +112,13 @@ namespace DatabaseManager.Common.Helpers
                 throw error;
             }
             // Wake up serverless database
-            //var retryPolicy = Policy
-            //    .Handle<SqlException>()
-            //    .Retry(
-            //    retryCount: 3,
-            //    onRetry: (e, i) => _log.LogInformation("Retrying due to " + e.Message + " Retry " + i + " next.")
-            //    );
-            //retryPolicy.Execute(() => _ida.WakeUpDatabase(connector.ConnectionString));
+            var retryPolicy = Policy
+                .Handle<SqlException>()
+                .Retry(
+                retryCount: 3,
+                onRetry: (e, i) => _log.LogInformation("Retrying due to " + e.Message + " Retry " + i + " next.")
+                );
+            retryPolicy.Execute(() => _ida.WakeUpDatabase(connector.ConnectionString));
             IEnumerable<DmsIndex> dmsIndex = await _indexData.GetNumberOfDescendantsByIdAndLevel("/", 1, connector.ConnectionString);
             result = JsonConvert.SerializeObject(dmsIndex, Formatting.Indented);
             return result;

@@ -38,7 +38,7 @@ namespace DatabaseManager.Server.Controllers
             {
                 _log.LogInformation("Start Get Index");
                 string storageAccount = Common.Helpers.Common.GetStorageKey(Request);
-                IndexManagement im = new IndexManagement(storageAccount);
+                IndexManagement im = new IndexManagement(storageAccount, _log);
                 string responseMessage = await im.GetIndexData(source);
                 List<DmsIndex> index = JsonConvert.DeserializeObject<List<DmsIndex>>(responseMessage);
                 return index;
