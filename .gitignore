@@ -341,3 +341,4 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+/DatabaseManager.Services.RulesSqlite/mydatabase.db
