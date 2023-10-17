@@ -86,10 +86,10 @@ namespace DatabaseManager.Services.RulesSqlite.Services
             _log.LogInformation("Sqlite database creation complete");
         }
 
-        public async Task CreateUpdateRule(RuleModelDto rule, string connectionString)
+        public async Task CreateUpdateRule(RuleModelDto rule)
         {
             RuleModel newRule = _mapper.Map<RuleModel>(rule);
-            IEnumerable<RuleModelDto> rules = await _id.ReadData<RuleModelDto>(_getSql, connectionString);
+            IEnumerable<RuleModelDto> rules = await _id.ReadData<RuleModelDto>(_getSql, _connectionString);
             var ruleExist = rules.FirstOrDefault(m => m.RuleName == rule.RuleName);
             if (ruleExist == null)
             {
@@ -97,11 +97,11 @@ namespace DatabaseManager.Services.RulesSqlite.Services
                     OrderByDescending(x => x.KeyNumber).FirstOrDefault();
                 if (rulesWithLastKeyNumber == null) newRule.KeyNumber = 1;
                 else newRule.KeyNumber = rulesWithLastKeyNumber.KeyNumber + 1;
-                await InsertRule(newRule, connectionString);
+                await InsertRule(newRule, _connectionString);
             }
             else 
             { 
-                await UpdateRule(newRule, ruleExist, connectionString); 
+                await UpdateRule(newRule, ruleExist, _connectionString); 
             }
         }
 
@@ -134,7 +134,7 @@ namespace DatabaseManager.Services.RulesSqlite.Services
                     if (result == null) ruleFunctions.Add(ruleFunction);
                 }
                 rule.RuleFunction = ruleFunction.FunctionName;
-                await CreateUpdateRule(rule, _connectionString);
+                await CreateUpdateRule(rule);
             }
             foreach (var function in ruleFunctions)
             {
@@ -197,7 +197,6 @@ namespace DatabaseManager.Services.RulesSqlite.Services
 
         private async Task InsertRule(RuleModel rule, string connectionString)
         {
-            List<RuleModelDto> rules = new List<RuleModelDto>();
             rule.RuleKey = GetRuleKey(rule);
             rule.CreatedDate = DateTime.Now;
             rule.ModifiedDate = DateTime.Now;
@@ -221,11 +220,31 @@ namespace DatabaseManager.Services.RulesSqlite.Services
             rule.Id = oldRule.Id;
             rule.ModifiedDate = DateTime.Now;
             string sql = $"UPDATE {_table} SET " +
-                "DataType = @DataType, RuleType = @RuleType, RuleParameters = @RuleParameters, RuleKey = @RuleKey, " +
-                "RuleName = @RuleName, RuleFunction = @RuleFunction, DataAttribute = @DataAttribute, RuleFilter = @RuleFilter, " +
-                "FailRule = @FailRule, PredictionOrder = @PredictionOrder, KeyNumber = @KeyNumber, Active = @Active, " +
-                "RuleDescription = @RuleDescription, CreatedDate = @CreatedDate, ModifiedDate = @ModifiedDate " +
-                "WHERE Id = {rule.Id}";
+                "DataType=@DataType, RuleType=@RuleType, RuleParameters=@RuleParameters, RuleKey=@RuleKey, " +
+                "RuleName=@RuleName, RuleFunction=@RuleFunction, DataAttribute=@DataAttribute, RuleFilter=@RuleFilter, " +
+                "FailRule=@FailRule, PredictionOrder=@PredictionOrder, KeyNumber=@KeyNumber, Active=@Active, " +
+                "RuleDescription=@RuleDescription, CreatedDate=@CreatedDate, ModifiedDate=@ModifiedDate " +
+                $"WHERE Id = {rule.Id}";
+            await _id.InsertUpdateData(sql, rule, connectionString);
+        }
+
+        public async Task<IEnumerable<RuleModelDto>> GetRules()
+        {
+            IEnumerable<RuleModelDto> result = await _id.ReadData<RuleModelDto>(_getSql, _connectionString);
+            return result;
+        }
+
+        public async Task<RuleModelDto> GetRule(int id)
+        {
+            string sql = _getSql + $" WHERE Id = {id}";
+            var results = await _id.ReadData<RuleModelDto>(sql, _connectionString);
+            return results.FirstOrDefault();
+        }
+
+        public async Task DeleteRule(int id)
+        {
+            string sql = $"DELETE FROM {_table} WHERE Id = {id}";
+            await _id.ExecuteSQL(sql, _connectionString);
         }
     }
 }

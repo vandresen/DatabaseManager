@@ -6,6 +6,9 @@ namespace DatabaseManager.Services.RulesSqlite.Services
     {
         Task CreateDatabaseRules();
         Task InitializeStandardRules();
-        Task CreateUpdateRule(RuleModelDto rule, string connectionString);
+        Task CreateUpdateRule(RuleModelDto rule);
+        Task<IEnumerable<RuleModelDto>> GetRules();
+        Task<RuleModelDto> GetRule(int id);
+        Task DeleteRule(int id);
     }
 }

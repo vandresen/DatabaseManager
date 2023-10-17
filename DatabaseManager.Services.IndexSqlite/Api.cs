@@ -1,12 +1,4 @@
-﻿using Azure;
-using DatabaseManager.Services.IndexSqlite.Services;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
-using System;
-using System.Threading.Tasks;
-
-namespace DatabaseManager.Services.IndexSqlite
+﻿namespace DatabaseManager.Services.IndexSqlite
 {
     public static class Api
     {
