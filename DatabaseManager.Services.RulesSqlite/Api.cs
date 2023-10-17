@@ -42,7 +42,7 @@ namespace DatabaseManager.Services.RulesSqlite
             throw new NotImplementedException();
         }
 
-        private static Task GetPredictionSets(HttpContext context)
+        private static Task GetPredictionSets(IRuleAccess ra)
         {
             throw new NotImplementedException();
         }
