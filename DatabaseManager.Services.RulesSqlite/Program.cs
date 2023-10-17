@@ -11,8 +11,6 @@ builder.Services.Configure<AzureBlobLoggerOptions>(options =>
     options.BlobName = "log.txt";
 });
 
-// Testing
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
