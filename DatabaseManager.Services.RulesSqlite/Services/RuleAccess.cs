@@ -83,6 +83,16 @@ namespace DatabaseManager.Services.RulesSqlite.Services
                 "FunctionKey TEXT" +
                 ");";
             await _id.ExecuteSQL(sql, _connectionString);
+
+            sql = dropSql + "pdo_rule_predictionsets;";
+            sql = sql + createSql + "pdo_rule_predictionsets" +
+                "(" +
+                "Id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "Name TEXT NOT NULL," +
+                "Description TEXT," +
+                "RuleSet TEXT" +
+                ");";
+            await _id.ExecuteSQL(sql, _connectionString);
             _log.LogInformation("Sqlite database creation complete");
         }
 

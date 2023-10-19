@@ -19,6 +19,7 @@ builder.Services.AddSingleton(mapper);
 builder.Services.AddSingleton<IRuleAccess, RuleAccess>();
 builder.Services.AddSingleton<IDataAccess, SqliteDataAccess>();
 builder.Services.AddSingleton<IFunctionAccess, FunctionAccess>();
+builder.Services.AddSingleton<IPredictionSetAccess, PredictionSetAccess>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddCors(options =>

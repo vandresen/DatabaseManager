@@ -22,29 +22,108 @@ namespace DatabaseManager.Services.RulesSqlite
             app.MapDelete("/PredictionSet", DeletePredictionSet);
         }
 
-        private static Task DeletePredictionSet(HttpContext context)
+        private static async Task<IResult> DeletePredictionSet(int id, IPredictionSetAccess ps)
         {
-            throw new NotImplementedException();
+            ResponseDto response = new();
+            try
+            {
+                await ps.DeletePredictionDataSet(id);
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"DeletePredictionSet: Could not delete prediction set, {ex}";
+                if (response.ErrorMessages == null) response.ErrorMessages = new List<string>();
+                response.ErrorMessages.Add(newString);
+            }
+            return Results.Ok(response);
         }
 
-        private static Task UpdatePredictionSet(HttpContext context)
+        private static async Task<IResult> UpdatePredictionSet(PredictionSet predSet, IPredictionSetAccess ps)
         {
-            throw new NotImplementedException();
+            ResponseDto response = new();
+            try
+            {
+                var oldPredSets = await ps.GetPredictionDataSet(predSet.Name);
+                if (oldPredSets == null) 
+                {
+                    response.IsSuccess = false;
+                    string newString = $"Update PredictionSet: Predictions set does not exist";
+                    if (response.ErrorMessages == null) response.ErrorMessages = new List<string>();
+                    response.ErrorMessages.Add(newString);
+                }
+                else 
+                {
+                    predSet.Id = oldPredSets.Id;
+                    await ps.UpdatePredictionDataSet(predSet);
+                    response.IsSuccess = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"Save PredictionSet: Could not save prediction set, {ex}";
+                if (response.ErrorMessages == null) response.ErrorMessages = new List<string>();
+                response.ErrorMessages.Add(newString);
+            }
+            return Results.Ok(response);
         }
 
-        private static Task SavePredictionSet(HttpContext context)
+        private static async Task<IResult> SavePredictionSet(PredictionSet predSet, IPredictionSetAccess ps)
         {
-            throw new NotImplementedException();
+            ResponseDto response = new();
+            try
+            {
+                await ps.SavePredictionDataSet(predSet);
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"SavePredictionSet: Could not save prediction set, {ex}";
+                if (response.ErrorMessages == null) response.ErrorMessages = new List<string>();
+                response.ErrorMessages.Add(newString);
+            }
+            return Results.Ok(response);
         }
 
-        private static Task GetPredictionSet(HttpContext context)
+        private static async Task<IResult> GetPredictionSet(string name, IPredictionSetAccess ps)
         {
-            throw new NotImplementedException();
+            ResponseDto response = new();
+            try
+            {
+                var predSets = await ps.GetPredictionDataSet(name);
+                response.Result = predSets;
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"GetPredictionSet: Could not get prediction set, {ex}";
+                if (response.ErrorMessages == null) response.ErrorMessages = new List<string>();
+                response.ErrorMessages.Add(newString);
+            }
+            return Results.Ok(response);
         }
 
-        private static Task GetPredictionSets(IRuleAccess ra)
+        private static async Task<IResult> GetPredictionSets(IPredictionSetAccess ps)
         {
-            throw new NotImplementedException();
+            ResponseDto response = new();
+            try
+            {
+                var predSets = await ps.GetPredictionDataSets();
+                response.Result = predSets;
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"GetPredictionSets: Could not get prediction sets, {ex}";
+                if (response.ErrorMessages == null) response.ErrorMessages = new List<string>();
+                response.ErrorMessages.Add(newString);
+            }
+            return Results.Ok(response);
         }
 
         private static async Task<IResult> DeleteRules(int id, IRuleAccess ra)
