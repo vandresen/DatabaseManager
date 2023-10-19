@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_NAME: 'PetrodataOnlineRulesSqlite'
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' 
+  AZURE_APP_NAME: 'PetrodataOnlineRulesSqlite'
+  AZURE_APP_PACKAGE_PATH: '.' 
   
 jobs:
   build:
@@ -22,7 +22,7 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          pushd './${{ env.AZURE_APP_PACKAGE_PATH }}'
           dotnet build DatabaseManager.Services.RulesSqlite/DatabaseManager.Services.RulesSqlite.csproj --configuration Release --output ./output
           popd
 
