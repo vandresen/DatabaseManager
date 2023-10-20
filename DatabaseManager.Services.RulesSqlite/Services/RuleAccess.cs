@@ -129,7 +129,7 @@ namespace DatabaseManager.Services.RulesSqlite.Services
         {
             _log.LogInformation($"Save rules to database");
             List<RuleFunctionsDto> ruleFunctions = new List<RuleFunctionsDto>();
-            IEnumerable<RuleFunctionsDto> functions = await _fa.GetFunctions(_connectionString);
+            IEnumerable<RuleFunctionsDto> functions = await _fa.GetFunctions();
             List<RuleModelDto> rules = JsonConvert.DeserializeObject<List<RuleModelDto>>(ruleString);
             foreach (var rule in rules)
             {
@@ -148,7 +148,7 @@ namespace DatabaseManager.Services.RulesSqlite.Services
             }
             foreach (var function in ruleFunctions)
             {
-                await _fa.CreateUpdateFunction(function, _connectionString);
+                await _fa.CreateUpdateFunction(function);
             }
         }
 

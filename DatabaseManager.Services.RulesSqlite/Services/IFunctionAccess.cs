@@ -4,9 +4,9 @@ namespace DatabaseManager.Services.RulesSqlite.Services
 {
     public interface IFunctionAccess
     {
-        Task<IEnumerable<RuleFunctionsDto>> GetFunctions(string connectionString);
-        Task<RuleFunctionsDto> GetFunction(int id, string connectionString);
-        Task CreateUpdateFunction(RuleFunctionsDto function, string connectionString);
-        Task DeleteFunction(int id, string connectionString);
+        Task<IEnumerable<RuleFunctionsDto>> GetFunctions();
+        Task<RuleFunctionsDto> GetFunction(int id);
+        Task CreateUpdateFunction(RuleFunctionsDto function);
+        Task DeleteFunction(int id);
     }
 }

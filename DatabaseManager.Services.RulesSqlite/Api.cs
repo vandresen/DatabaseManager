@@ -1,6 +1,8 @@
 ﻿using DatabaseManager.Services.RulesSqlite.Services;
 using DatabaseManager.Services.RulesSqlite.Models;
 using Microsoft.AspNetCore.Builder;
+using System.Data;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace DatabaseManager.Services.RulesSqlite
 {
@@ -20,6 +22,103 @@ namespace DatabaseManager.Services.RulesSqlite
             app.MapPost("/PredictionSet", SavePredictionSet);
             app.MapPut("/PredictionSet", UpdatePredictionSet);
             app.MapDelete("/PredictionSet", DeletePredictionSet);
+            app.MapGet("/Function", GetFunctions);
+            app.MapGet("/Function/{id}", GetFunction);
+            app.MapPost("/Function", SaveFunction);
+            app.MapPut("/Function", UpdateFunction);
+            app.MapDelete("/Function", DeleteFunction);
+        }
+
+        private static async Task<IResult> DeleteFunction(int id, IFunctionAccess fa)
+        {
+            ResponseDto response = new();
+            try
+            {
+                await fa.DeleteFunction(id);
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"DeleteFunction: Could not delete function, {ex}";
+                if (response.ErrorMessages == null) response.ErrorMessages = new List<string>();
+                response.ErrorMessages.Add(newString);
+            }
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> UpdateFunction(RuleFunctionsDto function, IFunctionAccess fa)
+        {
+            ResponseDto response = new();
+            try
+            {
+                await fa.CreateUpdateFunction(function);
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"UpdateFunction: Could not update function, {ex}";
+                if (response.ErrorMessages == null) response.ErrorMessages = new List<string>();
+                response.ErrorMessages.Add(newString);
+            }
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> SaveFunction(RuleFunctionsDto function, IFunctionAccess fa)
+        {
+            ResponseDto response = new();
+            try
+            {
+                await fa.CreateUpdateFunction(function);
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"SaveRules: Could not save function, {ex}";
+                if (response.ErrorMessages == null) response.ErrorMessages = new List<string>();
+                response.ErrorMessages.Add(newString);
+            }
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> GetFunction(int id, IFunctionAccess fa)
+        {
+            ResponseDto response = new();
+            try
+            {
+                RuleFunctionsDto functions = await fa.GetFunction(id);
+                response.Result = functions;
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"GetFunction: Could not get function, {ex}";
+                if (response.ErrorMessages == null) response.ErrorMessages = new List<string>();
+                response.ErrorMessages.Add(newString);
+            }
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> GetFunctions(IFunctionAccess fa)
+        {
+            ResponseDto response = new();
+            try
+            {
+                IEnumerable<RuleFunctionsDto> functions= await fa.GetFunctions();
+                response.Result = functions;
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"GetFunctions: Could not get functions, {ex}";
+                if (response.ErrorMessages == null) response.ErrorMessages = new List<string>();
+                response.ErrorMessages.Add(newString);
+            }
+            return Results.Ok(response);
         }
 
         private static async Task<IResult> DeletePredictionSet(int id, IPredictionSetAccess ps)
