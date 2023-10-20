@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_APP_NAME: 'PetrodataOnlineRulesSqlite'
+  AZURE_APP_NAME: 'DatabaseManagerServicesRulesSqlite'
   AZURE_APP_PACKAGE_PATH: '.' 
   
 jobs:
