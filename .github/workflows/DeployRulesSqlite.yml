@@ -27,7 +27,7 @@ jobs:
           popd
 
       - name: Deploy to Azure
-        uses: Azure/functions-action@v1
+        uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.AZURE_APP_NAME }}
           package: '${{ env.AZURE_APP_PACKAGE_PATH }}/output'
