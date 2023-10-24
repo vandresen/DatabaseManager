@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using DatabaseManager.AppFunctions.Entities;
+using DatabaseManager.AppFunctions.Extensions;
+using DatabaseManager.AppFunctions.Services;
 using DatabaseManager.Common.Helpers;
 using DatabaseManager.Shared;
 using Microsoft.Azure.WebJobs;
@@ -25,7 +28,6 @@ namespace DatabaseManager.AppFunctions
             ILogger log)
         {
             string response = "OK";
-
             List<DataOpParameters> pipelines = context.GetInput<List<DataOpParameters>>();
             log.LogInformation($"RunOrchestrator: Number of pipelines: {pipelines.Count}.");
 
@@ -128,32 +130,30 @@ namespace DatabaseManager.AppFunctions
         }
 
         [FunctionName("ManageDataOps_CreateIndex")]
-        public static async Task<string> CreateIndex([ActivityTrigger] DataOpParameters pipe, ILogger log)
+        public static async Task<string> CreateIndex(
+            [ActivityTrigger] DataOpParameters pipe,
+            ILogger log)
         {
             log.LogInformation($"CreateIndex: Starting");
-            CreateIndexParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<CreateIndexParameters>();
             try
             {
-                Sources sr = new Sources(pipe.StorageAccount);
-                ConnectParameters target = await sr.GetSourceParameters(parms.TargetName);
-                ConnectParameters source = await sr.GetSourceParameters(parms.SourceName);
-
-                Indexer index = new Indexer(pipe.StorageAccount);
-                int parentNodes = await index.Initialize(target, source, parms.Taxonomy, parms.Filter);
-
-                List<ParentIndexNodes> nodes = await index.IndexParent(parentNodes, parms.Filter);
-
-                for (int j = 0; j < nodes.Count; j++)
+                string baseUrl = Environment.GetEnvironmentVariable("IndexAPI");
+                string indexKey = Environment.GetEnvironmentVariable("IndexKey");
+                BuildIndexParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<BuildIndexParameters>();
+                parms.StorageAccount = pipe.StorageAccount;
+                var httpClient = new HttpClient();
+                IDataIndexer dataIndexer = new DataIndexer(httpClient);
+                string url = baseUrl.BuildFunctionUrl("/api/BuildIndex", $"", indexKey);
+                log.LogInformation($"CreateIndex: Url is {url}.");
+                Response response = await dataIndexer.Create(parms, url);
+                if (response.IsSuccess)
                 {
-                    ParentIndexNodes node = nodes[j];
-                    for (int i = 0; i < node.NodeCount; i++)
-                    {
-                        await index.IndexChildren(j, i, node.ParentNodeId);
-                    }
+                    log.LogInformation($"CreateIndex: Index success");
                 }
-
-                index.CloseIndex();
-
+                else
+                {
+                    log.LogInformation($"CreateIndex: Index failed");
+                }
             }
             catch (Exception ex)
             {

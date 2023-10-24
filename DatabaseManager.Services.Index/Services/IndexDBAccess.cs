@@ -50,18 +50,22 @@ namespace DatabaseManager.Services.Index.Services
 
         public async Task BuildIndex(BuildIndexParameters idxParms)
         {
+            _log.LogInformation($"BuildIndex: Start building index for source {idxParms.SourceName}");
             ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(idxParms.SourceName);
             ConnectParametersDto source = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+            _log.LogInformation("BuildIndex: Got the source info");
             ConnectParametersDto target = new ConnectParametersDto();
             if (!String.IsNullOrEmpty(idxParms.TargetName))
             {
                 dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(idxParms.TargetName);
+                _log.LogInformation("BuildIndex: Got the target info");
                 target = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
                 _ida.WakeUpDatabase(target.ConnectionString);
             }
 
             _fs.SetConnectionString(idxParms.StorageAccount);
             target.DataAccessDefinition = await _fs.ReadFile("connectdefinition", "PPDMDataAccess.json");
+            _log.LogInformation("BuildIndex: Got the connect definition");
 
             int parentNodes = await Initialize(target, source, idxParms);
 
@@ -74,6 +78,7 @@ namespace DatabaseManager.Services.Index.Services
                     await IndexChildren(j, i, node.ParentNodeId);
                 }
             }
+            _log.LogInformation("BuildIndex: Inserting indexes");
             await InsertIndexes(myIndex, 0, _connectionString);
         }
 

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DatabaseManager.Services.Index.Models
+namespace DatabaseManager.AppFunctions.Entities
 {
     public class BuildIndexParameters
     {

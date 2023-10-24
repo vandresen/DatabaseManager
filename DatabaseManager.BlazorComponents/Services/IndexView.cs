@@ -23,8 +23,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<List<DmsIndex>> GetChildren(string source, int id)
         {
-            if (string.IsNullOrEmpty(baseUrl)) url = $"api/index/{source}/{id}";
-            else url = baseUrl.BuildFunctionUrl("GetIndexItem", $"name={source}&id={id}", apiKey);
+            url = $"api/index/{source}/{id}";
             var response = await httpService.Get<List<DmsIndex>>(url);
             if (!response.Success)
             {
@@ -48,9 +47,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)
         {
-            Console.WriteLine($"Get index file defs base url: {baseUrl}");
-            if (string.IsNullOrEmpty(baseUrl)) url = $"api/index/GetTaxonomyFile/{fileName}";
-            else url = baseUrl.BuildFunctionUrl("GetTaxonomyFile", $"name={fileName}", apiKey);
+            url = $"api/index/GetTaxonomyFile/{fileName}";
             Console.WriteLine($"Save index url: {url}");
             var response = await httpService.Get<List<IndexFileDefinition>>(url);
             if (!response.Success)
@@ -62,8 +59,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task SaveIndexFileDefs(List<IndexFileDefinition> indexDef, string fileName)
         {
-            if (string.IsNullOrEmpty(baseUrl)) url = $"api/index/{fileName}";
-            else url = baseUrl.BuildFunctionUrl("SaveTaxonomyFile", $"name={fileName}", apiKey);
+            url = $"api/index/{fileName}";
             Console.WriteLine($"Save index url: {url}");
             var response = await httpService.Post(url, indexDef);
             if (!response.Success)
@@ -74,8 +70,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<List<IndexFileData>> GetIndexTaxonomy(string source)
         {
-            if (string.IsNullOrEmpty(baseUrl)) url = $"api/index/GetIndexTaxonomy/{source}";
-            else url = baseUrl.BuildFunctionUrl("GetIndexTaxonomy", $"name={source}", apiKey);
+            url = $"api/index/GetIndexTaxonomy/{source}";
             var response = await httpService.Get<List<IndexFileData>>(url);
             if (!response.Success)
             {
@@ -86,8 +81,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<IndexModel> GetSingleIndexItem(string source, int id)
         {
-            if (string.IsNullOrEmpty(baseUrl)) url = $"api/index/GetSingleIndexItem/{source}/{id}";
-            else url = baseUrl.BuildFunctionUrl("GetSingleIndexItem", $"name={source}&id={id}", apiKey);
+            url = $"api/index/GetSingleIndexItem/{source}/{id}";
             var response = await httpService.Get<IndexModel>(url);
             if (!response.Success)
             {
