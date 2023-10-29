@@ -31,29 +31,20 @@ else
 
 @code {
     [Parameter] public TransferParameters TransferParms { get; set; }
+    [Parameter] public List<ConnectParameters> Connectors { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
 
-    public List<ConnectParameters> connectParameters;
     public string[] options { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            connectParameters = await dataSources.GetSources();
-            options = connectParameters.Select(x => x.SourceName).ToArray();
+            options = Connectors.Select(x => x.SourceName).ToArray();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Errors: {ex}");
         }
-    }
-
-    private void Selected(string selectedString)
-    {
-        TransferParms.SourceName = selectedString;
-        Console.WriteLine($"selected source: {selectedString}");
-        ConnectParameters connector = connectParameters.FirstOrDefault(s => s.SourceName == selectedString);
-        TransferParms.SourceType = connector.SourceType;
     }
 }

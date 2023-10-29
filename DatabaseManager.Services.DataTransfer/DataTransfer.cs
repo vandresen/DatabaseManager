@@ -60,7 +60,7 @@ namespace DatabaseManager.Services.DataTransfer
             {
                 string name = req.GetQuery("Name", true);
                 string storageAccount = req.GetStorageKey();
-                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name, storageAccount);
                 if (dsResponse != null && dsResponse.IsSuccess)
                 {
                     List<string> containers = new List<string>();
@@ -108,7 +108,7 @@ namespace DatabaseManager.Services.DataTransfer
             {
                 string name = req.GetQuery("Name", true);
                 string storageAccount = req.GetStorageKey();
-                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name, storageAccount);
                 if (dsResponse != null && dsResponse.IsSuccess)
                 {
                     List<string> containers = new List<string>();
@@ -152,7 +152,8 @@ namespace DatabaseManager.Services.DataTransfer
             {
                 string name = req.GetQuery("Name", true);
                 string table = req.GetQuery("Table", true);
-                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                string storageAccount = req.GetStorageKey();
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name, storageAccount);
                 if (dsResponse != null && dsResponse.IsSuccess)
                 {
                     ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
@@ -210,8 +211,8 @@ namespace DatabaseManager.Services.DataTransfer
                 }
                 if (transParm.SourceType == "DataBase")
                 {
-                    ResponseDto sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.SourceName);
-                    ResponseDto targetResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.TargetName);
+                    ResponseDto sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.SourceName, SD.AzureStorageKey);
+                    ResponseDto targetResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.TargetName, SD.AzureStorageKey);
                     ResponseDto conFileResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("PPDMReferenceTables.json");
                     ResponseDto accessDefResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("PPDMDataAccess.json");
                     bool sourceAccepted = sourceResponse != null && sourceResponse.IsSuccess;
@@ -276,8 +277,8 @@ namespace DatabaseManager.Services.DataTransfer
                     return _response;
                 }
                 
-                ResponseDto sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.SourceName);
-                ResponseDto targetResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.TargetName);
+                ResponseDto sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.SourceName, SD.AzureStorageKey);
+                ResponseDto targetResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.TargetName, SD.AzureStorageKey);
                 ResponseDto conFileResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("PPDMReferenceTables.json");
                 ResponseDto accessDefResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("PPDMDataAccess.json");
                 bool sourceAccepted = sourceResponse != null && sourceResponse.IsSuccess;
@@ -451,8 +452,8 @@ namespace DatabaseManager.Services.DataTransfer
                 Exception error = new Exception($"Data transfer copy database object: Missing table name in tansfer parameters");
                 throw error;
             }
-            ResponseDto sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(_transParm.SourceName);
-            ResponseDto targetResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(_transParm.TargetName);
+            ResponseDto sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(_transParm.SourceName, SD.AzureStorageKey);
+            ResponseDto targetResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(_transParm.TargetName, SD.AzureStorageKey);
             bool sourceAccepted = sourceResponse != null && sourceResponse.IsSuccess;
             bool targetAccepted = targetResponse != null && targetResponse.IsSuccess;
             if (sourceAccepted && targetAccepted)

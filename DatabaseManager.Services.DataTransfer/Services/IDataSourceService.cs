@@ -8,6 +8,6 @@ namespace DatabaseManager.Services.DataTransfer.Services
 {
     public interface IDataSourceService : IBaseService
     {
-        Task<T> GetDataSourceByNameAsync<T>(string name);
+        Task<T> GetDataSourceByNameAsync<T>(string name, string storageAccount);
     }
 }

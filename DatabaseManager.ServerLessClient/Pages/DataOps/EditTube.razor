@@ -2,6 +2,7 @@
 @using MudBlazor
 @inject NavigationManager navigationManager
 @inject IDataOps ops
+@inject IDataSources dataSources
 
 <h3>Edit Tube</h3>
 
@@ -25,7 +26,7 @@ else if (TubeType == "Predictions")
 }
 else if (TubeType == "DataTransfer")
 {
-    <CreateDataTransferParmForm TransferParms="transferParms" OnValidSubmit="Save" />
+    <CreateDataTransferParmForm TransferParms="transferParms" Connectors="connectParameters" OnValidSubmit="Save" />
 }
 else
 {
@@ -41,14 +42,18 @@ else
     public PredictionParameters predictionParms = new PredictionParameters();
     TransferParameters transferParms = new TransferParameters();
     List<PipeLine> tubes = new List<PipeLine>();
+    public List<ConnectParameters> connectParameters;
     PipeLine tube = new PipeLine();
     string TubeType = "";
     int priority;
 
     protected override async Task OnInitializedAsync()
     {
+        connectParameters = await dataSources.GetSources();
+        Console.WriteLine($"In EditTube, number of connectors found is {connectParameters.Count}");
         tubes = await ops.GetPipeline(Name);
         tube = tubes.FirstOrDefault(x => x.Id == id);
+        Console.WriteLine($"In EditTube, number of tubes found is {tubes.Count}");
         if (tube != null)
         {
             TubeType = tube.ArtifactType;
@@ -96,6 +101,12 @@ else
         }
         else if (TubeType == "DataTransfer")
         {
+            ConnectParameters sourceConnector = connectParameters.FirstOrDefault(obj => obj.SourceName == transferParms.SourceName);
+            if (sourceConnector != null)
+            {
+                transferParms.SourceType = sourceConnector.SourceType;
+                transferParms.SourceDataType = sourceConnector.DataType;
+            }
             jsonString = JsonConvert.SerializeObject(transferParms);
             Console.WriteLine($"String is {jsonString}");
         }

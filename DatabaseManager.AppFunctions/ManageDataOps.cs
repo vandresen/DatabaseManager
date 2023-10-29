@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DatabaseManager.AppFunctions.Entities;
@@ -11,6 +12,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace DatabaseManager.AppFunctions
@@ -72,7 +74,7 @@ namespace DatabaseManager.AppFunctions
                     log.LogInformation($"Starting data transfer");
                     List<string> files = await context.CallActivityAsync<List<string>>("ManageDataOps_InitDataTransfer", pipe);
 
-                    TransferParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<TransferParameters>();
+                    Entities.TransferParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<Entities.TransferParameters>();
                     if (parms.SourceType == "DataBase")
                     {
                         foreach (string file in files)
@@ -193,11 +195,26 @@ namespace DatabaseManager.AppFunctions
         public static async Task<List<string>> InitDataTransfer([ActivityTrigger] DataOpParameters pipe, ILogger log)
         {
             log.LogInformation($"InitDataTransfer: Starting");
-            
-            DataTransfer dt = new DataTransfer(pipe.StorageAccount);
-            TransferParameters parms= JObject.Parse(pipe.JsonParameters).ToObject<TransferParameters>();
-            List<string> files = await dt.GetFiles(parms.SourceName);
-            
+            List<string> files = new List<string>();
+            string baseUrl = Environment.GetEnvironmentVariable("DataTransferAPI");
+            string apiKey = Environment.GetEnvironmentVariable("DataTransferKey");
+            Entities.TransferParameters parms = JObject.Parse(pipe.JsonParameters)
+                .ToObject<Entities.TransferParameters>();
+            string url = baseUrl.BuildFunctionUrl("/api/GetDataObjects", $"Name={parms.SourceName}", apiKey);
+            log.LogInformation($"InitDataTransfer: Url is {url}.");
+            var httpClient = new HttpClient();
+            IDataTransferService dataTransfer = new DataTransferService(httpClient);
+            Response response = await dataTransfer.GetDataObjects(url, pipe.StorageAccount);
+            if (response.IsSuccess)
+            {
+                files = JsonConvert.DeserializeObject<List<string>>(response.Result.ToString());
+                log.LogInformation($"InitDataTransfer: Number of files are {files.Count}.");
+            }
+            else
+            {
+                string separator = ";";
+                log.LogInformation($"InitDataTransfer: Error {string.Join(separator, response.ErrorMessages)}");
+            }
             log.LogInformation($"InitDataTransfer: Complete");
             return files;
         }
@@ -206,10 +223,25 @@ namespace DatabaseManager.AppFunctions
         public static async Task<string> DeleteDataTransfer([ActivityTrigger] DataOpParameters pipe, ILogger log)
         {
             log.LogInformation($"DeleteDataTransfer: Starting deleting");
-            DataTransfer dt = new DataTransfer(pipe.StorageAccount);
-            TransferParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<TransferParameters>();
-            await dt.DeleteTable(parms.TargetName, parms.Table);
-            log.LogInformation($"DeleteDataTransfer: Complete deleting {parms.Table}");
+            string baseUrl = Environment.GetEnvironmentVariable("DataTransferAPI");
+            string apiKey = Environment.GetEnvironmentVariable("DataTransferKey");
+            Entities.TransferParameters parms = JObject.Parse(pipe.JsonParameters)
+                .ToObject<Entities.TransferParameters>();
+            string url = baseUrl.BuildFunctionUrl("/api/DeleteObject", $"Name={parms.TargetName}&Table={parms.Table}", apiKey);
+            log.LogInformation($"DeleteDataTransfer: Url is {url}.");
+            var httpClient = new HttpClient();
+            IDataTransferService dataTransfer = new DataTransferService(httpClient);
+            Response response = await dataTransfer.DeleteTable(url, pipe.StorageAccount);
+            if (response.IsSuccess)
+            {
+                log.LogInformation($"DeleteDataTransfer: Table {parms.Table} deleted");
+            }
+            else
+            {
+                string separator = ";";
+                log.LogInformation($"DeleteDataTransfer: Error {string.Join(separator, response.ErrorMessages)}");
+            }
+            log.LogInformation($"InitDataTransfer: Complete");
             return $"DeleteDataTransfer Complete";
         }
 
@@ -217,10 +249,14 @@ namespace DatabaseManager.AppFunctions
         public static async Task<string> DataTransfer([ActivityTrigger] DataOpParameters pipe, ILogger log)
         {
             log.LogInformation($"DataTransfer: Starting");
-            DataTransfer dt = new DataTransfer(pipe.StorageAccount);
-            TransferParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<TransferParameters>();
-            await dt.CopyFiles(parms);
-            log.LogInformation($"DataTransfer: Complete copying {parms.Table}");
+            ApiInfo apiInfo = new ApiInfo();
+            apiInfo.BaseUrl = Environment.GetEnvironmentVariable("DataTransferAPI");
+            apiInfo.ApiKey = Environment.GetEnvironmentVariable("DataTransferKey");
+            Entities.TransferParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<Entities.TransferParameters>();
+            var httpClient = new HttpClient();
+            IDataTransferService dataTransfer = new DataTransferService(httpClient);
+            Response response = await dataTransfer.Copy(parms, apiInfo, pipe.StorageAccount);
+            log.LogInformation($"DataTransfer: Completed");
             return $"OK";
         }
 

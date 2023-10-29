@@ -12,12 +12,13 @@ namespace DatabaseManager.Services.DataTransfer.Services
             _clientFactory = clientFactory;
         }
 
-        public async Task<T> GetDataSourceByNameAsync<T>(string name)
+        public async Task<T> GetDataSourceByNameAsync<T>(string name, string storageAccount)
         {
             string url = SD.DataSourceAPIBase.BuildFunctionUrl($"/api/GetDataSource/{name}", "", SD.DataSourceKey);
             return await SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,
+                AzureStorage = storageAccount,
                 Url = url
             });
         }

@@ -28,17 +28,17 @@ namespace DatabaseManager.BlazorComponents.Services
             string url = "";
             if (transferParameters.SourceType == "DataBase")
             {
-                url = SD.DataTransferAPIBase.BuildFunctionUrl($"api/CopyDatabaseObject", $"", SD.DataTransferKey);
+                url = SD.DataTransferAPIBase.BuildFunctionUrl($"/api/CopyDatabaseObject", $"", SD.DataTransferKey);
             }
             else if(transferParameters.SourceType == "File")
             {
                 if (transferParameters.SourceDataType == "Logs")
                 {
-                    url = SD.DataTransferAPIBase.BuildFunctionUrl($"api/CopyLASObject", $"", SD.DataTransferKey);
+                    url = SD.DataTransferAPIBase.BuildFunctionUrl($"/api/CopyLASObject", $"", SD.DataTransferKey);
                 }
                 else
                 {
-                    url = SD.DataTransferAPIBase.BuildFunctionUrl($"api/CopyCSVObject", $"", SD.DataTransferKey);
+                    url = SD.DataTransferAPIBase.BuildFunctionUrl($"/api/CopyCSVObject", $"", SD.DataTransferKey);
                 }
             }
             else
@@ -61,7 +61,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task CopyRemote(TransferParameters transferParameters)
         {
-            string url = SD.DataTransferAPIBase.BuildFunctionUrl($"api/CopyRemoteObject", $"", SD.DataTransferKey);
+            string url = SD.DataTransferAPIBase.BuildFunctionUrl($"/api/CopyRemoteObject", $"", SD.DataTransferKey);
             Console.WriteLine($"Copy remote: {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -78,7 +78,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task DeleteTable(string source, string table)
         {
-            string url = SD.DataTransferAPIBase.BuildFunctionUrl($"api/DeleteObject", $"Name={source}&Table={table}", SD.DataTransferKey);
+            string url = SD.DataTransferAPIBase.BuildFunctionUrl($"/api/DeleteObject", $"Name={source}&Table={table}", SD.DataTransferKey);
             Console.WriteLine($"Delete: {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -94,7 +94,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<List<TransferParameters>> GetDataObjects(string source)
         {
-            string url = SD.DataTransferAPIBase.BuildFunctionUrl($"api/GetDataObjects", $"Name={source}", SD.DataTransferKey);
+            string url = SD.DataTransferAPIBase.BuildFunctionUrl($"/api/GetDataObjects", $"Name={source}", SD.DataTransferKey);
             Console.WriteLine($"Get data objects: {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -117,7 +117,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<List<MessageQueueInfo>> GetQueueMessage()
         {
-            string url = SD.DataTransferAPIBase.BuildFunctionUrl($"api/GetTransferQueueMessage", $"", SD.DataTransferKey);
+            string url = SD.DataTransferAPIBase.BuildFunctionUrl($"/api/GetTransferQueueMessage", $"", SD.DataTransferKey);
             Console.WriteLine($"Get queue message: {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {

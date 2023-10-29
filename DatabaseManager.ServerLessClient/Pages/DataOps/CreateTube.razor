@@ -3,6 +3,7 @@
 @inject NavigationManager navigationManager
 @inject SingletonServices singleton
 @inject IDataOps ops
+@inject IDataSources dataSources
 
 <h3>Create Tube</h3>
 
@@ -13,29 +14,34 @@
     <MudNumericField @bind-Value="priority" Label="Priority" Variant="Variant.Outlined" Step="1" Min="0" />
 </p>
 
-@if (TubeType == "CreateIndex")
+@if (connectParameters == null)
 {
-    <CreateIndexParmForm IndexParms="indexParms" OnValidSubmit="Save" />
-}
-else if (TubeType == "DataTransfer")
-{
-    <CreateDataTransferParmForm TransferParms="transferParms" OnValidSubmit="Save" />
-}
-else if (TubeType == "DataQC")
-{
-    <CreateQCParmForm DataQcParms="qcParms" OnValidSubmit="Save" />
-}
-else if (TubeType == "Predictions")
-{
-    <CreatePredictionParmForm PredictioncParms="predictionParms" OnValidSubmit="Save" />
+    <text>Loading...</text>
 }
 else
 {
-    <p>Tube type not supported</p>
-    <p><button @onclick="Save">Save</button></p>
+    @if (TubeType == "CreateIndex")
+    {
+        <CreateIndexParmForm IndexParms="indexParms" OnValidSubmit="Save" />
+    }
+    else if (TubeType == "DataTransfer")
+    {
+        <CreateDataTransferParmForm TransferParms="transferParms" Connectors="connectParameters" OnValidSubmit="Save" />
+    }
+    else if (TubeType == "DataQC")
+    {
+        <CreateQCParmForm DataQcParms="qcParms" OnValidSubmit="Save" />
+    }
+    else if (TubeType == "Predictions")
+    {
+        <CreatePredictionParmForm PredictioncParms="predictionParms" OnValidSubmit="Save" />
+    }
+    else
+    {
+        <p>Tube type not supported</p>
+        <p><button @onclick="Save">Save</button></p>
+    }
 }
-
-
 
 @code {
     [Parameter] public string TubeType { get; set; }
@@ -44,13 +50,15 @@ else
     public DataQCParameters qcParms = new DataQCParameters();
     public TransferParameters transferParms = new TransferParameters();
     public PredictionParameters predictionParms = new PredictionParameters();
-    string source;
-    string target;
-    string taxonomy;
+    public List<ConnectParameters> connectParameters;
+    // string source;
+    // string target;
+    // string taxonomy;
     int priority = 0;
 
     protected override async Task OnInitializedAsync()
     {
+        connectParameters = await dataSources.GetSources();
         if (TubeType == "CreateIndex")
         {
             indexParms.TargetName = singleton.TargetConnector;
@@ -59,6 +67,7 @@ else
         else if (TubeType == "DataTransfer")
         {
             transferParms.TargetName = singleton.TargetConnector;
+            transferParms.SourceName = "Please select";
         }
         else if (TubeType == "DataQC")
         {
@@ -95,6 +104,12 @@ else
         }
         else if (TubeType == "DataTransfer")
         {
+            ConnectParameters sourceConnector = connectParameters.FirstOrDefault(obj => obj.SourceName == transferParms.SourceName);
+            if (sourceConnector != null)
+            {
+                transferParms.SourceType = sourceConnector.SourceType;
+                transferParms.SourceDataType = sourceConnector.DataType;
+            }
             jsonString = JsonConvert.SerializeObject(transferParms);
             Console.WriteLine($"String is {jsonString}");
         }
