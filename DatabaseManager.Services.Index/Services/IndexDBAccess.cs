@@ -103,7 +103,6 @@ namespace DatabaseManager.Services.Index.Services
                 onRetry: (e, i) => _log.LogInformation("Retrying due to " + e.Message + " Retry " + i + " next.")
                 );
             retryPolicy.Execute(() => _ida.WakeUpDatabase(connectionString));
-            //_ida.WakeUpDatabase(connectionString);
             IEnumerable<DmIndexDto> result = await _dp.LoadData<DmIndexDto, dynamic>("dbo.spGetNumberOfDescendants",
                 new { indexnode = indexNode, level = level }, connectionString);
             return result;
@@ -541,6 +540,22 @@ namespace DatabaseManager.Services.Index.Services
             string parameterName = "UDIndexTable";
             string sql = "spInsertIndex";
             await _ida.InsertWithUDT(sql, parameterName, indexes, connectionString);
+        }
+
+        public async Task<IEnumerable<IndexDto>> QueriedIndexes(string connectionString, string dataType, string qcString)
+        {
+            string select = getSql;
+            if (!string.IsNullOrEmpty(dataType))
+            {
+                select = select + $" where DATATYPE = '{dataType}'";
+                if (!string.IsNullOrEmpty(qcString))
+                {
+                    select = select + $" and QC_STRING like '%{qcString}%'";
+                }
+            }
+            _log.LogInformation($"QueriedIndexes: Select statement is: {select}");
+            IEnumerable<IndexDto> result = await _dp.ReadData<IndexDto>(select, connectionString);
+            return result;
         }
     }
 }

@@ -14,6 +14,7 @@ namespace DatabaseManager.Services.Index.Services
         Task BuildIndex(BuildIndexParameters idxParms);
         Task CreateDatabaseIndex(string connectionString);
         Task<IEnumerable<IndexDto>> GetIndexes(string connectionString);
+        Task<IEnumerable<IndexDto>> QueriedIndexes(string connectionString, string dataType, string qcString);
         Task<IndexDto> GetIndex(int id, string connectionString);
         Task<IEnumerable<DmIndexDto>> GetDmIndexes(string indexNode, int level, string connectionString);
         Task<IEnumerable<DmIndexDto>> GetDmIndex(int id, string connectionString);

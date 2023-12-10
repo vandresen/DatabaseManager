@@ -120,6 +120,32 @@ namespace DatabaseManager.Services.Index
             return _response;
         }
 
+        [Function("QueryIndex")]
+        public async Task<ResponseDto> QueryIndexes(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "QueryIndex")] HttpRequestData req)
+        {
+            _logger.LogInformation("GetIndexes: Starting.");
+
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                string dataType = req.GetQuery("DataType", false);
+                string qcString = req.GetQuery("QcString", false);
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                IEnumerable<IndexDto> idx = await _indexDB.QueriedIndexes(connectParameter.ConnectionString, dataType, qcString);
+                _response.Result = idx.ToList();
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"GetIndexes: Error getting indexes: {ex}");
+            }
+            return _response;
+        }
+
         [Function("GetDmIndexes")]
         public async Task<ResponseDto> GetDmIndexes(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "DmIndexes")] HttpRequestData req)

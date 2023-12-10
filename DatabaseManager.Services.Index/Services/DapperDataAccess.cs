@@ -17,9 +17,10 @@ namespace DatabaseManager.Services.Index.Services
             return await cnn.QueryAsync<T>(storedProcedure, parameters, commandType: CommandType.StoredProcedure);
         }
 
-        public Task<IEnumerable<T>> ReadData<T>(string sql, string connectionString)
+        public async Task<IEnumerable<T>> ReadData<T>(string sql, string connectionString)
         {
-            throw new NotImplementedException();
+            using IDbConnection cnn = new SqlConnection(connectionString);
+            return await cnn.QueryAsync<T>(sql);
         }
 
         public Task SaveData<T>(string storedProcedure, T parameters, string connectionString)

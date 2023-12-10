@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "DatabaseManager.Services.DataQC": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7040",
+      "launchBrowser": false
+    }
+  }
+}
