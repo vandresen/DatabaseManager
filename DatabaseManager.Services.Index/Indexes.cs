@@ -120,6 +120,36 @@ namespace DatabaseManager.Services.Index
             return _response;
         }
 
+        [Function("EntiretyIndexes")]
+        public async Task<ResponseDto> GetEntiretyIndexes(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Indexes/EntiretyIndex")] HttpRequestData req)
+        {
+            _logger.LogInformation("EntiretyIndexes: Starting.");
+
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                string dataType = req.GetQuery("DataType", true);
+                string entiretyName = req.GetQuery("EntiretyName", true);
+                string parentType = req.GetQuery("ParentType", true);
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                string sql = $"WITH Parents AS (SELECT * FROM pdo_qc_index WHERE DataType = '{parentType}')" +
+                    $"SELECT A.IndexID FROM Parents A, pdo_qc_index B " +
+                    $"WHERE B.IndexNode.IsDescendantOf(A.IndexNode) = 1 AND B.DATANAME = '{entiretyName}' AND B.DataType = '{dataType}'";
+                IEnumerable<EntiretyListModel> idx = await _indexDB.GetEntiretyIndexes(sql, connectParameter.ConnectionString);
+                _response.Result = idx.ToList();
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"GetIndexes: Error getting indexes: {ex}");
+            }
+            return _response;
+        }
+
         [Function("QueryIndex")]
         public async Task<ResponseDto> QueryIndexes(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "QueryIndex")] HttpRequestData req)

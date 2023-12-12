@@ -1,4 +1,5 @@
-﻿using DatabaseManager.Services.Index.Extensions;
+﻿using Dapper;
+using DatabaseManager.Services.Index.Extensions;
 using DatabaseManager.Services.Index.Helpers;
 using DatabaseManager.Services.Index.Models;
 using Microsoft.Data.SqlClient;
@@ -556,6 +557,17 @@ namespace DatabaseManager.Services.Index.Services
             _log.LogInformation($"QueriedIndexes: Select statement is: {select}");
             IEnumerable<IndexDto> result = await _dp.ReadData<IndexDto>(select, connectionString);
             return result;
+        }
+
+        public async Task<IEnumerable<EntiretyListModel>> GetEntiretyIndexes(string sql, string connectionString)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                var result = connection.Query<EntiretyListModel>(sql);
+
+                return result;
+            }
         }
     }
 }
