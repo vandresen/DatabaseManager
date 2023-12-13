@@ -58,7 +58,7 @@ namespace DatabaseManager.Services.DataQC
                     {
                         var indexes = JsonConvert.DeserializeObject<List<IndexDto>>(Convert.ToString(idxResponse.Result));
                         _logger.LogInformation($"DataQC: Number of indexes are {indexes.Count}");
-                        List<int> failedObjects = await _dqc.QualityCheckDataType(indexes, rule);
+                        List<int> failedObjects = await _dqc.QualityCheckDataType(parms, indexes, rule);
                         _response.Result = failedObjects;
                     }
                     else

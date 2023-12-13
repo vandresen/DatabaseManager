@@ -9,6 +9,6 @@ namespace DatabaseManager.Services.DataQC.Services
 {
     public interface IDataQc
     {
-        Task<List<int>> QualityCheckDataType(List<IndexDto> indexes, RuleModelDto rule);
+        Task<List<int>> QualityCheckDataType(DataQCParameters parms, List<IndexDto> indexes, RuleModelDto rule);
     }
 }

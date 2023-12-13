@@ -11,6 +11,19 @@ namespace DatabaseManager.Services.DataQC.Services
         {
             _clientFactory = clientFactory;
         }
+
+        public async Task<T> GetEntiretyIndexes<T>(string dataSource, string dataType, string entiretyName, string parentType)
+        {
+            string url = SD.IndexAPIBase.BuildFunctionUrl($"/api/Indexes/EntiretyIndex", 
+                $"Name={dataSource}&DataType={dataType}&EntiretyName={entiretyName}&ParentType={parentType}", SD.IndexKey);
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                AzureStorage = SD.AzureStorageKey,
+                Url = url
+            });
+        }
+
         public async Task<T> GetIndexes<T>(string dataSource, string dataType)
         {
             string url = SD.IndexAPIBase.BuildFunctionUrl($"/api/QueryIndex", $"Name={dataSource}&DataType={dataType}", SD.IndexKey);

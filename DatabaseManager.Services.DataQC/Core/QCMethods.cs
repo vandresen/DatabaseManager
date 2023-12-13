@@ -14,13 +14,8 @@ namespace DatabaseManager.Services.DataQC.Core
 
         public static string Entirety(QcRuleSetup qcSetup, List<IndexDto> dt, List<DataAccessDef> accessDefs, IIndexAccess idxAccess)
         {
-            string returnStatus = "Passed";
-            RuleModelDto rule = JsonConvert.DeserializeObject<RuleModelDto>(qcSetup.RuleObject);
-            //string indexNode = qcSetup.IndexNode;
-            //JObject parameterObject = JObject.Parse(rule.RuleParameters);
-            //string dataName = parameterObject.GetValue("Name").ToString();
-            //IEnumerable<IndexModel> indexModels = Task.Run(() => indexData.GetChildrenWithName(qcSetup.DataConnector, indexNode, dataName)).GetAwaiter().GetResult();
-            //if (indexModels.Count() == 0) returnStatus = "Failed";
+            string returnStatus = "Failed";
+            if (qcSetup.IndexId == qcSetup.EniretyIndexId) returnStatus = "Passed";
             return returnStatus;
         }
 

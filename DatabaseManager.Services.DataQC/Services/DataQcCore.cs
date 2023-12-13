@@ -27,7 +27,7 @@ namespace DatabaseManager.Services.DataQC.Services
             _ds = ds;
         }
 
-        public async Task<List<int>> QualityCheckDataType(List<IndexDto> indexes, RuleModelDto rule)
+        public async Task<List<int>> QualityCheckDataType(DataQCParameters parms, List<IndexDto> indexes, RuleModelDto rule)
         {
             if (rule.RuleType == "Predictions")
             {
@@ -50,10 +50,23 @@ namespace DatabaseManager.Services.DataQC.Services
 
             if (rule.RuleFunction == "Uniqueness") CalculateKey(rule, indexes);
             if (rule.RuleFunction == "Consistency") qcSetup.ConsistencyConnectorString = await GetConsistencySource(rule.RuleParameters);
-            List<int> entiretyList = new List<int>();
+            List<EntiretyListModel> entiretyList = new List<EntiretyListModel>();
             if (rule.RuleFunction == "Entirety")
             {
-                entiretyList = await GetEntiretyList(rule);
+                JObject parameterObject = JObject.Parse(rule.RuleParameters);
+                string entiretyName = parameterObject.GetValue("Name").ToString();
+                string dataType = parameterObject.GetValue("DataType").ToString();
+                ResponseDto entiretyResponse = await _idxAccess.GetEntiretyIndexes<ResponseDto>(parms.DataConnector, dataType, 
+                    entiretyName, rule.DataType);
+                if (entiretyResponse.IsSuccess == true)
+                {
+                    entiretyList = JsonConvert.DeserializeObject<List<EntiretyListModel>>(Convert.ToString(entiretyResponse.Result));
+                }
+                else
+                {
+                    Exception error = new Exception($"Could not create a entirety list ");
+                    throw error;
+                }
             }
             foreach (IndexDto idxRow in indexes)
             {
@@ -61,8 +74,11 @@ namespace DatabaseManager.Services.DataQC.Services
                 if (!string.IsNullOrEmpty(jsonData))
                 {
                     qcSetup.IndexId = idxRow.IndexId;
-                    //qcSetup.IndexNode = idxRow["TextIndexNode"].ToString();
-                    //qcSetup.DataObject = jsonData;
+                    if (rule.RuleFunction == "Entirety")
+                    {
+                        bool isIdFound = entiretyList.Any(obj => obj.IndexID == idxRow.IndexId);
+                        if (isIdFound) qcSetup.EniretyIndexId = idxRow.IndexId;
+                    }
                     string result = "Passed";
                     if (!Filter(jsonData, ruleFilter))
                     {
