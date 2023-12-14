@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   
 env:
-  AZURE_FUNCTIONAPP_NAME: 'PetrodataOnlineIndex'
+  AZURE_FUNCTIONAPP_NAME: 'PetrodataOnlineDataQC'
   AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' 
 
 jobs:
@@ -18,3 +18,10 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
+
+      - name: Build
+        shell: pwsh
+        run: |
+          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet build DatabaseManager.Services.DataQC/DatabaseManager.Services.DataQC.csproj --configuration Release --output ./output
+          popd
