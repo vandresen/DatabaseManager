@@ -10,6 +10,7 @@ namespace DatabaseManager.Services.DataQC.Models
     {
         public string AzureStorageKey { get; set; }
         public string DataConnector { get; set; }
+        public string IndexProject { get; set; }
         public int RuleId { get; set; }
     }
 }

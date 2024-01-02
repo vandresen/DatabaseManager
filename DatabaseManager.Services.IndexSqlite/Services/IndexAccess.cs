@@ -783,18 +783,12 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                 if (children.Count() > 0)
                 {
                     var extract = children.Where(x => x.DataType == dataType && x.DataName == entiretyName).ToList();
-                    if (extract.Count()== 0)
+                    if (extract.Count() > 0)
                     {
                         EntiretyListModel elt = new EntiretyListModel();
                         elt.IndexID = parent.IndexId;
                         listResult.Add(elt);
                     }
-                }
-                else
-                {
-                    EntiretyListModel elt = new EntiretyListModel();
-                    elt.IndexID = parent.IndexId;
-                    listResult.Add(elt);
                 }
             }
             IEnumerable<EntiretyListModel> result = listResult;

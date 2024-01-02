@@ -53,7 +53,7 @@ namespace DatabaseManager.Services.DataQC
                 {
                     RuleModelDto rule = JsonConvert.DeserializeObject<RuleModelDto>(Convert.ToString(ruleResponse.Result));
                     _logger.LogInformation($"DataQC: Rulename is {rule.RuleName}");
-                    ResponseDto idxResponse = await _idxAccess.GetIndexes<ResponseDto>(parms.DataConnector, rule.DataType);
+                    ResponseDto idxResponse = await _idxAccess.GetIndexes<ResponseDto>(parms.DataConnector, parms.IndexProject, rule.DataType);
                     if(idxResponse.IsSuccess) 
                     {
                         var indexes = JsonConvert.DeserializeObject<List<IndexDto>>(Convert.ToString(idxResponse.Result));

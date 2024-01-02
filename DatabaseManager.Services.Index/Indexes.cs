@@ -122,7 +122,7 @@ namespace DatabaseManager.Services.Index
 
         [Function("EntiretyIndexes")]
         public async Task<ResponseDto> GetEntiretyIndexes(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Indexes/EntiretyIndex")] HttpRequestData req)
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "EntiretyIndexes")] HttpRequestData req)
         {
             _logger.LogInformation("EntiretyIndexes: Starting.");
 

@@ -14,7 +14,7 @@ namespace DatabaseManager.Services.DataQC.Services
 
         public async Task<T> GetEntiretyIndexes<T>(string dataSource, string dataType, string entiretyName, string parentType)
         {
-            string url = SD.IndexAPIBase.BuildFunctionUrl($"/Indexes/EntiretyIndex", 
+            string url = SD.IndexAPIBase.BuildFunctionUrl($"/EntiretyIndexes", 
                 $"Name={dataSource}&DataType={dataType}&EntiretyName={entiretyName}&ParentType={parentType}", SD.IndexKey);
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -24,9 +24,9 @@ namespace DatabaseManager.Services.DataQC.Services
             });
         }
 
-        public async Task<T> GetIndexes<T>(string dataSource, string dataType)
+        public async Task<T> GetIndexes<T>(string dataSource, string project, string dataType)
         {
-            string url = SD.IndexAPIBase.BuildFunctionUrl($"/QueryIndex", $"Name={dataSource}&DataType={dataType}", SD.IndexKey);
+            string url = SD.IndexAPIBase.BuildFunctionUrl($"/QueryIndex", $"Name={dataSource}&DataType={dataType}&Project={project}", SD.IndexKey);
             return await this.SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,
