@@ -3,6 +3,7 @@ using DatabaseManager.Services.IndexSqlite.Models;
 using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Data;
 using System.Linq;
 using System.Xml.Linq;
@@ -753,6 +754,51 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             if (_project == "Default") _projectTable = _table;
             else _projectTable = _project + "_" + _table;
             return _projectTable;
+        }
+
+        public async Task<IEnumerable<IndexModel>> QueriedIndexes(string project, string dataType, string qcString)
+        {
+            _project = project;
+            _projectTable = GetProjectTable();
+            string select = "Select " + _selectAttributes + " From " + _projectTable;
+            if (!string.IsNullOrEmpty(dataType))
+            {
+                select = select + $" where DATATYPE = '{dataType}'";
+                if (!string.IsNullOrEmpty(qcString))
+                {
+                    select = select + $" and QC_STRING like '%{qcString}%'";
+                }
+            }
+            IEnumerable<IndexModel> result = await _id.ReadData<IndexModel>(select, _connectionString);
+            return result;
+        }
+
+        public async Task<IEnumerable<EntiretyListModel>> GetEntiretyIndexes(string project, string dataType, string entiretyName, string parentType)
+        {
+            List<EntiretyListModel> listResult = new List<EntiretyListModel>();
+            var parents = await QueriedIndexes(project, parentType, "");
+            foreach (var parent in parents) 
+            {
+                var children = await GetDescendants(parent.IndexId, project);
+                if (children.Count() > 0)
+                {
+                    var extract = children.Where(x => x.DataType == dataType && x.DataName == entiretyName).ToList();
+                    if (extract.Count()== 0)
+                    {
+                        EntiretyListModel elt = new EntiretyListModel();
+                        elt.IndexID = parent.IndexId;
+                        listResult.Add(elt);
+                    }
+                }
+                else
+                {
+                    EntiretyListModel elt = new EntiretyListModel();
+                    elt.IndexID = parent.IndexId;
+                    listResult.Add(elt);
+                }
+            }
+            IEnumerable<EntiretyListModel> result = listResult;
+            return result;
         }
     }
 }

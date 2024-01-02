@@ -11,6 +11,8 @@
             app.MapGet("/GetDescendants/{id}", GetDescendants);
             app.MapGet("/GetNeighbors/{id}", GetNeighbors);
             app.MapGet("/DmIndexes", GetDmIndexes);
+            app.MapGet("/QueryIndex", QueryIndexes);
+            app.MapGet("/EntiretyIndexes", EntiretyIndexes);
             app.MapGet("/Project", GetProjects);
             app.MapPost("/Project", CreateProject);
             app.MapDelete("/Project", DeleteProject);
@@ -121,6 +123,42 @@
             {
                 response.IsSuccess = false;
                 string newString = $"GetDmIndexes: Could not get DM Indexes, {ex}";
+                response.ErrorMessages.Insert(0, newString);
+            }
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> QueryIndexes(string project, string dataType, string qcString, IIndexAccess idxAccess)
+        {
+            ResponseDto response = new();
+            try
+            {
+                var result = await idxAccess.QueriedIndexes(project, dataType, qcString);
+                response.IsSuccess = true;
+                response.Result = result;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"QueryIndexes: Could not get Indexes, {ex}";
+                response.ErrorMessages.Insert(0, newString);
+            }
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> EntiretyIndexes(string project, string dataType, string entiretyName, string parentType, IIndexAccess idxAccess)
+        {
+            ResponseDto response = new();
+            try
+            {
+                var result = await idxAccess.GetEntiretyIndexes(project, dataType, entiretyName, parentType);
+                response.IsSuccess = true;
+                response.Result = result;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"EntiretyIndexes: Could not get Indexes, {ex}";
                 response.ErrorMessages.Insert(0, newString);
             }
             return Results.Ok(response);

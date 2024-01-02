@@ -1,7 +1,4 @@
-﻿using DatabaseManager.Services.IndexSqlite.Models;
-using System.Threading.Tasks;
-
-namespace DatabaseManager.Services.IndexSqlite.Services
+﻿namespace DatabaseManager.Services.IndexSqlite.Services
 {
     public interface IIndexAccess
     {
@@ -24,7 +21,9 @@ namespace DatabaseManager.Services.IndexSqlite.Services
         Task<IEnumerable<IndexModel>> GetIndexes(string project);
         Task<IEnumerable<IndexModel>> GetIndexesWithQcStringFromSP(string qcString, string connectionString);
         Task<IEnumerable<IndexModel>> GetChildrenWithName(string connectionString, string indexNode, string name);
+        Task<IEnumerable<EntiretyListModel>> GetEntiretyIndexes(string project, string dataType, string entiretyName, string parentType);
         Task<IEnumerable<IndexModel>> GetNeighbors(int id, string project);
+        Task<IEnumerable<IndexModel>> QueriedIndexes(string project, string dataType, string qcString);
         Task<int> GetCount(string connectionString, string query);
         Task<List<string>> GetProjects();
         Task CreateProject(string project);
