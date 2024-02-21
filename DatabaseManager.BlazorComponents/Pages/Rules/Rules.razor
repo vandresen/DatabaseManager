@@ -31,7 +31,7 @@
 <Table TableItem="RuleModel" Items="RuleList" PageSize="@pageSize" ColumnReorder="true">
     <Column TableItem="RuleModel" Title="Action" Sortable="false">
         <Template>
-            <a class="btn btn-success" href="/rules/edit/@singleton.TargetConnector/@context.Id">Edit</a>
+            <a class="btn btn-success" href="/rules/edit/@target/@context.Id">Edit</a>
             <button class="btn btn-danger" @onclick="@(() => RuleDelete(context.Id))">Delete</button>
         </Template>
     </Column>
@@ -49,13 +49,25 @@
     private bool expandedState = false;
     private string showMenu = null;
     int pageSize = 10;
+    string target = "";
 
     protected override async Task OnInitializedAsync()
     {
         if (string.IsNullOrEmpty(singleton.TargetConnector))
         {
-            await displayMessage.DisplayErrorMessage("Please select a data connector");
-            navigationManager.NavigateTo("/");
+            if (SD.Sqlite)
+            {
+                target = "None";
+            }
+            else
+            {
+                await displayMessage.DisplayErrorMessage("Please select a data connector");
+                navigationManager.NavigateTo("/");
+            }
+        }
+        else
+        {
+            target = singleton.TargetConnector;
         }
         try
         {

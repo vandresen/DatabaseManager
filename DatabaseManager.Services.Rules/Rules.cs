@@ -74,6 +74,34 @@ namespace DatabaseManager.Services.Rules
             return _response;
         }
 
+        [Function("GetRule")]
+        public async Task<ResponseDto> GetRule(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Rule")] HttpRequestData req)
+        {
+            _logger.LogInformation("Rule get: Starting.");
+
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                int? id = req.GetQuery("Id", true).GetIntFromString();
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                _logger.LogInformation("Rules get: Successfully got the connect info.");
+                IEnumerable<RuleModelDto> rules = Enumerable.Empty<RuleModelDto>();
+                RuleModelDto rule = new RuleModelDto();
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                rule = await _ruleDB.GetRule((int)id, connectParameter.ConnectionString);
+                _response.Result = rule;
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"Rules get: Error getting rules: {ex}");
+            }
+            return _response;
+        }
+
         [Function("SaveRules")]
         public async Task<HttpResponseData> SaveRules(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Rules")] HttpRequestData req)

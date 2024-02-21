@@ -25,7 +25,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<T> DeleteFunctionAsync<T>(string source, int id)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/api/Function", $"Name={source}&Id={id}", SD.DataRuleKey);
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Function", $"Name={source}&Id={id}", SD.DataRuleKey);
             Console.WriteLine($"DeleteFunctionAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -37,7 +37,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<T> DeleteRuleAsync<T>(string source, int id)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/api/Rules", $"Name={source}&Id={id}", SD.DataRuleKey);
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Rules", $"Name={source}&Id={id}", SD.DataRuleKey);
             Console.WriteLine($"DeleteRuleAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -54,7 +54,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<T> GetFunctionsAsync<T>(string source)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/api/Function", $"Name={source}", SD.DataRuleKey);
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Function", $"Name={source}", SD.DataRuleKey);
             Console.WriteLine($"GetFunctionsAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -66,7 +66,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<T> GetPredictionAsync<T>(string predictionName)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/api/PredictionSet", $"Name={predictionName}", SD.DataRuleKey);
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/PredictionSet", $"Name={predictionName}", SD.DataRuleKey);
             Console.WriteLine($"GetPredictionAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -78,7 +78,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<T> GetPredictionsAsync<T>()
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/api/PredictionSet", $"", SD.DataRuleKey);
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/PredictionSet", $"", SD.DataRuleKey);
             Console.WriteLine($"GetFunctionsAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -90,7 +90,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<T> GetRuleAsync<T>(string source, int id)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/api/Rules", $"Name={source}&Id={id}", SD.DataRuleKey);
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Rule", $"Name={source}&Id={id}", SD.DataRuleKey);
             Console.WriteLine($"GetRuleAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -102,7 +102,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<T> GetRulesAsync<T>(string source)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/api/Rules", $"Name={source}", SD.DataRuleKey);
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Rules", $"Name={source}", SD.DataRuleKey);
             Console.WriteLine($"GetRulesAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -114,7 +114,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<T> InsertFunctionAsync<T>(RuleFunctions function, string source)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/api/Function", $"Name={source}", SD.DataRuleKey);
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Function", $"Name={source}", SD.DataRuleKey);
             Console.WriteLine($"InsertRulesAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -127,7 +127,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<T> InsertPredictionAsync<T>(PredictionSet predictionSet, string predictionName)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/api/PredictionSet", $"", SD.DataRuleKey);
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/PredictionSet", $"", SD.DataRuleKey);
             Console.WriteLine($"InsertPredictionAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -140,7 +140,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<T> InsertRuleAsync<T>(RuleModel rule, string source)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/api/Rules", $"Name={source}", SD.DataRuleKey);
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Rules", $"Name={source}", SD.DataRuleKey);
             Console.WriteLine($"InsertRulesAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -158,7 +158,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<T> UpdateRuleAsync<T>(RuleModel rule, string source)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/api/Rules", $"Name={source}", SD.DataRuleKey);
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Rules", $"Name={source}", SD.DataRuleKey);
             Console.WriteLine($"UpdateRulesAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {

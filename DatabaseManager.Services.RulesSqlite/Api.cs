@@ -11,7 +11,7 @@ namespace DatabaseManager.Services.RulesSqlite
         public static void ConfigureApi(this WebApplication app)
         {
             app.MapGet("/Rules", GetRules);
-            app.MapGet("/Rules/{id}", GetRule);
+            app.MapGet("/Rule", GetRule);
             app.MapPost("/CreateDatabase", CreateRulesDatabase);
             app.MapPost("/CreateStandardRules", CreateStandardRules);
             app.MapPost("/Rules", SaveRules);
@@ -298,12 +298,12 @@ namespace DatabaseManager.Services.RulesSqlite
             return Results.Ok(response);
         }
 
-        private static async Task<IResult> GetRule(int id, IRuleAccess ra)
+        private static async Task<IResult> GetRule(int Id, IRuleAccess ra)
         {
             ResponseDto response = new();
             try
             {
-                var rule = await ra.GetRule(id);
+                var rule = await ra.GetRule(Id);
                 response.Result = rule;
                 response.IsSuccess = true;
             }
