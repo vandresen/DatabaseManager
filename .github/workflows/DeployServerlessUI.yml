@@ -29,7 +29,7 @@ jobs:
         with:
           azcliversion: latest
           inlineScript: |
-            az storage blob upload-batch --account-name ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }} --account-key ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }} --destination <container_name> --source ./publish/wwwroot   
+            az storage blob upload-batch --account-name ${{ secrets.SERVERLESSUI_BLOB_STORAGE_ACCOUNT_NAME }} --account-key ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }} --destination \$web --source D:\a\DatabaseManager\published_app\wwwroot  
           
   
   
