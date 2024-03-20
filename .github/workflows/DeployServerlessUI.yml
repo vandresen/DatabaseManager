@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     name: Build release
-    runs-on: windows-2022
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       
@@ -22,38 +22,14 @@ jobs:
         run: dotnet build DatabaseManager.ServerLessClient/DatabaseManager.ServerLessClient.csproj --configuration Release --no-restore
         
       - name: Publish
-        run: dotnet publish DatabaseManager.ServerLessClient/DatabaseManager.ServerLessClient.csproj --configuration Release -o ../published_app --no-build --self-contained true
+        run: dotnet publish DatabaseManager.ServerLessClient/DatabaseManager.ServerLessClient.csproj --configuration Release -o ./publish --no-build --self-contained true
         
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+      - name: Deploy to Azure Storage Blob
+        uses: azure/CLI@v1
         with:
-          name: ServerlessUI
-          path: D:\a\DatabaseManager\published_app\wwwroot
+          azcliversion: latest
+          inlineScript: |
+            az storage blob upload-batch --account-name ${{ secrets.SERVERLESSUI_BLOB_STORAGE_ACCOUNT_NAME }} --account-key ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }} --destination \$web --source ./publish/wwwroot  --overwrite
           
-  deploy:
-    needs: build
-    name: Deploy
-    runs-on: ubuntu-latest
-    steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v3
-      with:
-        name: ServerlessUI
-    - name: Authenticate with Azure
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS  }}
-    - name: Deploy to storage using CLI
-      uses: azure/CLI@v1
-      with:
-        azcliversion: latest
-        inlineScript: | 
-          # show azure account being used
-          az account show
-          # az storage account upload
-          az storage blob upload-batch --account-name ${{ secrets.SERVERLESSUI_BLOB_STORAGE_ACCOUNT_NAME }} -s . -d \$web --overwrite true
-    - name: logout
-      working-directory: .
-      run: |
-        az logout
+  
   
