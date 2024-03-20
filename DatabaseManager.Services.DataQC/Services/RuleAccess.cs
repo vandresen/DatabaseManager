@@ -1,5 +1,6 @@
 ﻿using DatabaseManager.Services.DataQC.Extensions;
 using DatabaseManager.Services.DataQC.Models;
+using Microsoft.Extensions.Logging;
 
 namespace DatabaseManager.Services.DataQC.Services
 {
@@ -7,7 +8,7 @@ namespace DatabaseManager.Services.DataQC.Services
     {
         private readonly IHttpClientFactory _clientFactory;
 
-        public RuleAccess(IHttpClientFactory clientFactory) : base(clientFactory)
+        public RuleAccess(IHttpClientFactory clientFactory, ILoggerFactory loggerFactory) : base(clientFactory)
         {
             _clientFactory = clientFactory;
         }
