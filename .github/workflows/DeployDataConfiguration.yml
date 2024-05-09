@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   
 env:
-  AZURE_FUNCTIONAPP_NAME: 'PetrodataOnlinedataOps'
+  AZURE_FUNCTIONAPP_NAME: 'PetrodataOnlineDataConfiguration'
   AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' 
 
 jobs:
