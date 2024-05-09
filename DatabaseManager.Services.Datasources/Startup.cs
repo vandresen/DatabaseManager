@@ -3,7 +3,6 @@ using DatabaseManager.Services.Datasources.Repository;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Xml.Linq;
 
 [assembly: FunctionsStartup(typeof(DatabaseManager.Services.Datasources.Startup))]
 
