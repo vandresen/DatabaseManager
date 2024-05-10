@@ -1,12 +1,12 @@
-name: DeployDataTransfer
+name: DeployDataConfiguration
 
 on:
   workflow_dispatch:
   
 env:
-  AZURE_FUNCTIONAPP_NAME: 'PetrodataOnlineDataTransfer'
+  AZURE_FUNCTIONAPP_NAME: 'PetrodataOnlineDataConfiguration'
   AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' 
-  
+
 jobs:
   build:
     name: Build release
@@ -18,17 +18,18 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
-          
+
       - name: Build
         shell: pwsh
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          dotnet build DatabaseManager.Services.DataTransfer/DatabaseManager.Services.DataTransfer.csproj --configuration Release --output ./output
+          dotnet build DatabaseManager.Services.DataConfiguration/DatabaseManager.Services.DataConfiguration.csproj --configuration Release --output ./output
           popd
-          
-      - name: Deploy to Azure
+
+      - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
+        id: fa
         with:
           app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
           package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
-          publish-profile: ${{ secrets.DATATRANSFER_PROFILE }}
+          publish-profile: ${{ secrets.DATACONFIGURATION_PROFILE }}
