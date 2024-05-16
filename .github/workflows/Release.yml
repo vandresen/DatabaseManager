@@ -43,7 +43,7 @@ jobs:
       #  run: dotnet publish DatabaseManager/server/DatabaseManager.Server.csproj
 
       - name: Publish
-        run: dotnet publish -c Release -o ${{ github.workspace }}/publish
+        run: dotnet publish DatabaseManager/server/DatabaseManager.Server.csproj -o ${{ github.workspace }}/publish
         
       - name: Upload Hosted Server Build Artifact
         uses: actions/upload-artifact@v2
