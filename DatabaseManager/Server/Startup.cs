@@ -1,4 +1,3 @@
-//using DatabaseManager.Server.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.ResponseCompression;
@@ -13,9 +12,9 @@ using Azure.Storage.Queues;
 using Azure.Storage.Blobs;
 using Azure.Core.Extensions;
 using AutoMapper;
-using System.Reflection;
 using System.IO;
 using DatabaseManager.Common.Services;
+using System.Reflection;
 
 namespace DatabaseManager.Server
 {
@@ -30,7 +29,7 @@ namespace DatabaseManager.Server
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddAutoMapper(typeof(Startup));
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             services.AddScoped<IFileStorageServiceCommon, AzureFileStorageServiceCommon>();
             services.AddScoped<IQueueService, AzureQueueServiceCommon>();
 

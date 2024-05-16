@@ -1,5 +1,4 @@
 ﻿using BlazorTable;
-//using DatabaseManager.Client.Helpers;
 using DatabaseManager.Shared;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +8,8 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using DatabaseManager.BlazorComponents.Services;
 using Blazored.LocalStorage;
-using MathNet.Numerics;
+//using MathNet.Numerics;
+using Microsoft.AspNetCore.Components.Web;
 
 namespace DatabaseManager.Client
 {
@@ -21,7 +21,10 @@ namespace DatabaseManager.Client
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             string baseAddress = builder.HostEnvironment.BaseAddress;
             builder.RootComponents.Add<App>("app");
-            
+
+            //builder.RootComponents.Add<App>("#app");
+            //builder.RootComponents.Add<HeadOutlet>("head::after");
+
             builder.Services.AddSingleton(new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress), Timeout = TimeSpan.FromMinutes(5) });
             builder.Services.AddHttpClient("DatabaseManager", c => { c.BaseAddress = new Uri(baseAddress); });
             ConfigureServices(builder.Services);

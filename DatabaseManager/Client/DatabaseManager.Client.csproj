@@ -1,25 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <RazorLangVersion>3.0</RazorLangVersion>
+    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Blazored.LocalStorage" Version="4.2.0" />
+    <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
     <PackageReference Include="BlazorTable" Version="1.17.0" />
-    <PackageReference Include="Markdig" Version="0.30.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.8" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.8" />
-    <PackageReference Include="MudBlazor" Version="6.0.15" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <PackageReference Include="Plotly.Blazor" Version="2.12.0" />
+    <PackageReference Include="Markdig" Version="0.37.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.4" />
+    <PackageReference Include="MudBlazor" Version="6.19.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Plotly.Blazor" Version="4.3.0" />
     <PackageReference Include="System.IO" Version="4.3.0" />
-    <PackageReference Include="System.Net.Http.Json" Version="6.0.0" />
   </ItemGroup>
+	
   <ItemGroup>
     <ProjectReference Include="..\..\DatabaseManager.BlazorComponents\DatabaseManager.BlazorComponents.csproj" />
-    <ProjectReference Include="..\..\DatabaseManager.Common\DatabaseManager.Common.csproj" />
     <ProjectReference Include="..\Shared\DatabaseManager.Shared.csproj" />
   </ItemGroup>
 
