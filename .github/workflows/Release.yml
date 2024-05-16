@@ -43,7 +43,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: HostedServer
-          path: D:\a\DatabaseManager\DatabaseManager\DatabaseManager\Server\bin\Debug\net6.0\publish\
+          path: D:\a\DatabaseManager\DatabaseManager\DatabaseManager\Server\bin\Debug\net8.0\publish\
           
   release:
     name: Release Project
