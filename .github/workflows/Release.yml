@@ -6,6 +6,9 @@ on:
       versionNumber:
         description: 'Version number'   
         required: true
+
+env:
+  AZURE_APPSERVICE_PACKAGE_PATH: '.' 
   
 jobs:
   changelog:
@@ -36,14 +39,17 @@ jobs:
       - name: Build
         run: dotnet build DatabaseManager/server/DatabaseManager.Server.csproj --configuration Release --no-restore
         
+      #- name: Publish
+      #  run: dotnet publish DatabaseManager/server/DatabaseManager.Server.csproj
+
       - name: Publish
-        run: dotnet publish DatabaseManager/server/DatabaseManager.Server.csproj
+        run: dotnet publish -c Release -o ${{ github.workspace }}/publish
         
       - name: Upload Hosted Server Build Artifact
         uses: actions/upload-artifact@v2
         with:
           name: HostedServer
-          path: D:\a\DatabaseManager\DatabaseManager\DatabaseManager\Server\bin\Debug\net8.0\publish\
+          path: ${{ github.workspace }}/publish
           
   release:
     name: Release Project
