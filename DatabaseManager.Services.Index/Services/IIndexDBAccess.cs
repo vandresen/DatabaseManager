@@ -20,5 +20,6 @@ namespace DatabaseManager.Services.Index.Services
         Task<IEnumerable<DmIndexDto>> GetDmIndexes(string indexNode, int level, string connectionString);
         Task<IEnumerable<DmIndexDto>> GetDmIndex(int id, string connectionString);
         Task InsertIndexes(IndexDataCollection indexes, int parentid, string connectionString);
+        Task UpdateIndexes(List<IndexDto> indexes, string connectionString);
     }
 }

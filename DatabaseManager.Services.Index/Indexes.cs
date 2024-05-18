@@ -271,18 +271,31 @@ namespace DatabaseManager.Services.Index
             return response;
         }
 
-        [Function("SaveIndex")]
-        public HttpResponseData SaveIndex(
+        [Function("UpdateIndexes")]
+        public async Task<ResponseDto> UpdateIndexes(
             [HttpTrigger(AuthorizationLevel.Function, "put", Route = "Indexes")] HttpRequestData req)
         {
-            _logger.LogInformation("SaveIndex: Starting");
+            _logger.LogInformation("UpdateIndexes: Starting");
 
-            var response = req.CreateResponse(HttpStatusCode.OK);
-            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                var stringBody = await new StreamReader(req.Body).ReadToEndAsync();
+                List<IndexDto> indexes = JsonConvert.DeserializeObject<List<IndexDto>>(Convert.ToString(stringBody));
+                await _indexDB.UpdateIndexes(indexes, connectParameter.ConnectionString);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"UpdateIndexes: Error updating indexes: {ex}");
+            }
 
-            response.WriteString("Welcome to Azure Functions!");
-
-            return response;
+            _logger.LogInformation("UpdateIndexes: Completed");
+            return _response;
         }
 
         [Function("DeleteIndex")]

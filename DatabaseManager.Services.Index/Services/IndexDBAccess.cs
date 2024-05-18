@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -568,6 +569,25 @@ namespace DatabaseManager.Services.Index.Services
 
                 return result;
             }
+        }
+
+        public async Task UpdateIndexes(List<IndexDto> indexes, string connectionString)
+        {
+            string storedProcedure = "spUpdateIndex";
+            var parametersList = new List<DynamicParameters>();
+
+            foreach (var index in indexes)
+            {
+                // Define parameters for each model
+                var parameters = new DynamicParameters();
+                parameters.Add("@IndexId", index.IndexId);
+                parameters.Add("@QC_String", index.QC_String);
+                parameters.Add("@JsonDataObject", index.JsonDataObject);
+
+                // Add parameters to the list
+                parametersList.Add(parameters);
+            }
+            await _dp.SaveData(storedProcedure, parametersList, connectionString);
         }
     }
 }
