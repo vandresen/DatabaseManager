@@ -6,6 +6,9 @@ on:
       versionNumber:
         description: 'Version number'   
         required: true
+
+env:
+  AZURE_APPSERVICE_PACKAGE_PATH: '.' 
   
 jobs:
   changelog:
@@ -28,22 +31,25 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: 8.0.x
           
       - name: Install dependencies
         run: dotnet restore DatabaseManager/server/DatabaseManager.Server.csproj
         
       - name: Build
-        run: dotnet build DatabaseManager/server/DatabaseManager.Server.csproj --configuration Release --no-restore
+        run: dotnet build DatabaseManager/server/DatabaseManager.Server.csproj --configuration Release
         
+      #- name: Publish
+      #  run: dotnet publish DatabaseManager/server/DatabaseManager.Server.csproj
+      
       - name: Publish
-        run: dotnet publish DatabaseManager/server/DatabaseManager.Server.csproj
+        run: dotnet publish DatabaseManager/server/DatabaseManager.Server.csproj -o ${{ github.workspace }}/publish -c Release --no-restore --no-build
         
       - name: Upload Hosted Server Build Artifact
         uses: actions/upload-artifact@v2
         with:
           name: HostedServer
-          path: D:\a\DatabaseManager\DatabaseManager\DatabaseManager\Server\bin\Debug\net6.0\publish\
+          path: ${{ github.workspace }}/publish
           
   release:
     name: Release Project

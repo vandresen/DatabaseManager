@@ -1,3 +1,8 @@
+# Release 1.31
+* Created microservice for rules for both sql server and sqlite
+* Created microservice for dataqc 
+* Upgraded solution to .net 8 and fixed security vulnarables
+
 # Release 1.30
 * Added support for DQM projects in a sqlite database
 * Added functionality to delete when editing Taxonomy
