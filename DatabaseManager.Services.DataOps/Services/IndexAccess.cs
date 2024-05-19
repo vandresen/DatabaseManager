@@ -1,6 +1,7 @@
 ﻿using DatabaseManager.Services.DataOps.Extensions;
 using DatabaseManager.Services.DataOps.Models;
 using Microsoft.Extensions.Configuration;
+using System.ComponentModel.DataAnnotations;
 
 namespace DatabaseManager.Services.DataOps.Services
 {
@@ -26,6 +27,20 @@ namespace DatabaseManager.Services.DataOps.Services
                 ApiType = SD.ApiType.GET,
                 AzureStorage = SD.AzureStorageKey,
                 Url = url
+            });
+        }
+
+        public async Task<T> UpdateIndexes<T>(List<IndexDto> indexes, string dataSource, string project)
+        {
+            var indexAPIBase = _configuration.GetValue<string>("IndexAPI");
+            var indexKey = _configuration.GetValue<string>("IndexKey");
+            string url = indexAPIBase.BuildFunctionUrl($"/Indexes", $"Name={dataSource}&Project={project}", indexKey);
+            return await SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.PUT,
+                AzureStorage = SD.AzureStorageKey,
+                Url = url,
+                Data = indexes
             });
         }
     }

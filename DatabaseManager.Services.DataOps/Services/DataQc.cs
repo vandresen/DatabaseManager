@@ -1,4 +1,5 @@
-﻿using DatabaseManager.Services.DataOps.Extensions;
+﻿using Castle.Components.DictionaryAdapter;
+using DatabaseManager.Services.DataOps.Extensions;
 using DatabaseManager.Services.DataOps.Models;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Configuration;
@@ -24,14 +25,19 @@ namespace DatabaseManager.Services.DataOps.Services
 
         public async Task<T> CloseDataQc<T>(string source, List<RuleFailures> ruleFailures)
         {
+            string project = "";
             ResponseDto response = new ResponseDto();
             try
             {
-                ResponseDto idxResponse = await _indexAccess.GetIndexes<ResponseDto>(source, "", "");
+                ResponseDto idxResponse = await _indexAccess.GetIndexes<ResponseDto>(source, project, "");
                 ResponseDto ruleResponse = await _ruleAccess.GetRules<ResponseDto>(source);
                 if (idxResponse.IsSuccess && ruleResponse.IsSuccess)
                 {
                     var indexes = JsonConvert.DeserializeObject<List<IndexDto>>(Convert.ToString(idxResponse.Result));
+                    foreach (var index in indexes)
+                    {
+                        index.QC_String = "";
+                    }
                     var rules = JsonConvert.DeserializeObject<List<RuleModelDto>>(Convert.ToString(ruleResponse.Result));
                     foreach (var ruleFailure in ruleFailures)
                     {
@@ -49,13 +55,22 @@ namespace DatabaseManager.Services.DataOps.Services
                             index.QC_String = qcString;
                         }
                     }
-                    //ToBe Implemnted, saving indexes
-                    response.IsSuccess = true;
+                    ResponseDto updateRespones = await _indexAccess.UpdateIndexes<ResponseDto>(indexes, source, project);
+                    if (updateRespones.IsSuccess) 
+                    { 
+                        response.IsSuccess = true; 
+                    }
+                    else
+                    {
+                        response.IsSuccess = false;
+                        string error = $"CloseDataQc: Could not update indexes";
+                        response.ErrorMessages = new List<string>() { error };
+                    }
                 }
                 else
                 {
                     response.IsSuccess = false;
-                    string error = $"CloseDataQc: Could not indexes";
+                    string error = $"CloseDataQc: Could not close indexes";
                     response.ErrorMessages = new List<string>() { error };
                 }
                 return await Task.FromResult((T)(object)response);
