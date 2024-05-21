@@ -23,7 +23,7 @@ jobs:
         shell: pwsh
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          dotnet build DatabaseManager.Services.Rules/DatabaseManager.Services.DataOpsManagement.csproj --configuration Release --output ./output
+          dotnet build DatabaseManager.Services.DataOpsManagement/DatabaseManager.Services.DataOpsManagement.csproj --configuration Release --output ./output
           popd
           
       - name: Deploy to Azure
