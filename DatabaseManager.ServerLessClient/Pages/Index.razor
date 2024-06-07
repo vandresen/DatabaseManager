@@ -1,6 +1,6 @@
 ﻿@page "/"
 @inject ILocalStorageService localStorage
-@inject SingletonServices settings
+@inject BlazorSingletonService settings
 @inject HttpClient client
 @inject IDisplayMessage displayMessage
 @inject NavigationManager navigationManager
@@ -9,7 +9,6 @@
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration Configuration
 @using MudBlazor
-@using DatabaseManager.BlazorComponents;
 
 <div class="jumbotron">
     <h1>Welcome to Database Manager</h1>
@@ -87,7 +86,7 @@ else
     public List<ConnectParametersDto> ConnectParameters;
     private List<string> projects;
     private List<string> options;
-    public List<DmsIndex> index;
+    public List<DatabaseManager.Shared.DmsIndex> index;
     private string indexStatus = "No index available";
     bool spinner = false;
     bool sqlite = false;
@@ -96,7 +95,7 @@ else
     {
         try
         {
-            Console.WriteLine($"SD.DataTransferAPIBase = {SD.DataTransferAPIBase}");
+            Console.WriteLine($"SD.DataOpsManageAPIBase = {SD.DataOpsManageAPIBase}");
             Console.WriteLine($"SD.DataTransferKey = {SD.DataTransferKey}");
             Console.WriteLine($"SD.DataModelAPI = {SD.DataModelAPIBase}");
             Console.WriteLine($"SD.EsriKey = {SD.EsriKey}");
@@ -118,7 +117,7 @@ else
             }
             else
             {
-                ResponseDto response = await dataSourceService.GetAllDataSourcesAsync<ResponseDto>();
+                DatabaseManager.BlazorComponents.Models.ResponseDto response = await dataSourceService.GetAllDataSourcesAsync<DatabaseManager.BlazorComponents.Models.ResponseDto>();
                 if (response != null && response.IsSuccess)
                 {
                     ConnectParameters = JsonConvert.DeserializeObject<List<ConnectParametersDto>>(Convert.ToString(response.Result));
@@ -194,7 +193,7 @@ else
         }
     }
 
-    private void DataTypes(DmsIndex item)
+    private void DataTypes(DatabaseManager.Shared.DmsIndex item)
     {
         string url = @"/ChildData/" + $"{item.Id}";
         navigationManager.NavigateTo(url);

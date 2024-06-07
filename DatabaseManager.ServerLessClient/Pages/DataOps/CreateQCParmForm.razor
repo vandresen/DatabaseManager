@@ -24,7 +24,7 @@ else
 @code {
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public DataQCParameters DataQcParms { get; set; }
-    List<ConnectParameters> connectParameters;
+    List<DatabaseManager.Shared.ConnectParameters> connectParameters;
     public string[] options { get; set; }
 
     protected override async Task OnInitializedAsync()

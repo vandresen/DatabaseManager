@@ -17,7 +17,7 @@
 @code {
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public PredictionParameters PredictioncParms { get; set; }
-    List<ConnectParameters> connectParameters;
+    List<DatabaseManager.Shared.ConnectParameters> connectParameters;
     public string[] options { get; set; }
 
     protected override async Task OnInitializedAsync()

@@ -1,8 +1,8 @@
 ﻿@page "/createtube/{Name}/{TubeType}"
 @using MudBlazor
 @inject NavigationManager navigationManager
-@inject SingletonServices singleton
-@inject IDataOps ops
+@inject BlazorSingletonService singleton
+@inject DatabaseManager.ServerLessClient.Services.IDataOps ops
 @inject IDataSources dataSources
 
 <h3>Create Tube</h3>
@@ -50,10 +50,7 @@ else
     public DataQCParameters qcParms = new DataQCParameters();
     public TransferParameters transferParms = new TransferParameters();
     public PredictionParameters predictionParms = new PredictionParameters();
-    public List<ConnectParameters> connectParameters;
-    // string source;
-    // string target;
-    // string taxonomy;
+    public List<DatabaseManager.Shared.ConnectParameters> connectParameters;
     int priority = 0;
 
     protected override async Task OnInitializedAsync()
@@ -104,7 +101,7 @@ else
         }
         else if (TubeType == "DataTransfer")
         {
-            ConnectParameters sourceConnector = connectParameters.FirstOrDefault(obj => obj.SourceName == transferParms.SourceName);
+            DatabaseManager.Shared.ConnectParameters sourceConnector = connectParameters.FirstOrDefault(obj => obj.SourceName == transferParms.SourceName);
             if (sourceConnector != null)
             {
                 transferParms.SourceType = sourceConnector.SourceType;

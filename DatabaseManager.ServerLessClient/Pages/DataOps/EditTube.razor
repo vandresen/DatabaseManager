@@ -41,9 +41,9 @@ else
     DataQCParameters qcParms = new DataQCParameters();
     public PredictionParameters predictionParms = new PredictionParameters();
     TransferParameters transferParms = new TransferParameters();
-    List<PipeLine> tubes = new List<PipeLine>();
-    public List<ConnectParameters> connectParameters;
-    PipeLine tube = new PipeLine();
+    List<DatabaseManager.Shared.PipeLine> tubes = new List<DatabaseManager.Shared.PipeLine>();
+    public List<DatabaseManager.Shared.ConnectParameters> connectParameters;
+    DatabaseManager.Shared.PipeLine tube = new DatabaseManager.Shared.PipeLine();
     string TubeType = "";
     int priority;
 
@@ -101,7 +101,7 @@ else
         }
         else if (TubeType == "DataTransfer")
         {
-            ConnectParameters sourceConnector = connectParameters.FirstOrDefault(obj => obj.SourceName == transferParms.SourceName);
+            DatabaseManager.Shared.ConnectParameters sourceConnector = connectParameters.FirstOrDefault(obj => obj.SourceName == transferParms.SourceName);
             if (sourceConnector != null)
             {
                 transferParms.SourceType = sourceConnector.SourceType;
@@ -115,8 +115,8 @@ else
             Console.WriteLine("Tube type not supported");
         }
         tube.Parameters = jsonString;
-        DataOpsPipes pipe = new DataOpsPipes { Name = Name };
-        List<PipeLine> sortedTubes = tubes.OrderBy(o => o.Priority).ToList();
+        DatabaseManager.Shared.DataOpsPipes pipe = new DatabaseManager.Shared.DataOpsPipes { Name = Name };
+        List<DatabaseManager.Shared.PipeLine> sortedTubes = tubes.OrderBy(o => o.Priority).ToList();
         await ops.SavePipeline(pipe, sortedTubes);
         navigationManager.NavigateTo($"/dataops/edit/{Name}");
     }

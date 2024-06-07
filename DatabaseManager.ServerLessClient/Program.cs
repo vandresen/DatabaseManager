@@ -1,18 +1,12 @@
 using AutoMapper;
 using Blazored.LocalStorage;
 using BlazorTable;
-using DatabaseManager.BlazorComponents;
+//using DatabaseManager.BlazorComponents;
 using DatabaseManager.BlazorComponents.Services;
-using DatabaseManager.Shared;
+using DatabaseManager.ServerLessClient.Models;
 using dymaptic.GeoBlazor.Core;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using MudBlazor.Services;
-using System;
-using System.Net.Http;
-using System.Reflection.Metadata;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.ServerLessClient
 {
@@ -55,6 +49,8 @@ namespace DatabaseManager.ServerLessClient
             SD.DataRuleKey = builder.Configuration["ServiceUrls:DataRuleKey"];
             SD.DataTransferAPIBase = builder.Configuration["ServiceUrls:DataTransferAPI"];
             SD.DataTransferKey = builder.Configuration["ServiceUrls:DataTransferKey"];
+            SD.DataOpsManageAPIBase = builder.Configuration["ServiceUrls:DataOpsManageAPI"];
+            SD.DataOpsManageKey = builder.Configuration["ServiceUrls:DataOpsManageKey"];
 
             await builder.Build().RunAsync();
         }
@@ -64,7 +60,8 @@ namespace DatabaseManager.ServerLessClient
             IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
             services.AddSingleton(mapper);
 
-            services.AddSingleton<SingletonServices>();
+            services.AddSingleton<BlazorSingletonService>();
+            services.AddSingleton<DatabaseManager.Shared.SingletonServices>();
             services.AddBlazoredLocalStorage();
 
             services.AddHttpClient();
@@ -79,7 +76,7 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IDataModelService, DataModelService>();
             services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddScoped<IHttpService, HttpService>();
-            services.AddScoped<IDataOps, DataOpsServerLess>();
+            services.AddScoped<DatabaseManager.ServerLessClient.Services.IDataOps, DatabaseManager.ServerLessClient.Services.DataOps>();
             services.AddScoped<IDataSources, DataSourcesServerLess>();
             services.AddScoped<IDataTransfer, DataTransferServerLess>();
             services.AddScoped<IDataModelCreate, DataModelCreateServerless>();

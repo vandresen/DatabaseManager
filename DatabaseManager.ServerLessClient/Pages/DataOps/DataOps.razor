@@ -1,7 +1,7 @@
 ﻿@page "/dataops"
 @inject IDisplayMessage displayMessage
-@inject IDataOps dataOps
-@inject SingletonServices settings
+@inject DatabaseManager.ServerLessClient.Services.IDataOps dataOps
+@inject BlazorSingletonService settings
 @using System.Text
 
 <h3>Data Ops</h3>
@@ -49,7 +49,9 @@ input {
     {
         try
         {
-            pipeList = await dataOps.GetPipelines();
+            DatabaseManager.ServerLessClient.Models.ResponseDto response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
+            pipeList = JsonConvert.DeserializeObject<List<DataOpsPipes>>(Convert.ToString(response.Result));
+            Console.WriteLine($"Pipes: {pipeList.Count}");
         }
         catch (Exception ex)
         {
@@ -68,7 +70,8 @@ input {
             DataOpsPipes pipe = new DataOpsPipes();
             pipe.Name = pipelineName;
             await dataOps.CreatePipeline(pipe);
-            pipeList = await dataOps.GetPipelines();
+            DatabaseManager.ServerLessClient.Models.ResponseDto response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
+            // pipeList = await dataOps.GetPipelines();
             pipelineName = "";
             this.StateHasChanged();
         }
@@ -84,7 +87,8 @@ input {
         try
         {
             await dataOps.DeletePipeline(name);
-            pipeList = await dataOps.GetPipelines();
+            DatabaseManager.ServerLessClient.Models.ResponseDto response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
+            // pipeList = await dataOps.GetPipelines();
             this.StateHasChanged();
         }
         catch (Exception ex)

@@ -41,7 +41,7 @@ else
 @code {
     [Parameter] public CreateIndexParameters IndexParms { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
-    List<ConnectParameters> connectParameters;
+    List<DatabaseManager.Shared.ConnectParameters> connectParameters;
     public string[] options { get; set; }
     List<string> taxonomies;
 
@@ -49,7 +49,7 @@ else
     {
         connectParameters = await dataSources.GetSources();
         options = connectParameters.Select(x => x.SourceName).ToArray();
-        List<IndexFileList> indexFileList = await createIndex.GetTaxonomies();
+        List<DatabaseManager.Shared.IndexFileList> indexFileList = await createIndex.GetTaxonomies();
         Console.WriteLine($"Number index files are {indexFileList.Count}");
         taxonomies = indexFileList.Select(s => s.Name).ToList();
     }

@@ -23,7 +23,7 @@
 }
 else
 {
-    <Table TableItem="PipeLine" Items="tubes" PageSize="@pageSize" ColumnReorder="true">
+    <Table TableItem="DatabaseManager.Shared.PipeLine" Items="tubes" PageSize="@pageSize" ColumnReorder="true">
         <Column TableItem="PipeLine" Title="Action" Sortable="false">
             <Template>
                 <a class="btn btn-primary" href="/edittube/@Name/@context.Id">Edit</a>
@@ -40,7 +40,7 @@ else
 @code {
     [Parameter] public string Name { get; set; }
     private List<string> TubeTypes = new List<string>{ "DataTransfer", "CreateIndex", "DataQC", "Predictions"};
-    List<PipeLine> tubes;
+    List<DatabaseManager.Shared.PipeLine> tubes;
     private bool expandedState = false;
     private string showMenu = null;
     int pageSize = 10;
@@ -58,7 +58,7 @@ else
             Console.WriteLine($"Delete tube with iod={id}");
             tubes = await ops.GetPipeline(Name);
             tubes.RemoveAll(x => x.Id == id);
-            DataOpsPipes pipe = new DataOpsPipes { Name = Name };
+            DatabaseManager.Shared.DataOpsPipes pipe = new DatabaseManager.Shared.DataOpsPipes { Name = Name };
             await ops.SavePipeline(pipe, tubes);
             this.StateHasChanged();
         }

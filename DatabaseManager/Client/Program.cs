@@ -46,7 +46,7 @@ namespace DatabaseManager.Client
             services.AddScoped<IDataIndexer, DataIndexer>();
             services.AddScoped<IIndexView, IndexView >();
             services.AddScoped<IRules, Rules>();
-            services.AddScoped<IDataOps, DataOpsClientService>();
+            //services.AddScoped<IDataOps, DataOpsClientService>();
             services.AddScoped<IDataQc, DataQc>();
             services.AddScoped<IPrediction, Prediction>();
             services.AddScoped<ICookies, Cookies>();
