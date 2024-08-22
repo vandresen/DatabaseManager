@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace DatabaseManager.Shared
@@ -14,5 +15,7 @@ namespace DatabaseManager.Shared
         public bool ServerLess { get; set; }
         public int HttpTimeOut = 500;
         public string Project { get; set; }
+        public string IndexKey { get; set; }
+        public string IndexAPIBase { get; set; }
     }
 }

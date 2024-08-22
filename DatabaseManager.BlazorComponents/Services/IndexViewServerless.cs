@@ -29,7 +29,7 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<List<DmsIndex>> GetChildren(string source, int id)
         {
             List<DmsIndex> children = new List<DmsIndex>();
-            string url = SD.IndexAPIBase.BuildFunctionUrl("/api/DmIndex", $"name={source}&id={id}", SD.IndexKey);
+            string url = _settings.IndexAPIBase.BuildFunctionUrl("/api/DmIndex", $"name={source}&id={id}", _settings.IndexKey);
             Console.WriteLine($"GetDmIndexesAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -43,8 +43,9 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<List<DmsIndex>> GetIndex(string source)
         {
             List<DmsIndex> index = new List<DmsIndex>();
-            string baseUrl = SD.IndexAPIBase + "/api/DmIndexes";
-            string url = SD.IndexAPIBase.BuildFunctionUrl("/api/DmIndexes", $"name={source}", SD.IndexKey);
+            //string baseUrl = SD.IndexAPIBase + "/api/DmIndexes";
+            string url = _settings.IndexAPIBase.BuildFunctionUrl("/api/DmIndexes", $"name={source}", _settings.IndexKey);
+            Console.Write($"Key: {_settings.IndexKey}");
             Console.WriteLine($"GetIndex: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -80,7 +81,7 @@ namespace DatabaseManager.BlazorComponents.Services
 
         public async Task<List<IndexFileData>> GetIndexTaxonomy(string source)
         {
-            string url = SD.IndexAPIBase.BuildFunctionUrl("/api/DmIndexes", $"Name={source}&Node=/&Level=0", SD.IndexKey);
+            string url = _settings.IndexAPIBase.BuildFunctionUrl("/api/DmIndexes", $"Name={source}&Node=/&Level=0", _settings.IndexKey);
             Console.WriteLine($"GetDmIndexesAsync: url = {url}");
             ResponseDto response =  await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -104,7 +105,7 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<IndexModel> GetSingleIndexItem(string source, int id)
         {
             IndexModel idx = new IndexModel();
-            string url = SD.IndexAPIBase.BuildFunctionUrl($"/api/Indexes/{id}", $"Name={source}", SD.IndexKey);
+            string url = _settings.IndexAPIBase.BuildFunctionUrl($"/api/Indexes/{id}", $"Name={source}", _settings.IndexKey);
             Console.WriteLine($"GetDmIndexesAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {

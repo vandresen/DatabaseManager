@@ -1,11 +1,12 @@
 ﻿@page "/"
 @inject ILocalStorageService localStorage
 @inject BlazorSingletonService settings
+@inject DatabaseManager.Shared.SingletonServices settings2
 @inject HttpClient client
 @inject IDisplayMessage displayMessage
 @inject NavigationManager navigationManager
 @inject IIndexView idxView
-@inject IDataSourceService dataSourceService
+@inject DatabaseManager.ServerLessClient.Services.IDataSources dataSourceService
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration Configuration
 @using MudBlazor
@@ -96,11 +97,15 @@ else
         try
         {
             Console.WriteLine($"SD.DataOpsManageAPIBase = {SD.DataOpsManageAPIBase}");
-            Console.WriteLine($"SD.DataTransferKey = {SD.DataTransferKey}");
+            Console.WriteLine($"SD.DataSourceAPIBase = {SD.DataSourceAPIBase}");
             Console.WriteLine($"SD.DataModelAPI = {SD.DataModelAPIBase}");
             Console.WriteLine($"SD.EsriKey = {SD.EsriKey}");
             settings.ServerLess = true;
             settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
+            settings2.AzureStorage = settings.AzureStorage;
+            settings2.IndexAPIBase = SD.IndexAPIBase;
+            settings2.IndexKey = SD.IndexKey;
+            Console.WriteLine($"Azure settings: {settings.AzureStorage}");
             settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
             settings.ApiKey = await localStorage.GetItemAsync<string>("APIKey");
             Console.WriteLine($"Sqlite = {SD.Sqlite}");
@@ -117,7 +122,7 @@ else
             }
             else
             {
-                DatabaseManager.BlazorComponents.Models.ResponseDto response = await dataSourceService.GetAllDataSourcesAsync<DatabaseManager.BlazorComponents.Models.ResponseDto>();
+                DatabaseManager.BlazorComponents.Models.ResponseDto response = await dataSourceService.GetSources<DatabaseManager.BlazorComponents.Models.ResponseDto>();
                 if (response != null && response.IsSuccess)
                 {
                     ConnectParameters = JsonConvert.DeserializeObject<List<ConnectParametersDto>>(Convert.ToString(response.Result));

@@ -63,8 +63,10 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Console.WriteLine("Init settings");
         if(settings.ServerLess)
         {
+            Console.WriteLine($"Azure settings: {settings.AzureStorage}");
             AzureStorage = settings.AzureStorage;
             baseUrl = settings.BaseUrl;
             apiKey = settings.ApiKey;

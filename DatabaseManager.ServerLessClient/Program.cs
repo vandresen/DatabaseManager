@@ -1,7 +1,6 @@
 using AutoMapper;
 using Blazored.LocalStorage;
 using BlazorTable;
-//using DatabaseManager.BlazorComponents;
 using DatabaseManager.BlazorComponents.Services;
 using DatabaseManager.ServerLessClient.Models;
 using dymaptic.GeoBlazor.Core;
@@ -65,19 +64,19 @@ namespace DatabaseManager.ServerLessClient
             services.AddBlazoredLocalStorage();
 
             services.AddHttpClient();
-            services.AddHttpClient<IDataSourceService, DataSourceService>();
+            services.AddHttpClient<DatabaseManager.ServerLessClient.Services.IDataSources, DatabaseManager.ServerLessClient.Services.DataSources>();
             services.AddHttpClient<IDataModelService, DataModelService>();
             services.AddHttpClient<IDataConfiguration, DataConfiguration>();
             services.AddHttpClient<IRulesService, RulesService>();
             
             services.AddHttpClient<IDataIndexer, DataIndexerServerLess>();
 
-            services.AddScoped<IDataSourceService, DataSourceService>();
+            services.AddScoped<DatabaseManager.ServerLessClient.Services.IDataSources, DatabaseManager.ServerLessClient.Services.DataSources>();
             services.AddScoped<IDataModelService, DataModelService>();
             services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddScoped<IHttpService, HttpService>();
             services.AddScoped<DatabaseManager.ServerLessClient.Services.IDataOps, DatabaseManager.ServerLessClient.Services.DataOps>();
-            services.AddScoped<IDataSources, DataSourcesServerLess>();
+            //services.AddScoped<IDataSources, DataSourcesServerLess>();
             services.AddScoped<IDataTransfer, DataTransferServerLess>();
             services.AddScoped<IDataModelCreate, DataModelCreateServerless>();
             services.AddScoped<IDataIndexer, DataIndexerServerLess>();

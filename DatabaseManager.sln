@@ -45,7 +45,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.Da
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.DataOps", "DatabaseManager.Services.DataOps\DatabaseManager.Services.DataOps.csproj", "{417F2A5B-865C-4D9A-BE46-EE343DC36456}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.Services.DataOpsManagement", "DatabaseManager.Services.DataOpsManagement\DatabaseManager.Services.DataOpsManagement.csproj", "{87AF13EF-5839-487A-9435-6FA00CBCA8FC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.DataOpsManagement", "DatabaseManager.Services.DataOpsManagement\DatabaseManager.Services.DataOpsManagement.csproj", "{87AF13EF-5839-487A-9435-6FA00CBCA8FC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,0 +1,110 @@
+﻿@page "/settings"
+@inject NavigationManager navigationManager
+@inject BlazorSingletonService settings
+@inject ICookies cookies
+@inject ILocalStorageService localStorage
+@inject HttpClient client
+@using MudBlazor
+@using DatabaseManager.BlazorComponents.Pages.Settings
+
+<style>
+    input {
+        padding: 12px 20px;
+        margin: 8px 0;
+        box-sizing: border-box;
+        border: 2px solid black;
+        border-radius: 4px;
+    }
+</style>
+
+<h3>Settings</h3>
+
+<MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Primary">
+    <MudTabPanel Text="System settings">
+        @if (settings.ServerLess)
+        {
+            <br />
+            <MudTextField @bind-Value="@AzureStorage" Label="Azure Storage:" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <br />
+            <MudTextField @bind-Value="@baseUrl" Label="API URL:" Variant="Variant.Text" HelperTextOnFocus="true" 
+                      HelperText="Example: http://localhost:7071/api/" Margin="Margin.Normal"></MudTextField>
+            <MudTextField @bind-Value="@apiKey" Label="API Key:" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <br />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="SaveServerless">Save</MudButton>
+        }
+        else
+        {
+            <br />
+            <MudTextField @bind-Value="@AzureStorage" Label="Azure Storage:" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <MudNumericField @bind-Value="@ExpirationDays" Label="Cookie expiration days:" Variant="Variant.Text" Margin="Margin.Normal"></MudNumericField>
+            <br />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="Save">Save</MudButton>
+        }
+    </MudTabPanel>
+    <MudTabPanel Text="Taxonomy">
+        <TaxonomySettings></TaxonomySettings>
+    </MudTabPanel>
+    <MudTabPanel Text="Data Access">
+        <DataAccessSettings></DataAccessSettings>
+    </MudTabPanel>
+    @if (SD.Sqlite)
+    {
+        <MudTabPanel Text="Manage Projects">
+            <ManageProjects></ManageProjects>
+        </MudTabPanel>
+    }
+</MudTabs>
+
+@code {
+    string AzureStorage;
+    string baseUrl;
+    string apiKey;
+    int ExpirationDays = 7;
+    // CookieParameters cookieParams = new CookieParameters();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("Init settings");
+        if(settings.ServerLess)
+        {
+            Console.WriteLine($"Azure settings: {settings.AzureStorage}");
+            AzureStorage = settings.AzureStorage;
+            baseUrl = settings.BaseUrl;
+            apiKey = settings.ApiKey;
+            Console.WriteLine($"Base url: {baseUrl}");
+        }
+        else
+        {
+            // CookieParameters cookieParams = await cookies.GetCookie();
+            // AzureStorage = cookieParams.Value;
+            Console.WriteLine($"{AzureStorage}");
+        }
+    }
+
+    private async Task Save()
+    {
+        if (!string.IsNullOrEmpty(AzureStorage))
+        {
+            // await cookies.DeleteCookie();
+            // cookieParams.Value = AzureStorage;
+            // cookieParams.ExpirationDays = ExpirationDays;
+            // await cookies.CreateCookie(cookieParams);
+            // client.DefaultRequestHeaders.Remove("AzureStorageConnection");
+            // client.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
+        }
+        navigationManager.NavigateTo("/");
+    }
+
+    private async Task SaveServerless()
+    {
+        if (!string.IsNullOrEmpty(AzureStorage))
+        {
+            await localStorage.SetItemAsync("AzureStorage", AzureStorage);
+            await localStorage.SetItemAsync("BaseUrl", baseUrl);
+            await localStorage.SetItemAsync("APIKey", apiKey);
+            client.DefaultRequestHeaders.Remove("AzureStorageConnection");
+            client.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
+        }
+        navigationManager.NavigateTo("/");
+    }
+}
