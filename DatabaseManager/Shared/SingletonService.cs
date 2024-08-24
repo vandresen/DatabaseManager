@@ -17,5 +17,17 @@ namespace DatabaseManager.Shared
         public string Project { get; set; }
         public string IndexKey { get; set; }
         public string IndexAPIBase { get; set; }
+        public string DataOpsManageAPIBase { get; set; }
+        public string DataOpsManageKey { get; set; }
+        public string DataOpsAPIBase { get; set; }
+        public string DataOpsKey { get; set; }
+        public string DataConfigurationAPIBase { get; set; }
+        public string DataConfigurationKey { get; set; }
+        public string DataModelAPIBase { get; set; }
+        public string DataModelKey { get; set; }
+        public string DataRuleAPIBase { get; set; }
+        public string DataRuleKey { get; set; }
+        public string DataTransferAPIBase { get; set; }
+        public string DataTransferKey { get; set; }
     }
 }

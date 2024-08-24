@@ -105,6 +105,14 @@ else
             settings2.AzureStorage = settings.AzureStorage;
             settings2.IndexAPIBase = SD.IndexAPIBase;
             settings2.IndexKey = SD.IndexKey;
+            settings2.DataConfigurationAPIBase = SD.DataConfigurationAPIBase;
+            settings2.DataConfigurationKey = SD.DataConfigurationKey;
+            settings2.DataModelAPIBase = SD.DataModelAPIBase;
+            settings2.DataModelKey = SD.DataModelKey;
+            settings2.DataRuleAPIBase = SD.DataRuleAPIBase;
+            settings2.DataRuleKey = SD.DataRuleKey;
+            settings2.DataTransferAPIBase = SD.DataTransferKey;
+            settings2.DataTransferKey = SD.DataTransferKey;
             Console.WriteLine($"Azure settings: {settings.AzureStorage}");
             settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
             settings.ApiKey = await localStorage.GetItemAsync<string>("APIKey");
@@ -169,6 +177,8 @@ else
         var connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
         settings.TargetConnector = selectedString;
         settings.DataAccessDefinition = connector.DataAccessDefinition;
+        settings2.TargetConnector = selectedString;
+        settings2.DataAccessDefinition = connector.DataAccessDefinition;
         await GetIndexData();
     }
 

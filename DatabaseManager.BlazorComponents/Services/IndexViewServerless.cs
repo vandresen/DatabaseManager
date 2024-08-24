@@ -43,9 +43,7 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<List<DmsIndex>> GetIndex(string source)
         {
             List<DmsIndex> index = new List<DmsIndex>();
-            //string baseUrl = SD.IndexAPIBase + "/api/DmIndexes";
             string url = _settings.IndexAPIBase.BuildFunctionUrl("/api/DmIndexes", $"name={source}", _settings.IndexKey);
-            Console.Write($"Key: {_settings.IndexKey}");
             Console.WriteLine($"GetIndex: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -66,8 +64,8 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)
         {
             List<IndexFileDefinition> def = new List<IndexFileDefinition>();
-            if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={taxonomyShare}&name={fileName}";
-            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={taxonomyShare}&name={fileName}", SD.DataConfigurationKey);
+            if (string.IsNullOrEmpty(_settings.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={taxonomyShare}&name={fileName}";
+            else url = _settings.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={taxonomyShare}&name={fileName}", _settings.DataConfigurationKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {

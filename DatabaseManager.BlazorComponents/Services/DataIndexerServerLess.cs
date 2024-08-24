@@ -47,8 +47,8 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<List<IndexFileList>> GetTaxonomies()
         {
             List<IndexFileList> result = new ();
-            if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={taxonomyShare}";
-            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={taxonomyShare}", SD.DataConfigurationKey);
+            if (string.IsNullOrEmpty(_settings.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={taxonomyShare}";
+            else url = _settings.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={taxonomyShare}", _settings.DataConfigurationKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
