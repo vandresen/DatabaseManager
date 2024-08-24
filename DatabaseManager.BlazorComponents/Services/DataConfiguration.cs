@@ -27,8 +27,8 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<T> DeleteRecord<T>(string name)
         {
             ResponseDto responseDto = new ResponseDto();
-            if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={folder}&name={name}";
-            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={folder}&name={name}", SD.DataConfigurationKey);
+            if (string.IsNullOrEmpty(_settings.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={folder}&name={name}";
+            else url = _settings.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={folder}&name={name}", _settings.DataConfigurationKey);
             Console.WriteLine(url);
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -41,9 +41,9 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<T> GetRecord<T>(string name)
         {
             ResponseDto responseDto = new ResponseDto();
-            if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={folder}&name={name}";
-            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={folder}&name={name}", SD.DataConfigurationKey);
-            Console.WriteLine(url);
+            if (string.IsNullOrEmpty(_settings.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={folder}&name={name}";
+            else url = _settings.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={folder}&name={name}", _settings.DataConfigurationKey);
+            Console.WriteLine($"GetRecord URL:{url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,
@@ -55,9 +55,9 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<T> GetRecords<T>()
         {
             ResponseDto responseDto = new ResponseDto();
-            if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={folder}";
-            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={folder}", SD.DataConfigurationKey);
-            Console.WriteLine(url);
+            if (string.IsNullOrEmpty(_settings.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={folder}";
+            else url = _settings.DataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={folder}", _settings.DataConfigurationKey);
+            Console.WriteLine($"GetRecords URL:{url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,
@@ -69,8 +69,8 @@ namespace DatabaseManager.BlazorComponents.Services
         public async Task<T> SaveRecords<T>(string name, object body)
         {
             ResponseDto responseDto = new ResponseDto();
-            if (string.IsNullOrEmpty(SD.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={folder}&name={name}";
-            else url = SD.DataConfigurationAPIBase.BuildFunctionUrl("/api/DataConfiguration", $"folder={folder}&name={name}", SD.DataConfigurationKey);
+            if (string.IsNullOrEmpty(_settings.DataConfigurationAPIBase)) url = $"api/DataConfiguration?folder={folder}&name={name}";
+            else url = _settings.DataConfigurationAPIBase.BuildFunctionUrl("/api/DataConfiguration", $"folder={folder}&name={name}", _settings.DataConfigurationKey);
             Console.WriteLine(url);
             return await this.SendAsync<T>(new ApiRequest()
             {
