@@ -5,6 +5,7 @@
 @inject ILocalStorageService localStorage
 @inject HttpClient client
 @using MudBlazor
+@using DatabaseManager.BlazorComponents.Pages.Settings
 
 <style>
     input {
@@ -25,7 +26,7 @@
             <br />
             <MudTextField @bind-Value="@AzureStorage" Label="Azure Storage:" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
             <br />
-            <MudTextField @bind-Value="@baseUrl" Label="API URL:" Variant="Variant.Text" HelperTextOnFocus="true" 
+            <MudTextField @bind-Value="@baseUrl" Label="API URL:" Variant="Variant.Text" HelperTextOnFocus="true"
                       HelperText="Example: http://localhost:7071/api/" Margin="Margin.Normal"></MudTextField>
             <MudTextField @bind-Value="@apiKey" Label="API Key:" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
             <br />
@@ -46,12 +47,6 @@
     <MudTabPanel Text="Data Access">
         <DataAccessSettings></DataAccessSettings>
     </MudTabPanel>
-    @if (SD.Sqlite)
-    {
-        <MudTabPanel Text="Manage Projects">
-            <ManageProjects></ManageProjects>
-        </MudTabPanel>
-    }
 </MudTabs>
 
 @code {
@@ -64,7 +59,7 @@
     protected override async Task OnInitializedAsync()
     {
         Console.WriteLine("Init settings");
-        if(settings.ServerLess)
+        if (settings.ServerLess)
         {
             Console.WriteLine($"Azure settings: {settings.AzureStorage}");
             AzureStorage = settings.AzureStorage;

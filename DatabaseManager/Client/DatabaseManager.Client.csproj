@@ -5,10 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Remove="Pages\Settings.razor" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
     <PackageReference Include="BlazorTable" Version="1.17.0" />
     <PackageReference Include="Markdig" Version="0.37.0" />
@@ -18,23 +14,12 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Plotly.Blazor" Version="4.3.0" />
     <PackageReference Include="System.IO" Version="4.3.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.4" />
   </ItemGroup>
 	
   <ItemGroup>
     <ProjectReference Include="..\..\DatabaseManager.BlazorComponents\DatabaseManager.BlazorComponents.csproj" />
     <ProjectReference Include="..\Shared\DatabaseManager.Shared.csproj" />
-  </ItemGroup>
-	
-  <ItemGroup>
-    <UpToDateCheckInput Remove="Pages\Settings.razor" />
-  </ItemGroup>
-	
-  <ItemGroup>
-    <_ContentIncludedByDefault Remove="Pages\Settings.razor" />
-  </ItemGroup>
-	
-  <ItemGroup>
-    <None Include="Pages\Settings.razor" />
   </ItemGroup>
 
 </Project>
