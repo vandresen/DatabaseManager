@@ -12,6 +12,27 @@ namespace DatabaseManager.Services.DataOpsManagement.Services
     {
         private string _connectionString;
 
+        public async Task DeleteFile(string fileShare, string fileName)
+        {
+            ShareClient share = new ShareClient(_connectionString, fileShare);
+            if (!share.Exists())
+            {
+                Exception error = new Exception($"Fileshare {fileShare} does not exist ");
+                throw error;
+            }
+            ShareDirectoryClient rootDir = share.GetRootDirectoryClient();
+            ShareFileClient file = rootDir.GetFileClient(fileName);
+            if (file.Exists())
+            {
+                await file.DeleteAsync();
+            }
+            else
+            {
+                Exception error = new Exception($"File {fileName} does not exist in Azure storage ");
+                throw error;
+            }
+        }
+
         public async Task<List<string>> ListFiles(string fileShare)
         {
             List<string> files = new List<string>();

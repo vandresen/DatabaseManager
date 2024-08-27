@@ -25,5 +25,17 @@ namespace DatabaseManager.Services.DataOpsManagement.Extensions
             }
             return storageAccount;
         }
+
+        public static string GetQuery(this HttpRequestData req, string queryAttribute, bool mandatory)
+        {
+            var query = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
+            string result = query[queryAttribute];
+            if (string.IsNullOrEmpty(result) && mandatory)
+            {
+                Exception error = new Exception($"Error getting query result for {queryAttribute}");
+                throw error;
+            }
+            return result;
+        }
     }
 }

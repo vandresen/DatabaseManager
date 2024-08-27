@@ -10,5 +10,6 @@ namespace DatabaseManager.Services.DataOpsManagement.Services
     {
         Task<List<string>> ListFiles(string fileShare);
         void SetConnectionString(string connection);
+        Task DeleteFile(string fileShare, string fileName);
     }
 }
