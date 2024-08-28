@@ -50,6 +50,27 @@ namespace DatabaseManager.Services.DataOpsManagement.Services
             return files;
         }
 
+        public async Task SaveFile(string fileShare, string fileName, string fileContent)
+        {
+            ShareClient share = new ShareClient(_connectionString, fileShare);
+            if (!share.Exists())
+            {
+                share.Create();
+            }
+            ShareDirectoryClient rootDir = share.GetRootDirectoryClient();
+            ShareFileClient file = rootDir.GetFileClient(fileName);
+            if (!file.Exists())
+            {
+                file.Create(fileContent.Length);
+            }
+
+            byte[] outBuff = Encoding.ASCII.GetBytes(fileContent);
+            ShareFileOpenWriteOptions options = new ShareFileOpenWriteOptions { MaxSize = outBuff.Length };
+            var stream = await file.OpenWriteAsync(true, 0, options);
+            stream.Write(outBuff, 0, outBuff.Length);
+            stream.Flush();
+        }
+
         public void SetConnectionString(string connection)
         {
             if (!string.IsNullOrEmpty(connection)) _connectionString = connection;

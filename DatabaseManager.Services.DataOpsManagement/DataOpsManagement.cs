@@ -84,5 +84,35 @@ namespace DatabaseManager.Services.DataOpsManagement
             _logger.LogInformation("DataOpsList: Completed.");
             return response;
         }
+
+        [Function("SavePipeline")]
+        public async Task<HttpResponseData> Save([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
+        {
+            _logger.LogInformation("SavePipeline: Starting.");
+
+            try
+            {
+                string azureStorageAccount = req.GetStorageKey();
+                _fs.SetConnectionString(azureStorageAccount);
+
+                string name = req.GetQuery("Name", true);
+                if (!name.EndsWith(".txt")) name = name + ".txt";
+                _logger.LogInformation($"DeletePipeline: Pipe name {name}");
+
+                string content = await req.GetBody();
+                await _fs.SaveFile(fileShare, name, content);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"SavePipeline: Error saving pipeline: {ex}");
+            }
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(_response);
+            _logger.LogInformation("SavePipeline: Completed.");
+            return response;
+        }
     }
 }

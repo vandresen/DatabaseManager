@@ -37,5 +37,12 @@ namespace DatabaseManager.Services.DataOpsManagement.Extensions
             }
             return result;
         }
+
+        public static async Task<string> GetBody(this HttpRequestData req)
+        {
+            var body = req.Body;
+            string result = await new StreamReader(body).ReadToEndAsync();
+            return result;
+        }
     }
 }
