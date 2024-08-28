@@ -57,6 +57,35 @@ namespace DatabaseManager.Services.DataOpsManagement
             return response;
         }
 
+        [Function("GetPipe")]
+        public async Task<HttpResponseData> Get([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req)
+        {
+            _logger.LogInformation("GetPipe: Starting.");
+
+            try
+            {
+                string azureStorageAccount = req.GetStorageKey();
+                _fs.SetConnectionString(azureStorageAccount);
+
+                string name = req.GetQuery("Name", true);
+                if (!name.EndsWith(".txt")) name = name + ".txt";
+                _logger.LogInformation($"DeletePipeline: Pipe name {name}");
+                string result = await _fs.ReadFile(fileShare, name);
+                _response.Result = result;
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"GetPipe: Error getting data ops pipe: {ex}");
+            }
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(_response);
+            _logger.LogInformation("GetPipe: Completed.");
+            return response;
+        }
+
         [Function("DeletePipeline")]
         public async Task<HttpResponseData> Delete([HttpTrigger(AuthorizationLevel.Function, "delete")] HttpRequestData req)
         {
