@@ -1,28 +1,39 @@
 ﻿@using MudBlazor
-@inject IDataSources dataSources
+@inject DatabaseManager.ServerLessClient.Services.IDataSources dataSources
 
-<EditForm Model="PredictioncParms" OnValidSubmit="OnValidSubmit">
-    <DataAnnotationsValidator />
-    <div class="form-group">
-        <MudSelect T="string" Label="Source:" @bind-Value="PredictioncParms.DataConnector" Variant="Variant.Outlined">
-            @foreach (var option in options)
-            {
-                <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
-            }
-        </MudSelect>
-    </div>
-    <button class="btn btn-success" type="submit">Save Changes</button>
-</EditForm>
+@if (options == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <EditForm Model="PredictioncParms" OnValidSubmit="OnValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <MudSelect T="string" Label="Source:" @bind-Value="PredictioncParms.DataConnector" Variant="Variant.Outlined">
+                @foreach (var option in options)
+                {
+                    <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                }
+            </MudSelect>
+        </div>
+        <button class="btn btn-success" type="submit">Save Changes</button>
+    </EditForm>
+}
 
 @code {
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public PredictionParameters PredictioncParms { get; set; }
     List<DatabaseManager.Shared.ConnectParameters> connectParameters;
+    DatabaseManager.ServerLessClient.Models.ResponseDto response;
     public string[] options { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        connectParameters = await dataSources.GetSources();
+        response = await dataSources.GetSources<DatabaseManager.ServerLessClient.Models.ResponseDto>();
+        Console.WriteLine(response.Result);
+        connectParameters = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.ConnectParameters>>(Convert.ToString(response.Result));
+        Console.WriteLine($"Number of options: {connectParameters.Count}");
         options = connectParameters.Select(x => x.SourceName).ToArray();
     }
 }

@@ -1,5 +1,5 @@
 ﻿@using MudBlazor
-@inject IDataSources dataSources
+@inject DatabaseManager.ServerLessClient.Services.IDataSources dataSources
 
 @if (options == null)
 {
@@ -26,10 +26,12 @@ else
     [Parameter] public DataQCParameters DataQcParms { get; set; }
     List<DatabaseManager.Shared.ConnectParameters> connectParameters;
     public string[] options { get; set; }
+    DatabaseManager.ServerLessClient.Models.ResponseDto response;
 
     protected override async Task OnInitializedAsync()
     {
-        connectParameters = await dataSources.GetSources();
+        response = await dataSources.GetSources<DatabaseManager.ServerLessClient.Models.ResponseDto>();
+        connectParameters = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.ConnectParameters>>(Convert.ToString(response.Result));
         options = connectParameters.Select(x => x.SourceName).ToArray();
     }
 }

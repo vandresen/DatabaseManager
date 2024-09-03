@@ -1,5 +1,5 @@
 ﻿@page  "/dataops/edit/{Name}"
-@inject IDataOps ops
+@inject DatabaseManager.ServerLessClient.Services.IDataOps dataOps
 
 <h3>Edit DataOps Pipeline</h3>
 
@@ -24,15 +24,15 @@
 else
 {
     <Table TableItem="DatabaseManager.Shared.PipeLine" Items="tubes" PageSize="@pageSize" ColumnReorder="true">
-        <Column TableItem="PipeLine" Title="Action" Sortable="false">
+        <Column TableItem="DatabaseManager.Shared.PipeLine" Title="Action" Sortable="false">
             <Template>
                 <a class="btn btn-primary" href="/edittube/@Name/@context.Id">Edit</a>
                 <button class="btn btn-danger" @onclick="@(() => DeleteTube(context.Id))">Delete</button>
             </Template>
         </Column>
-        <Column TableItem="PipeLine" Title="Priority" Field="@(x => x.Priority)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
-        <Column TableItem="PipeLine" Title="Tube Type" Field="@(x => x.ArtifactType)" Sortable="true" Filterable="true"></Column>
-        <Column TableItem="PipeLine" Title="Parameters" Field="@(x => x.Parameters)" Sortable="true" Filterable="true"></Column>
+        <Column TableItem="DatabaseManager.Shared.PipeLine" Title="Priority" Field="@(x => x.Priority)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
+        <Column TableItem="DatabaseManager.Shared.PipeLine" Title="Tube Type" Field="@(x => x.ArtifactType)" Sortable="true" Filterable="true"></Column>
+        <Column TableItem="DatabaseManager.Shared.PipeLine" Title="Parameters" Field="@(x => x.Parameters)" Sortable="true" Filterable="true"></Column>
         <Pager ShowPageNumber="true" ShowTotalCount="true" />
     </Table>
 }
@@ -44,11 +44,13 @@ else
     private bool expandedState = false;
     private string showMenu = null;
     int pageSize = 10;
+    DatabaseManager.ServerLessClient.Models.ResponseDto response;
 
     protected override async Task OnInitializedAsync()
     {
         Console.WriteLine($"Edit data ops, name is {Name}");
-        tubes = await ops.GetPipeline(Name);
+        response = await dataOps.GetPipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(Name);
+        tubes = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.PipeLine>>(Convert.ToString(response.Result));
     }
 
     private async Task DeleteTube(int id)
@@ -56,10 +58,11 @@ else
         try
         {
             Console.WriteLine($"Delete tube with iod={id}");
-            tubes = await ops.GetPipeline(Name);
+            response = await dataOps.GetPipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(Name);
+            tubes = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.PipeLine>>(Convert.ToString(response.Result));
             tubes.RemoveAll(x => x.Id == id);
-            DatabaseManager.Shared.DataOpsPipes pipe = new DatabaseManager.Shared.DataOpsPipes { Name = Name };
-            await ops.SavePipeline(pipe, tubes);
+            DataOpsPipes pipe = new DataOpsPipes { Name = Name };
+            response = await dataOps.SavePipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(pipe, tubes);
             this.StateHasChanged();
         }
         catch (Exception ex)

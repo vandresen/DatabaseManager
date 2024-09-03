@@ -25,7 +25,9 @@ namespace DatabaseManager.Services.DataOps.ActivityFolder
             ResponseDto response = await _ruleAccess.GetRules<ResponseDto>(qcParms.DataConnector);
             if (response.IsSuccess) 
             {
-                List<QcResult> qcList = JsonConvert.DeserializeObject<List<QcResult>>(response.Result.ToString());
+                List<QcResult> fullList = JsonConvert.DeserializeObject<List<QcResult>>(response.Result.ToString());
+                List<QcResult> qcList = fullList.Where(x => x.RuleType != "Predictions").ToList();
+                log.LogInformation($"InitDataQC: Data QC list count = {qcList.Count}");
                 log.LogInformation($"InitDataQC: Complete");
                 return qcList;
             }

@@ -1,8 +1,8 @@
 ﻿@page "/edittube/{Name}/{Id:int}"
 @using MudBlazor
 @inject NavigationManager navigationManager
-@inject IDataOps ops
-@inject IDataSources dataSources
+@inject DatabaseManager.ServerLessClient.Services.IDataOps ops
+@inject DatabaseManager.ServerLessClient.Services.IDataSources dataSources
 
 <h3>Edit Tube</h3>
 
@@ -44,14 +44,17 @@ else
     List<DatabaseManager.Shared.PipeLine> tubes = new List<DatabaseManager.Shared.PipeLine>();
     public List<DatabaseManager.Shared.ConnectParameters> connectParameters;
     DatabaseManager.Shared.PipeLine tube = new DatabaseManager.Shared.PipeLine();
+    DatabaseManager.ServerLessClient.Models.ResponseDto response;
     string TubeType = "";
     int priority;
 
     protected override async Task OnInitializedAsync()
     {
-        connectParameters = await dataSources.GetSources();
+        response = await dataSources.GetSources<DatabaseManager.ServerLessClient.Models.ResponseDto>();
+        connectParameters = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.ConnectParameters>>(Convert.ToString(response.Result));
         Console.WriteLine($"In EditTube, number of connectors found is {connectParameters.Count}");
-        tubes = await ops.GetPipeline(Name);
+        response = await ops.GetPipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(Name);
+        tubes = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.PipeLine>>(Convert.ToString(response.Result));
         tube = tubes.FirstOrDefault(x => x.Id == id);
         Console.WriteLine($"In EditTube, number of tubes found is {tubes.Count}");
         if (tube != null)
@@ -115,9 +118,9 @@ else
             Console.WriteLine("Tube type not supported");
         }
         tube.Parameters = jsonString;
-        DatabaseManager.Shared.DataOpsPipes pipe = new DatabaseManager.Shared.DataOpsPipes { Name = Name };
+        DataOpsPipes pipe = new DataOpsPipes { Name = Name };
         List<DatabaseManager.Shared.PipeLine> sortedTubes = tubes.OrderBy(o => o.Priority).ToList();
-        await ops.SavePipeline(pipe, sortedTubes);
+        response = await ops.SavePipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(pipe, sortedTubes);
         navigationManager.NavigateTo($"/dataops/edit/{Name}");
     }
 }

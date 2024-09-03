@@ -42,14 +42,16 @@ input {
     string pipelineName;
     private string statusMessage = "None running";
     List<DataOpsPipes> pipeList;
+    List<DatabaseManager.Shared.PipeLine> pipelines;
     int pageSize = 10;
+    DatabaseManager.ServerLessClient.Models.ResponseDto response;
 
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            DatabaseManager.ServerLessClient.Models.ResponseDto response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
+            response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
             pipeList = JsonConvert.DeserializeObject<List<DataOpsPipes>>(Convert.ToString(response.Result));
             Console.WriteLine($"Pipes: {pipeList.Count}");
         }
@@ -67,11 +69,9 @@ input {
             {
                 await displayMessage.DisplayErrorMessage("Please enter a new pipeline name");
             }
-            DataOpsPipes pipe = new DataOpsPipes();
-            pipe.Name = pipelineName;
-            await dataOps.CreatePipeline(pipe);
-            DatabaseManager.ServerLessClient.Models.ResponseDto response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
-            // pipeList = await dataOps.GetPipelines();
+            response = await dataOps.CreatePipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(pipelineName);
+            response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
+            pipeList = JsonConvert.DeserializeObject<List<DataOpsPipes>>(Convert.ToString(response.Result));
             pipelineName = "";
             this.StateHasChanged();
         }
@@ -86,9 +86,9 @@ input {
     {
         try
         {
-            await dataOps.DeletePipeline(name);
-            DatabaseManager.ServerLessClient.Models.ResponseDto response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
-            // pipeList = await dataOps.GetPipelines();
+            response = await dataOps.DeletePipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(name);
+            response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
+            pipeList = JsonConvert.DeserializeObject<List<DataOpsPipes>>(Convert.ToString(response.Result));
             this.StateHasChanged();
         }
         catch (Exception ex)
@@ -102,7 +102,9 @@ input {
         Console.WriteLine($"excute pipeline {name}");
         try
         {
-            List<PipeLine> pipelines = await dataOps.GetPipeline(name);
+            response = await dataOps.GetPipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(name);
+            pipelines = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.PipeLine>>(Convert.ToString(response.Result));
+            // List<PipeLine> pipelines = await dataOps.GetPipeline(name);
             Console.WriteLine($"Number of pipes are {pipelines.Count}");
 
             List<DataOpParameters> parms = new List<DataOpParameters>();
@@ -120,7 +122,8 @@ input {
             Console.WriteLine($"Pipeline parameters are {parmString}");
             statusMessage = "Starting";
             StateHasChanged();
-            var result = await dataOps.ProcessPipelineWithStatus(parms);
+            var result = await dataOps.ProcessPipeline(parms);
+            Console.WriteLine(result.statusQueryGetUri);
             for (int i = 0; i < 100; i++)
             {
                 DataOpsStatus status = await dataOps.GetStatus(result.statusQueryGetUri);
@@ -133,7 +136,7 @@ input {
                     StateHasChanged();
                     break; 
                 }
-                await Task.Delay(5000);
+                await Task.Delay(1000);
             }
         }
         catch (Exception ex)
