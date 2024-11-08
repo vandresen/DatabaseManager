@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "DatabaseManager.Services.Reports": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7121",
+      "launchBrowser": false
+    }
+  }
+}
