@@ -1,0 +1,35 @@
+name: DeployReports
+
+on:
+  workflow_dispatch:
+  
+env:
+  AZURE_FUNCTIONAPP_NAME: 'PetrodataOnlineReports'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' 
+
+jobs:
+  build:
+    name: Build release
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build
+        shell: pwsh
+        run: |
+          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet build DatabaseManager.Services.Reports/DatabaseManager.Services.Reports.csproj --configuration Release --output ./output
+          popd
+
+      - name: 'Run Azure Functions Action'
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+          package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+          publish-profile: ${{ secrets.REPORTS_PROFILE }}
