@@ -22,5 +22,23 @@ namespace DatabaseManager.Services.Reports.Services
                 Url = url
             });
         }
+
+        public async Task<T> GetRootIndex<T>(string dataSource, string project)
+        {
+            string url = "";
+            if (SD.Sqlite)
+            {
+                url = SD.IndexAPIBase.BuildFunctionUrl($"/Index/1", $"project={project}", SD.IndexKey);
+            }
+            else
+            {
+                url = SD.IndexAPIBase.BuildFunctionUrl("/api/DmIndexes", $"Name={dataSource}&Node=/&Level=0", SD.IndexKey);
+            }
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                Url = url
+            });
+        }
     }
 }

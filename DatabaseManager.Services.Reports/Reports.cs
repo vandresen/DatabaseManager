@@ -30,6 +30,7 @@ namespace DatabaseManager.Services.Reports
             SD.RuleKey = _configuration["RuleKey"];
             SD.IndexAPIBase = _configuration["IndexAPI"];
             SD.IndexKey = _configuration["IndexKey"];
+            SD.Sqlite = bool.Parse(_configuration["Sqlite"]);
         }
 
         [Function("GetResults")]
@@ -56,9 +57,16 @@ namespace DatabaseManager.Services.Reports
                             var indexes = JsonConvert.DeserializeObject<List<IndexDto>>(Convert.ToString(iaResponse.Result));
                             qcItem.Failures = indexes.Count;
                         }
+                        _response.Result = qcResult;
                     }
                 }
-                _response.Result = qcResult;
+                else
+                {
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages
+                         = new List<string>() { "GetResults: Error getting rules for for reports" };
+                    _logger.LogError($"GetResults: Error getting rules for for reports");
+                }
             }
             catch (Exception ex)
             {
@@ -68,6 +76,57 @@ namespace DatabaseManager.Services.Reports
                 _logger.LogError($"GetResults: Error getting results for reports: {ex}");
             }
 
+            var result = req.CreateResponse(HttpStatusCode.OK);
+            await result.WriteAsJsonAsync(_response);
+            return result;
+        }
+
+        [Function("ReportAttributeInfo")]
+        public async Task<HttpResponseData> GetReportAttributeInfo([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req)
+        {
+            _logger.LogInformation("GetReportAttributeInfo: Starting.");
+            IndexRootJson rootJson = new IndexRootJson();
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                string dataType = req.GetQuery("Datatype", true);
+                string project = req.GetQuery("Project", false);
+
+                ResponseDto indexResponse = await _ia.GetRootIndex<ResponseDto>(name, project);
+                if (indexResponse != null && indexResponse.IsSuccess)
+                {
+                    if (SD.Sqlite)
+                    {
+                        IndexDto idx = JsonConvert.DeserializeObject<IndexDto>(indexResponse.Result.ToString());
+                        string jsonData = idx.JsonDataObject;
+                        rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonData);
+                    }
+                    else
+                    {
+                        List<DmsIndex> idx = JsonConvert.DeserializeObject<List<DmsIndex>>(indexResponse.Result.ToString());
+                        rootJson = JsonConvert.DeserializeObject<IndexRootJson>(idx[0].JsonData);
+                    }
+                }
+                else
+                {
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages
+                         = new List<string>() { "Error getting index root" };
+                    _logger.LogError($"GetReportAttributeInfo: Error getting index root");
+                }
+
+                ConnectParametersDto source = JsonConvert.DeserializeObject<ConnectParametersDto>(rootJson.Source);
+                List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(source.DataAccessDefinition);
+                DataAccessDef dataAccess = accessDefs.First(x => x.DataType == dataType);
+                _response.Result = dataAccess;
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"GetReportAttributeInfo: Error getting results for GetReportAttributeInfo: {ex}");
+            }
             var result = req.CreateResponse(HttpStatusCode.OK);
             await result.WriteAsJsonAsync(_response);
             return result;

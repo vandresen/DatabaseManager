@@ -8,6 +8,7 @@ namespace DatabaseManager.Services.Reports
 {
     public static class SD
     {
+        public static bool Sqlite { get; set; }
         public static string RuleAPIBase { get; set; }
         public static string RuleKey { get; set; }
         public static string IndexAPIBase { get; set; }
