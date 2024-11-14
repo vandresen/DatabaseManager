@@ -35,7 +35,7 @@ namespace DatabaseManager.Services.Reports.Services
             }
             else
             {
-                url = SD.IndexAPIBase.BuildFunctionUrl("/api/DmIndexes", $"Name={dataSource}&Node=/&Level=0", SD.IndexKey);
+                url = SD.IndexAPIBase.BuildFunctionUrl("/DmIndexes", $"Name={dataSource}&Node=/&Level=0", SD.IndexKey);
             }
             _logger.LogInformation($"Url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
