@@ -106,6 +106,11 @@ namespace DatabaseManager.Services.Reports
                         List<DmsIndex> idx = JsonConvert.DeserializeObject<List<DmsIndex>>(indexResponse.Result.ToString());
                         rootJson = JsonConvert.DeserializeObject<IndexRootJson>(idx[0].JsonData);
                     }
+                    _logger.LogInformation($"GetReportAttributeInfo: source info: {rootJson.Source}");
+                    ConnectParametersDto source = JsonConvert.DeserializeObject<ConnectParametersDto>(rootJson.Source);
+                    List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(source.DataAccessDefinition);
+                    DataAccessDef dataAccess = accessDefs.First(x => x.DataType == dataType);
+                    _response.Result = dataAccess;
                 }
                 else
                 {
@@ -114,11 +119,6 @@ namespace DatabaseManager.Services.Reports
                          = new List<string>() { "Error getting index root" };
                     _logger.LogError($"GetReportAttributeInfo: Error getting index root");
                 }
-
-                ConnectParametersDto source = JsonConvert.DeserializeObject<ConnectParametersDto>(rootJson.Source);
-                List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(source.DataAccessDefinition);
-                DataAccessDef dataAccess = accessDefs.First(x => x.DataType == dataType);
-                _response.Result = dataAccess;
             }
             catch (Exception ex)
             {
