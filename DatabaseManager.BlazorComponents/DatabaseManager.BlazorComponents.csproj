@@ -27,4 +27,12 @@
     <ProjectReference Include="..\DatabaseManager\Shared\DatabaseManager.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Pages\Settings\PPDMSettings.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Pages\Settings\PPDMSettings.razor" />
+  </ItemGroup>
+
 </Project>

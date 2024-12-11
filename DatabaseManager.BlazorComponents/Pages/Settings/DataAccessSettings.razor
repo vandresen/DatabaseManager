@@ -9,7 +9,11 @@
 
 @if(configType == "CSV")
 {
-   <CSVSettings Content="@content" ConfigFile="@configFile"></CSVSettings>
+    <CSVSettings Content="@content" ConfigFile="@configFile"></CSVSettings>
+}
+else if (configType == "PPDM")
+{
+    <PPDMSettings Content="@content" ConfigFile="@configFile"></PPDMSettings>
 }
 else
 {
@@ -43,6 +47,7 @@ else
         configFile = selectedString;
         ResponseDto response = await dataConfiguration.GetRecord<ResponseDto>(configFile);
         if (configFile.StartsWith("CSV")) configType = "CSV";
+        else if (configFile.StartsWith("PPDM")) configType = "PPDM";
         else configType = "";
         if (response != null && response.IsSuccess)
         {
