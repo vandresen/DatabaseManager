@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Upload Changelog Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: ChangelogStuff
           path: ./CHANGELOG.md
@@ -46,7 +46,7 @@ jobs:
         run: dotnet publish DatabaseManager/server/DatabaseManager.Server.csproj -o ${{ github.workspace }}/publish -c Release --no-restore --no-build
         
       - name: Upload Hosted Server Build Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: HostedServer
           path: ${{ github.workspace }}/publish
@@ -57,7 +57,7 @@ jobs:
     needs: build
     steps:
       - name: Download changelog
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
             name: ChangelogStuff
             
