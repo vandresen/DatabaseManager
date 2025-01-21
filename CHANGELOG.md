@@ -1,3 +1,8 @@
+# Release 1.32
+* Added edit functionality for PPDM data access under Settings
+* Created microservice for Dataops
+* Created microservice for Reports
+
 # Release 1.31
 * Created microservice for rules for both sql server and sqlite
 * Created microservice for dataqc 
