@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Dapper;
+﻿using Dapper;
 using DatabaseManager.Common.Data;
 using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
@@ -8,13 +7,7 @@ using DatabaseManager.Shared;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
 {
@@ -212,13 +205,40 @@ namespace DatabaseManager.Common.Helpers
         public async Task SaveRule(string sourceName, RuleModel rule)
         {
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
-            await InsertRule(rule, connector.ConnectionString);
+            IEnumerable<RuleModel> rules = await _ruleData.GetRulesFromSP(connector.ConnectionString);
+            var ruleExist = rules.FirstOrDefault(m => m.RuleName == rule.RuleName);
+            if (ruleExist == null)
+            {
+                var rulesWithLastKeyNumber = rules.Where(m => m.RuleType == rule.RuleType).
+                    OrderByDescending(x => x.KeyNumber).FirstOrDefault();
+                if (rulesWithLastKeyNumber == null) rule.KeyNumber = 1;
+                else rule.KeyNumber = rulesWithLastKeyNumber.KeyNumber + 1;
+                await InsertRule(rule, connector.ConnectionString);
+            }
+            else
+            {
+                Exception error = new Exception($"RuleManagement: rule already exist");
+                throw error;
+            }
         }
 
         public async Task SaveFunction(string sourceName, RuleFunctions function)
         {
             ConnectParameters connector = await Common.GetConnectParameters(azureConnectionString, sourceName);
-            InsertFunction(function, connector.ConnectionString);
+
+            IEnumerable<RuleFunctions> existingFunctions = await _functionData.GetFunctionsFromSP(connector.ConnectionString);
+            var functionExist = existingFunctions.FirstOrDefault(m => m.FunctionName == function.FunctionName);
+
+            if (functionExist == null)
+            {
+                await _functionData.CreateFunction(function, connector.ConnectionString);
+                
+            }
+            else
+            {
+                Exception error = new Exception($"RuleManagement: could not find function");
+                throw error;
+            }
         }
 
         public async Task SavePredictionSet(string name, PredictionSet set)
@@ -262,7 +282,7 @@ namespace DatabaseManager.Common.Helpers
             await _ruleData.InsertRules(rules, connector.ConnectionString);
             foreach (var function in ruleFunctions)
             {
-                InsertFunction(function, connector.ConnectionString);
+                await _functionData.CreateFunction(function, connector.ConnectionString);
             }
         }
 
@@ -274,27 +294,10 @@ namespace DatabaseManager.Common.Helpers
                 Exception error = new Exception($"RuleManagement: data source must be a Database type");
                 throw error;
             }
-            RuleModel oldRule = await _ruleData.GetRuleFromSP(id, connector.ConnectionString);
-            if (oldRule == null)
-            {
-                Exception error = new Exception($"RuleManagement: could not find rule");
-                throw error;
-            }
-            else
-            {
-                rule.Id = id;
-                string userName = await _systemData.GetUserName(connector.ConnectionString);
-                rule.ModifiedBy = userName;
-                string json = JsonConvert.SerializeObject(rule, Formatting.Indented);
-                json = Common.SetJsonDataObjectDate(json, "ModifiedDate");
-                using (IDbConnection cnn = new SqlConnection(connector.ConnectionString))
-                {
-                    var p = new DynamicParameters();
-                    p.Add("@json", json);
-                    string sql = "dbo.spUpdateRules";
-                    int recordsAffected = cnn.Execute(sql, p, commandType: CommandType.StoredProcedure);
-                }
-            }
+            rule.Id = id;
+            string userName = await _systemData.GetUserName(connector.ConnectionString);
+            rule.ModifiedBy = userName;
+            await _ruleData.UpdateRule(rule, id, connector.ConnectionString);
         }
 
         public async Task UpdateFunction(string sourceName, int id, RuleFunctions function)
@@ -305,23 +308,17 @@ namespace DatabaseManager.Common.Helpers
                 Exception error = new Exception($"RuleManagement: data source must be a Database type");
                 throw error;
             }
-            string query = $" where Id = {id}";
-            List<RuleFunctions> oldFunction = SelectFunctionByQuery(query, connector.ConnectionString);
-            if (oldFunction.Count == 0)
+
+            IEnumerable<RuleFunctions> existingFunctions = await _functionData.GetFunctionsFromSP(connector.ConnectionString);
+            var functionExist = existingFunctions.FirstOrDefault(m => m.Id == function.Id);
+            if (functionExist == null) 
             {
                 Exception error = new Exception($"RuleManagement: could not find function");
                 throw error;
             }
             else
             {
-                string json = JsonConvert.SerializeObject(function, Formatting.Indented);
-                using (IDbConnection cnn = new SqlConnection(connector.ConnectionString))
-                {
-                    var p = new DynamicParameters();
-                    p.Add("@json", json);
-                    string sql = "dbo.spUpdateFunctions";
-                    int recordsAffected = cnn.Execute(sql, p, commandType: CommandType.StoredProcedure);
-                }
+                await _functionData.UpdateFunction(function, connector.ConnectionString);
             }
         }
 
@@ -333,11 +330,7 @@ namespace DatabaseManager.Common.Helpers
                 Exception error = new Exception($"RuleManagement: data source must be a Database type");
                 throw error;
             }
-            using (var cnn = new SqlConnection(connector.ConnectionString))
-            {
-                string sql = "DELETE FROM pdo_qc_rules WHERE Id = @Id";
-                int recordsAffected = cnn.Execute(sql, new { Id = id });
-            }
+            await _ruleData.DeleteRule(id, connector.ConnectionString);
         }
 
         public async Task DeleteFunction(string source, int id)
@@ -348,11 +341,7 @@ namespace DatabaseManager.Common.Helpers
                 Exception error = new Exception($"RuleManagement: data source must be a Database type");
                 throw error;
             }
-            using (var cnn = new SqlConnection(connector.ConnectionString))
-            {
-                string sql = "DELETE FROM pdo_rule_functions WHERE Id = @Id";
-                int recordsAffected = cnn.Execute(sql, new { Id = id });
-            }
+            await _functionData.DeleteFunction(id, connector.ConnectionString);
         }
 
         public async Task DeletePrediction(string name)
@@ -391,29 +380,6 @@ namespace DatabaseManager.Common.Helpers
             return rf;
         }
 
-        private List<RuleFunctions> SelectFunctionByQuery(string query, string connectionString)
-        {
-            List<RuleFunctions> functions = new List<RuleFunctions>();
-            using (IDbConnection cnn = new SqlConnection(connectionString))
-            {
-                string sql = functionSql + query;
-                functions = cnn.Query<RuleFunctions>(sql).ToList();
-            }
-            return functions;
-        }
-
-        private RuleFunctions SelectFunctionByName(string functionName, string connectionString)
-        {
-            RuleFunctions function = new RuleFunctions();
-            using (IDbConnection cnn = new SqlConnection(connectionString))
-            {
-                string sql = functionSql + $" where FunctionName = '{functionName}'";
-                var functions = cnn.Query<RuleFunctions>(sql);
-                function = functions.FirstOrDefault();
-            }
-            return function;
-        }
-
         private async Task InsertRule(RuleModel rule, string connectionString)
         {
             List<RuleModel> rules = new List<RuleModel>();
@@ -427,32 +393,12 @@ namespace DatabaseManager.Common.Helpers
             await _ruleData.InsertRules(rules, connectionString);
         }
 
-        private void InsertFunction(RuleFunctions function, string connectionString)
-        {
-            string json = JsonConvert.SerializeObject(function, Formatting.Indented);
-            using (IDbConnection cnn = new SqlConnection(connectionString))
-            {
-                var p = new DynamicParameters();
-                p.Add("@json", json);
-                string sql = "dbo.spInsertFunctions";
-                int recordsAffected = cnn.Execute(sql, p, commandType: CommandType.StoredProcedure);
-            }
-        }
-
         private string GetRuleKey(RuleModel rule, string connectionString)
         {
             string ruleKey = "";
-            RuleModel outRule = rule;
-            using (IDbConnection cnn = new SqlConnection(connectionString))
-            {
-                string query = $" where RuleType = '{rule.RuleType}' order by keynumber desc";
-                string sql = getSql + query;
-                var rules = cnn.Query<RuleModel>(sql);
-                outRule.KeyNumber = rules.Select(s => s.KeyNumber).FirstOrDefault() + 1;
-                string strKey = outRule.KeyNumber.ToString();
-                RuleTypeDictionary rt = new RuleTypeDictionary();
-                ruleKey = rt[rule.RuleType] + strKey;
-            }
+            string strKey = rule.KeyNumber.ToString();
+            RuleTypeDictionary rt = new RuleTypeDictionary();
+            ruleKey = rt[rule.RuleType] + strKey;
             return ruleKey;
         }
     }

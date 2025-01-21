@@ -1,16 +1,8 @@
 ﻿using AutoMapper;
-using Dapper;
 using DatabaseManager.Services.Rules.Extensions;
 using DatabaseManager.Services.Rules.Models;
-using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Runtime.Intrinsics.Arm;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.Rules.Services
 {

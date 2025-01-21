@@ -52,5 +52,11 @@ namespace DatabaseManager.Common.DBAccess
             var result = await cnn.ExecuteScalarAsync<T>(storedProcedure, parameters, commandType: CommandType.StoredProcedure);
             return result;
         }
+
+        public async Task DeleteData<T>(string sql, T parameters, string connectionString)
+        {
+            using IDbConnection cnn = new SqlConnection(connectionString);
+            await cnn.ExecuteAsync(sql, parameters);
+        }
     }
 }

@@ -11,5 +11,6 @@ namespace DatabaseManager.Common.DBAccess
         Task SaveDataSQL<T>(string sql, T parameters, string connectionString);
         Task<T> SaveDataScalar<T, U>(string storedProcedure, U parameters, string connectionString);
         Task<T> Count<T, U>(string sql, U parameters, string connectionString);
+        Task DeleteData<T>(string sql, T parameters, string connectionString);
     }
 }

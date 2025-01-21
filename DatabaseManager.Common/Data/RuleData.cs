@@ -1,11 +1,7 @@
 ﻿using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Shared;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace DatabaseManager.Common.Data
 {
@@ -47,6 +43,27 @@ namespace DatabaseManager.Common.Data
                 ruleCollection.Add(rule);
             }
             await _db.InsertWithUDT("dbo.spInsertRules", parameterName, ruleCollection, connectionString);
+        }
+
+        public async Task UpdateRule(RuleModel rule, int id, string connectionString)
+        {
+            RuleModel oldRule = await GetRuleFromSP(id, connectionString);
+            if (oldRule == null)
+            {
+                Exception error = new Exception($"RuleData: could not find rule with this id {id}");
+                throw error;
+            }
+            else
+            {
+                string json = JsonConvert.SerializeObject(rule, Formatting.Indented);
+                await _dp.SaveData("dbo.spUpdateRules", new { json = json }, connectionString);
+            }
+        }
+
+        public async Task DeleteRule(int id, string connectionString)
+        {
+            string sql = "DELETE FROM pdo_qc_rules WHERE Id = @Id";
+            await _dp.DeleteData(sql, new { id }, connectionString);
         }
     }
 }

@@ -1,10 +1,6 @@
 ﻿using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Shared;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace DatabaseManager.Common.Data
 {
@@ -15,6 +11,12 @@ namespace DatabaseManager.Common.Data
         public FunctionData(IDapperDataAccess dp)
         {
             _dp = dp;
+        }
+
+        public async Task CreateFunction(RuleFunctions function, string connectionString)
+        {
+            string json = JsonConvert.SerializeObject(function, Formatting.Indented);
+            await _dp.SaveData("dbo.spInsertFunctions", new { json = json }, connectionString);
         }
 
         public async Task<RuleFunctions> GetFunctionFromSP(int id, string connectionString)
@@ -30,5 +32,17 @@ namespace DatabaseManager.Common.Data
 
         public Task<IEnumerable<RuleFunctions>> GetFunctionsFromSP(string connectionString) =>
             _dp.LoadData<RuleFunctions, dynamic>("dbo.spGetFunctions", new { }, connectionString);
+
+        public async Task UpdateFunction(RuleFunctions function, string connectionString)
+        {
+            string json = JsonConvert.SerializeObject(function, Formatting.Indented);
+            await _dp.SaveData("dbo.spUpdateFunctions", new { json = json }, connectionString);
+        }
+
+        public async Task DeleteFunction(int id, string connectionString)
+        {
+            string sql = "DELETE FROM pdo_rule_functions WHERE Id = @Id";
+            await _dp.DeleteData(sql, new { id }, connectionString);
+        }
     }
 }
