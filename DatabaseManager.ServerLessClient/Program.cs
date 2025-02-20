@@ -3,6 +3,7 @@ using Blazored.LocalStorage;
 using BlazorTable;
 using DatabaseManager.BlazorComponents.Services;
 using DatabaseManager.ServerLessClient.Models;
+using DatabaseManager.ServerLessClient.Services;
 using dymaptic.GeoBlazor.Core;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
@@ -78,21 +79,25 @@ namespace DatabaseManager.ServerLessClient
             services.AddHttpClient<IDataModelService, DataModelService>();
             services.AddHttpClient<IDataConfiguration, DataConfiguration>();
             services.AddHttpClient<IRulesService, RulesService>();
-            
+            services.AddHttpClient<IRuleService, RuleService>();
+            services.AddHttpClient<IReport, ReportService>();
+
             services.AddHttpClient<IDataIndexer, DataIndexerServerLess>();
 
             services.AddScoped<DatabaseManager.ServerLessClient.Services.IDataSources, DatabaseManager.ServerLessClient.Services.DataSources>();
             services.AddScoped<IDataModelService, DataModelService>();
             services.AddScoped<IDisplayMessage, DisplayMessage>();
+            services.AddScoped<IPopupMessage, PopupMessage>();
             services.AddScoped<IHttpService, HttpService>();
             services.AddScoped<DatabaseManager.ServerLessClient.Services.IDataOps, DatabaseManager.ServerLessClient.Services.DataOps>();
             //services.AddScoped<IDataSources, DataSourcesServerLess>();
             services.AddScoped<IDataTransfer, DataTransferServerLess>();
             services.AddScoped<IDataModelCreate, DataModelCreateServerless>();
             services.AddScoped<IDataIndexer, DataIndexerServerLess>();
-            services.AddScoped<IDataQc, DataQc>();
+            services.AddScoped<IReport, ReportService>();
             services.AddScoped<IRules, RulesServerless>();
             services.AddScoped<IRulesService, RulesService>();
+            services.AddScoped<IRuleService, RuleService>();
             services.AddScoped<IReportEdit, ReportEdit>();
             services.AddScoped<ISync, Sync>();
 

@@ -7,6 +7,8 @@ using Microsoft.Extensions.Logging;
 using System.Net;
 using DatabaseManager.Services.Reports.Services;
 using Newtonsoft.Json;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace DatabaseManager.Services.Reports
 {
@@ -17,15 +19,17 @@ namespace DatabaseManager.Services.Reports
         private readonly IConfiguration _configuration;
         private readonly IRuleAccess _ra;
         private readonly IIndexAccess _ia;
+        private readonly IDatabaseAccess _db;
 
         public Reports(ILogger<Reports> logger, IConfiguration configuration,
-            IRuleAccess ra, IIndexAccess ia)
+            IRuleAccess ra, IIndexAccess ia, IDatabaseAccess db)
         {
             _logger = logger;
             _response = new ResponseDto();
             _configuration = configuration;
             _ra = ra;
             _ia = ia;
+            _db = db;
             SD.RuleAPIBase = _configuration.GetValue<string>("DataRuleAPI");
             SD.RuleKey = _configuration["RuleKey"];
             SD.IndexAPIBase = _configuration["IndexAPI"];
@@ -81,6 +85,69 @@ namespace DatabaseManager.Services.Reports
             return result;
         }
 
+        [Function("GetResult")]
+        public async Task<HttpResponseData> GetResult([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req)
+        {
+            _logger.LogInformation("GetResults: Starting.");
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                int? id = req.GetQuery("Id", true).GetIntFromString();
+                ResponseDto dsResponse = await _ra.GetRule<ResponseDto>(name, (int)id);
+                if (dsResponse != null && dsResponse.IsSuccess)
+                {
+                    string content = Convert.ToString(dsResponse.Result);
+                    RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(content);
+                    if (rule != null)
+                    {
+                        ResponseDto iaResponse = await _ia.GetIndexFailures<ResponseDto>(name, "", rule.DataType, rule.RuleKey);
+                        if (iaResponse != null && iaResponse.IsSuccess) 
+                        {
+                            var indexes = JsonConvert.DeserializeObject<List<IndexDto>>(Convert.ToString(iaResponse.Result));
+                            List<DmsIndex> qcIndex = new List<DmsIndex>();
+                            foreach (var idxRow in indexes)
+                            {
+                                qcIndex.Add(new DmsIndex()
+                                {
+                                    Id = idxRow.IndexId,
+                                    DataType = idxRow.DataType,
+                                    DataKey = idxRow.DataKey,
+                                    JsonData = idxRow.JsonDataObject
+                                });
+                            }
+                            _response.Result = qcIndex;
+                        }
+                        else
+                        {
+                            _response.IsSuccess = false;
+                            _response.ErrorMessages
+                                 = new List<string>() { "GetResults: Error getting failed indexes" };
+                            _logger.LogError($"GetResults: Error getting failed indexes");
+                        }
+                        
+                    }
+                }
+                else
+                {
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages
+                         = new List<string>() { "GetResults: Error getting rule for for reports" };
+                    _logger.LogError($"GetResults: Error getting rule for for reports");
+                }
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"GetResults: Error getting result: {ex}");
+            }
+
+            var result = req.CreateResponse(HttpStatusCode.OK);
+            await result.WriteAsJsonAsync(_response);
+            return result;
+        }
+
         [Function("ReportAttributeInfo")]
         public async Task<HttpResponseData> GetReportAttributeInfo([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req)
         {
@@ -89,7 +156,7 @@ namespace DatabaseManager.Services.Reports
             try
             {
                 string name = req.GetQuery("Name", true);
-                string dataType = req.GetQuery("Datatype", true);
+                string dataType = req.GetQuery("C", true);
                 string project = req.GetQuery("Project", false);
 
                 ResponseDto indexResponse = await _ia.GetRootIndex<ResponseDto>(name, project);
@@ -110,7 +177,12 @@ namespace DatabaseManager.Services.Reports
                     ConnectParametersDto source = JsonConvert.DeserializeObject<ConnectParametersDto>(rootJson.Source);
                     List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(source.DataAccessDefinition);
                     DataAccessDef dataAccess = accessDefs.First(x => x.DataType == dataType);
-                    _response.Result = dataAccess;
+                    string table = dataAccess.Select.GetTable();
+
+                    var tableSchema = await 
+                        _db.LoadData<TableSchema, dynamic>("dbo.sp_columns", new { TABLE_NAME = table }, source.ConnectionString);
+
+                    _response.Result = tableSchema;
                 }
                 else
                 {

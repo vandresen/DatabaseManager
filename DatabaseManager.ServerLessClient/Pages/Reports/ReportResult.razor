@@ -1,0 +1,91 @@
+﻿@page "/reportresult"
+@inject BlazorSingletonService singleton
+@inject IPopupMessage displayMessage
+@inject NavigationManager navigationManager
+@inject IReport rp
+
+@using MudBlazor
+
+<h3>Report Results</h3>
+
+@if (ResultList == null)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudTable Items="@ResultList" Dense="true" Hover="true">
+        <ColGroup>
+            <col style="width:50px;" />
+            <col />
+            <col />
+        </ColGroup>
+        <HeaderContent>
+            <MudTh style="background-color:lightgray">Drilldown</MudTh>
+            <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<QcResult, object>(x=>x.RuleType)">Rule Type</MudTableSortLabel></MudTh>
+            <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<QcResult, object>(x=>x.RuleName)">Rule Name</MudTableSortLabel></MudTh>
+            <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<QcResult, object>(x=>x.DataType)">Data Type</MudTableSortLabel></MudTh>
+            <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<QcResult, object>(x=>x.Failures)">Failures</MudTableSortLabel></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>
+                <MudFab @onclick="@(() => DrillDown(context.Id))" Color="Color.Primary" StartIcon="@Icons.Material.Filled.List" Size="Size.Small" IconSize="Size.Small" />
+            </MudTd>
+            <MudTd DataLabel="Rule Type">@context.RuleType</MudTd>
+            <MudTd DataLabel="Rule Name">@context.RuleName</MudTd>
+            <MudTd DataLabel="Data Type">@context.DataType</MudTd>
+            <MudTd DataLabel="Failures">@context.Failures</MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+}
+
+
+@code {
+    List<QcResult> ResultList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"Target: {singleton.TargetConnector}");
+        if (string.IsNullOrEmpty(singleton.TargetConnector))
+        {
+            Console.WriteLine($"No connector");
+            await displayMessage.DisplayErrorMessage("Please select a data connector");
+            navigationManager.NavigateTo("/");
+        }
+        try
+        {
+            ResultList = await rp.GetResults(singleton.TargetConnector);
+            Console.WriteLine($"Number of report results are {ResultList.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task DrillDown(int id)
+    {
+        string ruleType = ResultList.Where(x => x.Id == id).Select(a => a.RuleType).First();
+        Console.WriteLine(id);
+        Console.WriteLine(ruleType);
+        if (ruleType == "Predictions")
+        {
+            navigationManager.NavigateTo($"/predictionreportdrilldown/{id}");
+        }
+        else if (ruleType == "Uniqueness")
+        {
+            // navigationManager.NavigateTo($"/uniquenessdrilldown/{id}");
+        }
+        else if (ruleType == "Entirety")
+        {
+            // navigationManager.NavigateTo($"/entiretydrilldown/{id}");
+        }
+        else
+        {
+            navigationManager.NavigateTo($"/reportdrilldown/{id}");
+        }
+    }
+}

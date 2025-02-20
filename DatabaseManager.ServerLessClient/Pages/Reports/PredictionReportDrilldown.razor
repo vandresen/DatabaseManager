@@ -1,0 +1,95 @@
+﻿@page "/predictionreportdrilldown/{Id:int}"
+@inject IRuleService rules
+@inject BlazorSingletonService singleton
+
+<h3>@header</h3>
+
+@if (dataIndex == null)
+{
+    <text>Loading Data...</text>
+}
+else if (dataDeleted)
+{
+    <text>Data has been deleted...</text>
+}
+else
+{
+    @* <MudTable Items="@reportList" Dense="true" Hover="true">
+        <ColGroup>
+            <col style="width:50px;" />
+            <col />
+            <col />
+        </ColGroup>
+        <HeaderContent>
+            <MudTh style="background-color:lightgray">Detail</MudTh>
+            <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<ReportData, object>(x=>x.Id)">Index Id</MudTableSortLabel></MudTh>
+            <MudTh style="background-color:lightgray"><MudTableSortLabel SortBy="new Func<ReportData, object>(x=>x.Key)">Data Key</MudTableSortLabel></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>
+                <MudFab @onclick="@(() => ShowBtnPress(context.Id))" Color="Color.Primary" Icon="@((context.ShowDetails == true)? @UnHideIcon : @HideIcon)" Size="Size.Small" IconSize="Size.Small" />
+            </MudTd>
+            <MudTd DataLabel="Index Id">@context.Id</MudTd>
+            <MudTd DataLabel="Data Key">@context.Key</MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+        <ChildRowContent>
+            @if (context.ShowDetails)
+            {
+                <MudTr>
+                    <td colspan="4">
+                        <MudCard Elevation="0">
+                            <MudCardContent>
+                                <MudText>Data Object</MudText>
+                                <MudText Typo="Typo.body2">@context.JsonData</MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </td>
+                </MudTr>
+            }
+        </ChildRowContent>
+    </MudTable> *@
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    public List<DmsIndex> dataIndex;
+    private bool dataDeleted = false;
+    private string header = "";
+    public RuleModelDto ruleModel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"Rule id = {Id}");
+        ruleModel = await rules.GetRuleAsync(singleton.TargetConnector, Id);
+        header = ruleModel.RuleName;
+        // dataIndex = await qc.GetResult(singleton.TargetConnector, Id);
+        // if (dataIndex != null)
+        // {
+        //     DmsIndex firstObject = dataIndex.First();
+        //     string jsonData = firstObject.JsonData;
+        //     if (string.IsNullOrEmpty(jsonData)) dataDeleted = true;
+        // }
+        // reportList = new List<ReportData>();
+        // foreach (var item in dataIndex)
+        // {
+        //     string key = item.DataKey;
+        //     reportList.Add(new ReportData
+        //         {
+        //             Id = item.Id,
+        //             JsonData = item.JsonData,
+        //             Key = key,
+        //             RuleKey = ruleModel.RuleKey
+        //         });
+        // }
+        // Console.WriteLine($"Number of predictions are {dataIndex.Count}");
+    }
+
+    private void ShowBtnPress(int id)
+    {
+        // ReportData item = reportList.First(f => f.Id == id);
+        // item.ShowDetails = !item.ShowDetails;
+    }
+}

@@ -19,6 +19,7 @@ var host = new HostBuilder()
         services.AddScoped<IRuleAccess, RuleAccess>();
         services.AddHttpClient<IIndexAccess, IndexAccess>();
         services.AddScoped<IIndexAccess, IndexAccess>();
+        services.AddScoped<IDatabaseAccess, DatabaseAccess>();
     })
     .Build();
 

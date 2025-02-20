@@ -1,9 +1,13 @@
-﻿using Azure;
+﻿using AutoMapper;
+using Azure;
 using Azure.Data.Tables;
 using Azure.Storage.Files.Shares;
-using DatabaseManager.Services.Datasources.Extensions;
 using DatabaseManager.Services.Datasources.Models;
 using DatabaseManager.Services.Datasources.Models.Dto;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.Datasources.Repository
 {
@@ -13,17 +17,18 @@ namespace DatabaseManager.Services.Datasources.Repository
         private const string PartitionKey = "PPDM";
         private const string fileShare = "connectdefinition";
         private const string fileName = "PPDMDataAccess.json";
-    
+        private readonly IMapper _mapper;
 
-        public DataSourceRepository()
+        public DataSourceRepository(IMapper mapper)
         {
+            _mapper = mapper;
         }
 
         public async Task<ConnectParametersDto> CreateUpdateDataSource(ConnectParametersDto connectParametersDto, string connectionString)
         {
             var tableClient = await GetTableClient(connectionString);
-            ConnectParameters connectParameters = connectParametersDto.FromConnectParametersDto();
-            DataSourceEntity entity = connectParameters.ToDataSourceEntity();
+            ConnectParameters connectParameters = _mapper.Map<ConnectParameters>(connectParametersDto);
+            DataSourceEntity entity = _mapper.Map<DataSourceEntity>(connectParameters);
             entity.PartitionKey = PartitionKey;
             await tableClient.UpsertEntityAsync(entity);
             return connectParametersDto;
@@ -47,12 +52,7 @@ namespace DatabaseManager.Services.Datasources.Repository
         {
             TableClient tableClient = await GetTableClient(connectionString);
             DataSourceEntity entity = await tableClient.GetEntityAsync<DataSourceEntity>(PartitionKey, dataSourceName);
-            ConnectParametersDto connector = entity.FromDataSourceEntity();
-            if (connector.SourceType == "DataBase")
-            {
-                string jsonConnectDef = await ReadFile(connectionString);
-                connector.DataAccessDefinition = jsonConnectDef;
-            }
+            ConnectParametersDto connector = _mapper.Map<ConnectParametersDto>(entity);
             return connector;
         }
 
@@ -64,9 +64,8 @@ namespace DatabaseManager.Services.Datasources.Repository
             string jsonConnectDef = await ReadFile(connectionString);
             foreach (DataSourceEntity entity in entities)
             {
-                ConnectParametersDto connector = entity.FromDataSourceEntity();
-                if (connector.SourceType == "DataBase")
-                    connector.DataAccessDefinition = jsonConnectDef;
+                ConnectParametersDto connector = _mapper.Map<ConnectParametersDto>(entity);
+                connector.DataAccessDefinition = jsonConnectDef;
                 result.Add(connector);
             }
             return result;

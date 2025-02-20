@@ -1,0 +1,47 @@
+﻿@page "/reportdrilldown/{Id:int}"
+@inject IRuleService rules
+@inject BlazorSingletonService singleton
+@inject IReport rp
+
+<h3>@header</h3>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private string header = "";
+    public RuleModelDto ruleModel;
+    private bool canEdit = false;
+    private string columnName = "";
+    private string dataType = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"Rule id = {Id}");
+
+        ruleModel = await rules.GetRuleAsync(singleton.TargetConnector, Id);
+        string ruleAttribute = ruleModel.DataAttribute.Trim();
+        header = ruleModel.RuleName;
+        dataType = ruleModel.DataType;
+        columnName = ruleModel.DataAttribute;
+        canEdit = ruleModel.RuleType == "Validity" || ruleModel.RuleType == "Completeness";
+
+        List<string> keyList = new List<string>();
+        Console.WriteLine($"Access def = {singleton.DataAccessDefinition}");
+        List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(singleton.DataAccessDefinition);
+        DataAccessDef dataDef = accessDefs.FirstOrDefault(x => x.DataType == dataType);
+        if (dataDef != null) keyList = dataDef.Keys.Split(',').ToList();
+        Console.WriteLine($"We are here");
+        if (canEdit)
+        {
+            List<TableSchema> info = await rp.GetAttributeInfo(singleton.TargetConnector, dataType);
+            Console.WriteLine($"Number of attributes: {info.Count}");
+            // if (!info.DataAttributes.TryGetValue(columnName, out valueType))
+            // {
+            //     Console.WriteLine($"Error: Could not get a value for {columnName}");
+            // }
+            // if (valueType == "System.Decimal") { valueType = "number"; }
+            // else { valueType = "text"; }
+            // Console.WriteLine($"Value type is {valueType}");
+        }
+        // List<ReportData> reportList = await CreateReportList();
+    }
+}

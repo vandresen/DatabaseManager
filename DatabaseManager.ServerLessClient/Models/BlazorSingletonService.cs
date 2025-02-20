@@ -10,5 +10,7 @@
         public bool ServerLess { get; set; }
         public int HttpTimeOut = 500;
         public string Project { get; set; }
+        public string ReportApiBase { get; set; }
+        public string ReportKey { get; set; }
     }
 }

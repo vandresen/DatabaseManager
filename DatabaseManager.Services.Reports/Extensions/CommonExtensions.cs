@@ -28,5 +28,24 @@ namespace DatabaseManager.Services.Reports.Extensions
             }
             return result;
         }
+
+        public static string GetTable(this string select)
+        {
+            select = select.ToUpper();
+            int from = select.IndexOf(" FROM ") + 6;
+            string table = select.Substring(from);
+            return table;
+        }
+
+        public static int? GetIntFromString(this string token)
+        {
+            int? number = null;
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                int value;
+                if (int.TryParse(token, out value)) number = value;
+            }
+            return number;
+        }
     }
 }

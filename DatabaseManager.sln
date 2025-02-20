@@ -21,8 +21,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Common", "D
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{EA828F33-3FF9-4D14-9C0E-F36AB7E3C98A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.Datasources", "DatabaseManager.Services.Datasources\DatabaseManager.Services.Datasources.csproj", "{9C98D64B-D730-4B65-9998-1C3E603ECAA4}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.DataConfiguration", "DatabaseManager.Services.DataConfiguration\DatabaseManager.Services.DataConfiguration.csproj", "{DF13C120-0DF2-4641-A4A3-88A5A3D8DF86}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.Index", "DatabaseManager.Services.Index\DatabaseManager.Services.Index.csproj", "{C9ABA3C4-FD66-476A-AA3A-CCF210FCD568}"
@@ -48,6 +46,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.DataOpsManagement", "DatabaseManager.Services.DataOpsManagement\DatabaseManager.Services.DataOpsManagement.csproj", "{87AF13EF-5839-487A-9435-6FA00CBCA8FC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManager.Services.Reports", "DatabaseManager.Services.Reports\DatabaseManager.Services.Reports.csproj", "{3BEAF571-66F0-4DA1-8127-5E82110C6B5F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseManager.Services.Datasources", "DatabaseManager.Services.Datasources\DatabaseManager.Services.Datasources.csproj", "{646EAAEC-4637-4483-B4B6-F8BC60D70EB8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -87,10 +87,6 @@ Global
 		{E64B8DE9-C03F-44B5-8EE6-82F406198579}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E64B8DE9-C03F-44B5-8EE6-82F406198579}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E64B8DE9-C03F-44B5-8EE6-82F406198579}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9C98D64B-D730-4B65-9998-1C3E603ECAA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9C98D64B-D730-4B65-9998-1C3E603ECAA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9C98D64B-D730-4B65-9998-1C3E603ECAA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9C98D64B-D730-4B65-9998-1C3E603ECAA4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DF13C120-0DF2-4641-A4A3-88A5A3D8DF86}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DF13C120-0DF2-4641-A4A3-88A5A3D8DF86}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF13C120-0DF2-4641-A4A3-88A5A3D8DF86}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -139,12 +135,15 @@ Global
 		{3BEAF571-66F0-4DA1-8127-5E82110C6B5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3BEAF571-66F0-4DA1-8127-5E82110C6B5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3BEAF571-66F0-4DA1-8127-5E82110C6B5F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{646EAAEC-4637-4483-B4B6-F8BC60D70EB8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{646EAAEC-4637-4483-B4B6-F8BC60D70EB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{646EAAEC-4637-4483-B4B6-F8BC60D70EB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{646EAAEC-4637-4483-B4B6-F8BC60D70EB8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{9C98D64B-D730-4B65-9998-1C3E603ECAA4} = {EA828F33-3FF9-4D14-9C0E-F36AB7E3C98A}
 		{DF13C120-0DF2-4641-A4A3-88A5A3D8DF86} = {EA828F33-3FF9-4D14-9C0E-F36AB7E3C98A}
 		{C9ABA3C4-FD66-476A-AA3A-CCF210FCD568} = {EA828F33-3FF9-4D14-9C0E-F36AB7E3C98A}
 		{38F8D227-2697-49A0-B9EE-C6C937250D94} = {EA828F33-3FF9-4D14-9C0E-F36AB7E3C98A}
@@ -157,6 +156,7 @@ Global
 		{417F2A5B-865C-4D9A-BE46-EE343DC36456} = {EA828F33-3FF9-4D14-9C0E-F36AB7E3C98A}
 		{87AF13EF-5839-487A-9435-6FA00CBCA8FC} = {EA828F33-3FF9-4D14-9C0E-F36AB7E3C98A}
 		{3BEAF571-66F0-4DA1-8127-5E82110C6B5F} = {EA828F33-3FF9-4D14-9C0E-F36AB7E3C98A}
+		{646EAAEC-4637-4483-B4B6-F8BC60D70EB8} = {EA828F33-3FF9-4D14-9C0E-F36AB7E3C98A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E9878295-7BBD-490C-BAD1-48F130062BC4}
