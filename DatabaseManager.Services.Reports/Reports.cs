@@ -156,7 +156,7 @@ namespace DatabaseManager.Services.Reports
             try
             {
                 string name = req.GetQuery("Name", true);
-                string dataType = req.GetQuery("C", true);
+                string dataType = req.GetQuery("Datatype", true);
                 string project = req.GetQuery("Project", false);
 
                 ResponseDto indexResponse = await _ia.GetRootIndex<ResponseDto>(name, project);

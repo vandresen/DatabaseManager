@@ -33,7 +33,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<List<TableSchema>> GetAttributeInfo(string source, string dataType)
         {
             List<TableSchema> result = new List<TableSchema>();
-            string url = baseUrl.BuildFunctionUrl("ReportAttributeInfo", $"Name={source}&ReportAttributeInfo={dataType}", apiKey);
+            string url = baseUrl.BuildFunctionUrl("ReportAttributeInfo", $"Name={source}&Datatype={dataType}", apiKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -41,6 +41,20 @@ namespace DatabaseManager.ServerLessClient.Services
                 Url = url
             });
             result = JsonConvert.DeserializeObject<List<TableSchema>>(response.Result.ToString());
+            return result;
+        }
+
+        public async Task<List<DmsIndex>> GetResult(string source, int id)
+        {
+            List<DmsIndex> result = new List<DmsIndex>();
+            string url = baseUrl.BuildFunctionUrl("GetResult", $"name={source}&Id={id}", apiKey);
+            Console.WriteLine(url);
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                Url = url
+            });
+            result = JsonConvert.DeserializeObject<List<DmsIndex>>(response.Result.ToString());
             return result;
         }
     }
