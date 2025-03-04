@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DatabaseManager.Services.Reports.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,5 +11,6 @@ namespace DatabaseManager.Services.Reports.Services
     {
         Task<T> GetIndexFailures<T>(string dataSource, string project, string dataType, string qcString);
         Task<T> GetRootIndex<T>(string dataSource, string project);
+        Task InsertEdits(ReportData reportData, string dataSource, string project);
     }
 }

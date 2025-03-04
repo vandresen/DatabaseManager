@@ -230,6 +230,8 @@ else
         try
         {
             Console.WriteLine($"RowEditCommit event: Changes to Element {((ReportData)item).Key} committed");
+            string json = JsonConvert.SerializeObject((ReportData)item);
+            Console.WriteLine(json);
             // await re.Update(singleton.TargetConnector, (ReportData)item);
         }
         catch (Exception ex)
