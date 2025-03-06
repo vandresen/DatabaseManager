@@ -225,5 +225,27 @@ namespace DatabaseManager.Services.Reports
             await result.WriteAsJsonAsync(_response);
             return result;
         }
+
+        [Function("DeleteReportData")]
+        public async Task<HttpResponseData> DeleteIndex([HttpTrigger(AuthorizationLevel.Function, "delete", Route = null)] HttpRequestData req)
+        {
+            _logger.LogInformation("DeleteReportData: Starting");
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                int? id = req.GetQuery("Id", true).GetIntFromString();
+                //await _ia.InsertEdits(reportData, name, "");
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"DeleteReportData: Error updating report edits: {ex}");
+            }
+            var result = req.CreateResponse(HttpStatusCode.OK);
+            await result.WriteAsJsonAsync(_response);
+            return result;
+        }
     }
 }

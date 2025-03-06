@@ -17,6 +17,11 @@ namespace DatabaseManager.Services.Reports.Services
             _logger = logger;
         }
 
+        public Task DeleteEdits(int id, string dataSource, string project)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<T> GetIndexFailures<T>(string dataSource, string project, string dataType, string qcString)
         {
             string url = SD.IndexAPIBase.BuildFunctionUrl($"/QueryIndex", 

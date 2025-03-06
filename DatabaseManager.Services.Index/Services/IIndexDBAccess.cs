@@ -21,5 +21,6 @@ namespace DatabaseManager.Services.Index.Services
         Task<IEnumerable<DmIndexDto>> GetDmIndex(int id, string connectionString);
         Task InsertIndexes(IndexDataCollection indexes, int parentid, string connectionString);
         Task UpdateIndexes(List<IndexDto> indexes, string connectionString);
+        Task DeleteIndex(int id, string connectionString);
     }
 }

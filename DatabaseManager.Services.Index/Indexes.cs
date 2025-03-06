@@ -299,18 +299,27 @@ namespace DatabaseManager.Services.Index
         }
 
         [Function("DeleteIndex")]
-        public HttpResponseData DeleteIndex(
+        public async Task<ResponseDto> DeleteIndex(
             [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "Indexes/{id}")] HttpRequestData req,
             int id)
         {
             _logger.LogInformation("DeleteIndex: Starting");
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                await _indexDB.DeleteIndex(id, connectParameter.ConnectionString);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"UpdateIndexes: Error updating indexes: {ex}");
+            }
 
-            var response = req.CreateResponse(HttpStatusCode.OK);
-            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
-
-            response.WriteString($"Welcome to Azure Functions, id = {id}!");
-
-            return response;
+            return _response;
         }
     }
 }

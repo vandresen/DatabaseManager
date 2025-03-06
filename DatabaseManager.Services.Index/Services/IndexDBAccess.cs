@@ -531,6 +531,9 @@ namespace DatabaseManager.Services.Index.Services
             }
         }
 
+        private Task<IEnumerable<IndexDto>> GetDescendants(int id, string connectionString) =>
+            _dp.LoadData<IndexDto, dynamic>("dbo.spGetDescendants", new { id = id }, connectionString);
+
         public async Task DeleteIndexes(string connectionString)
         {
             string sql = $"DELETE FROM {_table}";
@@ -588,6 +591,26 @@ namespace DatabaseManager.Services.Index.Services
                 parametersList.Add(parameters);
             }
             await _dp.SaveData(storedProcedure, parametersList, connectionString);
+        }
+
+        public async Task DeleteIndex(int id, string connectionString)
+        {
+            IndexDto idxResults = await GetIndex(id, connectionString);
+            if (idxResults != null)
+            {
+
+                IEnumerable<IndexDto> dmsIndex = await GetDescendants(id, connectionString);
+                foreach (IndexDto index in dmsIndex)
+                {
+                    index.JsonDataObject = "";
+                    index.QC_String = "";
+                }
+                await UpdateIndexes(dmsIndex.ToList(), connectionString);
+            }
+            else
+            {
+                throw new System.Exception($"DeleteIndex: Cannot get data for index key {id}");
+            }
         }
     }
 }
