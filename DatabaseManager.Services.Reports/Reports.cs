@@ -234,14 +234,21 @@ namespace DatabaseManager.Services.Reports
             {
                 string name = req.GetQuery("Name", true);
                 int? id = req.GetQuery("Id", true).GetIntFromString();
-                //await _ia.InsertEdits(reportData, name, "");
+                ResponseDto deleteResponse = await _ia.DeleteEdits<ResponseDto>((int)id, name, "");
+                if (deleteResponse == null || !deleteResponse.IsSuccess)
+                {
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages
+                     = new List<string>() { $"DeleteReportData: Could not delete data object with id {id}" };
+                    _logger.LogError($"DeleteReportData: Could not delete data object with id {id}");
+                }
             }
             catch (Exception ex)
             {
                 _response.IsSuccess = false;
                 _response.ErrorMessages
                      = new List<string>() { ex.ToString() };
-                _logger.LogError($"DeleteReportData: Error updating report edits: {ex}");
+                _logger.LogError($"DeleteReportData: Error deleting report edits: {ex}");
             }
             var result = req.CreateResponse(HttpStatusCode.OK);
             await result.WriteAsJsonAsync(_response);

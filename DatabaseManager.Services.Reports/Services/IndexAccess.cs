@@ -3,6 +3,7 @@ using DatabaseManager.Services.Reports.Models;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.ComponentModel.DataAnnotations;
 
 namespace DatabaseManager.Services.Reports.Services
 {
@@ -17,9 +18,14 @@ namespace DatabaseManager.Services.Reports.Services
             _logger = logger;
         }
 
-        public Task DeleteEdits(int id, string dataSource, string project)
+        public async Task<T> DeleteEdits<T>(int id, string dataSource, string project)
         {
-            throw new NotImplementedException();
+            string url = SD.IndexAPIBase.BuildFunctionUrl($"/Indexes/{id}", $"Name={dataSource}&Project={project}", SD.IndexKey);
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.DELETE,
+                Url = url
+            });
         }
 
         public async Task<T> GetIndexFailures<T>(string dataSource, string project, string dataType, string qcString)
@@ -120,6 +126,5 @@ namespace DatabaseManager.Services.Reports.Services
             }
             //if (connector.SourceType == "DataBase") UpdateDatabase(index.JsonDataObject, connector.ConnectionString, reportData.DataType);
         }
-
     }
 }
