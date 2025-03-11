@@ -1,6 +1,9 @@
 ﻿@page "/predictionreportdrilldown/{Id:int}"
 @inject IRuleService rules
 @inject BlazorSingletonService singleton
+@inject IReport rp
+
+@using MudBlazor
 
 <h3>@header</h3>
 
@@ -14,7 +17,7 @@ else if (dataDeleted)
 }
 else
 {
-    @* <MudTable Items="@reportList" Dense="true" Hover="true">
+    <MudTable Items="@reportList" Dense="true" Hover="true">
         <ColGroup>
             <col style="width:50px;" />
             <col />
@@ -27,7 +30,7 @@ else
         </HeaderContent>
         <RowTemplate>
             <MudTd>
-                <MudFab @onclick="@(() => ShowBtnPress(context.Id))" Color="Color.Primary" Icon="@((context.ShowDetails == true)? @UnHideIcon : @HideIcon)" Size="Size.Small" IconSize="Size.Small" />
+                <MudFab @onclick="@(() => ShowBtnPress(context.Id))" Color="Color.Primary" StartIcon="@((context.ShowDetails == true)? @UnHideIcon : @HideIcon)" Size="Size.Small" IconSize="Size.Small" />
             </MudTd>
             <MudTd DataLabel="Index Id">@context.Id</MudTd>
             <MudTd DataLabel="Data Key">@context.Key</MudTd>
@@ -50,46 +53,49 @@ else
                 </MudTr>
             }
         </ChildRowContent>
-    </MudTable> *@
+    </MudTable>
 }
 
 @code {
     [Parameter] public int Id { get; set; }
     public List<DmsIndex> dataIndex;
+    List<ReportData> reportList;
     private bool dataDeleted = false;
     private string header = "";
     public RuleModelDto ruleModel;
+    private string HideIcon = Icons.Material.Filled.Add;
+    private string UnHideIcon = Icons.Material.Filled.HorizontalRule;
 
     protected override async Task OnInitializedAsync()
     {
         Console.WriteLine($"Rule id = {Id}");
         ruleModel = await rules.GetRuleAsync(singleton.TargetConnector, Id);
         header = ruleModel.RuleName;
-        // dataIndex = await qc.GetResult(singleton.TargetConnector, Id);
-        // if (dataIndex != null)
-        // {
-        //     DmsIndex firstObject = dataIndex.First();
-        //     string jsonData = firstObject.JsonData;
-        //     if (string.IsNullOrEmpty(jsonData)) dataDeleted = true;
-        // }
-        // reportList = new List<ReportData>();
-        // foreach (var item in dataIndex)
-        // {
-        //     string key = item.DataKey;
-        //     reportList.Add(new ReportData
-        //         {
-        //             Id = item.Id,
-        //             JsonData = item.JsonData,
-        //             Key = key,
-        //             RuleKey = ruleModel.RuleKey
-        //         });
-        // }
-        // Console.WriteLine($"Number of predictions are {dataIndex.Count}");
+        dataIndex = await rp.GetResult(singleton.TargetConnector, Id);
+        if (dataIndex != null)
+        {
+            DmsIndex firstObject = dataIndex.First();
+            string jsonData = firstObject.JsonData;
+            if (string.IsNullOrEmpty(jsonData)) dataDeleted = true;
+        }
+        reportList = new List<ReportData>();
+        foreach (var item in dataIndex)
+        {
+            string key = item.DataKey;
+            reportList.Add(new ReportData
+                {
+                    Id = item.Id,
+                    JsonData = item.JsonData,
+                    Key = key,
+                    RuleKey = ruleModel.RuleKey
+                });
+        }
+        Console.WriteLine($"Number of predictions are {dataIndex.Count}");
     }
 
     private void ShowBtnPress(int id)
     {
-        // ReportData item = reportList.First(f => f.Id == id);
-        // item.ShowDetails = !item.ShowDetails;
+        ReportData item = reportList.First(f => f.Id == id);
+        item.ShowDetails = !item.ShowDetails;
     }
 }
