@@ -232,7 +232,7 @@ else
             Console.WriteLine($"RowEditCommit event: Changes to Element {((ReportData)item).Key} committed");
             string json = JsonConvert.SerializeObject((ReportData)item);
             Console.WriteLine(json);
-            // await re.Update(singleton.TargetConnector, (ReportData)item);
+            await rp.Update(singleton.TargetConnector, (ReportData)item);
         }
         catch (Exception ex)
         {
@@ -246,7 +246,7 @@ else
     private async Task Delete(int id)
     {
         Console.WriteLine($"Delete index id {id}");
-        // await re.Delete(singleton.TargetConnector, id);
+        await rp.Delete(id, singleton.TargetConnector);
         List<ReportData> reportList = await CreateReportList();
         this.StateHasChanged();
     }

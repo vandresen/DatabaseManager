@@ -57,5 +57,36 @@ namespace DatabaseManager.ServerLessClient.Services
             result = JsonConvert.DeserializeObject<List<DmsIndex>>(response.Result.ToString());
             return result;
         }
+
+        public async Task Update(string source, ReportData reportData)
+        {
+            string url = baseUrl.BuildFunctionUrl("UpdateReportData", $"name={source}", apiKey);
+            Console.WriteLine(url);
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.PUT,
+                Url = url,
+                Data = reportData
+            });
+            if (!response.IsSuccess)
+            {
+                throw new ApplicationException(String.Join("Update data objects:", response.ErrorMessages));
+            }
+        }
+
+        public async Task Delete(int id, string source)
+        {
+            string url = baseUrl.BuildFunctionUrl("DeleteReportData", $"name={source}&Id={id}", apiKey);
+            Console.WriteLine(url);
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.DELETE,
+                Url = url
+            });
+            if (!response.IsSuccess)
+            {
+                throw new ApplicationException(String.Join("Delete data objects:", response.ErrorMessages));
+            }
+        }
     }
 }
