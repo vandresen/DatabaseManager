@@ -1,6 +1,8 @@
 ﻿using DatabaseManager.Services.Index.Models;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -76,6 +78,65 @@ namespace DatabaseManager.Services.Index.Helpers
                 throw new Exception($"Could not get column info, no match for table {tableName}.");
             }
             return columns;
+        }
+
+        public static IndexFileData ProcessJTokens(JToken token)
+        {
+            IndexFileData idxDataObject = new IndexFileData();
+            idxDataObject.DataName = (string)token["DataName"];
+            idxDataObject.NameAttribute = token["NameAttribute"]?.ToString();
+            idxDataObject.LatitudeAttribute = token["LatitudeAttribute"]?.ToString();
+            idxDataObject.LongitudeAttribute = token["LongitudeAttribute"]?.ToString();
+            idxDataObject.ParentKey = token["ParentKey"]?.ToString();
+            if (token["UseParentLocation"] != null) idxDataObject.UseParentLocation = (Boolean)token["UseParentLocation"];
+            if (token["Arrays"] != null)
+            {
+                idxDataObject.Arrays = token["Arrays"];
+            }
+            return idxDataObject;
+        }
+
+        public static List<IndexFileData> ProcessIndexArray(JToken parent, List<IndexFileData> idxData)
+        {
+            if (parent["DataObjects"] != null)
+            {
+                foreach (JToken level in parent["DataObjects"])
+                {
+                    idxData.Add(ProcessJTokens(level));  // Assuming ProcessJTokens returns IndexFileData
+                    ProcessIndexArray(level, idxData); // Recursive call
+                }
+            }
+            return idxData;
+        }
+
+        public static string GetDataKey(JObject dataObject, string dbKeys)
+        {
+            string dataKey = "";
+            string and = "";
+            string[] keys = dbKeys.Split(',');
+            foreach (string key in keys)
+            {
+                string attribute = key.Trim();
+                string attributeValue = "'" + dataObject[attribute].ToString() + "'";
+                dataKey = dataKey + and + key.Trim() + " = " + attributeValue;
+                and = " AND ";
+            }
+            return dataKey;
+        }
+
+        public static double GetLocationFromJson(JObject dataObject, string attribute)
+        {
+            double location = -99999.0;
+            if (!string.IsNullOrEmpty(attribute))
+            {
+                string strLocation = dataObject[attribute].ToString();
+                if (!string.IsNullOrEmpty(strLocation))
+                {
+                    Boolean isNumber = double.TryParse(strLocation, out location);
+                    if (!isNumber) location = -99999.0;
+                }
+            }
+            return location;
         }
     }
 }

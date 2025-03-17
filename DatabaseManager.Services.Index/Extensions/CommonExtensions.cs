@@ -207,5 +207,14 @@ namespace DatabaseManager.Services.Index.Extensions
                 .Select(attr => attr.Trim())
                 .ToArray();
         }
+
+        public static DataAccessDef GetDataAccessDefintionFromSourceJson(this string dataConnectorJson, string dataType)
+        {
+            ConnectParametersDto source = JsonConvert.DeserializeObject<ConnectParametersDto>(dataConnectorJson);
+            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(source.DataAccessDefinition);
+            DataAccessDef accessDef = accessDefs.FirstOrDefault(x => x.DataType == dataType)
+                ?? throw new InvalidOperationException($"No access definition found for data type {dataType}"); ;
+            return accessDef;
+        }
     }
 }

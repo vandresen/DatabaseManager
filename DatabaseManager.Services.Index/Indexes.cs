@@ -8,6 +8,7 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace DatabaseManager.Services.Index
 {
@@ -258,17 +259,66 @@ namespace DatabaseManager.Services.Index
         }
 
         [Function("SaveIndexes")]
-        public HttpResponseData SaveIndexes(
+        public async Task<ResponseDto> SaveIndexes(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "Indexes")] HttpRequestData req)
         {
             _logger.LogInformation("SaveIndexes: Starting.");
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                string dataType = req.GetQuery("Datatype", true);
+                int? parentid = req.GetQuery("Parentid", true).GetIntFromString();
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                var stringBody = await new StreamReader(req.Body).ReadToEndAsync();
+                JObject dataObject = JObject.Parse(stringBody);
 
-            var response = req.CreateResponse(HttpStatusCode.OK);
-            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+                IndexDto rootIndex = await _indexDB.GetIndexRoot(connectParameter.ConnectionString);
+                string jsonStringObject = rootIndex.JsonDataObject;
+                IndexRootJson rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonStringObject);
+                _logger.LogInformation($"SaveIndexes: taxonomy is {rootJson.Taxonomy} ");
+                DataAccessDef accessDef = rootJson.Source.GetDataAccessDefintionFromSourceJson(dataType);
+                string taxonomy = rootJson.Taxonomy;
+                _logger.LogInformation($"SaveIndexes: taxonomy is {taxonomy} ");
+                JArray JsonIndexArray = JArray.Parse(taxonomy);
+                List<IndexFileData> idxData = new List<IndexFileData>();
+                foreach (JToken level in JsonIndexArray)
+                {
+                    idxData.Add(Common.ProcessJTokens(level));
+                    idxData = Common.ProcessIndexArray(level, idxData);
+                }
+                IndexFileData taxonomyInfoForMissingObject = idxData.FirstOrDefault(x => x.DataName == dataType);
+                string latitudeAttribute = taxonomyInfoForMissingObject.LatitudeAttribute;
+                string longitudeAttribute = taxonomyInfoForMissingObject.LongitudeAttribute;
 
-            response.WriteString("Welcome to Azure Functions!");
+                double latitude = Common.GetLocationFromJson(dataObject, latitudeAttribute);
+                double longitude = Common.GetLocationFromJson(dataObject, longitudeAttribute);
+                if (taxonomyInfoForMissingObject.UseParentLocation)
+                {
+                    IndexDto parentObject = await _indexDB.GetIndex((int)parentid, connectParameter.ConnectionString);
+                    if (parentObject.Latitude != null) latitude = (double)parentObject.Latitude;
+                    if (parentObject.Longitude != null) longitude = (double)parentObject.Longitude;
+                }
 
-            return response;
+                string dataName = dataObject[taxonomyInfoForMissingObject.NameAttribute].ToString();
+                string dataKey = Common.GetDataKey(dataObject, accessDef.Keys);
+                IndexDto indexModel = new IndexDto();
+                indexModel.Latitude = latitude;
+                indexModel.Longitude = longitude;
+                indexModel.DataType = dataType;
+                indexModel.DataName = dataName;
+                indexModel.DataKey = dataKey;
+                indexModel.JsonDataObject = stringBody;
+                _response.Result = await _indexDB.InsertIndex(indexModel, (int)parentid, connectParameter.ConnectionString);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"SaveIndexes: Error saving index: {ex}");
+            }
+            return _response;
         }
 
         [Function("UpdateIndexes")]

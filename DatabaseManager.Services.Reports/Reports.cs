@@ -254,5 +254,27 @@ namespace DatabaseManager.Services.Reports
             await result.WriteAsJsonAsync(_response);
             return result;
         }
+
+        [Function("InsertChildReportData")]
+        public async Task<HttpResponseData> InsertChildIndex([HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequestData req)
+        {
+            _logger.LogInformation("UpdateReportData: Starting");
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                ReportData reportData = await req.ReadFromJsonAsync<ReportData>();
+                await _ia.InsertChildEdits(reportData, name, "");
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"UpdateReportData: Error updating report edits: {ex}");
+            }
+            var result = req.CreateResponse(HttpStatusCode.OK);
+            await result.WriteAsJsonAsync(_response);
+            return result;
+        }
     }
 }

@@ -58,6 +58,11 @@ namespace DatabaseManager.Services.Reports.Services
             });
         }
 
+        public Task InsertChildEdits(ReportData reportData, string dataSource, string project)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task InsertEdits(ReportData reportData, string dataSource, string project)
         {
             string url = "";

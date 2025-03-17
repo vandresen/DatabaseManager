@@ -13,5 +13,6 @@ namespace DatabaseManager.Services.Reports.Services
         Task<T> GetRootIndex<T>(string dataSource, string project);
         Task InsertEdits(ReportData reportData, string dataSource, string project);
         Task<T> DeleteEdits<T>(int id, string dataSource, string project);
+        Task InsertChildEdits(ReportData reportData, string dataSource, string project);
     }
 }

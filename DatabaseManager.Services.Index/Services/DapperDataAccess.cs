@@ -29,6 +29,13 @@ namespace DatabaseManager.Services.Index.Services
             cnn.Execute(storedProcedure, parameters, commandType: CommandType.StoredProcedure);
         }
 
+        public async Task<T> SaveDataScalar<T, U>(string storedProcedure, U parameters, string connectionString)
+        {
+            using IDbConnection cnn = new SqlConnection(connectionString);
+            var result = await cnn.ExecuteScalarAsync<T>(storedProcedure, parameters, commandType: CommandType.StoredProcedure);
+            return result;
+        }
+
         public Task SaveDataSQL<T>(string sql, T parameters, string connectionString)
         {
             throw new NotImplementedException();

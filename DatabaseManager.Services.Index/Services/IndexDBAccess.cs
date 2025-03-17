@@ -7,13 +7,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Polly;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.Index.Services
 {
@@ -611,6 +605,51 @@ namespace DatabaseManager.Services.Index.Services
             {
                 throw new System.Exception($"DeleteIndex: Cannot get data for index key {id}");
             }
+        }
+
+        public async Task<int> InsertIndex(IndexDto indexModel, int parentid, string connectionString)
+        {
+            int id = -1;
+            string sql;
+            Boolean nullLocation = (indexModel.Latitude == -99999.0 | indexModel.Longitude == -99999.0);
+            Boolean zeroLocation = (indexModel.Latitude == 0.0 & indexModel.Longitude == 0.0);
+            if (nullLocation || zeroLocation)
+            {
+                sql = "spAddIndex";
+                var parameters = new
+                {
+                    parentid = parentid,
+                    d_name = indexModel.DataName,
+                    type = indexModel.DataType,
+                    datakey = indexModel.DataKey,
+                    jsondataobject = indexModel.JsonDataObject
+                };
+                id = await _dp.SaveDataScalar<int, dynamic>(sql, parameters, connectionString);
+            }
+
+            else
+            {
+                sql = "spAddIndexWithLocation";
+                var parameters = new
+                {
+                    parentid = parentid,
+                    d_name = indexModel.DataName,
+                    type = indexModel.DataType,
+                    datakey = indexModel.DataKey,
+                    jsondataobject = indexModel.JsonDataObject,
+                    latitude = indexModel.Latitude,
+                    longitude = indexModel.Longitude
+                };
+                id = await _dp.SaveDataScalar<int, dynamic>(sql, parameters, connectionString);
+            }
+
+            return id;
+        }
+
+        public async Task<IndexDto> GetIndexRoot(string connectionString)
+        {
+            var results = await _dp.LoadData<IndexDto, dynamic>("dbo.spGetIndexWithINDEXNODE", new { query = '/' }, connectionString);
+            return results.FirstOrDefault();
         }
     }
 }

@@ -22,5 +22,7 @@ namespace DatabaseManager.Services.Index.Services
         Task InsertIndexes(IndexDataCollection indexes, int parentid, string connectionString);
         Task UpdateIndexes(List<IndexDto> indexes, string connectionString);
         Task DeleteIndex(int id, string connectionString);
+        Task<int> InsertIndex(IndexDto indexModel, int parentid, string connectionString);
+        Task<IndexDto> GetIndexRoot(string connectionString);
     }
 }
