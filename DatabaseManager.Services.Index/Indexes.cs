@@ -233,6 +233,39 @@ namespace DatabaseManager.Services.Index
             return _response;
         }
 
+
+        [Function("GetDescendants")]
+        public async Task<ResponseDto> GetDescendants(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "GetDescendants/{id}")] HttpRequestData req, int id)
+        {
+            _logger.LogInformation("GetDescendants: Starting.");
+
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                if (dsResponse == null || !dsResponse.IsSuccess)
+                {
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages
+                     = new List<string>() { $"GetDescendants: Could not get descendants with id {id}" };
+                    _logger.LogError($"GetDescendants: Could not get descendants with id {id}");
+                }
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                IEnumerable<IndexDto> idx = await _indexDB.GetDescendants(id, "", connectParameter.ConnectionString);
+                _response.Result = idx.ToList();
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"GetDescendants: Error getting indexes: {ex}");
+            }
+            _logger.LogInformation("GetDescendants: Completed.");
+            return _response;
+        }
+
         [Function("GetIndex")]
         public async Task<ResponseDto> GetIndex(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Indexes/{id}")] HttpRequestData req,

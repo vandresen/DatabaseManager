@@ -50,6 +50,10 @@ namespace DatabaseManager.Services.Reports.Services
                         message.Method = HttpMethod.Get;
                         break;
                 }
+                if (!string.IsNullOrEmpty(apiRequest.AzureStorage))
+                {
+                    client.DefaultRequestHeaders.Add("azurestorageconnection", apiRequest.AzureStorage);
+                }
                 apiResponse = await client.SendAsync(message);
 
                 var apiContent = await apiResponse.Content.ReadAsStringAsync();

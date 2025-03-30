@@ -148,6 +148,8 @@ else
     {
         Console.WriteLine($"Create child for index id {id}");
         ReportData report = reportList.FirstOrDefault(x => x.Id == id);
+        string json = JsonConvert.SerializeObject(report, Formatting.Indented);
+        Console.WriteLine(json);
         // await re.InsertChild(singleton.TargetConnector, report);
         // reportList = await CreateReportList();
         // this.StateHasChanged();

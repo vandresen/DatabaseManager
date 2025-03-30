@@ -24,5 +24,6 @@ namespace DatabaseManager.Services.Index.Services
         Task DeleteIndex(int id, string connectionString);
         Task<int> InsertIndex(IndexDto indexModel, int parentid, string connectionString);
         Task<IndexDto> GetIndexRoot(string connectionString);
+        Task<IEnumerable<IndexDto>> GetDescendants(int id, string project, string connectionString);
     }
 }

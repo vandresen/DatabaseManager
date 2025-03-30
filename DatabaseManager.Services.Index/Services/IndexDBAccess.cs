@@ -525,7 +525,7 @@ namespace DatabaseManager.Services.Index.Services
             }
         }
 
-        private Task<IEnumerable<IndexDto>> GetDescendants(int id, string connectionString) =>
+        public Task<IEnumerable<IndexDto>> GetDescendants(int id, string project, string connectionString) =>
             _dp.LoadData<IndexDto, dynamic>("dbo.spGetDescendants", new { id = id }, connectionString);
 
         public async Task DeleteIndexes(string connectionString)
@@ -593,7 +593,7 @@ namespace DatabaseManager.Services.Index.Services
             if (idxResults != null)
             {
 
-                IEnumerable<IndexDto> dmsIndex = await GetDescendants(id, connectionString);
+                IEnumerable<IndexDto> dmsIndex = await GetDescendants(id, "", connectionString);
                 foreach (IndexDto index in dmsIndex)
                 {
                     index.JsonDataObject = "";

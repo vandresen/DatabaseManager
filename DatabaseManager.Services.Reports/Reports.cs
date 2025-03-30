@@ -1,14 +1,12 @@
 using DatabaseManager.Services.Reports.Extensions;
 using DatabaseManager.Services.Reports.Models;
+using DatabaseManager.Services.Reports.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.Net;
-using DatabaseManager.Services.Reports.Services;
 using Newtonsoft.Json;
-using System.Linq;
-using System.Collections.Generic;
+using System.Net;
 
 namespace DatabaseManager.Services.Reports
 {
@@ -261,6 +259,7 @@ namespace DatabaseManager.Services.Reports
             _logger.LogInformation("UpdateReportData: Starting");
             try
             {
+                SD.AzureStorageKey = req.GetStorageKey();
                 string name = req.GetQuery("Name", true);
                 ReportData reportData = await req.ReadFromJsonAsync<ReportData>();
                 await _ia.InsertChildEdits(reportData, name, "");

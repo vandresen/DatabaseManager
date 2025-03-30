@@ -13,6 +13,7 @@ namespace DatabaseManager.Services.Reports
         public static string RuleKey { get; set; }
         public static string IndexAPIBase { get; set; }
         public static string IndexKey { get; set; }
+        public static string AzureStorageKey { get; set; }
         public enum ApiType
         {
             GET,
