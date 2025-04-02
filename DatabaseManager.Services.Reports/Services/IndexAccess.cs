@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Runtime.Intrinsics.Arm;
 
 namespace DatabaseManager.Services.Reports.Services
@@ -40,7 +41,7 @@ namespace DatabaseManager.Services.Reports.Services
 
         public async Task<T> GetIndexFailures<T>(string dataSource, string project, string dataType, string qcString)
         {
-            string url = SD.IndexAPIBase.BuildFunctionUrl($"/QueryIndex", 
+            string url = SD.IndexAPIBase.BuildFunctionUrl($"/QueryIndex",
                 $"Name={dataSource}&DataType={dataType}&Project={project}&QcString={qcString}", SD.IndexKey);
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -117,7 +118,6 @@ namespace DatabaseManager.Services.Reports.Services
             }
             _logger.LogInformation($"Root json {rootIndex.JsonData}");
             IndexRootJson rootJson = JsonConvert.DeserializeObject<IndexRootJson>(rootIndex.JsonData);
-            _logger.LogInformation($"Root source {rootJson.Source}");
             DataAccessDef accessDef = rootJson.Source.GetDataAccessDefintionFromSourceJson(parms.DataType);
             string sourceConectionString = rootJson.Source.GetConnectionStringFromSourceJson();
 
@@ -133,7 +133,7 @@ namespace DatabaseManager.Services.Reports.Services
 
             string dataTypeSql = accessDef.Select;
             string table = dataTypeSql.GetTable();
-            
+
 
             IEnumerable<TableSchema> attributeProperties = await GetColumnInfo(sourceConectionString, table);
 
@@ -144,72 +144,56 @@ namespace DatabaseManager.Services.Reports.Services
             }
             string json = UpdateJsonAttribute(emptyJson, taxonomyInfoForMissingObject.NameAttribute, parms.Name);
             json = PopulateJsonWithKeyValues(taxonomyInfoForMissingObject, json, parentObject, accessDef);
-            await InsertNewObjectToIndex(json, parms.DataType, taxonomyInfoForMissingObject, parentObject, accessDef);
+            await InsertNewObjectToIndex(json, parms.DataType, taxonomyInfoForMissingObject, parentObject, accessDef, dataSource, project);
             //if (connector.SourceType == "DataBase")
             //{
             //    await InsertNewObjectToDatabase(json, parms.DataType);
             //}
-            //string failRule = reportData.RuleKey + ";";
-            //parentObject.QC_String = parentObject.QC_String.Replace(failRule, "");
-            //await _indexData.UpdateIndex(parentObject, connector.ConnectionString);
-
-            throw new NotImplementedException();
+            string failRule = reportData.RuleKey + ";";
+            parentObject.QC_String = parentObject.QC_String.Replace(failRule, "");
+            List<IndexDto> updateIndexes = [parentObject];
+            await UpdateIndex(updateIndexes, dataSource, "");
         }
 
         private async Task InsertNewObjectToIndex(string json, string dataType, IndexFileData taxonomyInfoForMissingObject,
-            IndexDto parentObject, DataAccessDef accessDef)
+            IndexDto parentObject, DataAccessDef accessDef, string dataSource, string project)
         {
             JObject dataObject = JObject.Parse(json);
             string dataName = dataObject[taxonomyInfoForMissingObject.NameAttribute].ToString();
             string dataKey = GetDataKey(dataObject, accessDef.Keys);
             int parentId = parentObject.IndexId;
-            double latitude = -99999.0;
-            double longitude = -99999.0;
-            if (taxonomyInfoForMissingObject.UseParentLocation)
-            {
-                if (parentObject.Latitude != null) latitude = (double)parentObject.Latitude;
-                if (parentObject.Longitude != null) longitude = (double)parentObject.Longitude;
-            }
-            int nodeId = await GetIndextNode(dataType, parentObject);
-            //IndexModel indexModel = new IndexModel();
-            //indexModel.Latitude = latitude;
-            //indexModel.Longitude = longitude;
-            //indexModel.DataType = dataType;
-            //indexModel.DataName = dataName;
-            //indexModel.DataKey = dataKey;
-            //indexModel.JsonDataObject = json;
-            //if (nodeId > 0)
-            //{
-            //    int result = await _indexData.InsertSingleIndex(indexModel, nodeId, _dbConnectionString);
-            //}
+            int result = await InsertSingleIndex(json, parentId, "", dataSource, dataType);
         }
 
-        private async Task<int> GetIndextNode(string dataType, IndexDto idxResult)
+        private async Task<int> InsertSingleIndex(string json, int parentId, string project, string dataSource, string dataType)
         {
-            int nodeid = 0;
-            string nodeName = dataType + "s";
-            if (idxResult != null)
+            dynamic dataObject = JsonConvert.DeserializeObject<dynamic>(json);
+            string url = "";
+            if (SD.Sqlite)
             {
-                //IEnumerable<IndexDto> indexes = await _indexData.GetDescendantsFromSP(idxResult.IndexId, _dbConnectionString);
-                //if (indexes.Count() > 1)
-                //{
-                //    var nodeIndex = indexes.FirstOrDefault(x => x.DataType == nodeName);
-                //    if (nodeIndex != null)
-                //    {
-                //        nodeid = nodeIndex.IndexId;
-                //    }
-                //}
-                if (nodeid == 0)
-                {
-                    //IndexModel nodeIndex = new IndexModel();
-                    //nodeIndex.Latitude = 0.0;
-                    //nodeIndex.Longitude = 0.0;
-                    //nodeIndex.DataType = nodeName;
-                    //nodeIndex.DataName = nodeName;
-                    //nodeid = await _indexData.InsertSingleIndex(nodeIndex, idxResult.IndexId, _dbConnectionString);
-                }
+                url = SD.IndexAPIBase.BuildFunctionUrl($"/Indexes", $"project={project}&Parentid={parentId}&Datatype={dataType}", SD.IndexKey);
             }
-            return nodeid;
+            else
+            {
+                url = SD.IndexAPIBase.BuildFunctionUrl($"/Indexes", $"Name={dataSource}&Parentid={parentId}&Datatype={dataType}", SD.IndexKey);
+            }
+            _logger.LogInformation($"Url = {url}");
+            ResponseDto indexResponse = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.POST,
+                Data = dataObject,
+                Url = url
+            });
+            if (indexResponse == null || !indexResponse.IsSuccess)
+            {
+                Exception error = new Exception($"GetDescendants: Failed saving index, {indexResponse.ErrorMessages}");
+                throw error;
+            }
+            else
+            {
+                int id = Convert.ToInt32(indexResponse.Result);
+                return id;
+            }
         }
 
         public async Task InsertEdits(ReportData reportData, string dataSource, string project)
@@ -349,37 +333,6 @@ namespace DatabaseManager.Services.Reports.Services
             return json;
         }
 
-        //private static string PopulateJsonForMissingDataObject(string parameters, string emptyJson, string parentData)
-        //{
-        //    string json = emptyJson;
-        //    try
-        //    {
-        //        MissingObjectsParameters missingObjectParms = new MissingObjectsParameters();
-        //        missingObjectParms = JsonConvert.DeserializeObject<MissingObjectsParameters>(parameters);
-        //        JObject dataObject = JObject.Parse(emptyJson);
-        //        JObject parentObject = JObject.Parse(parentData);
-        //        foreach (var key in missingObjectParms.Keys)
-        //        {
-        //            var tagName = key.Key;
-        //            var variable = key.Value;
-        //            if (variable.Substring(0, 1) == "!")
-        //            {
-        //                string parentTag = key.Value.Substring(1);
-        //                variable = parentObject[parentTag].ToString();
-        //            }
-        //            dataObject[tagName] = variable;
-        //        }
-        //        dataObject["REMARK"] = $"Has been predicted and created by QCEngine;";
-        //        json = dataObject.ToString();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        json = "Error";
-        //    }
-
-        //    return json;
-        //}
-
         private string PopulateJsonWithKeyValues(IndexFileData taxonomyInfo, string emptyJson, IndexDto parentObject, DataAccessDef accessDef)
         {
             string json = emptyJson;
@@ -443,6 +396,31 @@ namespace DatabaseManager.Services.Reports.Services
                 and = " AND ";
             }
             return dataKey;
+        }
+
+        private async Task UpdateIndex(List<IndexDto> updateIndexes, string dataSource, string project)
+        {
+            string url = "";
+            if (SD.Sqlite)
+            {
+                url = SD.IndexAPIBase.BuildFunctionUrl($"/Indexes", $"project={project}", SD.IndexKey);
+            }
+            else
+            {
+                url = SD.IndexAPIBase.BuildFunctionUrl($"/Indexes", $"Name={dataSource}", SD.IndexKey);
+            }
+            _logger.LogInformation($"Url = {url}");
+            ResponseDto updateResponse = await SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.PUT,
+                Url = url,
+                Data = updateIndexes
+            });
+            if (updateResponse == null || !updateResponse.IsSuccess)
+            {
+                Exception error = new Exception($"InsertEdits: Failed to update index");
+                throw error;
+            }
         }
 
         private Task<IEnumerable<TableSchema>> GetColumnInfo(string connectionString, string table) =>

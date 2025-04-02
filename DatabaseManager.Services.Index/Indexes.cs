@@ -326,15 +326,16 @@ namespace DatabaseManager.Services.Index
 
                 double latitude = Common.GetLocationFromJson(dataObject, latitudeAttribute);
                 double longitude = Common.GetLocationFromJson(dataObject, longitudeAttribute);
+                IndexDto parentObject = await _indexDB.GetIndex((int)parentid, connectParameter.ConnectionString);
                 if (taxonomyInfoForMissingObject.UseParentLocation)
                 {
-                    IndexDto parentObject = await _indexDB.GetIndex((int)parentid, connectParameter.ConnectionString);
                     if (parentObject.Latitude != null) latitude = (double)parentObject.Latitude;
                     if (parentObject.Longitude != null) longitude = (double)parentObject.Longitude;
                 }
 
                 string dataName = dataObject[taxonomyInfoForMissingObject.NameAttribute].ToString();
                 string dataKey = Common.GetDataKey(dataObject, accessDef.Keys);
+                int nodeId = await GetIndextNode(dataType, parentObject, connectParameter.ConnectionString);
                 IndexDto indexModel = new IndexDto();
                 indexModel.Latitude = latitude;
                 indexModel.Longitude = longitude;
@@ -342,7 +343,7 @@ namespace DatabaseManager.Services.Index
                 indexModel.DataName = dataName;
                 indexModel.DataKey = dataKey;
                 indexModel.JsonDataObject = stringBody;
-                _response.Result = await _indexDB.InsertIndex(indexModel, (int)parentid, connectParameter.ConnectionString);
+                _response.Result = await _indexDB.InsertIndex(indexModel, nodeId, connectParameter.ConnectionString);
             }
             catch (Exception ex)
             {
@@ -352,6 +353,34 @@ namespace DatabaseManager.Services.Index
                 _logger.LogError($"SaveIndexes: Error saving index: {ex}");
             }
             return _response;
+        }
+
+        private async Task<int> GetIndextNode(string dataType, IndexDto idxResult, string connectionString)
+        {
+            int nodeid = 0;
+            string nodeName = dataType + "s";
+            if (idxResult != null)
+            {
+                IEnumerable<IndexDto> indexes = await _indexDB.GetDescendants(idxResult.IndexId, "", connectionString);
+                if (indexes.Count() > 1)
+                {
+                    var nodeIndex = indexes.FirstOrDefault(x => x.DataType == nodeName);
+                    if (nodeIndex != null)
+                    {
+                        nodeid = nodeIndex.IndexId;
+                    }
+                }
+                if (nodeid == 0)
+                {
+                    IndexDto nodeIndex = new IndexDto();
+                    nodeIndex.Latitude = 0.0;
+                    nodeIndex.Longitude = 0.0;
+                    nodeIndex.DataType = nodeName;
+                    nodeIndex.DataName = nodeName;
+                    nodeid = await _indexDB.InsertIndex(nodeIndex, idxResult.IndexId, connectionString);
+                }
+            }
+            return nodeid;
         }
 
         [Function("UpdateIndexes")]
