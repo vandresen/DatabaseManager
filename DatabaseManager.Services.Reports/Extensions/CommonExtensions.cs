@@ -65,23 +65,6 @@ namespace DatabaseManager.Services.Reports.Extensions
             return source.ConnectionString;
         }
 
-        public static string GetStorageKey(this HttpRequestData req)
-        {
-            var headers = req.Headers;
-            IEnumerable<string> headerSerachResult;
-            string storageAccount = string.Empty;
-            if (headers.TryGetValues("azurestorageconnection", out headerSerachResult))
-            {
-                storageAccount = headerSerachResult.First();
-            }
-            if (string.IsNullOrEmpty(storageAccount))
-            {
-                Exception error = new Exception($"Error getting azure storage key");
-                throw error;
-            }
-            return storageAccount;
-        }
-
         public static string[] GetAttributes(this string select)
         {
             int from = 7;

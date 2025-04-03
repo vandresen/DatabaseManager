@@ -88,5 +88,21 @@ namespace DatabaseManager.ServerLessClient.Services
                 throw new ApplicationException(String.Join("Delete data objects:", response.ErrorMessages));
             }
         }
+
+        public async Task InsertChild(string source, ReportData reportData)
+        {
+            string url = baseUrl.BuildFunctionUrl("InsertChildReportData", $"name={source}", apiKey);
+            Console.WriteLine(url);
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.POST,
+                Url = url,
+                Data = reportData
+            });
+            if (!response.IsSuccess)
+            {
+                throw new ApplicationException(String.Join("Update data objects:", response.ErrorMessages));
+            }
+        }
     }
 }

@@ -150,8 +150,8 @@ else
         ReportData report = reportList.FirstOrDefault(x => x.Id == id);
         string json = JsonConvert.SerializeObject(report, Formatting.Indented);
         Console.WriteLine(json);
-        // await re.InsertChild(singleton.TargetConnector, report);
-        // reportList = await CreateReportList();
-        // this.StateHasChanged();
+        await rp.InsertChild(singleton.TargetConnector, report);
+        reportList = await CreateReportList();
+        this.StateHasChanged();
     }
 }

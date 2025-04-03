@@ -15,17 +15,15 @@ namespace DatabaseManager.Services.Reports.Services
         private readonly ILogger<IndexAccess> _logger;
         private readonly IRuleAccess _ra;
         private readonly IConfiguration _configuration;
-        private readonly IConfigFileService _cfs;
         private readonly IDatabaseAccess _db;
 
         public IndexAccess(IHttpClientFactory clientFactory, ILogger<IndexAccess> logger, IRuleAccess ra,
-            IConfiguration configuration, IConfigFileService cfs, IDatabaseAccess db) : base(clientFactory)
+            IConfiguration configuration, IDatabaseAccess db) : base(clientFactory)
         {
             _clientFactory = clientFactory;
             _logger = logger;
             _ra = ra;
             _configuration = configuration;
-            _cfs = cfs;
             _db = db;
         }
 

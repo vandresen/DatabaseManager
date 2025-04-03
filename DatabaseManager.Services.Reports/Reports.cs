@@ -259,7 +259,6 @@ namespace DatabaseManager.Services.Reports
             _logger.LogInformation("UpdateReportData: Starting");
             try
             {
-                SD.AzureStorageKey = req.GetStorageKey();
                 string name = req.GetQuery("Name", true);
                 ReportData reportData = await req.ReadFromJsonAsync<ReportData>();
                 await _ia.InsertChildEdits(reportData, name, "");
