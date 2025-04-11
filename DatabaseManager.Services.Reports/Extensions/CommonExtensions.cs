@@ -1,11 +1,108 @@
 ﻿using Microsoft.Azure.Functions.Worker.Http;
 using DatabaseManager.Services.Reports.Models;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Text;
+using System.Security.Cryptography;
+using Microsoft.VisualBasic.FileIO;
 
 namespace DatabaseManager.Services.Reports.Extensions
 {
     public static class CommonExtensions
     {
+        public static string GetUniqKey(this string jsonData, RuleModel rule)
+        {
+            string keyText = "";
+            string uniqKey = "";
+            string[] keyAttributes = rule.RuleParameters.Split(';');
+            if (!string.IsNullOrEmpty(jsonData))
+            {
+                JObject dataObject = JObject.Parse(jsonData);
+                foreach (string key in keyAttributes)
+                {
+                    string function = "";
+                    string normalizeParameter = "";
+                    string attribute = key.Trim();
+                    if (attribute.Substring(0, 1) == "*")
+                    {
+                        //attribute = attribute.Split('(', ')')[1];
+                        int start = attribute.IndexOf("(") + 1;
+                        int end = attribute.IndexOf(")", start);
+                        function = attribute.Substring(0, start - 1);
+                        string csv = attribute.Substring(start, end - start);
+                        TextFieldParser parser = new TextFieldParser(new StringReader(csv));
+                        parser.HasFieldsEnclosedInQuotes = true;
+                        parser.SetDelimiters(",");
+                        string[] parms = parser.ReadFields();
+                        attribute = parms[0];
+                        if (parms.Length > 1) normalizeParameter = parms[1];
+                    }
+                    string value = dataObject.GetValue(attribute).ToString();
+                    if (function == "*NORMALIZE") value = value.NormalizeString(normalizeParameter);
+                    if (function == "*NORMALIZE14") value = value.NormalizeString14();
+                    keyText = keyText + value;
+                    if (!string.IsNullOrEmpty(keyText)) uniqKey = keyText.GetSHA256Hash();
+                }
+            }
+            return uniqKey;
+        }
+
+        public static string GetSHA256Hash(this string input)
+        {
+            try
+            {
+                using (SHA256 sha256 = SHA256.Create())
+                {
+                    byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+                    byte[] hashBytes = sha256.ComputeHash(inputBytes);
+                    StringBuilder sb = new StringBuilder();
+                    foreach (byte b in hashBytes)
+                    {
+                        sb.Append(b.ToString("x2"));
+                    }
+                    return sb.ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public static string NormalizeString(this string str, string parms = "")
+        {
+            string[] charsToRemove = new string[] { "_", "-", "#", "*", ".", "@", "~", " ", "\t", "\n", "\r", "\r\n" };
+            if (!string.IsNullOrEmpty(parms))
+            {
+                charsToRemove = parms.Select(x => x.ToString()).ToArray();
+            }
+
+            foreach (var c in charsToRemove)
+            {
+                str = str.Replace(c, string.Empty);
+            }
+            str = str.Replace("&", "AND");
+            str = str.ToUpper();
+            return str;
+        }
+
+        public static string NormalizeString14(this string str)
+        {
+            var charsToRemove = new string[] { "_", "-", "#", "*", ".", "@", "~", " ", "\t", "\n", "\r", "\r\n" };
+            foreach (var c in charsToRemove)
+            {
+                str = str.Replace(c, string.Empty);
+            }
+            str = str.Replace("&", "AND");
+            int length = str.Length;
+            if (length < 14)
+            {
+                char pad = '0';
+                str = str.PadRight(14, pad);
+            }
+            return str;
+        }
+
         public static string BuildFunctionUrl(this string url, string function, string query, string apiKey)
         {
             bool buildQuery = false;
@@ -91,6 +188,13 @@ namespace DatabaseManager.Services.Reports.Extensions
             }
 
             return keyValuePairs;
+        }
+        public static string ModifyJson(this string json, string path, string newValue)
+        {
+            JObject dataObject = JObject.Parse(json);
+            dataObject[path] = newValue;
+            string newJson = dataObject.ToString();
+            return newJson;
         }
     }
 }

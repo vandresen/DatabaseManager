@@ -274,5 +274,27 @@ namespace DatabaseManager.Services.Reports
             await result.WriteAsJsonAsync(_response);
             return result;
         }
+
+        [Function("MergeReportData")]
+        public async Task<HttpResponseData> MergeIndexData([HttpTrigger(AuthorizationLevel.Function, "put", Route = null)] HttpRequestData req)
+        {
+            _logger.LogInformation("MergeReportData: Starting");
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                ReportData reportData = await req.ReadFromJsonAsync<ReportData>();
+                await _ia.MergeIndexes(reportData, name, "");
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"MergeReportData: Error merging data: {ex}");
+            }
+            var result = req.CreateResponse(HttpStatusCode.OK);
+            await result.WriteAsJsonAsync(_response);
+            return result;
+        }
     }
 }

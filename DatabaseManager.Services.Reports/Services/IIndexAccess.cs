@@ -14,5 +14,7 @@ namespace DatabaseManager.Services.Reports.Services
         Task InsertEdits(ReportData reportData, string dataSource, string project);
         Task<T> DeleteEdits<T>(int id, string dataSource, string project);
         Task InsertChildEdits(ReportData reportData, string dataSource, string project);
+
+        Task MergeIndexes(ReportData reportData, string dataSource, string project);
     }
 }

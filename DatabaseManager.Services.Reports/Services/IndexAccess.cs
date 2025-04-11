@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Runtime.Intrinsics.Arm;
 
 namespace DatabaseManager.Services.Reports.Services
@@ -151,6 +153,134 @@ namespace DatabaseManager.Services.Reports.Services
             parentObject.QC_String = parentObject.QC_String.Replace(failRule, "");
             List<IndexDto> updateIndexes = [parentObject];
             await UpdateIndex(updateIndexes, dataSource, "");
+        }
+
+        public async Task MergeIndexes(ReportData reportData, string dataSource, string project)
+        {
+            ResponseDto ruleResponse = await _ra.GetRules<ResponseDto>(dataSource);
+            if (ruleResponse == null || !ruleResponse.IsSuccess)
+            {
+                Exception error = new Exception($"MergeIndexes: Failed getting rules");
+                throw error;
+            }
+            List<RuleModel> rules = JsonConvert.DeserializeObject<List<RuleModel>>(ruleResponse.Result.ToString());
+            RuleModel rule = rules.FirstOrDefault(x => x.RuleKey == reportData.RuleKey);
+
+            ResponseDto duplicateResponse = await GetIndexFailures<ResponseDto>(dataSource, "", rule.DataType, reportData.RuleKey);
+            if (duplicateResponse == null || !duplicateResponse.IsSuccess)
+            {
+                Exception error = new Exception($"MergeIndexes: Failed getting duplicates");
+                throw error;
+            }
+            IEnumerable<IndexDto> duplicates = JsonConvert.DeserializeObject<IEnumerable<IndexDto>>(duplicateResponse.Result.ToString());
+            reportData.TextValue = reportData.JsonData.GetUniqKey(rule);
+            foreach (var duplicate in duplicates)
+            {
+                if (duplicate.IndexId != reportData.Id)
+                {
+                    string key = duplicate.JsonDataObject.GetUniqKey(rule);
+                    if (key == reportData.TextValue)
+                    {
+                        _logger.LogInformation($"Found duplicate");
+                        await MergeIndexChildren(dataSource, duplicate.IndexId,
+                            reportData.Id, reportData.RuleKey);
+                    }
+                }
+            }
+        }
+
+        private async Task MergeIndexChildren(string dataSource, int oldId, int newId, string ruleKey)
+        {
+            Dictionary<string, int> nodes = new Dictionary<string, int>();
+
+            IEnumerable<IndexDto> newIndex = await GetDescendants(newId, dataSource, "");
+            foreach (var index in newIndex)
+            {
+                if (string.IsNullOrEmpty(index.DataKey))
+                {
+                    nodes.Add(index.DataType, index.IndexId);
+                }
+            }
+
+            IEnumerable<IndexDto> oldIndex = await GetDescendants(oldId, dataSource, "");
+            IndexDto newParentIndex = newIndex.FirstOrDefault(x => x.IndexId == newId);
+            IndexDto oldParentIndex = oldIndex.FirstOrDefault(x => x.IndexId == oldId);
+            foreach (var index in oldIndex)
+            {
+                if (index.IndexId != oldId)
+                {
+                    string name = index.DataName;
+                    IndexDto idx = newIndex.FirstOrDefault(x => x.DataName == name);
+                    if (idx == null)
+                    {
+                        if (index.DataType != index.DataName)
+                        {
+                            string newJson = GetMergeJson(newParentIndex.DataKey, index.JsonDataObject);
+                            int result = await InsertSingleIndex(newJson, newParentIndex.IndexId, "", dataSource, index.DataType);
+                            index.JsonDataObject = "";
+                            index.QC_String = "";
+                            List<IndexDto> deleteIndexes = [index];
+                            await UpdateIndex(deleteIndexes, dataSource, "");
+                        }
+                    }
+                }
+            }
+
+            oldParentIndex.JsonDataObject = "";
+            oldParentIndex.QC_String = "";
+            List<IndexDto> oldParentIndexes = [oldParentIndex];
+            await UpdateIndex(oldParentIndexes, dataSource, "");
+            newParentIndex.QC_String = newParentIndex.QC_String.Replace((ruleKey + ";"), "");
+            List<IndexDto> newParentIndexes = [newParentIndex];
+            await UpdateIndex(newParentIndexes, dataSource, "");
+        }
+
+        private string GetMergeJson(string dataKey, string json)
+        {
+            string newJson = json;
+            string[] keyAttributes = dataKey.Split(new string[] { "AND" }, StringSplitOptions.None);
+            foreach (var keyAttribute in keyAttributes)
+            {
+                string key = keyAttribute.Trim();
+                string[] keyPair = dataKey.Split('=');
+                newJson = newJson.ModifyJson(keyPair[0].Trim(), keyPair[1].Trim());
+            }
+            return newJson;
+        }
+
+        private string GetMergeKey(string newParentDataKey, string oldParentDataKey, string oldIndexDataKey)
+        {
+            string key = oldIndexDataKey.Replace(oldParentDataKey, newParentDataKey);
+            return key;
+        }
+
+        private async Task<IEnumerable<IndexDto>> GetDescendants(int indexId, string dataSource, string project)
+        {
+            string url = "";
+            if (SD.Sqlite)
+            {
+                url = SD.IndexAPIBase.BuildFunctionUrl($"/GetDescendants/{indexId}", $"project={project}", SD.IndexKey);
+            }
+            else
+            {
+                url = SD.IndexAPIBase.BuildFunctionUrl($"/GetDescendants/{indexId}", $"Name={dataSource}", SD.IndexKey);
+            }
+            _logger.LogInformation($"Url = {url}");
+            ResponseDto indexResponse = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                Url = url
+            });
+            if (indexResponse == null || !indexResponse.IsSuccess)
+            {
+                Exception error = new Exception($"GetDescendants: Failed saving index, {indexResponse.ErrorMessages}");
+                throw error;
+            }
+            else
+            {
+                IEnumerable<IndexDto> indexes = JsonConvert.DeserializeObject<IEnumerable<IndexDto>>(indexResponse.Result.ToString());
+                return indexes;
+            }
         }
 
         private async Task InsertNewObjectToIndex(string json, string dataType, IndexFileData taxonomyInfoForMissingObject,
