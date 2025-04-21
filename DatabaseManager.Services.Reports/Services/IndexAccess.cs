@@ -191,16 +191,7 @@ namespace DatabaseManager.Services.Reports.Services
 
         private async Task MergeIndexChildren(string dataSource, int oldId, int newId, string ruleKey)
         {
-            Dictionary<string, int> nodes = new Dictionary<string, int>();
-
             IEnumerable<IndexDto> newIndex = await GetDescendants(newId, dataSource, "");
-            foreach (var index in newIndex)
-            {
-                if (string.IsNullOrEmpty(index.DataKey))
-                {
-                    nodes.Add(index.DataType, index.IndexId);
-                }
-            }
 
             IEnumerable<IndexDto> oldIndex = await GetDescendants(oldId, dataSource, "");
             IndexDto newParentIndex = newIndex.FirstOrDefault(x => x.IndexId == newId);
@@ -222,6 +213,17 @@ namespace DatabaseManager.Services.Reports.Services
                             List<IndexDto> deleteIndexes = [index];
                             await UpdateIndex(deleteIndexes, dataSource, "");
                         }
+                        else
+                        {
+                            _logger.LogInformation($"Name = {index.DataName}");
+                        }
+                    }
+                    else
+                    {
+                        index.JsonDataObject = "";
+                        index.QC_String = "";
+                        List<IndexDto> deleteIndexes = [index];
+                        await UpdateIndex(deleteIndexes, dataSource, "");
                     }
                 }
             }
@@ -246,12 +248,6 @@ namespace DatabaseManager.Services.Reports.Services
                 newJson = newJson.ModifyJson(keyPair[0].Trim(), keyPair[1].Trim());
             }
             return newJson;
-        }
-
-        private string GetMergeKey(string newParentDataKey, string oldParentDataKey, string oldIndexDataKey)
-        {
-            string key = oldIndexDataKey.Replace(oldParentDataKey, newParentDataKey);
-            return key;
         }
 
         private async Task<IEnumerable<IndexDto>> GetDescendants(int indexId, string dataSource, string project)

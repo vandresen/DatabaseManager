@@ -113,6 +113,13 @@ namespace DatabaseManager.Services.Reports
                                     JsonData = idxRow.JsonDataObject
                                 });
                             }
+                            if (rule.RuleType == "Uniqueness")
+                            {
+                                foreach (var index in qcIndex)
+                                {
+                                    index.UniqKey = index.JsonData.GetUniqKey(rule);
+                                }
+                            }
                             _response.Result = qcIndex;
                         }
                         else

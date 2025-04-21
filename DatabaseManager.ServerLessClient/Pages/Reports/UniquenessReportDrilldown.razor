@@ -6,13 +6,15 @@
 
 <h3>@header</h3>
 
-@if (dataIndex == null)
+@if (isLoading)
 {
-    <text>Loading Data...</text>
+    <div style="display:flex; justify-content:center; align-items:center; height:200px;">
+        <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+    </div>
 }
 else if (dataDeleted)
 {
-    <text>Data has been deleted...</text>
+    <text>All QC failures have been corrected...</text>
 }
 else
 {
@@ -82,18 +84,20 @@ else
     public RuleModelDto ruleModel;
     public List<DmsIndex> dataIndex;
     private bool dataDeleted = false;
+    private bool isLoading = true;
     private string searchString = "";
     private string UnHideIcon = Icons.Material.Filled.HorizontalRule;
     private string HideIcon = Icons.Material.Filled.Add;
 
     protected override async Task OnInitializedAsync()
     {
+        isLoading = true;
         Console.WriteLine($"Rule id = {Id}");
-
         ruleModel = await rules.GetRuleAsync(singleton.TargetConnector, Id);
         header = ruleModel.RuleName;
         reportList = await CreateReportList();
         Console.WriteLine($"Number of failures are {dataIndex.Count}");
+        isLoading = false;
     }
 
     private async Task<List<ReportData>> CreateReportList()
@@ -132,11 +136,21 @@ else
 
     private async Task Merge(int id)
     {
-        Console.WriteLine($"Merge index id {id}");
-        ReportData report = reportList.FirstOrDefault(x => x.Id == id);
-        // await re.Merge(singleton.TargetConnector, report);
-        reportList = await CreateReportList();
-        this.StateHasChanged();
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            Console.WriteLine($"Merge index id {id}");
+            ReportData report = reportList.FirstOrDefault(x => x.Id == id);
+            await rp.Merge(singleton.TargetConnector, report);
+            reportList = await CreateReportList();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
 
     private void ShowBtnPress(int id)

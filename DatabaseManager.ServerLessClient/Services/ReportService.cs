@@ -104,5 +104,21 @@ namespace DatabaseManager.ServerLessClient.Services
                 throw new ApplicationException(String.Join("Update data objects:", response.ErrorMessages));
             }
         }
+
+        public async Task Merge(string source, ReportData reportData)
+        {
+            string url = baseUrl.BuildFunctionUrl("MergeReportData", $"name={source}", apiKey);
+            Console.WriteLine(url);
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.PUT,
+                Url = url,
+                Data = reportData
+            });
+            if (!response.IsSuccess)
+            {
+                throw new ApplicationException(String.Join("Update data objects:", response.ErrorMessages));
+            }
+        }
     }
 }
