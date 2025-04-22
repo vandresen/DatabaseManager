@@ -96,15 +96,20 @@ namespace DatabaseManager.Common.Helpers
             {
                 Status = "Failed"
             };
-            DataTable nb = RuleMethodUtilities.GetNeighbors(qcSetup);
-            if (nb != null)
+            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+            
+            string path = $"$.{rule.DataAttribute}";
+            string failRule = $"%{rule.FailRule}%";
+            IEnumerable<NeighbourIndex> nbs = Task.Run(() => idxdata.GetNeighbors(qcSetup.IndexId, failRule, path, qcSetup.DataConnector)).
+                GetAwaiter().GetResult();
+            if (nbs.Count() > 0)
             {
-                depth = RuleMethodUtilities.CalculateDepthUsingIdw(nb, qcSetup);
+                depth = RuleMethodUtilities.CalculateDepthUsingIdw(nbs, qcSetup);
             }
 
             if (depth != null)
             {
-                RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+                
                 JObject dataObject = JObject.Parse(qcSetup.DataObject);
                 dataObject[rule.DataAttribute] = depth;
                 string remark = dataObject["REMARK"] + $";{rule.DataAttribute} has been predicted by QCEngine;";

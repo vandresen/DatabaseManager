@@ -1,17 +1,10 @@
 ﻿using DatabaseManager.Common.Data;
 using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
-using DatabaseManager.Common.Extensions;
 using DatabaseManager.Shared;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
 {
@@ -73,68 +66,45 @@ namespace DatabaseManager.Common.Helpers
             public string Value { get; set; }
         }
 
-        public static DataTable GetNeighbors(QcRuleSetup qcSetup)
-        {
-            int indexId = qcSetup.IndexId;
-            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
-            string failRule = rule.FailRule;
-            string path = $"$.{rule.DataAttribute}";
-            IADODataAccess db = new ADODataAccess();
-            string sql = $"EXEC spGetNeighborsNoFailuresDepth {indexId}, '%{failRule}%', '{path}'";
-            DataTable nb = db.GetDataTable(sql, qcSetup.DataConnector);
-            return nb;
-        }
-
-        public static double? CalculateDepthUsingIdw(DataTable nb, QcRuleSetup qcSetup)
+        public static double? CalculateDepthUsingIdw(IEnumerable<NeighbourIndex> nb, QcRuleSetup qcSetup)
         {
             double? depth = null;
 
             double prevLat = -99999.0;
             double prevLon = -99999.0;
-            for (int k = 0; k < nb.Rows.Count; k++)
+
+            List<NeighbourIndex> validNbs = new List<NeighbourIndex>();
+            foreach(NeighbourIndex neighbour in nb)
             {
-                double currLat = Common.GetDataRowNumber(nb.Rows[k], "LATITUDE");
-                double currLon = Common.GetDataRowNumber(nb.Rows[k], "LONGITUDE");
-                double distance = 99999.0;
-                if (nb.Columns.Contains("DISTANCE"))
-                {
-                    distance = Convert.ToDouble(nb.Rows[k]["DISTANCE"]);
-                }
-
                 Boolean deleteRow = false;
-                if (currLat == -99999.0 && currLon == -99999.0) deleteRow = true;
-                if (Math.Abs(prevLat - currLat) < 0.0001 & Math.Abs(prevLon - currLon) < 0.0001) deleteRow = true;
-                if (distance < 0.1) deleteRow = true;
-                if (deleteRow)
+                if (neighbour.Latitude == -99999.0 && neighbour.Longitude == -99999.0) deleteRow = true;
+                if (Math.Abs(prevLat - neighbour.Latitude) < 0.0001 & Math.Abs(prevLon - neighbour.Longitude) < 0.0001) deleteRow = true;
+                if (neighbour.Distance < 0.1) deleteRow = true;
+                if (!deleteRow)
                 {
-                    nb.Rows[k].Delete();
+                    validNbs.Add(neighbour);
                 }
-
-                prevLat = currLat;
-                prevLon = currLon;
+                prevLat = neighbour.Latitude;
+                prevLon = neighbour.Longitude;
             }
-            nb.AcceptChanges();
 
             JObject ruleObject = JObject.Parse(qcSetup.RuleObject);
             string depthAttribute = ruleObject["DataAttribute"].ToString();
             List<IdwPoint> idwPoints = new List<IdwPoint>();
 
-            foreach (DataRow row in nb.Rows)
+            foreach(NeighbourIndex nbi in validNbs)
             {
-                double distance = Common.GetDataRowNumber(row, "DISTANCE");
-                double number = Common.GetDataRowNumber(row, "DEPTH");
-                if (number != -99999.0)
+                if (nbi.Depth != -99999.0)
                 {
                     idwPoints.Add(new IdwPoint
                     {
-                        Distance = distance,
-                        Depth = number
+                        Distance = nbi.Distance,
+                        Depth = nbi.Depth
                     });
                 }
             }
 
             if (idwPoints.Count > 2) depth = IdwCalculate(idwPoints);
-
             return depth;
         }
 

@@ -161,5 +161,9 @@ namespace DatabaseManager.Common.Data
             IEnumerable<IndexModel> result = await _dp.ReadData<IndexModel>(sql, connectionString);
             return result;
         }
+
+        public Task<IEnumerable<NeighbourIndex>> GetNeighbors(int id, string failRule, string path, string connectionString) =>
+            _dp.LoadData<NeighbourIndex, dynamic>("dbo.spGetNeighborsNoFailuresDepth",
+                new { indexId = id, failRule = failRule, path = path }, connectionString);
     }
 }

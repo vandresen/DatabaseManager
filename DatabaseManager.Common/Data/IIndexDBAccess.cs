@@ -24,6 +24,7 @@ namespace DatabaseManager.Common.Data
         Task<IEnumerable<IndexModel>> GetIndexesWithQcStringFromSP(string qcString, string connectionString);
         Task<IEnumerable<IndexModel>> GetChildrenWithName(string connectionString, string indexNode, string name);
         Task<IEnumerable<IndexModel>> GetIndexesWithDataType(string connectionString, string name);
+        Task<IEnumerable<NeighbourIndex>> GetNeighbors(int id, string failRule, string path, string connectionString);
         Task<int> GetCount(string connectionString, string query);
         DataAccessDef GetDataAccessDefinition();
         string GetSelectSQL();
