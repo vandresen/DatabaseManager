@@ -1,6 +1,7 @@
 ﻿@page "/datasources/edit/{SourceName}"
 @inject IDataSources dataSources
 @inject NavigationManager navigationManager
+@inject SingletonServices settings
 
 <h3>Edit Data Source</h3>
 
@@ -36,7 +37,15 @@
     {
         try
         {
-            string connectStr = Common.CreateDatabaseConnectionString(connectParameters);
+            string connectStr = "";
+            if (connectParameters.SourceType == "File")
+            {
+                connectStr = settings.AzureStorage;
+            }
+            else
+            {
+                connectStr = Common.CreateDatabaseConnectionString(connectParameters);
+            }
             connectParameters.ConnectionString = connectStr;
             await dataSources.UpdateSource(connectParameters);
             navigationManager.NavigateTo("datasources");

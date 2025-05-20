@@ -2,6 +2,7 @@
 @inject IDataSources dataSources
 @inject NavigationManager navigationManager
 @inject IDisplayMessage displayMessage
+@inject SingletonServices settings
 
 <h3>Create Data Connector</h3>
 @if (SourceType == "File")
@@ -20,7 +21,15 @@ else
     private async Task Create()
     {
         connectParameters.SourceType = SourceType;
-        string connectStr = Common.CreateDatabaseConnectionString(connectParameters);
+        string connectStr = "";
+        if (SourceType == "File")
+        {
+            connectStr = settings.AzureStorage;
+        }
+        else
+        {
+            connectStr = Common.CreateDatabaseConnectionString(connectParameters);
+        }
         connectParameters.ConnectionString = connectStr;
         try
         {
