@@ -14,5 +14,16 @@
             if (url.EndsWith("&")) url = url.Substring(0, url.Length - 1);
             return url;
         }
+
+        public static string[] GetAttributes(this string select)
+        {
+            int from = 7;
+            int to = select.IndexOf("from");
+            int length = to - 8;
+            string attributes = select.Substring(from, length);
+            string[] words = attributes.Split(',');
+
+            return words;
+        }
     }
 }

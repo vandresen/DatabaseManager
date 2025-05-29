@@ -1,0 +1,76 @@
+﻿@page "/createdatarule/{RuleType}"
+@inject IDataConfigurationService dcs
+@inject IDisplayMessage dm
+@inject IRuleService rules
+@inject NavigationManager navigationManager
+@using DatabaseManager.ServerLessClient.Helpers;
+
+<h3>New @RuleType Rule</h3>
+
+@if (ruleInfo != null)
+{
+    <NewDataRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" Type="@type" OnValidSubmit="Create" FunctionMethods="functionMethods"/>
+}
+
+@code {
+    [Parameter] public string RuleType { get; set; }
+    public RuleModel ruleModel = new RuleModel();
+    public RuleInfo ruleInfo;
+    private List<RuleFunctionDto> FunctionList;
+    public string type;
+    public List<string> functionMethods;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ruleInfo = await GetRuleInfo();
+        FunctionList = await rules.GetFunctionsAsync();
+        type = RuleType;
+        Console.WriteLine($"New Rule: {type}");
+        string shortType = "";
+        if (type == "Validity") shortType = "V";
+        if (type == "Predictions") shortType = "P";
+        functionMethods = FunctionList.Where(s => s.FunctionType == shortType).Select(s => s.FunctionName).ToList();
+    }
+
+    private async Task<RuleInfo> GetRuleInfo()
+    {
+        string content = "";
+        DatabaseManager.ServerLessClient.Models.ResponseDto response = await dcs.GetRecord<DatabaseManager.ServerLessClient.Models.ResponseDto>("PPDMDataAccess.json");
+        if (response != null && response.IsSuccess)
+        {
+            content = Convert.ToString(response.Result);
+            Console.WriteLine(content);
+        }
+        else
+        {
+            Console.WriteLine(response.ErrorMessages);
+            await dm.DisplayErrorMessage("Error getting rule info");
+        }
+        List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(content);
+        RuleInfo ruleInfo = new RuleInfo();
+        ruleInfo.DataTypeOptions = new List<string>();
+        ruleInfo.DataAttributes = new Dictionary<string, string>();
+        foreach (DataAccessDef accessDef in accessDefs)
+        {
+            ruleInfo.DataTypeOptions.Add(accessDef.DataType);
+            string select = accessDef.Select;
+            string[] attributeArray = select.GetAttributes();
+            string attributes = String.Join(",", attributeArray);
+            ruleInfo.DataAttributes.Add(accessDef.DataType, attributes);
+        }
+        return ruleInfo;
+    }
+
+    private async Task Create()
+    {
+        try
+        {
+            await rules.InsertRuleAsync(ruleModel);
+            navigationManager.NavigateTo("datarules");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}

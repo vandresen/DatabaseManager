@@ -79,7 +79,7 @@ namespace DatabaseManager.ServerLessClient
             services.AddHttpClient<DatabaseManager.ServerLessClient.Services.IDataSources, DatabaseManager.ServerLessClient.Services.DataSources>();
             services.AddHttpClient<IDataModelService, DataModelService>();
             services.AddHttpClient<IDataConfiguration, DataConfiguration>();
-            services.AddHttpClient<IRulesService, RulesService>();
+            services.AddHttpClient<IDataConfigurationService, DataConfigurationService>();
             services.AddHttpClient<IRuleService, RuleService>();
             services.AddHttpClient<IReport, ReportService>();
 
@@ -96,14 +96,12 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IDataModelCreate, DataModelCreateServerless>();
             services.AddScoped<IDataIndexer, DataIndexerServerLess>();
             services.AddScoped<IReport, ReportService>();
-            services.AddScoped<IRules, RulesServerless>();
-            services.AddScoped<IRulesService, RulesService>();
             services.AddScoped<IRuleService, RuleService>();
             services.AddScoped<IReportEdit, ReportEdit>();
             services.AddScoped<ISync, Sync>();
 
             services.AddScoped<ICookies, Cookies>();
-            services.AddScoped<IDataConfiguration, DataConfiguration>();
+            services.AddScoped<IDataConfigurationService, DataConfigurationService>();
 
             if (sqlite)
             {

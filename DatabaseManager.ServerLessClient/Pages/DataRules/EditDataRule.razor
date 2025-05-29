@@ -1,0 +1,70 @@
+﻿@page "/editdatarules/{Id:int}"
+@inject NavigationManager navigationManager
+@inject IDataConfigurationService dcs
+@inject IDisplayMessage dm
+@inject IRuleService rules
+@using DatabaseManager.ServerLessClient.Helpers;
+
+<h3>Edit Rule</h3>
+
+@if (ruleModelDto != null)
+{
+    <EditDataRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" OnValidSubmit="Edit" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    public RuleModelDto ruleModelDto;
+    public RuleModel ruleModel;
+    public RuleInfo ruleInfo;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("Inside Edit rule page");
+        ruleInfo = await GetRuleInfo();
+        ruleModelDto = await rules.GetRuleAsync("", Id);
+        ruleModel = ruleModelDto.FromRuleModelDto();
+    }
+
+    private async Task Edit()
+    {
+        try
+        {
+            await rules.UpdateRuleAsync(ruleModel);
+            navigationManager.NavigateTo("datarules");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    private async Task<RuleInfo> GetRuleInfo()
+    {
+        string content = "";
+        DatabaseManager.ServerLessClient.Models.ResponseDto response = await dcs.GetRecord<DatabaseManager.ServerLessClient.Models.ResponseDto>("PPDMDataAccess.json");
+        if (response != null && response.IsSuccess)
+        {
+            content = Convert.ToString(response.Result);
+            Console.WriteLine(content);
+        }
+        else
+        {
+            Console.WriteLine(response.ErrorMessages);
+            await dm.DisplayErrorMessage("Error getting rule info");
+        }
+        List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(content);
+        RuleInfo ruleInfo = new RuleInfo();
+        ruleInfo.DataTypeOptions = new List<string>();
+        ruleInfo.DataAttributes = new Dictionary<string, string>();
+        foreach (DataAccessDef accessDef in accessDefs)
+        {
+            ruleInfo.DataTypeOptions.Add(accessDef.DataType);
+            string select = accessDef.Select;
+            string[] attributeArray = select.GetAttributes();
+            string attributes = String.Join(",", attributeArray);
+            ruleInfo.DataAttributes.Add(accessDef.DataType, attributes);
+        }
+        return ruleInfo;
+    }
+}

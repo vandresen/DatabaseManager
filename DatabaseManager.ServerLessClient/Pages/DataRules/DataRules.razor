@@ -1,0 +1,170 @@
+﻿@page "/datarules"
+@inject IRuleService rules
+@inject IDisplayMessage displayMessage
+@inject NavigationManager navigationManager
+@using MudBlazor
+
+<h3>Rules</h3>
+
+<div class="form-group">
+    <a class="btn btn-info" href="rules/saveprediction">Save Prediction Set</a>
+    <a class="btn btn-info" href="rules/getpredictions">Get Prediction Set</a>
+</div>
+
+<div class="form-group">
+    <a class="btn btn-info" href="rules/functions">Manage Rule Functions</a>
+</div>
+
+<MudMenu Label="New Rule" Color="Color.Secondary">
+    @foreach (var rule in RuleTypes)
+    {
+        <MudMenuItem Href="@($"createdatarule/{rule}")">@rule</MudMenuItem>
+    }
+</MudMenu>
+
+@if (RuleList == null)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudTable Items="@RuleList" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Filter="FilterRules">
+        <HeaderContent>
+            <MudTh style="background-color:lightgray">
+                Action
+                <MudTooltip Text="Clear all filters">
+                    <MudIconButton Icon="@Icons.Material.Filled.FilterAltOff"
+                                   Color="Color.Secondary"
+                                   OnClick="@ClearFilters"
+                                   Size="Size.Small" />
+                </MudTooltip>
+            </MudTh>
+
+            <MudTh style="background-color:lightgray">
+                <MudTableSortLabel SortBy="@((RuleModelDto x) => x.DataType)">Data Type</MudTableSortLabel>
+                <MudTextField @bind-Value="filterDataType" Margin="Margin.Dense" Variant="Variant.Outlined" />
+            </MudTh>
+
+            <MudTh style="background-color:lightgray">
+                <MudTableSortLabel SortBy="@((RuleModelDto x) => x.RuleType)">Category</MudTableSortLabel>
+                <MudTextField @bind-Value="filterCategory" Margin="Margin.Dense" Variant="Variant.Outlined" />
+            </MudTh>
+
+            <MudTh style="background-color:lightgray">
+                <MudTableSortLabel SortBy="@((RuleModelDto x) => x.RuleName)">Rule Name</MudTableSortLabel>
+                <MudTextField @bind-Value="filterRuleName" Margin="Margin.Dense" Variant="Variant.Outlined" />
+            </MudTh>
+
+            <MudTh style="background-color:lightgray">
+                <MudTableSortLabel SortBy="@((RuleModelDto x) => x.Active)">Active</MudTableSortLabel>
+                <MudTextField @bind-Value="filterActive" Margin="Margin.Dense" Variant="Variant.Outlined" />
+            </MudTh>
+
+            <MudTh style="background-color:lightgray">
+                <MudTableSortLabel SortBy="@((RuleModelDto x) => x.RuleKey)">Rule Key</MudTableSortLabel>
+                <MudTextField @bind-Value="filterRuleKey" Margin="Margin.Dense" Variant="Variant.Outlined" />
+            </MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd>
+                <MudFab StartIcon="@Icons.Material.Filled.Edit"
+                        Color="Color.Secondary"
+                        Size="Size.Small"
+                        IconSize="Size.Small"
+                        Class="me-1"
+                        @onclick="@(() => EditRule(context.Id))" />
+                <MudFab StartIcon="@Icons.Material.Filled.Delete"
+                        Color="Color.Primary"
+                        Size="Size.Small"
+                        IconSize="Size.Small"
+                        @onclick="@(() => RuleDelete(context.Id))" />
+            </MudTd>
+            <MudTd DataLabel="Data Type">@context.DataType</MudTd>
+            <MudTd DataLabel="Category">@context.RuleType</MudTd>
+            <MudTd DataLabel="Rule Name">@context.RuleName</MudTd>
+            <MudTd DataLabel="Active">@context.Active</MudTd>
+            <MudTd DataLabel="Rule Key">@context.RuleKey</MudTd>
+        </RowTemplate>
+
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+
+}
+
+@code {
+    private List<string> RuleTypes = new();
+    private List<RuleModelDto> RuleList = new();
+    private bool expandedState = false;
+    private string showMenu = null;
+    private string filterDataType = string.Empty;
+    private string filterCategory = string.Empty;
+    private string filterRuleName = string.Empty;
+    private string filterActive = string.Empty;
+    private string filterRuleKey = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            RuleTypeDictionary rt = new RuleTypeDictionary();
+            RuleTypes = new List<string>();
+            foreach (var item in rt._dictionary)
+            {
+                RuleTypes.Add(item.Key);
+            }
+            RuleList = await rules.GetRulesAsync();
+            Console.WriteLine(RuleList.Count);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors in Rules.razor: {ex}");
+            await displayMessage.DisplayErrorMessage("Problems getting rules");
+        }
+    }
+
+    private void ToggleDropdownMenu()
+    {
+        expandedState = !expandedState;
+        showMenu = expandedState ? "show" : null;
+    }
+
+    private async Task RuleDelete(int id)
+    {
+        try
+        {
+            await rules.DeleteRuleAsync(id);
+            RuleList = await rules.GetRulesAsync();
+            this.StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private bool FilterRules(RuleModelDto rule)
+    {
+        return (string.IsNullOrWhiteSpace(filterDataType) || rule.DataType?.Contains(filterDataType, StringComparison.OrdinalIgnoreCase) == true)
+            && (string.IsNullOrWhiteSpace(filterCategory) || rule.RuleType?.Contains(filterCategory, StringComparison.OrdinalIgnoreCase) == true)
+            && (string.IsNullOrWhiteSpace(filterRuleName) || rule.RuleName?.Contains(filterRuleName, StringComparison.OrdinalIgnoreCase) == true)
+            && (string.IsNullOrWhiteSpace(filterActive) || rule.Active.ToString().Contains(filterActive, StringComparison.OrdinalIgnoreCase))
+            && (string.IsNullOrWhiteSpace(filterRuleKey) || rule.RuleKey?.Contains(filterRuleKey, StringComparison.OrdinalIgnoreCase) == true);
+    }
+
+    private void ClearFilters()
+    {
+        filterDataType = string.Empty;
+        filterCategory = string.Empty;
+        filterRuleName = string.Empty;
+        filterActive = string.Empty;
+        filterRuleKey = string.Empty;
+    }
+
+    private void EditRule(int id)
+    {
+        navigationManager.NavigateTo($"/editdatarules/{id}");
+    }
+}
