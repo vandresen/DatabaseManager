@@ -15,6 +15,23 @@ namespace DatabaseManager.ServerLessClient.Services
             _clientFactory = clientFactory;
         }
 
+        public async Task DeletePredictionAsync(int id)
+        {
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/PredictionSet", $"id={id}", SD.DataRuleKey);
+            Console.WriteLine($"GetFunctionsAsync: url = {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.DELETE,
+                Url = url
+            });
+            if (!response.IsSuccess)
+            {
+
+                Console.WriteLine(String.Join("There is a problem deleting the prediction set; ", response.ErrorMessages));
+                throw new ApplicationException(String.Join("There is a problem deleting the prediction set; ", response.ErrorMessages));
+            }
+        }
+
         public async Task DeleteRuleAsync(int id)
         {
             string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Rules", $"Id={id}", SD.DataRuleKey);
@@ -49,6 +66,62 @@ namespace DatabaseManager.ServerLessClient.Services
             else
             {
                 Console.WriteLine($"No success");
+            }
+            return result;
+        }
+
+        public async Task<PredictionSet> GetPredictionAsync(string predictionName)
+        {
+            PredictionSet result = new PredictionSet();
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/PredictionSet", $"Name={predictionName}", SD.DataRuleKey);
+            Console.WriteLine($"GetPredictionAsync: url = {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                Url = url
+            });
+            if (response.IsSuccess)
+            {
+                string json = response.Result.ToString();
+                Console.WriteLine($"GetPredictionsAsync: json = {json}");
+                var predictionSets = JsonConvert.DeserializeObject<List<PredictionSet>>(json);
+                if (predictionSets != null && predictionSets.Count > 0)
+                {
+                    result = predictionSets[0];
+                }
+                else
+                {
+                    result = null;
+                }
+            }
+            else
+            {
+                Console.WriteLine(String.Join("There is a problem getting prediction sets; ", response.ErrorMessages));
+                throw new ApplicationException(String.Join("There is a problem getting prediction sets; ", response.ErrorMessages));
+            }
+            return result;
+        }
+
+        public async Task<List<PredictionSet>> GetPredictionsAsync()
+        {
+            List<PredictionSet> result = new List<PredictionSet>();
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/PredictionSet", $"", SD.DataRuleKey);
+            Console.WriteLine($"GetPredictionsAsync: url = {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                Url = url
+            });
+            if (response.IsSuccess)
+            {
+                string json = response.Result.ToString();
+                Console.WriteLine($"GetPredictionsAsync: json = {json}");
+                result = JsonConvert.DeserializeObject<List<PredictionSet>>(json);
+            }
+            else
+            {
+                Console.WriteLine(String.Join("There is a problem getting prediction sets; ", response.ErrorMessages));
+                throw new ApplicationException(String.Join("There is a problem getting prediction sets; ", response.ErrorMessages));
             }
             return result;
         }
@@ -97,6 +170,24 @@ namespace DatabaseManager.ServerLessClient.Services
             return result;
         }
 
+        public async Task InsertPredictionAsync(PredictionSet predictionSet)
+        {
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/PredictionSet", $"", SD.DataRuleKey);
+            Console.WriteLine($"InsertPredictionAsync: url = {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.POST,
+                Data = predictionSet,
+                Url = url
+            });
+            if (!response.IsSuccess)
+            {
+
+                Console.WriteLine(String.Join("There is a problem inserting prediction set; ", response.ErrorMessages));
+                throw new ApplicationException(String.Join("There is a problem inserting prediction set; ", response.ErrorMessages));
+            }
+        }
+
         public async Task InsertRuleAsync(RuleModel rule)
         {
             string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Rules", $"", SD.DataRuleKey);
@@ -131,5 +222,6 @@ namespace DatabaseManager.ServerLessClient.Services
                 throw new ApplicationException(String.Join("There is a problem updating rule; ", response.ErrorMessages));
             }
         }
+
     }
 }

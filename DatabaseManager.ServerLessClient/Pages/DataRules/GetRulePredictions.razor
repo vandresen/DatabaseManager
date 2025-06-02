@@ -1,0 +1,126 @@
+﻿@page "/rules/getrulepredictions"
+@inject IRuleService rules
+@inject NavigationManager navigationManager
+@inject IDisplayMessage displayMessage
+@using DatabaseManager.ServerLessClient.Helpers
+@using MudBlazor
+
+<h3>Predictions</h3>
+
+@if (predictionSets == null)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else if (predictionSets.Count == 0 )
+{
+    <h2>No prediction sets are available</h2>
+}
+else
+{
+    <MudTable Items="@predictionSets" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
+        <HeaderContent>
+            <MudTh style="background-color:lightgray">
+                Action
+            </MudTh>
+
+            <MudTh style="background-color:lightgray">
+                <MudTableSortLabel SortBy="@((PredictionSet x) => x.Name)">Name</MudTableSortLabel>
+            </MudTh>
+
+            <MudTh style="background-color:lightgray">
+                <MudTableSortLabel SortBy="@((PredictionSet x) => x.Description)">Description</MudTableSortLabel>
+            </MudTh>
+
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd>
+                <MudTooltip Text="Apply this prediction set">
+                    <MudFab StartIcon="@Icons.Material.Filled.CheckCircle"
+                            Color="Color.Secondary"
+                            Size="Size.Small"
+                            IconSize="Size.Small"
+                            Class="me-1"
+                            @onclick="@(() => SelectedPrediction(context.Name))" />
+                </MudTooltip>
+                <MudTooltip Text="Delete this prediction set">
+                <MudFab StartIcon="@Icons.Material.Filled.Delete"
+                        Color="Color.Primary"
+                        Size="Size.Small"
+                        IconSize="Size.Small"
+                        @onclick="@(() => Delete(context.Id))" />
+                </MudTooltip>
+            </MudTd>
+            <MudTd DataLabel="Name">@context.Name</MudTd>
+            <MudTd DataLabel="Description">@context.Description</MudTd>
+        </RowTemplate>
+
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+
+}
+
+@code {
+    List<PredictionSet> predictionSets;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            predictionSets = await rules.GetPredictionsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task SelectedPrediction(string name)
+    {
+        try
+        {
+            Console.WriteLine($"Selected rule set is {name}");
+            List<RuleModelDto> currentRules = await rules.GetRulesAsync();
+            foreach (RuleModelDto currRule in currentRules)
+            {
+                await rules.DeleteRuleAsync(currRule.Id);
+            }
+            PredictionSet predictionSet = await rules.GetPredictionAsync(name);
+            List<RuleModelDto> ruleSet = JsonConvert.DeserializeObject<List<RuleModelDto>>(predictionSet.RuleSet);
+            // List<RuleModel> ruleSet = await rules.GetPredictionAsync(name);
+            foreach (RuleModelDto newRule in ruleSet)
+            {
+                RuleModel mappedRule = newRule.FromRuleModelDto();
+                await rules.InsertRuleAsync(mappedRule);
+            }
+            navigationManager.NavigateTo("datarules");
+        }
+        catch (Exception ex)
+        {
+            if (ex.ToString().Contains("does not exist in Azure storage"))
+            {
+                await displayMessage.DisplayErrorMessage("The rule file is missing. Delete from from list");
+            }
+            else
+            {
+                Console.WriteLine($"Errors: {ex}");
+            }
+        }
+
+    }
+
+    private async Task Delete(int id)
+    {
+        try
+        {
+            await rules.DeletePredictionAsync(id);
+            navigationManager.NavigateTo("datarules");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+}

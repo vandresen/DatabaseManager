@@ -1,0 +1,77 @@
+﻿@page "/rules/savepredictionset"
+@inject IRuleService rules
+@inject IDisplayMessage displayMessage
+@inject NavigationManager navigationManager
+@using MudBlazor
+
+
+<h3>Save Prediction</h3>
+
+<MudPaper Class="pa-6 mx-auto mt-6" MaxWidth="500px" Elevation="4">
+    <MudText Typo="Typo.h5" GutterBottom="true">Save Prediction</MudText>
+
+    <MudTextField @bind-Value="predictionName" Label="Prediction Name" Variant="Variant.Outlined" Margin="Margin.Dense" />
+
+    <MudTextField @bind-Value="description" Label="Description" Variant="Variant.Outlined" Margin="Margin.Dense" />
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Class="mt-4">
+        Save
+    </MudButton>
+</MudPaper>
+
+@code {
+    List<RuleModelDto> RuleList;
+    public string predictionName { get; set; }
+    private string description;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            RuleList = await rules.GetRulesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task Save()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(predictionName))
+            {
+                await displayMessage.DisplayErrorMessage("Prediction name cannot be empty");
+            }
+            else if (RuleList == null || RuleList.Count == 0)
+            {
+                await displayMessage.DisplayErrorMessage("No rules available to save as a prediction set.");
+            }
+            else
+            {
+                string ruleSet = JsonConvert.SerializeObject(RuleList);
+                PredictionSet predictionSet = new PredictionSet()
+                {
+                    Name = predictionName,
+                    Description = description,
+                    RuleSet = ruleSet
+                };
+                await rules.InsertPredictionAsync(predictionSet);
+            }
+            navigationManager.NavigateTo("datarules");
+        }
+        catch (Exception ex)
+        {
+            if (ex.ToString().Contains("Prediction set exist"))
+            {
+                await displayMessage.DisplayErrorMessage("Prediction set already exist, please use another name");
+            }
+            else
+            {
+                Console.WriteLine($"Errors: {ex}");
+            }
+        }
+
+    }
+}
