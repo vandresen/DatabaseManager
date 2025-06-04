@@ -1,0 +1,67 @@
+﻿@page "/rules/getrulefunctions"
+@inject IRuleService rules
+@using MudBlazor
+
+<h3>Manage Rule Functions</h3>
+
+<div class="form-group">
+    <a class="btn btn-info" href="rules/newrulefunction">New Function</a>
+</div>
+
+<MudTable Items="@FunctionList" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
+    
+    <HeaderContent>
+        <MudTh style="background-color:lightgray">
+            Action
+        </MudTh>
+
+        <MudTh style="background-color:lightgray">
+            <MudTableSortLabel SortBy="@((RuleFunctionDto x) => x.FunctionName)">Name</MudTableSortLabel>
+        </MudTh>
+        <MudTh style="background-color:lightgray">
+            <MudTableSortLabel SortBy="@((RuleFunctionDto x) => x.FunctionUrl)">Name</MudTableSortLabel>
+        </MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>
+            <MudTooltip Text="Delete this prediction set">
+                <MudFab StartIcon="@Icons.Material.Filled.Delete"
+                        Color="Color.Primary"
+                        Size="Size.Small"
+                        IconSize="Size.Small"
+                        Class="me-1"
+                        @onclick="@(() => Delete(context.Id))" />
+            </MudTooltip>
+            @* <MudFab @onclick="@(() => Delete(context.Id))" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" /> *@
+        </MudTd>
+        <MudTd DataLabel="Function Name">@context.FunctionName</MudTd>
+        <MudTd DataLabel="Data Key">@context.FunctionUrl</MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+    List<RuleFunctionDto> FunctionList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            FunctionList = await rules.GetFunctionsAsync();
+            Console.WriteLine($"Number of functions is {FunctionList.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task Delete(int id)
+    {
+        await rules.DeleteFunctionAsync(id);
+        FunctionList = await rules.GetFunctionsAsync();
+        this.StateHasChanged();
+    }
+}

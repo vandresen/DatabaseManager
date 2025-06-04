@@ -1,0 +1,25 @@
+﻿@page "/rules/newrulefunction"
+@inject NavigationManager navigationManager
+@inject IRuleService rules
+
+<RuleFunctionForm RuleFunction="ruleFunction" OnValidSubmit="Create" />
+
+
+@code {
+    private RuleFunction ruleFunction = new RuleFunction();
+
+    private async Task Create()
+    {
+        try
+        {
+            Console.WriteLine($"Creating function with name and type: {ruleFunction.FunctionName}, {ruleFunction.FunctionType}");
+            await rules.InsertFunctionAsync(ruleFunction);
+            navigationManager.NavigateTo("rules/getrulefunctions");
+        }
+
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}

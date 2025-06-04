@@ -1,0 +1,101 @@
+﻿@using MudBlazor
+@using DatabaseManager.ServerLessClient.Models
+
+<MudCard Class="mx-auto my-4" Style="max-width: 600px;">
+    <MudCardContent>
+        <MudText Typo="Typo.h5" Class="mb-4">Edit Rule Function</MudText>
+
+        <MudForm @ref="form" Model="@RuleFunction" OnValidSubmit="HandleValidSubmit">
+            <MudGrid Spacing="2">
+
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="RuleFunction.FunctionName"
+                                  Label="Function Name"
+                                  For="@(() => RuleFunction.FunctionName)"
+                                  ReadOnly="@ReadOnlyName"
+                                  Required="true"
+                                  MaxLength="40"
+                                  Variant="Variant.Filled"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Title"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudSelect T="string"
+                               Label="Function Type"
+                               @bind-Value="RuleFunction.FunctionType"
+                               Variant="Variant.Filled"
+                               Required="true"
+                               Placeholder="Please Select"
+                               Margin="Margin.Dense"
+                               Adornment="Adornment.Start"
+                               AdornmentIcon="@Icons.Material.Filled.Category">
+                        @foreach (var item in typeOptions)
+                        {
+                            <MudSelectItem Value="@item.Id">@item.Type</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="RuleFunction.FunctionUrl"
+                                  Label="Function URL"
+                                  For="@(() => RuleFunction.FunctionUrl)"
+                                  Required="true"
+                                  MaxLength="255"
+                                  Variant="Variant.Filled"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Link"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="RuleFunction.FunctionKey"
+                                  Label="Function Key"
+                                  MaxLength="255"
+                                  Variant="Variant.Filled"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.VpnKey"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12" class="d-flex justify-end">
+                    <MudButton Color="Color.Success" Variant="Variant.Filled" OnClick="(() => HandleValidSubmit())">
+                        Save Changes
+                    </MudButton>
+                </MudItem>
+
+            </MudGrid>
+        </MudForm>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private MudForm form;
+
+    [Parameter] public RuleFunction RuleFunction { get; set; }
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+    [Parameter] public bool ReadOnlyName { get; set; }
+    public List<RuleFunctionTypeOption> typeOptions;
+
+    protected override void OnInitialized()
+    {
+        typeOptions = new List<RuleFunctionTypeOption>()
+        {
+            new RuleFunctionTypeOption(){Id = null, Type = "None"},
+            new RuleFunctionTypeOption(){Id = "V", Type = "Validity"},
+            new RuleFunctionTypeOption(){Id = "P", Type = "Predictions"}
+        };
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        Console.WriteLine($"Submitting function data"); 
+        await form.Validate();
+        if (form.IsValid && OnValidSubmit.HasDelegate)
+        {
+            await OnValidSubmit.InvokeAsync();
+        }
+    }
+}

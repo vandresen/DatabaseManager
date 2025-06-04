@@ -15,6 +15,23 @@ namespace DatabaseManager.ServerLessClient.Services
             _clientFactory = clientFactory;
         }
 
+        public async Task DeleteFunctionAsync(int id)
+        {
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Function", $"Id={id}", SD.DataRuleKey);
+            Console.WriteLine($"DeleteFunctionAsync: url = {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.DELETE,
+                Url = url
+            });
+            if (!response.IsSuccess)
+            {
+
+                Console.WriteLine(String.Join("There is a problem deleting the function; ", response.ErrorMessages));
+                throw new ApplicationException(String.Join("There is a problem deleting the function; ", response.ErrorMessages));
+            }
+        }
+
         public async Task DeletePredictionAsync(int id)
         {
             string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/PredictionSet", $"id={id}", SD.DataRuleKey);
@@ -168,6 +185,24 @@ namespace DatabaseManager.ServerLessClient.Services
                 Console.WriteLine($"No success");
             }
             return result;
+        }
+
+        public async Task InsertFunctionAsync(RuleFunction function)
+        {
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Function", $"", SD.DataRuleKey);
+            Console.WriteLine($"InsertRulesAsync: url = {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.POST,
+                Data = function,
+                Url = url
+            });
+            if (!response.IsSuccess)
+            {
+
+                Console.WriteLine(String.Join("There is a problem inserting function; ", response.ErrorMessages));
+                throw new ApplicationException(String.Join("There is a problem inserting function; ", response.ErrorMessages));
+            }
         }
 
         public async Task InsertPredictionAsync(PredictionSet predictionSet)
