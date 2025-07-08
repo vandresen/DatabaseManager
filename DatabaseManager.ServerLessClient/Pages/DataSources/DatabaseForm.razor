@@ -1,0 +1,53 @@
+﻿<EditForm Model="ConnectParameters" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label>Name:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@ConnectParameters.SourceName" readonly="@ReadOnlySourceName" />
+            <ValidationMessage For="@(() => ConnectParameters.SourceName)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Database Name:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@ConnectParameters.Catalog" />
+            <ValidationMessage For="@(() => ConnectParameters.Catalog)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Database Server:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@ConnectParameters.DatabaseServer" />
+            <ValidationMessage For="@(() => ConnectParameters.DatabaseServer)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>User Name:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@ConnectParameters.User" />
+            <ValidationMessage For="@(() => ConnectParameters.User)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Password:</label>
+        <div>
+            <InputText class="form-control" @bind-Value="@ConnectParameters.Password" />
+            <ValidationMessage For="@(() => ConnectParameters.Password)" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Command timeout:</label>
+        <div>
+            <InputNumber class="form-control" @bind-Value="ConnectParameters.CommandTimeOut" />
+            <ValidationMessage For="@(() => ConnectParameters.CommandTimeOut)" />
+        </div>
+    </div>
+
+    <button class="btn btn-success" type="submit">Save Changes</button>
+</EditForm>
+
+@code {
+    [Parameter] public ConnectParameters ConnectParameters { get; set; }
+    [Parameter] public EventCallback OnValidSubmit { get; set; }
+    [Parameter] public bool ReadOnlySourceName { get; set; }
+}

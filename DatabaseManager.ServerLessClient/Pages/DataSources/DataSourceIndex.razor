@@ -1,0 +1,106 @@
+﻿@page "/datasourceindex"
+@inject DatabaseManager.ServerLessClient.Services.IDataSources dataSourceService
+@inject IDisplayMessage displayMessage
+@inject NavigationManager NavManager
+@inject BlazorSingletonService settings
+@using MudBlazor
+
+<h3>Data Connectors</h3>
+
+<MudMenu Color="Color.Info"
+         Label="New Connector"
+         Variant="Variant.Filled"
+         StartIcon="@Icons.Material.Filled.Add">
+    @foreach (var type in SourceTypes)
+    {
+        <MudMenuItem OnClick="@(() => NavManager.NavigateTo($"/datasource/create/{type}"))">
+            @type
+        </MudMenuItem>
+    }
+</MudMenu>
+
+<br />
+
+<MudTable Items="connectParameters" Dense="true" Hover="true" Striped="true">
+    <HeaderContent>
+        <MudTh>Action</MudTh>
+        <MudTh>Name</MudTh>
+        <MudTh>Source Type</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>
+            <MudButton Variant="Variant.Filled" Color="Color.Success"
+                       OnClick="@(() => NavManager.NavigateTo($"/datasource/edit/{context.SourceName}"))">
+                Edit
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="@(() => DeleteSources(context.SourceName))">Delete</MudButton>
+        </MudTd>
+        <MudTd>@context.SourceName</MudTd>
+        <MudTd>@context.SourceType</MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+    public List<ConnectParameters> connectParameters;
+    private List<string> SourceTypes = new List<string> { "DataBase", "File" };
+    // private bool expandedState = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Models.ResponseDto response = await dataSourceService.GetSources<Models.ResponseDto>();
+            if (response != null && response.IsSuccess)
+            {
+                connectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
+            }
+            else
+            {
+                Console.WriteLine(response.ErrorMessages);
+                await displayMessage.DisplayErrorMessage(" There is a problem accessing data source server");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+        Console.WriteLine("Finished getting sources");
+    }
+
+    private async Task DeleteSources(string name)
+    {
+        try
+        {
+            Models.ResponseDto response = new Models.ResponseDto();
+            Console.WriteLine($"Delete Source");
+            response = await dataSourceService.DeleteSource<Models.ResponseDto>(name);
+            if (response == null || !response.IsSuccess)
+            {
+                Console.WriteLine(response.ErrorMessages);
+                await displayMessage.DisplayErrorMessage("The connector was not deleted");
+            }
+            else
+            {
+                response = await dataSourceService.GetSources<Models.ResponseDto>();
+                if (response != null && response.IsSuccess)
+                {
+                    connectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
+                }
+                else
+                {
+                    Console.WriteLine(response.ErrorMessages);
+                    await displayMessage.DisplayErrorMessage(" There is a problem accessing data source server");
+                }
+                this.StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+        this.StateHasChanged();
+    }
+}

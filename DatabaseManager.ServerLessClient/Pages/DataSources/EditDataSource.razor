@@ -1,0 +1,77 @@
+﻿@page "/datasource/edit/{SourceName}"
+@using DatabaseManager.ServerLessClient.Helpers
+@inject DatabaseManager.ServerLessClient.Services.IDataSources dataSourceService
+@inject IDisplayMessage displayMessage
+@inject BlazorSingletonService settings
+@inject NavigationManager navigationManager
+
+<h3>Edit Data Source</h3>
+
+@if (connectParameters != null)
+{
+    if (connectParameters.SourceType == "File")
+    {
+        <FileForm ConnectParameters="connectParameters" OnValidSubmit="Edit" ReadOnlySourceName="true" />
+    }
+    else
+    {
+        <DatabaseForm ConnectParameters="connectParameters" OnValidSubmit="Edit" ReadOnlySourceName="true" />
+    }
+}
+
+@code {
+    [Parameter] public string SourceName { get; set; }
+    public ConnectParameters connectParameters;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Models.ResponseDto response = await dataSourceService.GetSource<Models.ResponseDto>(SourceName);
+            if (response != null && response.IsSuccess)
+            {
+                connectParameters = JsonConvert.DeserializeObject<ConnectParameters>(Convert.ToString(response.Result));
+            }
+            else
+            {
+                Console.WriteLine(response.ErrorMessages);
+                await displayMessage.DisplayErrorMessage(" There is a problem accessing data source server");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+
+    private async Task Edit()
+    {
+        try
+        {
+            string connectStr = "";
+            if (connectParameters.SourceType == "File")
+            {
+                connectStr = settings.AzureStorage;
+            }
+            else
+            {
+                connectStr = connectParameters.CreateDatabaseConnectionString();
+            }
+            connectParameters.ConnectionString = connectStr;
+            Models.ResponseDto response = await dataSourceService.UpdateSource<Models.ResponseDto>(connectParameters);
+            if (response == null || !response.IsSuccess)
+            {
+                Console.WriteLine(response.ErrorMessages);
+                await displayMessage.DisplayErrorMessage("The connector was not updated");
+            }
+            else
+            {
+                navigationManager.NavigateTo("datasourceindex");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}

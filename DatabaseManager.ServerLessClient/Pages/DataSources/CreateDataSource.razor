@@ -1,0 +1,61 @@
+﻿@page "/datasource/create/{SourceType}"
+@using DatabaseManager.ServerLessClient.Helpers
+@inject DatabaseManager.ServerLessClient.Services.IDataSources dataSourceService
+@inject BlazorSingletonService settings
+@inject NavigationManager navigationManager
+@inject IDisplayMessage displayMessage
+
+<h3>CreateDataSource</h3>
+@if (SourceType == "File")
+{
+    <FileForm ConnectParameters="connectParameters" OnValidSubmit="Create" />
+}
+else
+{
+    <DatabaseForm ConnectParameters="connectParameters" OnValidSubmit="Create" />
+}
+
+@code {
+    [Parameter] public string SourceType { get; set; }
+    private ConnectParameters connectParameters = new ConnectParameters();
+
+    private async Task Create()
+    {
+        connectParameters.SourceType = SourceType;
+        string connectStr = "";
+        if (SourceType == "File")
+        {
+            connectStr = settings.AzureStorage;
+        }
+        else
+        {
+            connectStr = connectParameters.CreateDatabaseConnectionString();
+        }
+        connectParameters.ConnectionString = connectStr;
+        Console.WriteLine($"Connectionstring: {connectStr}");
+        try
+        {
+            Models.ResponseDto response = await dataSourceService.CreateSource<Models.ResponseDto>(connectParameters);
+            if (response == null || !response.IsSuccess)
+            {
+                Console.WriteLine(response.ErrorMessages);
+                await displayMessage.DisplayErrorMessage("The connector was not saved");
+            }
+            else
+            {
+                navigationManager.NavigateTo("datasourceindex");
+            }
+        }
+        catch (Exception ex)
+        {
+            if (ex.Message.Contains("The specified entity already exists"))
+            {
+                await displayMessage.DisplayErrorMessage("A connector with this name already exist, please change name");
+            }
+            else
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+    }
+}
