@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using DatabaseManager.Common.Data;
+﻿using DatabaseManager.Common.Data;
 using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Extensions;
@@ -8,16 +7,7 @@ using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Data;
-using System.Data.Common;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static DatabaseManager.Common.Data.SystemDBData;
 
 namespace DatabaseManager.Common.Helpers
@@ -102,21 +92,17 @@ namespace DatabaseManager.Common.Helpers
             {
                 string sql = await ReadDatabaseFile("StoredProcedures.sql");
                 string[] commandText = sql.Split(new string[] { String.Format("{0}GO{0}", Environment.NewLine) }, StringSplitOptions.RemoveEmptyEntries);
-                DbUtilities dbConn = new DbUtilities();
-                dbConn.OpenConnection(connector);
                 for (int x = 0; x < commandText.Length; x++)
                 {
                     if (commandText[x].Trim().Length > 0)
                     {
-                        dbConn.SQLExecute(commandText[x]);
+                        _db.ExecuteSQL(commandText[x], connector.ConnectionString);
                     }
                 }
 
-                await CreateGetStoredProcedure(dbConn);
-                await CreateInsertStoredProcedure(dbConn, connector.ConnectionString);
-                await CreateUpdateStoredProcedure(dbConn, connector.ConnectionString);
-
-                dbConn.CloseConnection();
+                CreateGetStoredProcedure(connector.ConnectionString);
+                await CreateInsertStoredProcedure(connector.ConnectionString);
+                await CreateUpdateStoredProcedure(connector.ConnectionString);
             }
             catch (Exception ex)
             {
@@ -129,18 +115,16 @@ namespace DatabaseManager.Common.Helpers
         {
             string sql = await ReadDatabaseFile("Functions.sql");
             string[] commandText = sql.Split(new string[] { String.Format("{0}GO{0}", Environment.NewLine) }, StringSplitOptions.RemoveEmptyEntries);
-            DbUtilities dbConn = new DbUtilities();
-            dbConn.OpenConnection(connector);
             for (int x = 0; x < commandText.Length; x++)
             {
                 if (commandText[x].Trim().Length > 0)
                 {
-                    dbConn.SQLExecute(commandText[x]);
+                    _db.ExecuteSQL(commandText[x], connector.ConnectionString);
                 }
             }
         }
 
-        private void CreateUserDefinedTypes(DbUtilities dbConn, IEnumerable<TableSchema> attributeProperties, string sql, string dataType)
+        private void CreateUserDefinedTypes(IEnumerable<TableSchema> attributeProperties, string sql, string dataType, string connectionString)
         {
             string[] tableAttributes = Common.GetAttributes(sql);
             string comma = "";
@@ -155,7 +139,7 @@ namespace DatabaseManager.Common.Helpers
             string sqlCommand = $"CREATE TYPE [dbo].[UDT{dataType}] AS TABLE ( ";
             sqlCommand = sqlCommand + attributes + ")";
 
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
         }
 
         private async Task CreateDMSModel(DataModelParameters dmParameters, ConnectParameters connector)
@@ -192,29 +176,29 @@ namespace DatabaseManager.Common.Helpers
             }
         }
 
-        private async Task CreateGetStoredProcedure(DbUtilities dbConn)
+        private void CreateGetStoredProcedure(string connectionString)
         {
             RuleManagement rm = new RuleManagement();
             string type = "Rules";
             DataAccessDef ruleDef = rm.GetDataAccessDefinition(type);
-            BuildGetProcedure(dbConn, type, ruleDef);
-            BuildGetProcedureWithId(dbConn, type, ruleDef);
+            BuildGetProcedure(type, ruleDef, connectionString);
+            BuildGetProcedureWithId(type, ruleDef, connectionString);
             type = "Functions";
             DataAccessDef functionDef = rm.GetDataAccessDefinition(type);
-            BuildGetProcedure(dbConn, type, functionDef);
-            BuildGetProcedureWithId(dbConn, type, functionDef);
+            BuildGetProcedure(type, functionDef, connectionString);
+            BuildGetProcedureWithId(type, functionDef, connectionString);
 
             type = "Index";
             DataAccessDef indexDef = _indexData.GetDataAccessDefinition();
-            BuildGetProcedure(dbConn, type, indexDef);
-            BuildGetProcedureWithQcString(dbConn, indexDef);
-            BuildGetProcedureWithAttributeQuery(dbConn, type, "INDEXNODE", indexDef);
+            BuildGetProcedure(type, indexDef, connectionString);
+            BuildGetProcedureWithQcString(indexDef, connectionString);
+            BuildGetProcedureWithAttributeQuery(type, "INDEXNODE", indexDef, connectionString);
         }
 
-        private void BuildGetProcedure(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
+        private void BuildGetProcedure(string dataType, DataAccessDef accessDef, string connectionString)
         {
             string sqlCommand = $"DROP PROCEDURE IF EXISTS spGet{dataType} ";
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
 
             sqlCommand = "";
             string sql = accessDef.Select;
@@ -223,13 +207,13 @@ namespace DatabaseManager.Common.Helpers
             sqlCommand = sqlCommand + " BEGIN ";
             sqlCommand = sqlCommand + sql;
             sqlCommand = sqlCommand + " END";
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
         }
 
-        private void BuildGetProcedureWithId(DbUtilities dbConn, string dataType, DataAccessDef accessDef)
+        private void BuildGetProcedureWithId(string dataType, DataAccessDef accessDef, string connectionString)
         {
             string sqlCommand = $"DROP PROCEDURE IF EXISTS spGetWithId{dataType} ";
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
 
             sqlCommand = "";
             string sql = accessDef.Select;
@@ -240,13 +224,13 @@ namespace DatabaseManager.Common.Helpers
             sqlCommand = sqlCommand + " BEGIN ";
             sqlCommand = sqlCommand + sql + query;
             sqlCommand = sqlCommand + " END";
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
         }
 
-        private void BuildGetProcedureWithQcString(DbUtilities dbConn, DataAccessDef accessDef)
+        private void BuildGetProcedureWithQcString(DataAccessDef accessDef, string connectionString)
         {
             string sqlCommand = $"DROP PROCEDURE IF EXISTS spGetWithQcStringIndex ";
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
 
             sqlCommand = "";
             string sql = accessDef.Select;
@@ -260,14 +244,14 @@ namespace DatabaseManager.Common.Helpers
             sqlCommand = sqlCommand + sql;
             sqlCommand = sqlCommand + " WHERE QC_STRING like @query";
             sqlCommand = sqlCommand + " END";
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
         }
 
-        private void BuildGetProcedureWithAttributeQuery(DbUtilities dbConn, string dataType, string attribute,
-            DataAccessDef accessDef)
+        private void BuildGetProcedureWithAttributeQuery(string dataType, string attribute,
+            DataAccessDef accessDef, string connectionString)
         {
             string sqlCommand = $"DROP PROCEDURE IF EXISTS spGet{dataType}With{attribute} ";
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
 
             sqlCommand = "";
             string sql = accessDef.Select;
@@ -281,33 +265,32 @@ namespace DatabaseManager.Common.Helpers
             sqlCommand = sqlCommand + sql;
             sqlCommand = sqlCommand + $" WHERE {attribute} = @querystring";
             sqlCommand = sqlCommand + " END";
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
         }
 
-        private async Task CreateInsertStoredProcedure(DbUtilities dbConn, string connectionString)
+        private async Task CreateInsertStoredProcedure(string connectionString)
         {
             List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
             var dataTypes = accessDefs.Select(s => s.DataType).Where(s => s != "Index").ToList();
             foreach(string dataType in dataTypes)
             {
                 DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
-                await BuildInsertProcedure(dbConn, dataType, accessDef, connectionString);
+                await BuildInsertProcedure(dataType, accessDef, connectionString);
             }
             RuleManagement rm = new RuleManagement();
             string type = "Rules";
             DataAccessDef ruleDef = rm.GetDataAccessDefinition(type);
-            await BuildInsertWithUDTProcedure(dbConn, type, ruleDef, connectionString);
+            await BuildInsertWithUDTProcedure(type, ruleDef, connectionString);
             type = "Functions";
             DataAccessDef functionDef = rm.GetDataAccessDefinition(type);
-            await BuildInsertProcedure(dbConn, type, functionDef, connectionString);
+            await BuildInsertProcedure(type, functionDef, connectionString);
         }
 
-        private async Task BuildInsertWithUDTProcedure(DbUtilities dbConn, string dataType, 
-            DataAccessDef accessDef, string connectionString)
+        private async Task BuildInsertWithUDTProcedure(string dataType, DataAccessDef accessDef, string connectionString)
         {
             string sqlCommand = $"DROP PROCEDURE IF EXISTS spInsert{dataType}; ";
             sqlCommand = sqlCommand + $"DROP TYPE IF EXISTS[dbo].[UDT{dataType}];";
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
 
             sqlCommand = "";
             string sql = accessDef.Select;
@@ -315,7 +298,7 @@ namespace DatabaseManager.Common.Helpers
             IEnumerable<TableSchema> attributeProperties = await _systemData.GetColumnInfo(connectionString, table);
             string[] tableAttributes = Common.GetAttributes(sql);
             tableAttributes = tableAttributes.Where(w => w != "Id").ToArray();
-            CreateUserDefinedTypes(dbConn, attributeProperties, sql, dataType);
+            CreateUserDefinedTypes(attributeProperties, sql, dataType, connectionString);
             string comma = "";
             string attributes = "";
             foreach (var word in tableAttributes)
@@ -329,17 +312,16 @@ namespace DatabaseManager.Common.Helpers
                 $" INSERT INTO dbo.{table}({attributes}) " +
                 $" SELECT {attributes} FROM @rules;" +
                 " END";
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
         }
 
-        private async Task BuildInsertProcedure(DbUtilities dbConn, string dataType, 
-            DataAccessDef accessDef, string connectionString)
+        private async Task BuildInsertProcedure(string dataType, DataAccessDef accessDef, string connectionString)
         {
             string comma;
             string attributes;
             string sqlCommand = $"DROP PROCEDURE IF EXISTS spInsert{dataType}; ";
             sqlCommand = sqlCommand + $"DROP TYPE IF EXISTS[dbo].[UDT{dataType}];";
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
 
             sqlCommand = "";
             string sql = accessDef.Select;
@@ -393,34 +375,33 @@ namespace DatabaseManager.Common.Helpers
             sqlCommand = sqlCommand + ") AS jsonValues ";
 
             sqlCommand = sqlCommand + " END";
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
         }
 
-        private async Task CreateUpdateStoredProcedure(DbUtilities dbConn, string connectionString)
+        private async Task CreateUpdateStoredProcedure(string connectionString)
         {
             List<DataAccessDef> accessDefs = await GetDataAccessDefinitions();
             var dataTypes = accessDefs.Select(s => s.DataType).Where(s => s != "Index").ToList();
             foreach (string dataType in dataTypes)
             {
                 DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
-                await BuildUpdateProcedure(dbConn, dataType, accessDef, connectionString);
+                await BuildUpdateProcedure(dataType, accessDef, connectionString);
             }
             RuleManagement rm = new RuleManagement();
             string type = "Rules";
             DataAccessDef ruleDef = rm.GetDataAccessDefinition(type);
-            await BuildUpdateProcedure(dbConn, type, ruleDef, connectionString);
+            await BuildUpdateProcedure(type, ruleDef, connectionString);
             type = "Functions";
             DataAccessDef functionDef = rm.GetDataAccessDefinition(type);
-            await BuildUpdateProcedure(dbConn, type, functionDef, connectionString);
+            await BuildUpdateProcedure(type, functionDef, connectionString);
         }
 
-        private async Task BuildUpdateProcedure(DbUtilities dbConn, string dataType, 
-            DataAccessDef accessDef, string connectionString)
+        private async Task BuildUpdateProcedure(string dataType, DataAccessDef accessDef, string connectionString)
         {
             string comma;
             string attributes;
             string sqlCommand = $"DROP PROCEDURE IF EXISTS spUpdate{dataType} ";
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
 
             sqlCommand = "";
             string sql = accessDef.Select;
@@ -488,7 +469,7 @@ namespace DatabaseManager.Common.Helpers
             sqlCommand = sqlCommand + attributes;
             sqlCommand = sqlCommand + " END";
 
-            dbConn.SQLExecute(sqlCommand);
+            _db.ExecuteSQL(sqlCommand, connectionString);
         }
         
         private async Task CreatePpdmModifications(ConnectParameters connector)
@@ -498,16 +479,13 @@ namespace DatabaseManager.Common.Helpers
                 string sql = await ReadDatabaseFile("PpdmModifications.sql");
                 string[] commandText = sql.Split(new string[] { String.Format("{0}GO{0}", Environment.NewLine) }, StringSplitOptions.RemoveEmptyEntries);
                 await PopulateFixedKeys(connector);
-                DbUtilities dbConn = new DbUtilities();
-                dbConn.OpenConnection(connector);
                 for (int x = 0; x < commandText.Length; x++)
                 {
                     if (commandText[x].Trim().Length > 0)
                     {
-                        dbConn.SQLExecute(commandText[x]);
+                        _db.ExecuteSQL(commandText[x], connector.ConnectionString);
                     }
                 }
-                dbConn.CloseConnection();
             }
             catch (Exception ex)
             {
@@ -528,61 +506,13 @@ namespace DatabaseManager.Common.Helpers
                 }
                 else
                 {
-                    DbUtilities dbConn = new DbUtilities();
-                    dbConn.OpenConnection(connector);
-                    dbConn.SQLExecute(sql);
-                    dbConn.CloseConnection();
+                    _db.ExecuteSQL(sql, connector.ConnectionString);
                 }
             }
             catch (Exception ex)
             {
                 Exception error = new Exception("Create PPDM Model Error: ", ex);
                 throw error;
-            }
-        }
-
-        private void CreateSqlSources(DbUtilities dbConn)
-        {
-            string sql = "";
-            try
-            {
-                sql = @"CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'MasterKeyAzureBlobs'";
-                dbConn.SQLExecute(sql);
-            }
-            catch (Exception ex)
-            {
-                //logger.LogInformation("Problems creating master key, it may already exist, {ex}");
-            }
-
-            sql = "Select * from sys.external_data_sources ";
-            string query = " where name = 'PDOAzureBlob'";
-            DataTable dt = dbConn.GetDataTable(sql, query);
-            if (dt.Rows.Count > 0)
-            {
-                sql = "DROP EXTERNAL DATA SOURCE PDOAzureBlob ";
-                dbConn.SQLExecute(sql);
-            }
-
-            try
-            {
-                //sql = $"DROP DATABASE SCOPED CREDENTIAL {_credentials}";
-                //dbConn.SQLExecute(sql);
-            }
-            catch (Exception ex)
-            {
-                //logger.LogInformation($"Problems deleting credentials, it may not exist, {ex}");
-            }
-
-            try
-            {
-                //sql = $"CREATE DATABASE SCOPED CREDENTIAL {_credentials} WITH IDENTITY = 'SHARED ACCESS SIGNATURE', SECRET = '{_secret}'";
-                //dbConn.SQLExecute(sql);
-                //sql = $"CREATE EXTERNAL DATA SOURCE PDOAzureBlob WITH(TYPE = BLOB_STORAGE, LOCATION = '{_blobStorage}', CREDENTIAL = {_credentials})";
-                //dbConn.SQLExecute(sql);
-            }
-            catch (Exception ex)
-            {
-                //logger.LogInformation($"Problems crreating external data source, {ex}");
             }
         }
 
@@ -640,10 +570,6 @@ namespace DatabaseManager.Common.Helpers
                     {
                         throw new NullReferenceException("Serious problems with getting the foreign key info");
                     }
-                    
-                    
-
-                    
                 }
             }
         }

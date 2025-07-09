@@ -6,15 +6,9 @@ namespace DatabaseManager.Services.IndexSqlite.Helpers
 {
     public class IndexBuilder
     {
-        //private DbUtilities dbConn;
-        //private LASLoader lasConn;
         private List<DataAccessDef> dataAccessDefs = new List<DataAccessDef>();
         private static List<IndexFileData> _idxData;
-        //private IndexDataCollection myIndex;
         private List<IndexModel> myIndex;
-        //private IndexFileData _currentItem;
-        //private Location _location;
-        //private IndexFileData _parentItem;
         private readonly IDataAccess _sourceAccess;
         private string _connectionString;
         private string _taxonomy;
