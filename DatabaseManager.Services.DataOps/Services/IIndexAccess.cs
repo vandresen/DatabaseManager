@@ -11,5 +11,6 @@ namespace DatabaseManager.Services.DataOps.Services
     {
         Task<T> GetIndexes<T>(string dataSource, string project, string dataType);
         Task<T> UpdateIndexes<T>(List<IndexDto> indexes, string dataSource, string project);
+        Task<T> BuildIndex<T>(BuildIndexParameters idxParms);
     }
 }
