@@ -408,7 +408,7 @@ namespace DatabaseManager.Services.DataTransfer
         [Function("CopyCSVObject")]
         public async Task<ResponseDto> CopyCSV([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
         {
-            _logger.LogInformation("Data transfer copy LAS object: Starting.");
+            _logger.LogInformation("Data transfer copy file object: Starting.");
             try
             {
                 SD.AzureStorageKey = req.GetStorageKey();

@@ -2,12 +2,8 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.DataOps.Orchestrators
 {
@@ -62,25 +58,25 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
                     log.LogInformation($"Starting data transfer");
                     List<string> files = await context.CallActivityAsync<List<string>>("ManageDataOps_InitDataTransfer", pipe);
 
-                    //Entities.TransferParameters parms = JObject.Parse(pipe.JsonParameters).ToObject<Entities.TransferParameters>();
-                    //if (parms.SourceType == "DataBase")
-                    //{
-                    //    foreach (string file in files)
-                    //    {
-                    //        JObject pipeParm = JObject.Parse(pipe.JsonParameters);
-                    //        pipeParm["Table"] = file;
-                    //        pipe.JsonParameters = pipeParm.ToString();
-                    //        string stat = await context.CallActivityAsync<string>("ManageDataOps_DeleteDataTransfer", pipe);
-                    //    }
-                    //}
+                    TransferParameters parms = JsonConvert.DeserializeObject<TransferParameters>(pipe.JsonParameters);
+                    if (parms.SourceType == "DataBase")
+                    {
+                        foreach (string file in files)
+                        {
+                            JObject pipeParm = JObject.Parse(pipe.JsonParameters);
+                            pipeParm["Table"] = file;
+                            pipe.JsonParameters = pipeParm.ToString();
+                            string stat = await context.CallActivityAsync<string>("ManageDataOps_DeleteDataTransfer", pipe);
+                        }
+                    }
 
-                    //foreach (string file in files)
-                    //{
-                    //    JObject pipeParm = JObject.Parse(pipe.JsonParameters);
-                    //    pipeParm["Table"] = file;
-                    //    pipe.JsonParameters = pipeParm.ToString();
-                    //    string stat = await context.CallActivityAsync<string>("ManageDataOps_DataTransfer", pipe);
-                    //}
+                    foreach (string file in files)
+                    {
+                        JObject pipeParm = JObject.Parse(pipe.JsonParameters);
+                        pipeParm["Table"] = file;
+                        pipe.JsonParameters = pipeParm.ToString();
+                        string stat = await context.CallActivityAsync<string>("ManageDataOps_DataTransfer", pipe);
+                    }
                 }
                 else if (pipe.Name == "Predictions")
                 {

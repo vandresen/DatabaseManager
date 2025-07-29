@@ -35,13 +35,8 @@ namespace DatabaseManager.ServerLessClient
                 SD.EsriKey = builder.Configuration["ArcGISApiKey"];
             }
 
-            var dataOpsApiUrl = config["ServiceUrls:DataOpsAPI"];
-            var dataOpsKey = config["ServiceUrls:DataOpsKey"];
-
             builder.Services.AddHttpClient("DataOpsAPI", client =>
             {
-                client.BaseAddress = new Uri(dataOpsApiUrl);
-                client.DefaultRequestHeaders.Add("x-functions-key", dataOpsKey);
                 client.Timeout = TimeSpan.FromMinutes(5);
             });
 

@@ -1,8 +1,6 @@
-﻿using DatabaseManager.ServerLessClient.Models;
-using DatabaseManager.ServerLessClient.Helpers;
-using System.Xml.Linq;
+﻿using DatabaseManager.ServerLessClient.Helpers;
+using DatabaseManager.ServerLessClient.Models;
 using System.Net.Http.Json;
-using System.Net.Http;
 
 namespace DatabaseManager.ServerLessClient.Services
 {
@@ -10,13 +8,17 @@ namespace DatabaseManager.ServerLessClient.Services
     {
         private readonly IHttpClientFactory _clientFactory;
         private readonly BlazorSingletonService _settings;
+        private readonly string _dataOpsApiUrl;
+        private readonly string _dataOpsKey;
         private string resultMessage;
 
         public DataOps(IHttpClientFactory clientFactory, 
-            BlazorSingletonService settings) : base(clientFactory)
+            BlazorSingletonService settings, IConfiguration configuration) : base(clientFactory)
         {
             _clientFactory = clientFactory;
             _settings = settings;
+            _dataOpsApiUrl = configuration["ServiceUrls:DataOpsAPI"];
+            _dataOpsKey = configuration["ServiceUrls:DataOpsKey"];
         }
 
         public async Task<T> GetPipelines<T>()
@@ -49,28 +51,40 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task<DataOpsResults> ProcessPipeline(List<DataOpParameters> parms)
         {
-            //DataOpsResults results = new DataOpsResults();
             var client = _clientFactory.CreateClient("DataOpsAPI");
-            var response = await client.PostAsJsonAsync("api/DataOps_HttpStart", parms);
-            Console.WriteLine($"Status = {response.IsSuccessStatusCode}");
-            if (response.IsSuccessStatusCode)
+            string url = _dataOpsApiUrl.BuildFunctionUrl($"api/DataOps_HttpStart", "", _dataOpsKey);
+
+            try
             {
-                var responseContent = await response.Content.ReadFromJsonAsync<DataOpsResults>();
-                if (responseContent != null)
+                var response = await client.PostAsJsonAsync(url, parms);
+                Console.WriteLine($"Status = {response.IsSuccessStatusCode}");
+                if (response.IsSuccessStatusCode)
                 {
-                    return responseContent;
+                    var responseContent = await response.Content.ReadFromJsonAsync<DataOpsResults>();
+                    if (responseContent != null)
+                    {
+                        return responseContent;
+                    }
+                    else
+                    {
+                        resultMessage = $"There was no content";
+                        throw new ApplicationException(resultMessage);
+                    }
                 }
                 else
                 {
-                    resultMessage = $"There was no content";
+                    resultMessage = "There was an error sending data.";
                     throw new ApplicationException(resultMessage);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                resultMessage = "There was an error sending data.";
-                throw new ApplicationException(resultMessage);
+                Console.WriteLine($"Exception: {ex.Message}");
+                throw;
             }
+
+            
+            
         }
 
         public async Task<T> SavePipeline<T>(DataOpsPipes pipe, List<DatabaseManager.Shared.PipeLine> tubes)
@@ -172,16 +186,6 @@ namespace DatabaseManager.ServerLessClient.Services
         //    }
         //}
 
-        //public async Task ProcessPipeline(List<DataOpParameters> parms)
-        //{
-        //    string url = baseUrl.BuildFunctionUrl("ManageDataOps_HttpStart", $"", apiKey);
-        //    Console.WriteLine($"Url = {url}");
-        //    var response = await httpService.Post(url, parms);
-        //    if (!response.Success)
-        //    {
-        //        throw new ApplicationException(await response.GetBody());
-        //    }
-        //}
 
         //public async Task<DataOpsResults> ProcessPipelineWithStatus(List<DataOpParameters> parms)
         //{

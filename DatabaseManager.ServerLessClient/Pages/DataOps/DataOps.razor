@@ -104,7 +104,6 @@ input {
         {
             response = await dataOps.GetPipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(name);
             pipelines = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.PipeLine>>(Convert.ToString(response.Result));
-            // List<PipeLine> pipelines = await dataOps.GetPipeline(name);
             Console.WriteLine($"Number of pipes are {pipelines.Count}");
 
             List<DataOpParameters> parms = new List<DataOpParameters>();

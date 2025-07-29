@@ -13,6 +13,8 @@ var host = new HostBuilder()
         services.AddScoped<IRuleAccess, RuleAccess>();
         services.AddHttpClient<IDataQc, DataQc>();
         services.AddScoped<IDataQc, DataQc>();
+        services.AddHttpClient<IDataTransferAccess, DataTransferAccess>();
+        services.AddScoped<IDataTransferAccess, DataTransferAccess>();
         services.AddHttpClient<IIndexAccess, IndexAccess>();
         services.AddScoped<IIndexAccess, IndexAccess>();
     })

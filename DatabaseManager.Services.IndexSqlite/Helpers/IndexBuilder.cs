@@ -23,7 +23,6 @@ namespace DatabaseManager.Services.IndexSqlite.Helpers
 
         public IndexBuilder(IDataAccess sourceAccess)
         {
-            //dbConn = new DbUtilities();
             _sourceAccess = sourceAccess;
         }
 
