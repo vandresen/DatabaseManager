@@ -1,0 +1,141 @@
+﻿<br />
+<Table TableItem="JObject" Items="Data" PageSize="15" ColumnReorder="true">
+    @foreach (var head in headers)
+    {
+        @if (head.Name == "Children")
+        {
+            <Column TableItem="JObject" Title="" Sortable="false">
+                <Template>
+                    @if (context.Property("Children").Value.Value<int>() > 0)
+                    {
+                        <button class="btn btn-info" @onclick="@(() => DrillDown(context.ToString()))">...</button>
+                    }
+                </Template>
+            </Column>
+        }
+        else if (head.IsArray)
+        {
+            <Column TableItem="JObject" Title="@head.Name" Sortable="false">
+                <Template>
+                    <button class="btn btn-info" @onclick="@(() => ArrayAction(context.ToString()))">...</button>
+                </Template>
+            </Column>
+        }
+        else
+        {
+            <Column TableItem="JObject" Title="@head.Name" Field="@(x => x.Property(head.Name).Value)" Sortable="true" Filterable="@head.Filter" Type="@head.Type" />
+        }
+    }
+    <Pager ShowPageNumber="true" ShowTotalCount="true" />
+</Table>
+
+@code {
+    [Parameter] public List<JObject> Data { get; set; }
+    [Parameter] public string Attributes { get; set; }
+    [Parameter] public EventCallback<string> ChildrenDrillDown { get; set; }
+    [Parameter] public EventCallback<string> ArrayDrillDown { get; set; }
+    [Parameter] public IndexFileData Taxonomy { get; set; }
+    private List<Header> headers = new List<Header>();
+    private List<string> attributeList;
+    private List<string> arrayColumns;
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine($"Arrays: {Taxonomy.Arrays}");
+        attributeList = Attributes.Split(',').Select(p => p.Trim()).ToList();
+        headers = CreateHeader();
+    }
+
+    private List<Header> CreateHeader()
+    {
+        Console.WriteLine("Create Header");
+        List<Header> newHeader = new List<Header>();
+        JObject headerToken = Data.FirstOrDefault();
+
+        if (Taxonomy.Arrays != null)
+        {
+            if (Taxonomy.Arrays.Type == JTokenType.Array)
+            {
+                arrayColumns = new List<string>();
+                foreach (var item in Taxonomy.Arrays)
+                {
+                    var col = item.Value<string>("Attribute");
+                    arrayColumns.Add(col);
+                }
+            }
+
+        }
+
+        newHeader.Add(new Header() { Name = "Children", Type = typeof(string) });
+        foreach (JProperty property in headerToken.Properties())
+        {
+            bool filter = true;
+            if (Data.FirstOrDefault(s => s.Property(property.Name).Value.Type == JTokenType.Null) != null) filter = false;
+
+            Type type = typeof(string);
+            var vidar = Data.FirstOrDefault(s => s.Property(property.Name).Value != null);
+            var tokenType = vidar.Property(property.Name).Value.Type;
+            if (tokenType == JTokenType.Integer)
+            {
+                type = typeof(int);
+            }
+            else if (tokenType == JTokenType.Float)
+            {
+                type = typeof(double);
+            }
+            else if (tokenType == JTokenType.Date)
+            {
+                type = typeof(DateTime);
+            }
+
+            bool isArray = false;
+            if (arrayColumns != null)
+            {
+                foreach (var col in arrayColumns)
+                {
+                    if (col == property.Name)
+                    {
+                        isArray = true;
+                    }
+                }
+            }
+
+            bool display = false;
+            if (attributeList.Contains(property.Name)) display = true;
+
+            if (display)
+            {
+                //Console.WriteLine(property.Name);
+                if (display) newHeader.Add(
+                    new Header()
+                    {
+                        Name = property.Name,
+                        Type = type,
+                        Filter = filter,
+                        IsArray = isArray
+                    });
+            }
+        }
+
+        return newHeader;
+    }
+
+    private async Task DrillDown(string jsonString)
+    {
+        await ChildrenDrillDown.InvokeAsync(jsonString);
+    }
+
+    private async Task ArrayAction(string jsonString)
+    {
+        Console.WriteLine("Array drill down");
+        await ArrayDrillDown.InvokeAsync(jsonString);
+    }
+
+    public class Header
+    {
+        public string Name { get; set; }
+        public Type Type { get; set; }
+        public bool Filter { get; set; }
+        public bool IsArray { get; set; }
+    }
+}

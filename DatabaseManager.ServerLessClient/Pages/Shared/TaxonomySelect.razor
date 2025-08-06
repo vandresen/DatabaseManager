@@ -1,0 +1,30 @@
+﻿@inject Services.IIndexView idxView
+@using MudBlazor
+
+@if (taxonomies == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <MudSelect T="string" Label="Choose taxonomy:" ValueChanged=Selection Variant="Variant.Outlined">
+        @foreach (var option in taxonomies)
+        {
+            <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+        }
+    </MudSelect>
+}
+
+@code {
+    [Parameter] public EventCallback<string> Selection { get; set; }
+    List<string> taxonomies;
+    public string taxonomy { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        List<IndexFileList> fileList = await idxView.GetTaxonomies();
+        var files = fileList.Select(s => s.Name);
+        taxonomies = files.ToList();
+    }
+
+}

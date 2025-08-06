@@ -1,6 +1,6 @@
 ﻿@using MudBlazor
-@inject DatabaseManager.ServerLessClient.Services.IDataSources dataSources
-@inject IDataIndexer createIndex
+@inject Services.IDataSources dataSources
+@inject Services.IIndexView idxView
 
 @if (options == null || taxonomies == null)
 {
@@ -41,18 +41,17 @@ else
 @code {
     [Parameter] public CreateIndexParameters IndexParms { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
-    List<DatabaseManager.Shared.ConnectParameters> connectParameters;
-    DatabaseManager.ServerLessClient.Models.ResponseDto response;
+    List<ConnectParameters> connectParameters;
+    ResponseDto response;
     public string[] options { get; set; }
     List<string> taxonomies;
 
     protected override async Task OnInitializedAsync()
     {
-        response = await dataSources.GetSources<DatabaseManager.ServerLessClient.Models.ResponseDto>();
-        connectParameters = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.ConnectParameters>>(Convert.ToString(response.Result));
-        // connectParameters = await dataSources.GetSources();
+        response = await dataSources.GetSources<ResponseDto>();
+        connectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
         options = connectParameters.Select(x => x.SourceName).ToArray();
-        List<DatabaseManager.Shared.IndexFileList> indexFileList = await createIndex.GetTaxonomies();
+        List<IndexFileList> indexFileList = await idxView.GetTaxonomies();
         Console.WriteLine($"Number index files are {indexFileList.Count}");
         taxonomies = indexFileList.Select(s => s.Name).ToList();
     }

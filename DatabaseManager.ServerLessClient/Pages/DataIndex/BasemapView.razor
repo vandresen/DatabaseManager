@@ -1,0 +1,134 @@
+﻿@using dymaptic.GeoBlazor.Core.Components
+@using dymaptic.GeoBlazor.Core.Components.Layers
+@using dymaptic.GeoBlazor.Core.Components.Geometries
+@using dymaptic.GeoBlazor.Core.Components.Renderers
+@using dymaptic.GeoBlazor.Core.Components.Symbols
+@using dymaptic.GeoBlazor.Core.Components.Popups
+@using dymaptic.GeoBlazor.Core.Enums
+@using dymaptic.GeoBlazor.Core.Model
+
+<br />
+<button disabled="@_graphicsAdded" class="btn btn-primary" @onclick="AddGraphicsToLayer">
+    Add wells to map
+</button>
+<br />
+
+<MapView Style="height: 600px; width: 100%;">
+    @if (_graphics.Any())
+    {
+        <Extent Ymin="@_ymin" Xmin="@_xmin" Ymax="@_ymax" Xmax="@_xmax">
+            <SpatialReference Wkid="3857" />
+        </Extent>
+    }
+    <Map>
+        <Basemap>
+            <WebTileLayer UrlTemplate="https://tile.openstreetmap.org/{level}/{col}/{row}.png"
+                          Copyright="© OpenStreetMap contributors" />
+        </Basemap>
+
+        <GraphicsLayer @ref="_graphicsLayer"/>
+    </Map>
+</MapView>
+
+@code {
+    [Parameter] public List<DmsIndex> Index { get; set; }
+    private GraphicsLayer? _graphicsLayer;
+    private readonly List<Graphic> _graphics = new();
+    private bool _graphicsAdded = false;
+    private readonly Random _random = new();
+    private CancellationTokenSource _cts = new();
+    private double _xmin;
+    private double _xmax;
+    private double _ymin;
+    private double _ymax;
+
+    protected override void OnInitialized()
+    {
+        SetGraphics();
+    }
+
+    private void SetGraphics()
+    {
+        _graphics.Clear();
+
+        _xmin = double.MaxValue;
+        _xmax = double.MinValue;
+        _ymin = double.MaxValue;
+        _ymax = double.MinValue;
+        Console.WriteLine($"Number of indexes: {Index.Count}");
+        foreach (var idx in Index)
+        {
+            if (!string.IsNullOrEmpty(idx.JsonData))
+            {
+                double? lat = idx.JsonData.GetNumberFromJson("SURFACE_LATITUDE");
+                double? lon = idx.JsonData.GetNumberFromJson("SURFACE_LONGITUDE");
+                if (lat == null || lon == null || lat == -99999.0 || lon == -99999.0)
+                    continue;
+                var (x, y) = LatLonToWebMercator((double)lon, (double)lat);
+
+                string title = idx.JsonData.GetStringFromJson("UWI");
+
+                if (x < _xmin) _xmin = x;
+                if (x > _xmax) _xmax = x;
+                if (y < _ymin) _ymin = y;
+                if (y > _ymax) _ymax = y;
+
+                Point point = new Point(
+                    x: x,
+                    y: y,
+                    spatialReference: SpatialReference.WebMercator
+                );
+
+                SimpleMarkerSymbol symbol = new SimpleMarkerSymbol(new Outline(new MapColor("green")),
+                    new MapColor("red"), 10);
+
+                string content = "Vidar";
+                Console.WriteLine(content);
+                PopupTemplate popup = new PopupTemplate(title, "Field: {ASSIGNED_FIELD}<br/>Operator: {OPERATOR}", new[] { "*" });
+
+                Dictionary<string, object> jsonDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(idx.JsonData);
+                AttributesDictionary attributes = new AttributesDictionary(jsonDictionary);
+
+                Graphic graphic = new Graphic(point, symbol, popup, attributes);
+                _graphics.Add(graphic);
+            }
+
+        }
+
+        Console.WriteLine($"Number of graphic points: {_graphics.Count}");
+        _xmin -= 1000;
+        _xmax += 1000;
+        _ymin -= 1000;
+        _ymax += 1000;
+       
+    }
+
+    private async Task AddGraphicsToLayer()
+    {
+        if (_graphicsLayer == null)
+        {
+            Console.WriteLine("GraphicsLayer is not ready yet.");
+            return;
+        }
+        StateHasChanged();
+        _cts.Cancel();
+        _cts = new CancellationTokenSource();
+        Console.WriteLine($"Adding {_graphics.Count} graphics to layer.");
+        await _graphicsLayer!.Add(_graphics, _cts.Token);
+        _graphicsAdded = true;
+        await InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
+    }
+
+    private static (double x, double y) LatLonToWebMercator(double lon, double lat)
+    {
+        double originShift = 2 * Math.PI * 6378137 / 2.0;
+        double mx = lon * originShift / 180.0;
+        double my = Math.Log(Math.Tan((90 + lat) * Math.PI / 360.0)) / (Math.PI / 180.0);
+        my = my * originShift / 180.0;
+        return (mx, my);
+    }
+
+}

@@ -1,0 +1,58 @@
+﻿@page "/indexdata/{Id:int}"
+@inject IIndexView idxData
+@inject BlazorSingletonService settings
+@using MudBlazor
+
+<h3>Index Data</h3>
+
+<MudText Typo="Typo.h5" Class="mb-4">Index Data</MudText>
+
+@if (index == null)
+{
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+}
+else if (!index.Any())
+{
+    <MudAlert Severity="Severity.Info">No index data available.</MudAlert>
+}
+else
+{
+    <MudTable Items="index" Dense="true" Hover="true" Elevation="1">
+        <HeaderContent>
+            <MudTh></MudTh>
+            <MudTh>Data Type</MudTh>
+            <MudTh>Number Of Data Objects</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>
+                <MudButton Color="Color.Info" Variant="Variant.Filled" Href="@($"/childdata/{context.Id}")">
+                    View
+                </MudButton>
+            </MudTd>
+            <MudTd>@context.DataType</MudTd>
+            <MudTd>@context.NumberOfDataObjects</MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    public List<DmsIndex> index;
+    private string indexSource;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Console.WriteLine($"Fetch data for {Id}");
+            if (SD.Sqlite) indexSource = settings.Project;
+            else indexSource = settings.TargetConnector;
+            index = await idxData.GetChildren(indexSource, Id);
+            Console.WriteLine($"Number of objects {index.Count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+        }
+    }
+}

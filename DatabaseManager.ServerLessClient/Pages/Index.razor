@@ -3,9 +3,9 @@
 @inject BlazorSingletonService settings
 @inject DatabaseManager.Shared.SingletonServices settings2
 @inject HttpClient client
-@inject IDisplayMessage displayMessage
+@inject IPopupMessage displayMessage
 @inject NavigationManager navigationManager
-@inject IIndexView idxView
+@inject Services.IIndexView idxView
 @inject DatabaseManager.ServerLessClient.Services.IDataSources dataSourceService
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration Configuration
@@ -84,10 +84,10 @@ else
 }
 
 @code {
-    public List<ConnectParametersDto> ConnectParameters;
+    public List<ConnectParameters> ConnectParameters;
     private List<string> projects;
     private List<string> options;
-    public List<DatabaseManager.Shared.DmsIndex> index;
+    public List<DmsIndex> index;
     private string indexStatus = "No index available";
     bool spinner = false;
     bool sqlite = false;
@@ -124,7 +124,7 @@ else
 
             if (sqlite)
             {
-                projects = await idxView.GetIndexProjects();
+                // projects = await idxView.GetIndexProjects();
                 if (string.IsNullOrEmpty(settings.Project) == true) settings.Project = "Default";
                 await GetIndexData();
             }
@@ -133,7 +133,7 @@ else
                 DatabaseManager.BlazorComponents.Models.ResponseDto response = await dataSourceService.GetSources<DatabaseManager.BlazorComponents.Models.ResponseDto>();
                 if (response != null && response.IsSuccess)
                 {
-                    ConnectParameters = JsonConvert.DeserializeObject<List<ConnectParametersDto>>(Convert.ToString(response.Result));
+                    ConnectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
                 }
                 else
                 {
@@ -141,7 +141,7 @@ else
                     await displayMessage.DisplayErrorMessage(" There is a problem accessing data source server");
                 }
                 options = new List<string>();
-                foreach (ConnectParametersDto conn in ConnectParameters)
+                foreach (ConnectParameters conn in ConnectParameters)
                 {
                     if (conn.SourceType != "File") options.Add(conn.SourceName);
                 }
@@ -208,7 +208,7 @@ else
         }
     }
 
-    private void DataTypes(DatabaseManager.Shared.DmsIndex item)
+    private void DataTypes(DmsIndex item)
     {
         string url = @"/ChildData/" + $"{item.Id}";
         navigationManager.NavigateTo(url);

@@ -1,5 +1,5 @@
 ﻿@page "/ChildData/{Id:int}"
-@inject SingletonServices settings
+@inject BlazorSingletonService settings
 @inject IIndexView indexData
 @inject NavigationManager navigationManager
 @using MudBlazor
@@ -79,12 +79,10 @@
         try
         {
             data = new List<JObject>();
-            indexData.InitSettings(settings);
             if (!string.IsNullOrEmpty(SD.EsriKey)) basemap = true;
             if (SD.Sqlite) indexSource = settings.Project;
             else indexSource = settings.TargetConnector;
             index = await indexData.GetChildren(indexSource, Id);
-            Console.WriteLine($"Children count: {index.Count}");
             List<IndexFileData> taxonomyList = await indexData.GetIndexTaxonomy(indexSource);
             //Console.WriteLine($"Root Taxonomy count: {taxonomyList.Count}");
             DataType = index[0].DataType;

@@ -6,7 +6,6 @@ using DatabaseManager.ServerLessClient.Models;
 using DatabaseManager.ServerLessClient.Services;
 using dymaptic.GeoBlazor.Core;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using MudBlazor;
 using MudBlazor.Services;
 
 namespace DatabaseManager.ServerLessClient
@@ -40,13 +39,12 @@ namespace DatabaseManager.ServerLessClient
                 client.Timeout = TimeSpan.FromMinutes(5);
             });
 
+            builder.Services.AddGeoBlazor(builder.Configuration);
             ConfigureServices(builder.Services, sqlite);
 
             SD.Sqlite = sqlite;
             SD.DataSourceAPIBase = builder.Configuration["ServiceUrls:DataSourceAPI"];
             SD.DataSourceKey = builder.Configuration["ServiceUrls:DataSourceKey"];
-            SD.IndexAPIBase = builder.Configuration["ServiceUrls:IndexAPI"];
-            SD.IndexKey = builder.Configuration["ServiceUrls:IndexKey"];
             SD.DataConfigurationAPIBase = builder.Configuration["ServiceUrls:DataConfigurationAPI"];
             SD.DataConfigurationKey = builder.Configuration["ServiceUrls:DataConfigurationKey"];
             SD.DataModelAPIBase = builder.Configuration["ServiceUrls:DataModelAPI"];
@@ -100,18 +98,16 @@ namespace DatabaseManager.ServerLessClient
 
             if (sqlite)
             {
-                services.AddHttpClient<IIndexView, IndexViewSqlite>();
-                services.AddScoped<IIndexView, IndexViewSqlite>();
+                //services.AddHttpClient<Services.IIndexView, Services.IndexViewSqlLite>();
+                services.AddScoped<Services.IIndexView, IndexViewSqlLite>();
             }
             else
             {
-                services.AddHttpClient<IIndexView, IndexViewServerless>();
-                services.AddScoped<IIndexView, IndexViewServerless>();
+                services.AddScoped<Services.IIndexView, IndexViewSqlServer>();
             }
 
             services.AddBlazorTable();
             services.AddMudServices();
-            services.AddGeoBlazor();
         }
     }
 }

@@ -1,11 +1,9 @@
 ﻿@page "/settings"
 @inject NavigationManager navigationManager
 @inject BlazorSingletonService settings
-@inject ICookies cookies
 @inject ILocalStorageService localStorage
 @inject HttpClient client
 @using MudBlazor
-@using DatabaseManager.BlazorComponents.Pages.Settings
 
 <style>
     input {
@@ -26,7 +24,7 @@
             <br />
             <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="SaveServerless">Save</MudButton>
     </MudTabPanel>
-    <MudTabPanel Text="Taxonomy">
+    @* <MudTabPanel Text="Taxonomy">
         <TaxonomySettings></TaxonomySettings>
     </MudTabPanel>
     <MudTabPanel Text="Data Access">
@@ -37,7 +35,7 @@
         <MudTabPanel Text="Manage Projects">
             <ManageProjects></ManageProjects>
         </MudTabPanel>
-    }
+    } *@
 </MudTabs>
 
 @code {
@@ -66,8 +64,6 @@
         if (!string.IsNullOrEmpty(AzureStorage))
         {
             await localStorage.SetItemAsync("AzureStorage", AzureStorage);
-            // await localStorage.SetItemAsync("BaseUrl", baseUrl);
-            // await localStorage.SetItemAsync("APIKey", apiKey);
             client.DefaultRequestHeaders.Remove("AzureStorageConnection");
             client.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
         }
