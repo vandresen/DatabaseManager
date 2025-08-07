@@ -1,0 +1,149 @@
+﻿@inject IIndexView iv
+@inject NavigationManager navigationManager
+@inject BlazorSingletonService settings
+@inject IPopupMessage displayMessage
+@using DatabaseManager.ServerLessClient.Pages.Shared
+@using MudBlazor
+
+<br />
+<TaxonomySelect Selection="Selected"></TaxonomySelect>
+<br />
+
+@if (ifdList == null)
+{
+    <text>No taxonomy file selected yet...</text>
+}
+else
+{
+    <MudCard Elevation="25">
+        <MudCardHeader Class="pb-1">
+            <CardHeaderContent>
+                <MudText Class="pb-1" Typo="Typo.h6">Edit Taxonomy @dataDef.DataName</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent Class="pt-1">
+            <MudTextField @bind-Value="dataDef.DataName" Label="Data object Name" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <MudTextField @bind-Value="dataDef.NameAttribute" Label="Data Attribute Key" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <MudTextField @bind-Value="dataDef.ParentKey" Label="Parent Key" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <MudTextField @bind-Value="dataDef.Select" Label="Select" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <br />
+            <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Save">Save</MudButton>
+        </MudCardContent>
+    </MudCard>
+    <br />
+    <MudTable Elevation="25" Items="@ifdList" Dense="true" Hover="true">
+        <ColGroup>
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col style="width:300px;" />
+        </ColGroup>
+        <HeaderContent>
+            <MudTh>Data object Name</MudTh>
+            <MudTh>Data attribute key</MudTh>
+            <MudTh>Parent key</MudTh>
+            <MudTh>Latitude attribute</MudTh>
+            <MudTh>Longitude attribute</MudTh>
+            <MudTh>Select statement</MudTh>
+            <MudTh>Use parent location</MudTh>
+            <MudTh>Action</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Data object Name">@context.DataName</MudTd>
+            <MudTd DataLabel="Data attribute key">@context.NameAttribute</MudTd>
+            <MudTd DataLabel="Parent key">@context.ParentKey</MudTd>
+            <MudTd DataLabel="Latitude attribute">@context.LatitudeAttribute</MudTd>
+            <MudTd DataLabel="Longitude attribute">@context.LongitudeAttribute</MudTd>
+            <MudTd DataLabel="Select statement">@context.Select</MudTd>
+            <MudTd DataLabel="Use parent location">@context.UseParentLocation</MudTd>
+            <MudTd DataLabel="">
+                <MudFab @onclick="@(() => Edit(@context))" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small" />
+                <MudFab @onclick="@(() => Delete(@context))" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+                @if (context.DataObjects != null)
+                {
+                    <MudFab @onclick="@(() => Drilldown(context))" Color="Color.Info" StartIcon="@Icons.Material.Filled.MoreHoriz" Size="Size.Small" IconSize="Size.Small" />
+                }
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    List<IndexFileDefinition> ifdList;
+    IndexFileDefinition ifd = new IndexFileDefinition();
+    Dictionary<string, List<IndexFileDefinition>> index = new Dictionary<string, List<IndexFileDefinition>>();
+    private IndexFileDefinition dataDef = new IndexFileDefinition();
+    private List<IndexFileDefinition> original;
+    private string TaxonomyFile;
+    bool edit = false;
+
+    private async Task Selected(string selectedString)
+    {
+        TaxonomyFile = selectedString;
+        ifdList = await iv.GetIndexFileDefs(TaxonomyFile);
+        bool allNullAttributes = ifdList.All(obj => obj.DataName == null);
+        if (allNullAttributes)
+        {
+            await displayMessage.DisplayErrorMessage("Looks like a bad taxonomy file");
+        }
+        else
+        {
+            original = ifdList;
+        }
+    }
+
+    private void Drilldown(IndexFileDefinition item)
+    {
+        JArray jArray = new JArray();
+        ifdList = item.DataObjects;
+        this.StateHasChanged();
+    }
+
+    private void Edit(IndexFileDefinition item)
+    {
+        Console.WriteLine($"Edit object : {item.DataName}");
+        edit = true;
+        dataDef = item;
+    }
+
+    private async Task Delete(IndexFileDefinition item)
+    {
+        Console.WriteLine($"Delete object : {item.DataName}");
+        item.DataName = "Delete";
+        RemoveNodes(original);
+        await iv.SaveIndexFileDefs(original, TaxonomyFile);
+    }
+
+    private void RemoveNodes(List<IndexFileDefinition> nodes)
+    {
+        for (int i = nodes.Count - 1; i >= 0; i--)
+        {
+            IndexFileDefinition node = nodes[i];
+            if (node.DataName == "Delete")
+            {
+                nodes.RemoveAt(i);
+            }
+            else if (node.DataObjects != null && node.DataObjects.Count > 0)
+            {
+                RemoveNodes(node.DataObjects);
+            }
+        }
+    }
+
+    private async Task Save()
+    {
+        if (!edit)
+        {
+            ifdList.Add(dataDef);
+        }
+        string saveResult = JsonConvert.SerializeObject(original, Formatting.Indented);
+        Console.WriteLine($"Saved json: {saveResult}");
+        await iv.SaveIndexFileDefs(original, TaxonomyFile);
+        edit = false;
+        dataDef = new IndexFileDefinition();
+    }
+}

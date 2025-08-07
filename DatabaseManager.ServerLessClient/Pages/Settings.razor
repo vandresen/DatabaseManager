@@ -3,6 +3,7 @@
 @inject BlazorSingletonService settings
 @inject ILocalStorageService localStorage
 @inject HttpClient client
+
 @using MudBlazor
 
 <style>
@@ -24,10 +25,10 @@
             <br />
             <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="SaveServerless">Save</MudButton>
     </MudTabPanel>
-    @* <MudTabPanel Text="Taxonomy">
+    <MudTabPanel Text="Taxonomy">
         <TaxonomySettings></TaxonomySettings>
     </MudTabPanel>
-    <MudTabPanel Text="Data Access">
+    @* <MudTabPanel Text="Data Access">
         <DataAccessSettings></DataAccessSettings>
     </MudTabPanel>
     @if (SD.Sqlite)

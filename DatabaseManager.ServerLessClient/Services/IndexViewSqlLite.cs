@@ -22,6 +22,11 @@ namespace DatabaseManager.ServerLessClient.Services
             throw new NotImplementedException();
         }
 
+        public Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<List<IndexFileData>> GetIndexTaxonomy(string source)
         {
             throw new NotImplementedException();
@@ -33,6 +38,11 @@ namespace DatabaseManager.ServerLessClient.Services
         }
 
         public Task<List<IndexFileList>> GetTaxonomies()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task SaveIndexFileDefs(List<IndexFileDefinition> indexDef, string fileName)
         {
             throw new NotImplementedException();
         }

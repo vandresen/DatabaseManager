@@ -221,6 +221,71 @@ namespace DatabaseManager.ServerLessClient.Services
             }
         }
 
+        public async Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                throw new ArgumentException("File name must be provided", nameof(fileName));
+            }
+
+            List<IndexFileDefinition> def = new List<IndexFileDefinition>();
+            string url = _dataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={_taxonomyShare}&name={fileName}", _dataConfigurationKey);
+            Console.WriteLine(url);
+
+            try
+            {
+                ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+                {
+                    ApiType = SD.ApiType.GET,
+                    AzureStorage = _settings.AzureStorage,
+                    Url = url
+                });
+                if (response?.IsSuccess != true || response.Result == null)
+                {
+                    Console.WriteLine($"GetIndexFileDefs: Request failed or response was null. " +
+                                      $"Errors: {string.Join(";", response?.ErrorMessages ?? new List<string>())}");
+                    return null;
+                }
+                return JsonConvert.DeserializeObject<List<IndexFileDefinition>>(response.Result.ToString());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GetIndexFileDefs: Exception - {ex.Message}");
+                return null;
+            }
+            
+        }
+
+        public async Task SaveIndexFileDefs(List<IndexFileDefinition> indexDef, string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                throw new ArgumentException("File name must be provided", nameof(fileName));
+            }
+
+            try
+            {
+                string url = _dataConfigurationAPIBase.BuildFunctionUrl("/api/DataConfiguration", $"folder={_taxonomyShare}&name={fileName}", _dataConfigurationKey);
+                Console.WriteLine(url);
+                ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+                {
+                    ApiType = SD.ApiType.POST,
+                    AzureStorage = _settings.AzureStorage,
+                    Url = url,
+                    Data = indexDef
+                });
+                if (response?.IsSuccess != true || response.Result == null)
+                {
+                    Console.WriteLine($"SaveIndexFileDefs: Request failed or response was null. " +
+                                      $"Errors: {string.Join(";", response?.ErrorMessages ?? new List<string>())}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SaveIndexFileDefs: Exception - {ex.Message}");
+            }
+        }
+
         private static IndexFileData ProcessJTokens(JToken token)
         {
             IndexFileData idxDataObject = new IndexFileData();
