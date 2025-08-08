@@ -11,7 +11,9 @@ namespace DatabaseManager.ServerLessClient.Services
         //Task<List<IndexFileData>> GetIndexTaxonomy(string source);
         Task<List<IndexFileList>> GetTaxonomies();
         Task<List<IndexFileData>> GetIndexTaxonomy(string source);
-
         Task SaveIndexFileDefs(List<IndexFileDefinition> indexDef, string fileName);
+        Task<List<string>> GetIndexProjects();
+        Task CreateProject(string project);
+        Task DeleteProject(string project);
     }
 }

@@ -316,6 +316,19 @@ namespace DatabaseManager.ServerLessClient.Services
             return result;
         }
 
-        
+        public Task<List<string>> GetIndexProjects()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task CreateProject(string project)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task DeleteProject(string project)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

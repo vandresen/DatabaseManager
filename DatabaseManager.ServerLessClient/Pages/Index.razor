@@ -113,8 +113,6 @@ else
             settings2.DataTransferAPIBase = SD.DataTransferKey;
             settings2.DataTransferKey = SD.DataTransferKey;
             Console.WriteLine($"Azure settings: {settings.AzureStorage}");
-            settings.BaseUrl = await localStorage.GetItemAsync<string>("BaseUrl");
-            settings.ApiKey = await localStorage.GetItemAsync<string>("APIKey");
             Console.WriteLine($"Sqlite = {SD.Sqlite}");
             sqlite = SD.Sqlite;
 
@@ -123,7 +121,7 @@ else
 
             if (sqlite)
             {
-                // projects = await idxView.GetIndexProjects();
+                projects = await idxView.GetIndexProjects();
                 if (string.IsNullOrEmpty(settings.Project) == true) settings.Project = "Default";
                 await GetIndexData();
             }

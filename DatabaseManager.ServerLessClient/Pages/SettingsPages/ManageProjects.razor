@@ -1,0 +1,59 @@
+﻿@inject IIndexView idxView
+@using MudBlazor
+
+<br />
+
+<MudTextField @bind-Value="projectName" Label="Project Name"></MudTextField>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateProject">Create Project</MudButton>
+
+
+@if (projects == null)
+{
+    <text>Loading...</text>
+}
+else
+{
+    <MudSelect Label="Select a Project" @bind-Value="selectedProject">
+        @foreach (var project in projects)
+        {
+            <MudSelectItem T="string" Value="@project">@project</MudSelectItem>
+        }
+    </MudSelect>
+    <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="DeleteProject">Delete Project</MudButton>
+}
+
+
+@code {
+    private string selectedProject;
+    private string[] projects { get; set; }
+    private string projectName { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        List<string> results = await idxView.GetIndexProjects();
+        projects = results.ToArray();
+    }
+
+    private async void CreateProject()
+    {
+        if (string.IsNullOrWhiteSpace(projectName) != true)
+        {
+            Console.WriteLine($"Create project {projectName}");
+            await idxView.CreateProject(projectName);
+            List<string> results = await idxView.GetIndexProjects();
+            projects = results.ToArray();
+            projectName = null;
+        }
+        StateHasChanged();
+    }
+
+    private async void DeleteProject()
+    {
+        Console.WriteLine($"Delete project {selectedProject}");
+        await idxView.DeleteProject(selectedProject);
+        List<string> results = await idxView.GetIndexProjects();
+        projects = results.ToArray();
+        selectedProject = null;
+        StateHasChanged();
+    }
+}
