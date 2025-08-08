@@ -1,0 +1,106 @@
+﻿@using MudBlazor
+@inject IDataConfigurationService dataConfiguration
+@inject IPopupMessage displayMessage
+
+@if (data == null)
+{
+    <p>No data</p>
+}
+else
+{
+    <MudCard Elevation="25">
+        <MudCardHeader Class="pb-1">
+            <CardHeaderContent>
+                <MudText Class="pb-1" Typo="Typo.h6">Edit Taxonomy @dataItem.Datatype</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent Class="pt-1">
+            <MudTextField @bind-Value="dataItem.Datatype" Label="Data type" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <MudTextField @bind-Value="dataItem.Mappings" Label="Mappings" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <MudTextField @bind-Value="dataItem.Constants" Label="Constants" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+            <br />
+            <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Save">Save</MudButton>
+        </MudCardContent>
+    </MudCard>
+    <br />
+    <MudTable Elevation="25" Items="@data" Dense="true" Hover="true">
+        <ColGroup>
+            <col />
+            <col />
+            <col />
+            <col style="width:300px;" />
+        </ColGroup>
+        <HeaderContent>
+            <MudTh>Data Type</MudTh>
+            <MudTh>Mappings</MudTh>
+            <MudTh>Constants</MudTh>
+            <MudTh>Action</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Data Type">@context.Datatype</MudTd>
+            <MudTd DataLabel="Mappings">@context.Mappings</MudTd>
+            <MudTd DataLabel="Constants">@context.Constants</MudTd>
+            <MudTd DataLabel="">
+                <MudFab @onclick="@(() => Edit(@context))" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small" />
+                <MudFab @onclick="@(() => Delete(@context))" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    [Parameter] public string Content { get; set; }
+    [Parameter] public string ConfigFile { get; set; }
+    private List<csvData> data;
+    private csvData dataItem = new csvData();
+    bool edit = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        data = Newtonsoft.Json.JsonConvert.DeserializeObject<List<csvData>>(Content);
+    }
+
+    private class csvData
+    {
+        public string Datatype { get; set; }
+        public string Mappings { get; set; }
+        public string Constants { get; set; }
+    }
+
+    private void Edit(csvData item)
+    {
+        Console.WriteLine($"Edit object : {item.Datatype}");
+        edit = true;
+        dataItem = item;
+    }
+
+    private async Task Save()
+    {
+        Console.WriteLine($"Save object : {dataItem.Datatype}");
+        if (!edit)
+        {
+            Console.WriteLine($"Insert object not implemented");
+            data.Add(dataItem);
+        }
+        string configFile = ConfigFile;
+        ResponseDto response = await dataConfiguration.SaveRecords<ResponseDto>(configFile, data);
+        if (!response.IsSuccess)
+        {
+            await displayMessage.DisplayErrorMessage(" There is a problem saving data");
+        }
+        edit = false;
+        dataItem = new csvData();
+    }
+
+    private async Task Delete(csvData item)
+    {
+        Console.WriteLine($"Delete {item.Datatype}");
+        data.RemoveAll(x => x.Datatype == item.Datatype);
+        string configFile = ConfigFile;
+        ResponseDto response = await dataConfiguration.SaveRecords<ResponseDto>(configFile, data);
+        if (!response.IsSuccess)
+        {
+            await displayMessage.DisplayErrorMessage(" There is a problem saving data");
+        }
+    }
+}

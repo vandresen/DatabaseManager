@@ -28,15 +28,15 @@
     <MudTabPanel Text="Taxonomy">
         <TaxonomySettings></TaxonomySettings>
     </MudTabPanel>
-    @* <MudTabPanel Text="Data Access">
+    <MudTabPanel Text="Data Access">
         <DataAccessSettings></DataAccessSettings>
     </MudTabPanel>
     @if (SD.Sqlite)
     {
         <MudTabPanel Text="Manage Projects">
-            <ManageProjects></ManageProjects>
+            @* <ManageProjects></ManageProjects> *@
         </MudTabPanel>
-    } *@
+    }
 </MudTabs>
 
 @code {
@@ -48,16 +48,7 @@
     protected override async Task OnInitializedAsync()
     {
         Console.WriteLine("Init settings");
-        if(settings.ServerLess)
-        {
-            AzureStorage = settings.AzureStorage;
-            baseUrl = settings.BaseUrl;
-            apiKey = settings.ApiKey;
-        }
-        else
-        {
-            Console.WriteLine($"{AzureStorage}");
-        }
+        AzureStorage = settings.AzureStorage;
     }
 
     private async Task SaveServerless()

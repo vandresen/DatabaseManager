@@ -72,19 +72,18 @@ namespace DatabaseManager.ServerLessClient
             services.AddHttpClient<DatabaseManager.ServerLessClient.Services.IDataSources, DatabaseManager.ServerLessClient.Services.DataSources>();
             services.AddHttpClient<IDataModelService, DataModelService>();
             services.AddHttpClient<IDataConfiguration, DataConfiguration>();
-            services.AddHttpClient<IDataConfigurationService, DataConfigurationService>();
+            //services.AddHttpClient<IDataConfigurationService, DataConfigurationService>();
             services.AddHttpClient<IRuleService, RuleService>();
             services.AddHttpClient<IReport, ReportService>();
 
             services.AddHttpClient<IDataIndexer, DataIndexerServerLess>();
 
-            services.AddScoped<DatabaseManager.ServerLessClient.Services.IDataSources, DatabaseManager.ServerLessClient.Services.DataSources>();
+            services.AddScoped<Services.IDataSources, Services.DataSources>();
             services.AddScoped<IDataModelService, DataModelService>();
             services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddScoped<IPopupMessage, PopupMessage>();
             services.AddScoped<IHttpService, HttpService>();
             services.AddScoped<DatabaseManager.ServerLessClient.Services.IDataOps, DatabaseManager.ServerLessClient.Services.DataOps>();
-            //services.AddScoped<IDataSources, DataSourcesServerLess>();
             services.AddScoped<IDataTransfer, DataTransferServerLess>();
             services.AddScoped<IDataModelCreate, DataModelCreateServerless>();
             services.AddScoped<IDataIndexer, DataIndexerServerLess>();
@@ -92,13 +91,11 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IRuleService, RuleService>();
             services.AddScoped<IReportEdit, ReportEdit>();
             services.AddScoped<ISync, Sync>();
-
             services.AddScoped<ICookies, Cookies>();
-            services.AddScoped<IDataConfigurationService, DataConfigurationService>();
+            services.AddScoped<Services.IDataConfigurationService, Services.DataConfigurationService>();
 
             if (sqlite)
             {
-                //services.AddHttpClient<Services.IIndexView, Services.IndexViewSqlLite>();
                 services.AddScoped<Services.IIndexView, IndexViewSqlLite>();
             }
             else

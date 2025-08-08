@@ -1,0 +1,68 @@
+﻿@inject IDataConfigurationService dataConfiguration
+@inject IPopupMessage displayMessage
+@using MudBlazor
+
+<br />
+<MudSelector Selection="Selected" Options="files"></MudSelector>
+<br />
+
+@switch (configType)
+{
+    case "CSV":
+        <CSVSettings Content="@content" ConfigFile="@configFile" />
+        break;
+    case "PPDM":
+        <PPDMSettings Content="@content" ConfigFile="@configFile" />
+        break;
+    default:
+        <MudTextField @bind-Value="content" Label="Content" ReadOnly="true" Variant="Variant.Outlined" />
+        break;
+}
+
+@code {
+    private List<string> files;
+    private string configFile;
+    private string configType = "";
+    private string content;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            ResponseDto response = await dataConfiguration.GetRecords<ResponseDto>();
+            if (response != null && response.IsSuccess)
+            {
+                files = JsonConvert.DeserializeObject<List<string>>(Convert.ToString(response.Result));
+            }
+            else
+            {
+                Console.WriteLine(string.Join(";", response?.ErrorMessages ?? new List<string> { "Unknown error" }));
+                await displayMessage.DisplayErrorMessage("There is a problem accessing data configuration server");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Unhandled exception in GetRecords: {ex.Message}");
+            await displayMessage.DisplayErrorMessage("A system error occurred while accessing data configuration.");
+        }
+    }
+
+    private async Task Selected(string selectedString)
+    {
+        configFile = selectedString;
+        ResponseDto response = await dataConfiguration.GetRecord<ResponseDto>(configFile);
+        if (configFile.StartsWith("CSV")) configType = "CSV";
+        else if (configFile.StartsWith("PPDM")) configType = "PPDM";
+        else configType = "";
+        if (response != null && response.IsSuccess)
+        {
+            content = Convert.ToString(response.Result);
+            Console.WriteLine(content);
+        }
+        else
+        {
+            Console.WriteLine(response.ErrorMessages);
+            await displayMessage.DisplayErrorMessage(" There is a problem accessing data configuration server");
+        }
+    }
+}
