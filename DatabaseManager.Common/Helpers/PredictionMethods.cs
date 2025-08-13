@@ -5,19 +5,15 @@ using DatabaseManager.Common.Extensions;
 using DatabaseManager.Shared;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Runtime.Intrinsics.Arm;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
 {
     static class PredictionMethods
     {
-        public static PredictionResult DeleteDataObject(QcRuleSetup qcSetup, DbUtilities dbConn, IndexDBAccess idxdata)
+        private static Dictionary<string, int> _ageLookupCache;
+
+        public static PredictionResult DeleteDataObject(QcRuleSetup qcSetup, DapperDataAccess dp, IndexDBAccess idxdata)
         {
             PredictionResult result = new PredictionResult();
 
@@ -28,68 +24,47 @@ namespace DatabaseManager.Common.Helpers
             return result;
         }
 
-        public static PredictionResult PredictFormationOrder(QcRuleSetup qcSetup, DbUtilities dbConn, IndexDBAccess idxdata)
+        public static PredictionResult PredictFormationOrder(QcRuleSetup qcSetup, DapperDataAccess dp, IndexDBAccess idxdata)
         {
-            List<StratUnits> inv = new List<StratUnits>();
-            PredictionResult result = new PredictionResult
+            if (_ageLookupCache == null)
             {
-                Status = "Failed"
-            };
-            string formation;
-            string tempTable = "#MinMaxAllFormationPick";
+                var picks = dp.LoadData<FormationPick, dynamic>(
+                "spGetMinMaxAllFormationPick",
+                new { },
+                qcSetup.DataConnector).GetAwaiter().GetResult(); ;
 
-            DataTable idx = new DataTable();
-
-            try
-            {
-                string select = "select * from #MinMaxAllFormationPick";
-                string query = "";
-                idx = dbConn.GetDataTable(select, query);
-            }
-            catch (Exception ex)
-            {
-                if (ex.InnerException.Message.Contains("Invalid object name"))
-                {
-                    string select = $"EXEC spGetMinMaxAllFormationPick";
-                    string query = "";
-                    idx = dbConn.GetDataTable(select, query);
-                    string SQLCreateTempTable = Common.GetCreateSQLFromDataTable(tempTable, idx);
-                    dbConn.SQLExecute(SQLCreateTempTable);
-                    dbConn.BulkCopy(idx, tempTable);
-                }
-                else
-                {
-                    throw;
-                }
+                _ageLookupCache = picks.ToDictionary(p => p.STRAT_UNIT_ID, p => p.AGE);
             }
 
-            JObject dataObject = JObject.Parse(qcSetup.DataObject);
-            formation = dataObject["STRAT_UNIT_ID"].ToString();
-            string tmpFormation = Common.FixAposInStrings(formation);
-            string condition = $"STRAT_UNIT_ID = '{tmpFormation}'";
-            var rows = idx.Select(condition);
-            if (rows.Length == 1)
-            {
-                RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
-                int age = Convert.ToInt32(rows[0]["AGE"]);
-                dataObject[rule.DataAttribute] = age;
-                string remark = dataObject["REMARK"] + $";{rule.DataAttribute} has been predicted by QCEngine;";
-                dataObject["REMARK"] = remark;
-                result.DataObject = dataObject.ToString();
-                result.DataType = rule.DataType;
-                result.SaveType = "Update";
-                result.IndexId = qcSetup.IndexId;
-                result.Status = "Passed";
-            }
-            else if (rows.Length > 1)
-            {
-                throw new Exception("PredictFormationOrder: Multiple occurences of formation not allowed");
-            }
+            var result = new PredictionResult { Status = "Failed" };
+            var dataObject = JObject.Parse(qcSetup.DataObject);
+            var formation = Common.FixAposInStrings((string)dataObject["STRAT_UNIT_ID"]);
+
+            if (!_ageLookupCache.TryGetValue(formation, out var age))
+                return result;
+
+            var rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+            dataObject[rule.DataAttribute] = age;
+            dataObject["REMARK"] = $"{dataObject["REMARK"]};{rule.DataAttribute} predicted by QCEngine;";
+
+            result.DataObject = dataObject.ToString();
+            result.DataType = rule.DataType;
+            result.SaveType = "Update";
+            result.IndexId = qcSetup.IndexId;
+            result.Status = "Passed";
 
             return result;
         }
 
-        public static PredictionResult PredictDepthUsingIDW(QcRuleSetup qcSetup, DbUtilities dbConn, IndexDBAccess idxdata)
+        public class FormationPick
+        {
+            public string STRAT_UNIT_ID { get; set; }
+            public int AGE { get; set; }
+            public double MIN { get; set; }
+            public double MAX { get; set; }
+        }
+
+        public static PredictionResult PredictDepthUsingIDW(QcRuleSetup qcSetup, DapperDataAccess dp, IndexDBAccess idxdata)
         {
             double? depth = null;
             PredictionResult result = new PredictionResult
@@ -124,7 +99,7 @@ namespace DatabaseManager.Common.Helpers
             return result;
         }
 
-        public static PredictionResult PredictDominantLithology(QcRuleSetup qcSetup, DbUtilities dbConn, IndexDBAccess idxdata)
+        public static PredictionResult PredictDominantLithology(QcRuleSetup qcSetup, DapperDataAccess dp, IndexDBAccess idxdata)
         {
             PredictionResult result = new PredictionResult
             {
@@ -136,81 +111,46 @@ namespace DatabaseManager.Common.Helpers
             string curveName = "GR";
             JToken value = dataObject.GetValue("PICK_DEPTH");
             double? pickDepth = value.GetNumberFromJToken();
-            if (pickDepth == null || pickDepth == -99999.0)
+            if (pickDepth == null || pickDepth == -99999.0) return result;
+
+            string dataKey = $"UWI = ''{uwi}'' and CURVE_ID = ''{curveName}''";
+            string query = $" where DataKey = '{dataKey}'";
+            string select = idxdata.GetSelectSQL() + query;
+            var lc = dp.ReadData<IndexModel>(select, qcSetup.DataConnector).GetAwaiter().GetResult();
+
+            if (lc?.Count() != 1) return result;
+
+            string logJson = lc.FirstOrDefault()?.JsonDataObject;
+            JObject logObject = JObject.Parse(logJson);
+            value = logObject.GetValue("NULL_REPRESENTATION");
+            double? logNullValue = value.GetNumberFromJToken();
+            double[] logArray = logObject["MEASURED_VALUE"].ToString().ConvertStringToArray();
+            double[] indexArray = logObject["INDEX_VALUE"].ToString().ConvertStringToArray();
+                        
+            if (logArray.Count() > 0)
             {
-                result.Status = "Failed";
-            }
-            else
-            {
-                IndexModel idxResult = Task.Run(() => idxdata.GetIndexRoot(qcSetup.DataConnector)).GetAwaiter().GetResult();
-                if (idxResult != null)
-                {
-                    string jsonStringObject = idxResult.JsonDataObject;
-                    IndexRootJson rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonStringObject);
-                    ConnectParameters source = JsonConvert.DeserializeObject<ConnectParameters>(rootJson.Source);
-                    List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(source.DataAccessDefinition);
+                int rowNumber = RuleMethodUtilities.GetRowNumberForPickDepth(indexArray, (double)pickDepth);
 
-                    DataAccessDef logType = accessDefs.First(x => x.DataType == "Log");
-                    string select = logType.Select;
-                    string query = $" where CURVE_ID = '{curveName}' and UWI = '{uwi}'";
-                    DataTable lc = dbConn.GetDataTable(select, query);
-                    if (lc.Rows.Count == 1)
-                    {
-                        double logNullValue = Common.GetDataRowNumber(lc.Rows[0], "NULL_REPRESENTATION");
+                double? smoothLogValue = RuleMethodUtilities.GetSmoothLogValue(logArray, (double)logNullValue, rowNumber);
 
-                        DataAccessDef logCurvedType = accessDefs.First(x => x.DataType == "LogCurve");
-                        select = logCurvedType.Select;
-                        query = $" where CURVE_ID = '{curveName}' and UWI = '{uwi}'";
-                        DataTable lg = dbConn.GetDataTable(select, query);
-                        DataTable sortedCurve = RuleMethodUtilities.GetSortedLogCurve(lg, uwi);
+                var rockType = LithologyInfo.GetLithology(smoothLogValue);
+                dataObject["DOMINANT_LITHOLOGY"] = rockType.ToString();
 
-                        if (sortedCurve.Rows.Count > 0)
-                        {
-                            int rowNumber = RuleMethodUtilities.GetRowNumberForPickDepth(sortedCurve, (double)pickDepth);
+                string remark = (dataObject["REMARK"]?.ToString() ?? "") + "; Pick depth has been predicted by QCEngine";
+                dataObject["REMARK"] = remark;
 
-                            double? smoothLogValue = RuleMethodUtilities.GetSmoothLogValue(sortedCurve, logNullValue, rowNumber);
-
-                            string rock;
-                            if (smoothLogValue >= 0 & smoothLogValue < 10)
-                            {
-                                rock = "Salt";
-                            }
-                            if (smoothLogValue >= 10 & smoothLogValue < 20)
-                            {
-                                rock = "Limestone";
-                            }
-                            else if (smoothLogValue >= 20 & smoothLogValue < 55)
-                            {
-                                rock = "Sandstone";
-                            }
-                            else if (smoothLogValue >= 55 & smoothLogValue < 150)
-                            {
-                                rock = "Shale";
-                            }
-                            else
-                            {
-                                rock = "Unknown";
-                            }
-
-                            dataObject["DOMINANT_LITHOLOGY"] = rock;
-                            string remark = dataObject["REMARK"] + $";Pick depth has been predicted by QCEngine";
-                            dataObject["REMARK"] = remark;
-
-                            RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
-                            result.DataObject = dataObject.ToString();
-                            result.DataType = rule.DataType;
-                            result.SaveType = "Update";
-                            result.IndexId = qcSetup.IndexId;
-                            result.Status = "Passed";
-                        }
-                    }
-                }
+                RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+                result.DataObject = dataObject.ToString();
+                result.DataType = rule.DataType;
+                result.SaveType = "Update";
+                result.IndexId = qcSetup.IndexId;
+                result.Status = "Passed";
             }
 
             return result;
         }
 
-        public static PredictionResult PredictLogDepthAttributes(QcRuleSetup qcSetup, DbUtilities dbConn, IndexDBAccess idxdata)
+        public static PredictionResult PredictLogDepthAttributes(QcRuleSetup qcSetup, DapperDataAccess dp, IndexDBAccess idxdata)
         {
             PredictionResult result = new PredictionResult
             {
@@ -235,7 +175,7 @@ namespace DatabaseManager.Common.Helpers
             return result;
         }
 
-        public static PredictionResult PredictMissingDataObjects(QcRuleSetup qcSetup, DbUtilities dbConn, IndexDBAccess idxdata)
+        public static PredictionResult PredictMissingDataObjects(QcRuleSetup qcSetup, DapperDataAccess dp, IndexDBAccess idxdata)
         {
             PredictionResult result = new PredictionResult
             {
@@ -253,7 +193,7 @@ namespace DatabaseManager.Common.Helpers
             DataAccessDef accessDef = rootJson.Source.GetDataAccessDefintionFromSourceJson(dataType);
             //DataAccessDef accessDef = RuleMethodUtilities.GetDataAccessDefintionFromRoot(idxdata, qcSetup.DataConnector, dataType);
             string table = Common.GetTable(accessDef.Select);
-            IDapperDataAccess dp;
+            //IDapperDataAccess dp;
             ISystemData systemData;
             dp = new DapperDataAccess();
             systemData = new SystemDBData(dp);

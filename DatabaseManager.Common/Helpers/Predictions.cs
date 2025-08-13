@@ -3,20 +3,13 @@ using DatabaseManager.Common.DBAccess;
 using DatabaseManager.Common.Entities;
 using DatabaseManager.Common.Services;
 using DatabaseManager.Shared;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Data;
-using System.Linq;
-using System.Net.Http;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Common.Helpers
 {
@@ -29,7 +22,6 @@ namespace DatabaseManager.Common.Helpers
         private readonly string container = "sources";
         private List<DataAccessDef> _accessDefs;
         DataAccessDef _indexAccessDef;
-        private DbUtilities _dbConn;
         private IADODataAccess _db;
         private bool syncPredictions;
         private bool entiretyPrediction;
@@ -49,9 +41,7 @@ namespace DatabaseManager.Common.Helpers
             IConfiguration configuration = builder.Build();
             _fileStorage = new AzureFileStorageServiceCommon(configuration);
             _fileStorage.SetConnectionString(azureConnectionString);
-            _dbConn = new DbUtilities();
             _db = new ADODataAccess();
-            
             _dp = new DapperDataAccess();
             _indexData = new IndexDBAccess(_dp);
             _log = log;
@@ -81,8 +71,6 @@ namespace DatabaseManager.Common.Helpers
             ConnectParameters connector = await GetConnector(parms.DataConnector);
             databaseConnectionString = connector.ConnectionString;
 
-            _dbConn.OpenConnection(connector);
-
             string sourceConnectorName = await GetSource();
             ConnectParameters sourceConnector = await GetConnector(sourceConnectorName);
             syncConnectionString = sourceConnector.ConnectionString;
@@ -96,7 +84,6 @@ namespace DatabaseManager.Common.Helpers
             manageIndexTable.InitQCFlags(false);
             _log.LogInformation($"Start making predictions");
             await MakePredictions(rule, connector);
-            _dbConn.CloseConnection();
             _log.LogInformation($"Saving qc flags");
             manageIndexTable.SaveQCFlags();
         }
@@ -117,6 +104,8 @@ namespace DatabaseManager.Common.Helpers
 
             indexTable = manageIndexTable.GetIndexTable();
             _log.LogInformation($"Number of prediction object are {indexTable.Rows.Count}");
+            //DbUtilities dbConn = new DbUtilities();
+            //dbConn.OpenConnection(connector);
             foreach (DataRow idxRow in indexTable.Rows)
             {
                 string jsonData = idxRow["JSONDATAOBJECT"].ToString();
@@ -136,11 +125,12 @@ namespace DatabaseManager.Common.Helpers
                     {
                         Type type = typeof(PredictionMethods);
                         MethodInfo info = type.GetMethod(rule.RuleFunction);
-                        result = (PredictionResult)info.Invoke(null, new object[] { qcSetup, _dbConn, _indexData });
+                        result = (PredictionResult)info.Invoke(null, new object[] { qcSetup, _dp, _indexData });
                     }
                     await ProcessResult(result, rule);
                 }
             }
+            //dbConn.CloseConnection();
             //_log.LogInformation($"Finished process all rows");
         }
 
@@ -368,7 +358,19 @@ namespace DatabaseManager.Common.Helpers
                     longitude = (double)idxResult.Longitude;
                 }
                 int nodeId = await GeIndextNode(dataType, idxResult);
-                if (nodeId > 0) _dbConn.InsertIndex(nodeId, dataName, dataType, dataKey, jsonData, latitude, longitude);
+
+                IndexModel indexModel = new IndexModel();
+                indexModel.Latitude = latitude;
+                indexModel.Longitude = longitude;
+                indexModel.DataType = dataType;
+                indexModel.DataName = dataName;
+                indexModel.DataKey = dataKey;
+                indexModel.JsonDataObject = jsonData;
+
+                if (nodeId > 0) 
+                { 
+                    int newIndexId = await _indexData.InsertSingleIndex(indexModel, nodeId, databaseConnectionString); 
+                }
             }
         }
 
@@ -402,22 +404,23 @@ namespace DatabaseManager.Common.Helpers
             string nodeName = dataType + "s";
             if (idxResult != null)
             {
-                string indexNode = idxResult.TextIndexNode;
-                int indexLevel = idxResult.IndexLevel + 1;
-                IEnumerable<DmsIndex> dmsIndex = await _indexData.GetNumberOfDescendantsByIdAndLevel(indexNode,
-                    indexLevel, databaseConnectionString);
-                if (dmsIndex.Count() > 1)
+                IEnumerable<IndexModel> indexes = await _indexData.GetDescendantsFromSP(idxResult.IndexId, databaseConnectionString);
+                if (indexes.Count() > 1)
                 {
-                    string condition = $"DATANAME={nodeName}";
-                    var rows = indexTable.Select(condition);
-                    if (rows.Length > 0)
+                    var nodeIndex = indexes.FirstOrDefault(x => x.DataType == nodeName);
+                    if (nodeIndex != null)
                     {
-                        nodeid = Convert.ToInt32(rows[0]["INDEXID"]);
+                        nodeid = nodeIndex.IndexId;
                     }
                 }
                 if (nodeid == 0)
                 {
-                    nodeid = _dbConn.InsertIndex(idxResult.IndexId, nodeName, nodeName, "", "", 0.0, 0.0);
+                    IndexModel nodeIndex = new IndexModel();
+                    nodeIndex.Latitude = 0.0;
+                    nodeIndex.Longitude = 0.0;
+                    nodeIndex.DataType = nodeName;
+                    nodeIndex.DataName = nodeName;
+                    nodeid = await _indexData.InsertSingleIndex(nodeIndex, idxResult.IndexId, databaseConnectionString);
                 }
             }
             return nodeid;
@@ -434,7 +437,6 @@ namespace DatabaseManager.Common.Helpers
                 idxData.Add(ProcessJTokens(level));
                 idxData = ProcessIndexArray(JsonIndexArray, level, idxData);
             }
-
             return idxData;
         }
 
