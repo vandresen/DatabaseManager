@@ -1,6 +1,7 @@
 ﻿using DatabaseManager.ServerLessClient.Helpers;
 using DatabaseManager.ServerLessClient.Models;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 
 namespace DatabaseManager.ServerLessClient.Services
@@ -66,9 +67,39 @@ namespace DatabaseManager.ServerLessClient.Services
             
         }
 
-        public Task<List<DmsIndex>> GetChildren(string source, int id)
+        public async Task<List<DmsIndex>> GetChildren(string source, int id)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                throw new ArgumentException("Project must be provided", nameof(source));
+            }
+
+            List<DmsIndex> children = new List<DmsIndex>();
+
+            string url = _indexAPIBase.BuildFunctionUrl("/DmIndexes", $"project={source}&id={id}", _indexKey);
+            Console.WriteLine($"GetIndex: url = {url}");
+
+            try
+            {
+                ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+                {
+                    ApiType = SD.ApiType.GET,
+                    Url = url
+                });
+                if (response?.IsSuccess != true || response.Result == null)
+                {
+                    Console.WriteLine($"GetChildren: Request failed or response was null. " +
+                                      $"Errors: {string.Join(";", response?.ErrorMessages ?? new List<string>())}");
+                    return null;
+                }
+                children = JsonConvert.DeserializeObject<List<DmsIndex>>(response.Result.ToString());
+                return children;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GetChildren: Exception - {ex.Message}");
+                return null;
+            }
         }
 
         public async Task<List<DmsIndex>> GetIndex(string source)
@@ -136,14 +167,86 @@ namespace DatabaseManager.ServerLessClient.Services
             
         }
 
-        public Task<List<IndexFileData>> GetIndexTaxonomy(string source)
+        public async Task<List<IndexFileData>> GetIndexTaxonomy(string source)
         {
-            throw new NotImplementedException();
+            
+
+            try
+            {
+                IndexModel idx = await GetSingleIndexItem(source, 1);
+                string jsonData = idx.JsonDataObject;
+                if (string.IsNullOrWhiteSpace(jsonData))
+                {
+                    Console.WriteLine("GetIndexTaxonomy: JsonData is empty");
+                    return new List<IndexFileData>();
+                }
+
+                var rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonData);
+                if (rootJson == null || string.IsNullOrWhiteSpace(rootJson.Taxonomy))
+                {
+                    Console.WriteLine("GetIndexTaxonomy: Taxonomy data is missing");
+                    return new List<IndexFileData>();
+                }
+
+                JArray taxonomyArray;
+                try
+                {
+                    taxonomyArray = JArray.Parse(rootJson.Taxonomy);
+                }
+                catch (JsonReaderException jex)
+                {
+                    Console.WriteLine($"GetIndexTaxonomy: Failed to parse taxonomy JSON - {jex.Message}");
+                    return new List<IndexFileData>();
+                }
+
+                List<IndexFileData> idxData = new List<IndexFileData>();
+                foreach (JToken level in taxonomyArray)
+                {
+                    idxData.Add(ProcessJTokens(level));
+                    idxData = ProcessIndexArray(taxonomyArray, level, idxData);
+                }
+                return idxData;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GetIndexTaxonomy: Exception - {ex.Message}");
+                return new List<IndexFileData>();
+            }
         }
 
-        public Task<IndexModel> GetSingleIndexItem(string source, int id)
+        public async Task<IndexModel> GetSingleIndexItem(string source, int id)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                throw new ArgumentException("Project must be provided", nameof(source));
+            }
+
+            IndexModel idx = new IndexModel();
+            string url = _indexAPIBase.BuildFunctionUrl($"/Index/{id}", $"Project={source}", _indexKey);
+            Console.WriteLine($"GetSingleIndexItem: url = {url}");
+
+            try
+            {
+                ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+                {
+                    ApiType = SD.ApiType.GET,
+                    Url = url
+                });
+
+                if (response?.IsSuccess != true || response.Result == null)
+                {
+                    Console.WriteLine($"GetSingleIndexItem: Request failed or response was null. " +
+                                      $"Errors: {string.Join(";", response?.ErrorMessages ?? new List<string>())}");
+                    return null;
+                }
+
+                return JsonConvert.DeserializeObject<IndexModel>(response.Result.ToString());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GetSingleIndexItem: Exception - {ex.Message}");
+                return idx;
+            }
         }
 
         public Task<List<IndexFileList>> GetTaxonomies()
@@ -154,6 +257,36 @@ namespace DatabaseManager.ServerLessClient.Services
         public Task SaveIndexFileDefs(List<IndexFileDefinition> indexDef, string fileName)
         {
             throw new NotImplementedException();
+        }
+
+        private static IndexFileData ProcessJTokens(JToken token)
+        {
+            IndexFileData idxDataObject = new IndexFileData();
+            idxDataObject.DataName = (string)token["DataName"];
+            idxDataObject.NameAttribute = token["NameAttribute"]?.ToString();
+            idxDataObject.LatitudeAttribute = token["LatitudeAttribute"]?.ToString();
+            idxDataObject.LongitudeAttribute = token["LongitudeAttribute"]?.ToString();
+            idxDataObject.ParentKey = token["ParentKey"]?.ToString();
+            if (token["UseParentLocation"] != null) idxDataObject.UseParentLocation = (Boolean)token["UseParentLocation"];
+            if (token["Arrays"] != null)
+            {
+                idxDataObject.Arrays = token["Arrays"];
+            }
+            return idxDataObject;
+        }
+
+        private List<IndexFileData> ProcessIndexArray(JArray JsonIndexArray, JToken parent, List<IndexFileData> idxData)
+        {
+            List<IndexFileData> result = idxData;
+            if (parent["DataObjects"] != null)
+            {
+                foreach (JToken level in parent["DataObjects"])
+                {
+                    result.Add(ProcessJTokens(level));
+                    result = ProcessIndexArray(JsonIndexArray, level, result);
+                }
+            }
+            return result;
         }
     }
 }

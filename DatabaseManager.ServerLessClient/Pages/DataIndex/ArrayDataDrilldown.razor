@@ -72,20 +72,23 @@ else
     Config config = new Config();
     Layout layout = new Layout();
     IList<ITrace> data = new List<ITrace>();
+    private string indexSource;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             Console.WriteLine($"Fetch data for {Id}");
-            index = await indexData.GetSingleIndexItem(settings.TargetConnector, Id);
+            if (SD.Sqlite) indexSource = settings.Project;
+            else indexSource = settings.TargetConnector;
+            index = await indexData.GetSingleIndexItem(indexSource, Id);
             dataName = index.DataName;
 
             if (index != null)
             {
                 string jsonData = index.JsonDataObject;
                 JObject dataObject = JObject.Parse(jsonData);
-                List<IndexFileData> taxonomyList = await indexData.GetIndexTaxonomy(settings.TargetConnector);
+                List<IndexFileData> taxonomyList = await indexData.GetIndexTaxonomy(indexSource);
                 string dataType = index.DataType;
                 IndexFileData taxonomy = taxonomyList.FirstOrDefault(s => s.DataName == dataType);
                 List<string> headers = new List<string>();

@@ -486,6 +486,17 @@ namespace DatabaseManager.Common.Helpers
                         _db.ExecuteSQL(commandText[x], connector.ConnectionString);
                     }
                 }
+
+                var lithologies = Enum.GetValues(typeof(LithologyInfo.Lithology))
+                    .Cast<LithologyInfo.Lithology>()
+                    .Select(l => l.ToString())
+                    .ToList();
+                foreach (var litho in lithologies)
+                {
+                    sql = $@"IF NOT EXISTS (SELECT 1 FROM r_lithology WHERE LITHOLOGY = '{litho}')" +
+                        $"BEGIN INSERT INTO r_lithology (LITHOLOGY, LONG_NAME) VALUES ('{litho}', '{litho}') END";
+                    _db.ExecuteSQL(sql, connector.ConnectionString);
+                }
             }
             catch (Exception ex)
             {
