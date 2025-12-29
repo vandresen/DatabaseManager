@@ -1,8 +1,10 @@
-﻿using DatabaseManager.ServerLessClient.Helpers;
+﻿//using DatabaseManager.BlazorComponents.Models;
+using DatabaseManager.ServerLessClient.Helpers;
 using DatabaseManager.ServerLessClient.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Runtime;
 
 namespace DatabaseManager.ServerLessClient.Services
 {
@@ -12,14 +14,22 @@ namespace DatabaseManager.ServerLessClient.Services
         private readonly string _taxonomyShare = "taxonomy";
         private readonly string _indexAPIBase;
         private readonly string _indexKey;
+        private readonly string _dataConfigurationKey;
+        private readonly string _dataConfigurationApiBase;
+        private readonly BlazorSingletonService _settings;
 
-        public IndexViewSqlLite(IHttpClientFactory clientFactory, IConfiguration configuration) : base(clientFactory)
+        public IndexViewSqlLite(IHttpClientFactory clientFactory, IConfiguration configuration, BlazorSingletonService settings) : base(clientFactory)
         {
             _clientFactory = clientFactory;
             _indexAPIBase = configuration["ServiceUrls:IndexAPI"]
                 ?? throw new InvalidOperationException("Missing ServiceUrls:IndexAPI");
             _indexKey = configuration["ServiceUrls:IndexKey"]
                 ?? throw new InvalidOperationException("Missing ServiceUrls:IndexKey");
+            _dataConfigurationKey = configuration["ServiceUrls:DataConfigurationKey"]
+                ?? throw new InvalidOperationException("Missing ServiceUrls:DataConfigurationKey");
+            _dataConfigurationApiBase = configuration["ServiceUrls:DataConfigurationAPI"]
+                ?? throw new InvalidOperationException("Missing ServiceUrls:DataConfigurationAPI");
+            _settings = settings;
         }
 
         public async Task CreateProject(string project)
@@ -132,9 +142,33 @@ namespace DatabaseManager.ServerLessClient.Services
             
         }
 
-        public Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)
+        public async Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)
         {
-            throw new NotImplementedException();
+            List<IndexFileDefinition> def = new List<IndexFileDefinition>();
+            string url = _dataConfigurationApiBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={_taxonomyShare}&name={fileName}", _dataConfigurationKey);
+            Console.WriteLine($"GetIndexFileDefs: url = {url}");
+
+            try
+            {
+                ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+                {
+                    ApiType = SD.ApiType.GET,
+                    AzureStorage = _settings.AzureStorage,
+                    Url = url
+                });
+                if (response?.IsSuccess != true || response.Result == null)
+                {
+                    Console.WriteLine($"GetIndexFileDefs: Request failed or response was null. " +
+                                      $"Errors: {string.Join(";", response?.ErrorMessages ?? new List<string>())}");
+                    return null;
+                }
+                def = JsonConvert.DeserializeObject<List<IndexFileDefinition>>(response.Result.ToString());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GetIndexFileDefs: Exception - {ex.Message}");
+            }
+            return def;
         }
 
         public async Task<List<string>> GetIndexProjects()
@@ -169,8 +203,6 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task<List<IndexFileData>> GetIndexTaxonomy(string source)
         {
-            
-
             try
             {
                 IndexModel idx = await GetSingleIndexItem(source, 1);
@@ -249,14 +281,66 @@ namespace DatabaseManager.ServerLessClient.Services
             }
         }
 
-        public Task<List<IndexFileList>> GetTaxonomies()
+        public async Task<List<IndexFileList>> GetTaxonomies()
         {
-            throw new NotImplementedException();
+            List<IndexFileList> result = new List<IndexFileList>();
+            string url = _dataConfigurationApiBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={_taxonomyShare}", _dataConfigurationKey);
+            Console.WriteLine($"GetSingleIndexItem: url = {url}");
+            try
+            {
+                ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+                {
+                    ApiType = SD.ApiType.GET,
+                    AzureStorage = _settings.AzureStorage,
+                    Url = url
+                });
+                if (response?.IsSuccess != true || response.Result == null)
+                {
+                    Console.WriteLine($"GetTaxonomies: Request failed or response was null. " +
+                                      $"Errors: {string.Join(";", response?.ErrorMessages ?? new List<string>())}");
+                    return null;
+                }
+                List<string> files = JsonConvert.DeserializeObject<List<string>>(response.Result.ToString());
+                foreach (string file in files)
+                {
+                    result.Add(new IndexFileList()
+                    {
+                        Name = file
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GetTaxonomies: Exception - {ex.Message}");
+            }
+            return result;
         }
 
-        public Task SaveIndexFileDefs(List<IndexFileDefinition> indexDef, string fileName)
+        public async Task SaveIndexFileDefs(List<IndexFileDefinition> indexDef, string fileName)
         {
-            throw new NotImplementedException();
+            string url = _dataConfigurationApiBase.BuildFunctionUrl("/api/DataConfiguration", $"folder={_taxonomyShare}&name={fileName}", _dataConfigurationKey);
+            Console.WriteLine($"GetSingleIndexItem: url = {url}");
+            var jsonIndexDef = JsonConvert.SerializeObject(indexDef);
+
+            try
+            {
+                ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+                {
+                    ApiType = SD.ApiType.POST,
+                    AzureStorage = _settings.AzureStorage,
+                    Url = url,
+                    Data = indexDef
+                });
+                if (response?.IsSuccess != true || response.Result == null)
+                {
+                    Console.WriteLine($"SaveIndexFileDefs: Request failed or response was null. " +
+                                      $"Errors: {string.Join(";", response?.ErrorMessages ?? new List<string>())}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SaveIndexFileDefs: Exception - {ex.Message}");
+            }
         }
 
         private static IndexFileData ProcessJTokens(JToken token)

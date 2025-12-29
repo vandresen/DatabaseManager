@@ -72,7 +72,6 @@ namespace DatabaseManager.ServerLessClient
             services.AddHttpClient<DatabaseManager.ServerLessClient.Services.IDataSources, DatabaseManager.ServerLessClient.Services.DataSources>();
             services.AddHttpClient<IDataModelService, DataModelService>();
             services.AddHttpClient<IDataConfiguration, DataConfiguration>();
-            //services.AddHttpClient<IDataConfigurationService, DataConfigurationService>();
             services.AddHttpClient<IRuleService, RuleService>();
             services.AddHttpClient<IReport, ReportService>();
 
