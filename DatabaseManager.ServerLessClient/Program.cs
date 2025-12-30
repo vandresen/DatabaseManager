@@ -61,9 +61,6 @@ namespace DatabaseManager.ServerLessClient
 
         private static void ConfigureServices(IServiceCollection services, bool sqlite)
         {
-            IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
-            services.AddSingleton(mapper);
-
             services.AddSingleton<BlazorSingletonService>();
             services.AddSingleton<DatabaseManager.Shared.SingletonServices>();
             services.AddBlazoredLocalStorage();
