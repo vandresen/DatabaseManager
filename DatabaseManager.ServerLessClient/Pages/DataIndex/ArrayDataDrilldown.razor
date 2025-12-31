@@ -1,179 +1,206 @@
 ﻿@page "/arraydatadrilldown/{Id:int}"
-@inject BlazorSingletonService settings
-@inject IIndexView indexData
-@inject NavigationManager nvm
+
 @using MudBlazor
+@using Newtonsoft.Json.Linq
 @using Plotly.Blazor
 @using Plotly.Blazor.Traces
 @using Plotly.Blazor.Traces.ScatterLib
 @using Plotly.Blazor.LayoutLib
 
+@inject BlazorSingletonService settings
+@inject IIndexView indexData
+@inject NavigationManager nvm
+
 <h3>Array Data Drilldown</h3>
 
 <br />
-<p>Name: @dataName</p>
+<p><strong>Name:</strong> @dataName</p>
 
-@if (TooManyArrays)
+@if (tooManyArrays)
 {
-    <text>It only support data types with max two arrays</text>
-    <br />
+    <MudAlert Severity="Severity.Warning">
+        This view only supports data types with a maximum of two arrays.
+    </MudAlert>
 }
-else if (dataTexts == null)
+else if (isLoading)
 {
-    <br/>
-    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
-    <br/>
-    <text>Loading...</text>
-    <br />
+    <MudProgressCircular Color="Color.Primary" Indeterminate />
+    <p>Loading...</p>
 }
 else
 {
-    <MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Primary" >
+    <MudTabs Elevation="4" Rounded Centered Color="Color.Primary">
+
         <MudTabPanel Text="Data Table">
-            <MudTable Items="@dataArray" Hover="true" Height="600px" Striped="true" 
-                Bordered="true" Dense="true" FixedHeader="true" Virtualize="true">
-                <ColGroup>
-                    <col style="width:30px;" />
-                    <col style="width:30px;" />
-                </ColGroup>
+            <MudTable Items="dataArray"
+                      Dense
+                      Hover
+                      Bordered
+                      Striped
+                      FixedHeader
+                      Height="600px"
+                      Virtualize>
+
                 <HeaderContent>
-                    <MudTh style="background-color:lightgray">@header1</MudTh>
-                    <MudTh style="background-color:lightgray">@header2</MudTh>
+                    <MudTh>@header1</MudTh>
+                    <MudTh>@header2</MudTh>
                 </HeaderContent>
+
                 <RowTemplate>
-                    <MudTd DataLabel=@header1>@context.Array1</MudTd>
-                    <MudTd DataLabel=@header2>@context.Array2</MudTd>
+                    <MudTd DataLabel="@header1">@context.Array1</MudTd>
+                    <MudTd DataLabel="@header2">@context.Array2</MudTd>
                 </RowTemplate>
-        </MudTable>
-    </MudTabPanel>
-    <MudTabPanel Text="Chart">
-        <PlotlyChart @bind-Config="config" @bind-Layout="layout" @bind-Data="data" @ref="chart"/>
-    </MudTabPanel>
-</MudTabs>
-    
+
+            </MudTable>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Chart">
+            <PlotlyChart @ref="chart"
+                         Data="plotData"
+                         Layout="layout"
+                         Config="config" />
+        </MudTabPanel>
+
+    </MudTabs>
 }
 
 <br />
-<button class="btn btn-primary" @onclick="GoToHome">
+<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="GoToHome">
     Home Page
-</button>
+</MudButton>
 
 @code {
+
     [Parameter] public int Id { get; set; }
-    public IndexModel index;
-    private List<string> dataTexts;
-    public List<string> headers;
-    private List<DataArray> dataArray;
-    private bool TooManyArrays = false;
-    private string header1 = "1";
-    private string header2 = "2";
-    private string dataName = "";
-    PlotlyChart chart;
-    Config config = new Config();
-    Layout layout = new Layout();
-    IList<ITrace> data = new List<ITrace>();
-    private string indexSource;
+
+    private bool isLoading = true;
+    private bool tooManyArrays;
+
+    private string dataName = string.Empty;
+    private string header1 = string.Empty;
+    private string header2 = string.Empty;
+
+    private List<DataArray> dataArray = new();
+
+    private PlotlyChart chart;
+    private Config config = new();
+    private Layout layout = new();
+    private IList<ITrace> plotData = new List<ITrace>();
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            Console.WriteLine($"Fetch data for {Id}");
-            if (SD.Sqlite) indexSource = settings.Project;
-            else indexSource = settings.TargetConnector;
-            index = await indexData.GetSingleIndexItem(indexSource, Id);
+            string indexSource = SD.Sqlite
+                ? settings.Project
+                : settings.TargetConnector;
+
+            var index = await indexData.GetSingleIndexItem(indexSource, Id);
+            if (index == null)
+                return;
+
             dataName = index.DataName;
 
-            if (index != null)
+            JObject dataObject = JObject.Parse(index.JsonDataObject);
+
+            var taxonomyList = await indexData.GetIndexTaxonomy(indexSource);
+            var taxonomy = taxonomyList.FirstOrDefault(t => t.DataName == index.DataType);
+
+            if (taxonomy == null)
             {
-                string jsonData = index.JsonDataObject;
-                JObject dataObject = JObject.Parse(jsonData);
-                List<IndexFileData> taxonomyList = await indexData.GetIndexTaxonomy(indexSource);
-                string dataType = index.DataType;
-                IndexFileData taxonomy = taxonomyList.FirstOrDefault(s => s.DataName == dataType);
-                List<string> headers = new List<string>();
-                foreach (var item in taxonomy.Arrays)
-                {
-                    var col = item.Value<string>("Attribute");
-                    headers.Add(col);
-                }
-
-                if (headers.Count > 2)
-                {
-                    TooManyArrays = true;
-                }
-                else
-                {
-                    dataTexts = new List<string>();
-                    foreach (var item in headers)
-                    {
-                        string value = dataObject[item].ToString();
-                        string txt = $"{item}: {value}";
-                        dataTexts.Add(txt);
-                    }
-
-                }
-                header1 = headers[0];
-                header2 = headers[1];
-                double[] array1 = dataObject[headers[0]].ToString().ConvertStringToArray();
-                double[] array2 = dataObject[headers[1]].ToString().ConvertStringToArray();
-                dataArray = new List<DataArray>();
-                for (int i = 0; i < array1.Length; i++)
-                {
-                    dataArray.Add(new DataArray { Array1 = array1[i], Array2 = array2[i] });
-                }
-
-                List<object> x = new List<object>();
-                List<object> y = new List<object>();
-                for (int i = 0; i < array1.Length; i++ )
-                {
-                    double number = array1[i];
-                    x.Add(number);
-                    number = array2[i];
-                    y.Add(number);
-                }
-
-                layout = new Layout
-                {
-                    YAxis = new List<YAxis>
-                    {
-                        new YAxis
-                        {
-                            Title = new Plotly.Blazor.LayoutLib.YAxisLib.Title
-                            {
-                                Text = header2
-                            }
-                        }
-                    },
-                    XAxis = new List<XAxis>
-                    {
-                        new XAxis
-                        {
-                            Title = new Plotly.Blazor.LayoutLib.XAxisLib.Title
-                            {
-                                Text = header1
-                            }
-                        }
-                    }
-                };
-
-
-                data = new List<ITrace>
-                {
-                    new Scatter
-                    {
-                        Name = "ScatterTrace",
-                        Mode = ModeFlag.Lines,
-                        X = x,
-                        Y = y 
-                    }
-                };
+                tooManyArrays = true;
+                return;
             }
+
+            var headers = new List<string>();
+            foreach (var item in taxonomy.Arrays)
+            {
+                var attribute = item.Value<string>("Attribute");
+                if (!string.IsNullOrWhiteSpace(attribute))
+                {
+                    headers.Add(attribute);
+                }
+            }
+
+            if (headers.Count > 2)
+            {
+                tooManyArrays = true;
+                return;
+            }
+
+            header1 = headers[0];
+            header2 = headers[1];
+
+            double[] array1 = dataObject[header1]?.ToString().ConvertStringToArray() ?? Array.Empty<double>();
+            double[] array2 = dataObject[header2]?.ToString().ConvertStringToArray() ?? Array.Empty<double>();
+
+            int len = Math.Min(array1.Length, array2.Length);
+
+            for (int i = 0; i < len; i++)
+            {
+                dataArray.Add(new DataArray
+                {
+                    Array1 = array1[i],
+                    Array2 = array2[i]
+                });
+            }
+
+            BuildChart(array1, array2);
+
+            isLoading = false;
+
+            await InvokeAsync(async () =>
+            {
+                if (chart != null)
+                    await chart.React();
+            });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Errors: {ex}");
+            Console.WriteLine($"ArrayDataDrilldown error: {ex}");
         }
+    }
+
+    private void BuildChart(double[] xValues, double[] yValues)
+    {
+        var x = xValues.Cast<object>().ToList();
+        var y = yValues.Cast<object>().ToList();
+
+        layout = new Layout
+        {
+            XAxis = new List<XAxis>
+            {
+                new XAxis
+                {
+                    Title = new Plotly.Blazor.LayoutLib.XAxisLib.Title
+                    {
+                        Text = header1
+                    }
+                }
+            },
+            YAxis = new List<YAxis>
+    {
+        new YAxis
+        {
+            Title = new Plotly.Blazor.LayoutLib.YAxisLib.Title
+            {
+                Text = header2
+            }
+        }
+    }
+        };
+
+
+        plotData = new List<ITrace>
+        {
+            new Scatter
+            {
+                Name = $"{header1} vs {header2}",
+                Mode = ModeFlag.Lines | ModeFlag.Markers,
+                X = x,
+                Y = y
+            }
+        };
     }
 
     private void GoToHome()
@@ -181,7 +208,7 @@ else
         nvm.NavigateTo("/");
     }
 
-    public class DataArray
+    private sealed class DataArray
     {
         public double Array1 { get; set; }
         public double Array2 { get; set; }
