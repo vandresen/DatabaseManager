@@ -87,7 +87,7 @@ namespace DatabaseManager.ServerLessClient.Services
             
         }
 
-        public async Task<T> SavePipeline<T>(DataOpsPipes pipe, List<DatabaseManager.Shared.PipeLine> tubes)
+        public async Task<T> SavePipeline<T>(DataOpsPipes pipe, List<PipeLine> tubes)
         {
             string name = pipe.Name;
             string url = SD.DataOpsManageAPIBase.BuildFunctionUrl($"/api/SavePipeline", $"Name={name}", SD.DataOpsManageKey);

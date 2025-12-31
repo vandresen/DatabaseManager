@@ -10,6 +10,7 @@
     <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
     <PackageReference Include="BlazorTable" Version="1.17.0" />
 	<PackageReference Include="dymaptic.GeoBlazor.Core" Version="4.4.0" />
+	<PackageReference Include="KdTree" Version="1.4.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.4" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
@@ -18,10 +19,6 @@
     <PackageReference Include="Plotly.Blazor" Version="6.0.2" />
     <PackageReference Include="System.Net.Http.Json" Version="8.0.0" />
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\DatabaseManager.BlazorComponents\DatabaseManager.BlazorComponents.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -41,9 +41,9 @@ else
     DataQCParameters qcParms = new DataQCParameters();
     public PredictionParameters predictionParms = new PredictionParameters();
     TransferParameters transferParms = new TransferParameters();
-    List<DatabaseManager.Shared.PipeLine> tubes = new List<DatabaseManager.Shared.PipeLine>();
-    public List<DatabaseManager.Shared.ConnectParameters> connectParameters;
-    DatabaseManager.Shared.PipeLine tube = new DatabaseManager.Shared.PipeLine();
+    List<PipeLine> tubes = new List<PipeLine>();
+    public List<ConnectParameters> connectParameters;
+    PipeLine tube = new PipeLine();
     DatabaseManager.ServerLessClient.Models.ResponseDto response;
     string TubeType = "";
     int priority;
@@ -51,10 +51,10 @@ else
     protected override async Task OnInitializedAsync()
     {
         response = await dataSources.GetSources<DatabaseManager.ServerLessClient.Models.ResponseDto>();
-        connectParameters = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.ConnectParameters>>(Convert.ToString(response.Result));
+        connectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
         Console.WriteLine($"In EditTube, number of connectors found is {connectParameters.Count}");
         response = await ops.GetPipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(Name);
-        tubes = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.PipeLine>>(Convert.ToString(response.Result));
+        tubes = JsonConvert.DeserializeObject<List<PipeLine>>(Convert.ToString(response.Result));
         tube = tubes.FirstOrDefault(x => x.Id == id);
         Console.WriteLine($"In EditTube, number of tubes found is {tubes.Count}");
         if (tube != null)
@@ -104,7 +104,7 @@ else
         }
         else if (TubeType == "DataTransfer")
         {
-            DatabaseManager.Shared.ConnectParameters sourceConnector = connectParameters.FirstOrDefault(obj => obj.SourceName == transferParms.SourceName);
+            ConnectParameters sourceConnector = connectParameters.FirstOrDefault(obj => obj.SourceName == transferParms.SourceName);
             if (sourceConnector != null)
             {
                 transferParms.SourceType = sourceConnector.SourceType;
@@ -119,8 +119,8 @@ else
         }
         tube.Parameters = jsonString;
         DataOpsPipes pipe = new DataOpsPipes { Name = Name };
-        List<DatabaseManager.Shared.PipeLine> sortedTubes = tubes.OrderBy(o => o.Priority).ToList();
-        response = await ops.SavePipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(pipe, sortedTubes);
+        List<PipeLine> sortedTubes = tubes.OrderBy(o => o.Priority).ToList();
+        response = await ops.SavePipeline<ResponseDto>(pipe, sortedTubes);
         navigationManager.NavigateTo($"/dataops/edit/{Name}");
     }
 }

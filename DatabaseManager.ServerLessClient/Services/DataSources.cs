@@ -1,6 +1,5 @@
-﻿using DatabaseManager.ServerLessClient.Models;
-using DatabaseManager.BlazorComponents.Extensions;
-using System.Xml.Linq;
+﻿using DatabaseManager.ServerLessClient.Helpers;
+using DatabaseManager.ServerLessClient.Models;
 
 namespace DatabaseManager.ServerLessClient.Services
 {
@@ -74,11 +73,6 @@ namespace DatabaseManager.ServerLessClient.Services
                 Url = url,
                 Data = connector
             });
-            //ResponseDto response = await _ds.CreateDataSourceAsync<ResponseDto>(connectParameters);
-            //if (!response.IsSuccess)
-            //{
-            //    throw new ApplicationException(String.Join("; ", response.ErrorMessages));
-            //}
         }
     }
 }

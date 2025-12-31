@@ -1,7 +1,7 @@
 ﻿@page "/"
 @inject ILocalStorageService localStorage
 @inject BlazorSingletonService settings
-@inject DatabaseManager.Shared.SingletonServices settings2
+@* @inject DatabaseManager.Shared.SingletonServices settings2 *@
 @inject HttpClient client
 @inject IPopupMessage displayMessage
 @inject NavigationManager navigationManager
@@ -101,17 +101,17 @@ else
             Console.WriteLine($"SD.DataModelAPI = {SD.DataModelAPIBase}");
             Console.WriteLine($"SD.EsriKey = {SD.EsriKey}");
             settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
-            settings2.AzureStorage = settings.AzureStorage;
-            settings2.IndexAPIBase = SD.IndexAPIBase;
-            settings2.IndexKey = SD.IndexKey;
-            settings2.DataConfigurationAPIBase = SD.DataConfigurationAPIBase;
-            settings2.DataConfigurationKey = SD.DataConfigurationKey;
-            settings2.DataModelAPIBase = SD.DataModelAPIBase;
-            settings2.DataModelKey = SD.DataModelKey;
-            settings2.DataRuleAPIBase = SD.DataRuleAPIBase;
-            settings2.DataRuleKey = SD.DataRuleKey;
-            settings2.DataTransferAPIBase = SD.DataTransferKey;
-            settings2.DataTransferKey = SD.DataTransferKey;
+            // settings2.AzureStorage = settings.AzureStorage;
+            // settings2.IndexAPIBase = SD.IndexAPIBase;
+            // settings2.IndexKey = SD.IndexKey;
+            // settings2.DataConfigurationAPIBase = SD.DataConfigurationAPIBase;
+            // settings2.DataConfigurationKey = SD.DataConfigurationKey;
+            // settings2.DataModelAPIBase = SD.DataModelAPIBase;
+            // settings2.DataModelKey = SD.DataModelKey;
+            // settings2.DataRuleAPIBase = SD.DataRuleAPIBase;
+            // settings2.DataRuleKey = SD.DataRuleKey;
+            // settings2.DataTransferAPIBase = SD.DataTransferKey;
+            // settings2.DataTransferKey = SD.DataTransferKey;
             Console.WriteLine($"Azure settings: {settings.AzureStorage}");
             Console.WriteLine($"Sqlite = {SD.Sqlite}");
             sqlite = SD.Sqlite;
@@ -127,7 +127,7 @@ else
             }
             else
             {
-                DatabaseManager.BlazorComponents.Models.ResponseDto response = await dataSourceService.GetSources<DatabaseManager.BlazorComponents.Models.ResponseDto>();
+                ResponseDto response = await dataSourceService.GetSources<ResponseDto>();
                 if (response != null && response.IsSuccess)
                 {
                     ConnectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
@@ -174,8 +174,8 @@ else
         var connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
         settings.TargetConnector = selectedString;
         settings.DataAccessDefinition = connector.DataAccessDefinition;
-        settings2.TargetConnector = selectedString;
-        settings2.DataAccessDefinition = connector.DataAccessDefinition;
+        // settings2.TargetConnector = selectedString;
+        // settings2.DataAccessDefinition = connector.DataAccessDefinition;
         await GetIndexData();
     }
 

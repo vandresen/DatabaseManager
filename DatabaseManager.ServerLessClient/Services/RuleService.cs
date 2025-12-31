@@ -1,7 +1,6 @@
 ﻿using DatabaseManager.ServerLessClient.Models;
 using DatabaseManager.ServerLessClient.Helpers;
 using Newtonsoft.Json;
-using DatabaseManager.BlazorComponents.Services;
 
 namespace DatabaseManager.ServerLessClient.Services
 {

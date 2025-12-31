@@ -24,14 +24,14 @@ else
 @code {
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public DataQCParameters DataQcParms { get; set; }
-    List<DatabaseManager.Shared.ConnectParameters> connectParameters;
+    List<ConnectParameters> connectParameters;
     public string[] options { get; set; }
     DatabaseManager.ServerLessClient.Models.ResponseDto response;
 
     protected override async Task OnInitializedAsync()
     {
         response = await dataSources.GetSources<DatabaseManager.ServerLessClient.Models.ResponseDto>();
-        connectParameters = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.ConnectParameters>>(Convert.ToString(response.Result));
+        connectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
         options = connectParameters.Select(x => x.SourceName).ToArray();
     }
 }

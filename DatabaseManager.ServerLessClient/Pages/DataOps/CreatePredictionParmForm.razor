@@ -24,7 +24,7 @@ else
 @code {
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public PredictionParameters PredictioncParms { get; set; }
-    List<DatabaseManager.Shared.ConnectParameters> connectParameters;
+    List<ConnectParameters> connectParameters;
     DatabaseManager.ServerLessClient.Models.ResponseDto response;
     public string[] options { get; set; }
 
@@ -32,7 +32,7 @@ else
     {
         response = await dataSources.GetSources<DatabaseManager.ServerLessClient.Models.ResponseDto>();
         Console.WriteLine(response.Result);
-        connectParameters = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.ConnectParameters>>(Convert.ToString(response.Result));
+        connectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
         Console.WriteLine($"Number of options: {connectParameters.Count}");
         options = connectParameters.Select(x => x.SourceName).ToArray();
     }

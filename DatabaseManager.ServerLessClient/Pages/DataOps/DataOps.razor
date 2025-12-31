@@ -43,7 +43,7 @@ input {
     string pipelineName;
     private string statusMessage = "None running";
     List<DataOpsPipes> pipeList;
-    List<DatabaseManager.Shared.PipeLine> pipelines;
+    List<PipeLine> pipelines;
     int pageSize = 10;
     DatabaseManager.ServerLessClient.Models.ResponseDto response;
 
@@ -104,7 +104,7 @@ input {
         try
         {
             response = await dataOps.GetPipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(name);
-            pipelines = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.PipeLine>>(Convert.ToString(response.Result));
+            pipelines = JsonConvert.DeserializeObject<List<PipeLine>>(Convert.ToString(response.Result));
             Console.WriteLine($"Number of pipes are {pipelines.Count}");
 
             List<DataOpParameters> parms = new List<DataOpParameters>();

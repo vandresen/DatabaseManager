@@ -30,7 +30,7 @@ else
 
 @code {
     [Parameter] public TransferParameters TransferParms { get; set; }
-    [Parameter] public List<DatabaseManager.Shared.ConnectParameters> Connectors { get; set; }
+    [Parameter] public List<ConnectParameters> Connectors { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
 
     public string[] options { get; set; }

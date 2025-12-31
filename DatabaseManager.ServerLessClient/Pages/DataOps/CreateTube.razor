@@ -50,14 +50,14 @@ else
     public DataQCParameters qcParms = new DataQCParameters();
     public TransferParameters transferParms = new TransferParameters();
     public PredictionParameters predictionParms = new PredictionParameters();
-    public List<DatabaseManager.Shared.ConnectParameters> connectParameters;
+    public List<ConnectParameters> connectParameters;
     DatabaseManager.ServerLessClient.Models.ResponseDto response;
     int priority = 0;
 
     protected override async Task OnInitializedAsync()
     {
         response = await dataSources.GetSources<DatabaseManager.ServerLessClient.Models.ResponseDto>();
-        connectParameters = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.ConnectParameters>>(Convert.ToString(response.Result));
+        connectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
         if (TubeType == "CreateIndex")
         {
             indexParms.TargetName = singleton.TargetConnector;
@@ -85,7 +85,7 @@ else
         Console.WriteLine($"Priority is {priority}");
         string jsonString = "";
         response = await ops.GetPipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(Name);
-        List<DatabaseManager.Shared.PipeLine> tubes = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.PipeLine>>(Convert.ToString(response.Result));
+        List<PipeLine> tubes = JsonConvert.DeserializeObject<List<PipeLine>>(Convert.ToString(response.Result));
         if (TubeType == "CreateIndex")
         {
             jsonString = JsonConvert.SerializeObject(indexParms);
@@ -103,7 +103,7 @@ else
         }
         else if (TubeType == "DataTransfer")
         {
-            DatabaseManager.Shared.ConnectParameters sourceConnector = connectParameters.FirstOrDefault(obj => obj.SourceName == transferParms.SourceName);
+            ConnectParameters sourceConnector = connectParameters.FirstOrDefault(obj => obj.SourceName == transferParms.SourceName);
             if (sourceConnector != null)
             {
                 transferParms.SourceType = sourceConnector.SourceType;
@@ -119,13 +119,13 @@ else
         int maxId = 1;
         if (tubes == null || tubes.Count == 0)
         {
-            tubes = new List<DatabaseManager.Shared.PipeLine>();
+            tubes = new List<PipeLine>();
         }
         else
         {
             maxId = tubes.Select(i => i.Id).Max() + 1;
         }
-        tubes.Add(new DatabaseManager.Shared.PipeLine
+        tubes.Add(new PipeLine
         {
             Id = maxId,
             Priority = priority,
@@ -133,7 +133,7 @@ else
             Parameters = jsonString
         });
         DataOpsPipes pipe = new DataOpsPipes { Name = Name };
-        List<DatabaseManager.Shared.PipeLine> sortedTubes = tubes.OrderBy(o => o.Priority).ToList();
+        List<PipeLine> sortedTubes = tubes.OrderBy(o => o.Priority).ToList();
         response = await ops.SavePipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(pipe, sortedTubes);
         navigationManager.NavigateTo($"/dataops/edit/{Name}");
     }

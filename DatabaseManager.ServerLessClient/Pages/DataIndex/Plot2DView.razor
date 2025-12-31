@@ -5,105 +5,103 @@
 
 @if (noData)
 {
-        <br />
-        <p>Not enough data points</p>
+    <br />
+    <p>Not enough data points</p>
 }
 else if (DataType == "WellBore")
 {
-    <PlotlyChart style="height: 60vh; min-height: 150px" Layout="layout" Config="config" Data="data" Id="MapChart" @ref="chart" />
+    <PlotlyChart style="height: 60vh; min-height: 150px"
+                 Layout="layout"
+                 Config="config"
+                 Data="data"
+                 Id="MapChart" />
 }
 else
 {
-        <br />
-        <p>No data available for surface view</p>
+    <br />
+    <p>No data available for surface view</p>
 }
 
 @code {
     [Parameter] public string DataType { get; set; }
-    private bool noData = false;
-    [Parameter] public List<DmsIndex> Index { get; set; }
+    [Parameter] public List<DmsIndex>? Index { get; set; }
 
-    private List<TwoDPoint> _points;
+    private bool noData;
+    private IList<ITrace> data = new List<ITrace>();
 
-    PlotlyChart chart;
-    Config config = new Config();
-    Layout layout = new Layout
-        {
-            Title = new Title
-            {
-                Text = "2D Plotview"
-            },
-            YAxis = new List<YAxis>
-            {
-                new YAxis
-                {
-                    ShowGrid = false,
-                    ShowLine = true,
-                    ShowTickLabels = true,
-                    LineWidth = 2,
-                    Mirror = Plotly.Blazor.LayoutLib.YAxisLib.MirrorEnum.True,
-                    Ticks = Plotly.Blazor.LayoutLib.YAxisLib.TicksEnum.Outside
-                }
-            },
-            XAxis = new List<XAxis>
-            {
-                new XAxis
-                {
-                    ShowGrid = false,
-                    ShowLine = true,
-                    ShowTickLabels = true,
-                    LineWidth = 2,
-                    Mirror = Plotly.Blazor.LayoutLib.XAxisLib.MirrorEnum.True,
-                    Ticks = Plotly.Blazor.LayoutLib.XAxisLib.TicksEnum.Outside
-                }
-            }
-        };
-    IList<ITrace> data = new List<ITrace>();
-
-    protected override async Task OnInitializedAsync()
+    private readonly Layout layout = new()
     {
-        _points = new List<TwoDPoint>();
-        List<object> x = new List<object>();
-        List<object> y = new List<object>();
-        foreach (DmsIndex item in Index)
+        Title = new Title { Text = "2D Plotview" },
+        XAxis = new List<XAxis>
         {
-            bool use = true;
-            if (!string.IsNullOrEmpty(item.JsonData))
+            new XAxis
             {
-                double? lat = item.JsonData.GetNumberFromJson("SURFACE_LATITUDE");
-                double? lon = item.JsonData.GetNumberFromJson("SURFACE_LONGITUDE");
-                if (lat == null || lat == -99999.0) use = false;
-                if (lon == null || lon == -99999.0) use = false;
-                Console.WriteLine($"Lat = {lat}, Lon = {lon}");
-                if (use)
-                {
-                    TwoDPoint point = new TwoDPoint { xPoint = (double)lon, yPoint = (double)lat };
-                    _points.Add(point);
-                }
+                ShowGrid = false,
+                ShowLine = true,
+                ShowTickLabels = true,
+                LineWidth = 2,
+                Mirror = Plotly.Blazor.LayoutLib.XAxisLib.MirrorEnum.True,
+                Ticks = Plotly.Blazor.LayoutLib.XAxisLib.TicksEnum.Outside
             }
-        }
-        if (_points.Count < 1) noData = true;
-        foreach (var item in _points)
+        },
+        YAxis = new List<YAxis>
         {
-            x.Add(item.xPoint);
-            y.Add(item.yPoint);
-        }
-
-        data = new List<ITrace>
-        {
-            new Scatter
+            new YAxis
             {
-                Name = "ScatterTrace",
-                Mode = ModeFlag.Markers,
-                X = x,
-                Y = y
+                ShowGrid = false,
+                ShowLine = true,
+                ShowTickLabels = true,
+                LineWidth = 2,
+                Mirror = Plotly.Blazor.LayoutLib.YAxisLib.MirrorEnum.True,
+                Ticks = Plotly.Blazor.LayoutLib.YAxisLib.TicksEnum.Outside
+            }
         }
     };
+
+    private readonly Config config = new();
+
+    protected override void OnParametersSet()
+    {
+        BuildChartData();
     }
 
-    private class TwoDPoint
+    private void BuildChartData()
     {
-        public double? yPoint { get; set; }
-        public double? xPoint { get; set; }
+        data.Clear();
+        noData = true;
+
+        if (Index == null || Index.Count == 0)
+            return;
+
+        var x = new List<object>();
+        var y = new List<object>();
+
+        foreach (var item in Index)
+        {
+            if (string.IsNullOrWhiteSpace(item.JsonData))
+                continue;
+
+            double? lat = item.JsonData.GetNumberFromJson("SURFACE_LATITUDE");
+            double? lon = item.JsonData.GetNumberFromJson("SURFACE_LONGITUDE");
+
+            if (lat is null or -99999.0 || lon is null or -99999.0)
+                continue;
+
+            x.Add(lon.Value);
+            y.Add(lat.Value);
+        }
+
+        if (x.Count == 0)
+            return;
+
+        noData = false;
+
+        data.Add(new Scatter
+        {
+            Name = "ScatterTrace",
+            Mode = ModeFlag.Markers,
+            X = x,
+            Y = y
+        });
     }
 }

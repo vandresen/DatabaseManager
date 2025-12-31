@@ -23,16 +23,16 @@
 }
 else
 {
-    <Table TableItem="DatabaseManager.Shared.PipeLine" Items="tubes" PageSize="@pageSize" ColumnReorder="true">
-        <Column TableItem="DatabaseManager.Shared.PipeLine" Title="Action" Sortable="false">
+    <Table TableItem="PipeLine" Items="tubes" PageSize="@pageSize" ColumnReorder="true">
+        <Column TableItem="PipeLine" Title="Action" Sortable="false">
             <Template>
                 <a class="btn btn-primary" href="/edittube/@Name/@context.Id">Edit</a>
                 <button class="btn btn-danger" @onclick="@(() => DeleteTube(context.Id))">Delete</button>
             </Template>
         </Column>
-        <Column TableItem="DatabaseManager.Shared.PipeLine" Title="Priority" Field="@(x => x.Priority)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
-        <Column TableItem="DatabaseManager.Shared.PipeLine" Title="Tube Type" Field="@(x => x.ArtifactType)" Sortable="true" Filterable="true"></Column>
-        <Column TableItem="DatabaseManager.Shared.PipeLine" Title="Parameters" Field="@(x => x.Parameters)" Sortable="true" Filterable="true"></Column>
+        <Column TableItem="PipeLine" Title="Priority" Field="@(x => x.Priority)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
+        <Column TableItem="PipeLine" Title="Tube Type" Field="@(x => x.ArtifactType)" Sortable="true" Filterable="true"></Column>
+        <Column TableItem="PipeLine" Title="Parameters" Field="@(x => x.Parameters)" Sortable="true" Filterable="true"></Column>
         <Pager ShowPageNumber="true" ShowTotalCount="true" />
     </Table>
 }
@@ -40,7 +40,7 @@ else
 @code {
     [Parameter] public string Name { get; set; }
     private List<string> TubeTypes = new List<string>{ "DataTransfer", "CreateIndex", "DataQC", "Predictions"};
-    List<DatabaseManager.Shared.PipeLine> tubes;
+    List<PipeLine> tubes;
     private bool expandedState = false;
     private string showMenu = null;
     int pageSize = 10;
@@ -50,7 +50,7 @@ else
     {
         Console.WriteLine($"Edit data ops, name is {Name}");
         response = await dataOps.GetPipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(Name);
-        tubes = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.PipeLine>>(Convert.ToString(response.Result));
+        tubes = JsonConvert.DeserializeObject<List<PipeLine>>(Convert.ToString(response.Result));
     }
 
     private async Task DeleteTube(int id)
@@ -59,7 +59,7 @@ else
         {
             Console.WriteLine($"Delete tube with iod={id}");
             response = await dataOps.GetPipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(Name);
-            tubes = JsonConvert.DeserializeObject<List<DatabaseManager.Shared.PipeLine>>(Convert.ToString(response.Result));
+            tubes = JsonConvert.DeserializeObject<List<PipeLine>>(Convert.ToString(response.Result));
             tubes.RemoveAll(x => x.Id == id);
             DataOpsPipes pipe = new DataOpsPipes { Name = Name };
             response = await dataOps.SavePipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(pipe, tubes);
