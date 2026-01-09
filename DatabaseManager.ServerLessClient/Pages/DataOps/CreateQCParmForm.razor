@@ -1,5 +1,6 @@
 ﻿@using MudBlazor
-@inject DatabaseManager.ServerLessClient.Services.IDataSources dataSources
+@inject IDataSources dataSources
+@inject IIndexView idxView
 
 @if (options == null)
 {
@@ -25,13 +26,24 @@ else
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public DataQCParameters DataQcParms { get; set; }
     List<ConnectParameters> connectParameters;
-    public string[] options { get; set; }
+    public List<string> options { get; set; }
     DatabaseManager.ServerLessClient.Models.ResponseDto response;
 
     protected override async Task OnInitializedAsync()
     {
-        response = await dataSources.GetSources<DatabaseManager.ServerLessClient.Models.ResponseDto>();
-        connectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
-        options = connectParameters.Select(x => x.SourceName).ToArray();
+        if (SD.Sqlite)
+        {
+            options = await idxView.GetIndexProjects();
+            foreach (var option in options)
+            {
+                Console.WriteLine($"Option: {option}");
+            }
+        }
+        else
+        {
+            response = await dataSources.GetSources<DatabaseManager.ServerLessClient.Models.ResponseDto>();
+            connectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
+            options = connectParameters.Select(x => x.SourceName).ToList();
+        }
     }
 }

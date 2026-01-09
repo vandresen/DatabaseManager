@@ -64,14 +64,12 @@ namespace DatabaseManager.ServerLessClient
 
             services.AddHttpClient();
             services.AddHttpClient<IDataSources, DataSources>();
-            //services.AddHttpClient<IDataModelService, DataModelService>();
-            //services.AddHttpClient<IDataConfiguration, DataConfiguration>();
             services.AddHttpClient<IRuleService, RuleService>();
             services.AddHttpClient<IReport, ReportService>();
 
             //services.AddHttpClient<IDataIndexer, DataIndexerServerLess>();
 
-            services.AddScoped<Services.IDataSources, Services.DataSources>();
+            services.AddScoped<IDataSources, DataSources>();
             //services.AddScoped<IDataModelService, DataModelService>();
             //services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddScoped<IPopupMessage, PopupMessage>();
