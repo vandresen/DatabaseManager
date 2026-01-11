@@ -67,8 +67,6 @@ namespace DatabaseManager.ServerLessClient
             services.AddHttpClient<IRuleService, RuleService>();
             services.AddHttpClient<IReport, ReportService>();
 
-            //services.AddHttpClient<IDataIndexer, DataIndexerServerLess>();
-
             services.AddScoped<IDataSources, DataSources>();
             //services.AddScoped<IDataModelService, DataModelService>();
             //services.AddScoped<IDisplayMessage, DisplayMessage>();

@@ -13,7 +13,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public ReportService(IHttpClientFactory clientFactory, IConfiguration configuration) : base(clientFactory)
         {
             baseUrl = configuration["ServiceUrls:ReportApiBase"];
-            apiKey = configuration["ServiceUrls: ReportKey"];
+            apiKey = configuration["ServiceUrls:ReportKey"];
         }
 
         public async Task<List<QcResult>> GetResults(string source)

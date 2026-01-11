@@ -49,7 +49,9 @@ else
     protected override async Task OnInitializedAsync()
     {
         Console.WriteLine($"Target: {singleton.TargetConnector}");
-        if (string.IsNullOrEmpty(singleton.TargetConnector))
+        string source = singleton.TargetConnector;
+        if (SD.Sqlite) source = singleton.Project;
+        if (string.IsNullOrEmpty(source))
         {
             Console.WriteLine($"No connector");
             await displayMessage.DisplayErrorMessage("Please select a data connector");
@@ -57,7 +59,7 @@ else
         }
         try
         {
-            ResultList = await rp.GetResults(singleton.TargetConnector);
+            ResultList = await rp.GetResults(source);
             Console.WriteLine($"Number of report results are {ResultList.Count}");
         }
         catch (Exception ex)
