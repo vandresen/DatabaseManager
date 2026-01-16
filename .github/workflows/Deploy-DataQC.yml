@@ -25,7 +25,7 @@ jobs:
       shell: pwsh # For Linux, use bash
       run: |
         pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-        dotnet build DatabaseManager.Services.DataQC/DatabaseManager.Services.DataQC.csproj --configuration Release --output ./output
+        dotnet build DatabaseManager.Services.DataQuality/DatabaseManager.Services.DataQuality.csproj --configuration Release --output ./output
         popd
 
     - name: 'Run Azure Functions Action'
