@@ -127,7 +127,7 @@ input {
             for (int i = 0; i < 100; i++)
             {
                 DataOpsStatus status = await dataOps.GetStatus(result.statusQueryGetUri);
-                Console.WriteLine(status.runtimeStatus);
+                Console.WriteLine($"Runtime status: {status.runtimeStatus}");
                 statusMessage = status.runtimeStatus + ": " + status.customStatus;
                 StateHasChanged();
                 if (status.runtimeStatus == "Completed") 
@@ -135,6 +135,10 @@ input {
                     statusMessage = status.runtimeStatus;
                     StateHasChanged();
                     break; 
+                }
+                if (status.runtimeStatus == "Failed")
+                {
+                    Console.WriteLine("Pipeline failed");
                 }
                 await Task.Delay(1000);
             }
