@@ -1,3 +1,4 @@
+using DatabaseManager.Services.DataQuality.Models;
 using DatabaseManager.Services.DataQuality.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
@@ -15,6 +16,8 @@ builder.Services.AddScoped<IIndexAccess, IndexAccess>();
 builder.Services.AddScoped<IConfigFileService, ConfigFileService>();
 builder.Services.AddScoped<IDataQc, DataQcCore>();
 builder.Services.AddScoped<IDataSourceService, DataSourceService>();
+builder.Services.AddScoped<DataQcExecutionContext>();
+
 
 // Add Application Insights
 builder.Services

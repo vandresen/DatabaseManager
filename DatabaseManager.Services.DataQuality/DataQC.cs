@@ -17,15 +17,17 @@ public class DataQC
     private readonly IRuleAccess _rules;
     private readonly IIndexAccess _idxAccess;
     private readonly IDataQc _dataQc;
+    private readonly DataQcExecutionContext _execContext;
 
     public DataQC(ILogger<DataQC> logger, IConfiguration configuration, IRuleAccess rules,
-        IIndexAccess idxAccess, IDataQc dataQc)
+        IIndexAccess idxAccess, IDataQc dataQc, DataQcExecutionContext execContext)
     {
         _logger = logger;
         _configuration = configuration;
         _rules = rules;
         _idxAccess = idxAccess;
         _dataQc = dataQc;
+        _execContext = execContext;
     }
 
     [Function("DataQC")]
@@ -53,6 +55,8 @@ public class DataQC
                 {
                     PropertyNameCaseInsensitive = true
                 });
+
+            _execContext.AzureStorageConnection = parms?.AzureStorageKey;
 
             if (parms is null)
             {

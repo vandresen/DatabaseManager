@@ -10,20 +10,19 @@ namespace DatabaseManager.Services.DataQuality.Services
         private readonly ILogger<IndexAccess> _logger;
         private readonly string _indexAPIBase;
         private readonly string _indexApiKey;
-        private readonly string _azureStorageKey;
+        private readonly DataQcExecutionContext _execContext;
 
-        public IndexAccess(IHttpClientFactory clientFactory, ILogger<IndexAccess> logger, IConfiguration configuration) : base(clientFactory)
+        public IndexAccess(IHttpClientFactory clientFactory, ILogger<IndexAccess> logger, IConfiguration configuration,
+            DataQcExecutionContext execContext) : base(clientFactory)
         {
             _logger = logger;
+            _execContext = execContext; 
 
             _indexAPIBase = configuration["IndexAPI"]
                 ?? throw new InvalidOperationException("IndexAPI is not configured");
 
             _indexApiKey = configuration["IndexKey"]
                 ?? throw new InvalidOperationException("IndexKey is not configured");
-
-            _azureStorageKey = configuration["AzurestorageConnection"]
-                ?? throw new InvalidOperationException("AzurestorageConnection is not configured");
         }
 
         public async Task<T> GetEntiretyIndexes<T>(string dataSource, string dataType, string entiretyName, string parentType)
@@ -34,7 +33,7 @@ namespace DatabaseManager.Services.DataQuality.Services
             return await this.SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,
-                AzureStorage = _azureStorageKey,
+                AzureStorage = _execContext.AzureStorageConnection,
                 Url = url
             });
         }
@@ -46,7 +45,7 @@ namespace DatabaseManager.Services.DataQuality.Services
             return await this.SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,
-                AzureStorage = _azureStorageKey,
+                AzureStorage = _execContext.AzureStorageConnection,
                 Url = url
             });
         

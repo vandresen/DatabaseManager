@@ -10,21 +10,19 @@ namespace DatabaseManager.Services.DataQuality.Services
         private readonly ILogger<ConfigFileService> _logger;
         private readonly string _configApiBase;
         private readonly string _configApiKey;
-        private readonly string _azureStorageKey;
         private readonly string folder = "connectdefinition";
+        private readonly DataQcExecutionContext _execContext;
 
         public ConfigFileService(IHttpClientFactory clientFactory, ILogger<ConfigFileService> logger,
-            IConfiguration configuration) : base(clientFactory)
+            IConfiguration configuration, DataQcExecutionContext execContext) : base(clientFactory)
         {
             _logger = logger;
+            _execContext = execContext;
             _configApiBase = configuration["DataConfigurationAPI"]
                 ?? throw new InvalidOperationException("DataConfigurationAPI is not configured");
 
             _configApiKey = configuration["DataConfigurationKey"]
                 ?? throw new InvalidOperationException("DataConfigurationKey is not configured");
-
-            _azureStorageKey = configuration["AzurestorageConnection"]
-                ?? throw new InvalidOperationException("AzurestorageConnection is not configured");
         }
 
         public async Task<T> GetConfigurationFileAsync<T>(string name)
@@ -36,7 +34,7 @@ namespace DatabaseManager.Services.DataQuality.Services
             return await SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,
-                AzureStorage = _azureStorageKey,
+                AzureStorage = _execContext.AzureStorageConnection,
                 Url = url
             });
         }
