@@ -27,7 +27,7 @@ namespace DatabaseManager.Services.DataOps.ActivityFolder
             log.LogInformation($"CloseDataQC: Starting");
             DataOpParameters pipe = parms.Parameters;
             DataQCParameters qcParms = JObject.Parse(pipe.JsonParameters).ToObject<DataQCParameters>();
-            ResponseDto response = await _dataQc.CloseDataQc<ResponseDto>(qcParms.DataConnector, parms.Failures);
+            ResponseDto response = await _dataQc.CloseDataQc<ResponseDto>(qcParms.DataConnector, qcParms.IndexProject, parms.Failures);
             log.LogInformation($"CloseDataQC: Complete");
             return "Data QC Closed";
         }

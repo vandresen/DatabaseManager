@@ -10,6 +10,6 @@ namespace DatabaseManager.Services.DataOps.Services
     public interface IDataQc
     {
         Task<T> ExecuteDataQc<T>(DataQCParameters qcParms);
-        Task<T> CloseDataQc<T>(string source, List<RuleFailures> ruleFailures);
+        Task<T> CloseDataQc<T>(string source, string project, List<RuleFailures> ruleFailures);
     }
 }

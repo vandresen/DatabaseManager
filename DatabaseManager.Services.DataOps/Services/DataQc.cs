@@ -23,9 +23,8 @@ namespace DatabaseManager.Services.DataOps.Services
             _ruleAccess = ruleAccess;
         }
 
-        public async Task<T> CloseDataQc<T>(string source, List<RuleFailures> ruleFailures)
+        public async Task<T> CloseDataQc<T>(string source, string project, List<RuleFailures> ruleFailures)
         {
-            string project = "";
             ResponseDto response = new ResponseDto();
             try
             {
