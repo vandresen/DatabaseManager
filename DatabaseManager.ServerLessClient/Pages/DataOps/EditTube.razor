@@ -94,6 +94,7 @@ else
         }
         else if (TubeType == "DataQC")
         {
+            qcParms.IndexProject = qcParms.DataConnector;
             jsonString = JsonConvert.SerializeObject(qcParms);
             Console.WriteLine($"String is {jsonString}");
         }
