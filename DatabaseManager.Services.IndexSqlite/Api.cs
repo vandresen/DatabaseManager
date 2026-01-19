@@ -16,6 +16,7 @@
             app.MapGet("/Project", GetProjects);
             app.MapPost("/Project", CreateProject);
             app.MapDelete("/Project", DeleteProject);
+            app.MapPut("/Indexes", UpdateIndexes);
         }
 
         private static async Task<IResult> GetIndexes(string project, IIndexAccess idxAccess)
@@ -36,7 +37,7 @@
             try
             {
                 var results = await idxAccess.GetIndex(id, project);
-                if (results == null) 
+                if (results == null)
                 {
                     string newString = $"GetIndex: Index with id {id} could not be found";
                     response.ErrorMessages.Insert(0, newString);
@@ -171,15 +172,15 @@
             {
                 var results = await idxAccess.GetProjects();
                 List<string> projects = new();
-                foreach (var result in results) 
+                foreach (var result in results)
                 {
                     int indexOfEnd = result.IndexOf("pdo_qc_index");
 
                     if (indexOfEnd != -1)
                     {
                         string startsWith = result.Substring(0, indexOfEnd);
-                        if(string.IsNullOrEmpty(startsWith)) 
-                        { 
+                        if (string.IsNullOrEmpty(startsWith))
+                        {
                             projects.Add("Default");
                         }
                         else
@@ -240,6 +241,24 @@
                 string newString = $"DeleteProject: Could not delete project, {ex}";
                 response.ErrorMessages.Insert(0, newString);
             }
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> UpdateIndexes(List<IndexModel> indexes, string Name, string Project, IIndexAccess idxAccess)
+        {
+            ResponseDto response = new();
+            try
+            {
+                await idxAccess.UpdateIndexes(indexes, Project); 
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"UpdateIndexes: Could not update indexes in project, {ex}";
+                response.ErrorMessages.Insert(0, newString);
+            }
+
             return Results.Ok(response);
         }
     }

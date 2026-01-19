@@ -262,9 +262,14 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             throw new NotImplementedException();
         }
 
-        public Task UpdateIndexes(List<IndexModel> indexes, string connectionString)
+        public async Task UpdateIndexes(List<IndexModel> indexes, string project)
         {
-            throw new NotImplementedException();
+            if (indexes == null || indexes.Count == 0)
+                return;
+            _project = project;
+            _projectTable = GetProjectTable();
+            string sql = $"update {_projectTable} set QC_STRING = @QC_String, JSONDATAOBJECT = @JsonDataObject where INDEXID = @IndexId";
+            await _id.SaveDataSQL(sql, indexes, _connectionString);
         }
 
         public async Task BuildIndex(BuildIndexParameters idxParms)
