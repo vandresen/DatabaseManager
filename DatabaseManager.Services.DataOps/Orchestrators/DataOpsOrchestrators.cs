@@ -26,7 +26,7 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
                 }
                 else if (pipe.Name == "DataQC")
                 {
-
+                    log.LogInformation($"RunOrchestrator: Starting Data QC");
                     List<QcResult> qcList = await context.CallActivityAsync<List<QcResult>>("DataOps_InitDataQC", pipe);
                     var tasks = new Task<List<int>>[qcList.Count];
                     for (int i = 0; i < qcList.Count; i++)

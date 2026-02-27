@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "DatabaseManager.Services.Predictions": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7020",
+      "launchBrowser": false
+    }
+  }
+}
