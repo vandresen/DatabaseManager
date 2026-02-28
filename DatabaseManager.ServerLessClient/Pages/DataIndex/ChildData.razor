@@ -112,14 +112,30 @@
     private List<JObject> CreateDataTable()
     {
         List<JObject> dataTable = new List<JObject>();
-        string json = "";
+    
+        // First pass: collect all possible properties
+        HashSet<string> allProperties = new HashSet<string>();
         foreach (DmsIndex item in index)
         {
-            json = item.JsonData;
-            //Console.WriteLine($"Index item: {json}");
-            if (!string.IsNullOrEmpty(json))
+            if (!string.IsNullOrEmpty(item.JsonData))
             {
-                JObject token = JObject.Parse(json);
+                JObject token = JObject.Parse(item.JsonData);
+                foreach (JProperty prop in token.Properties())
+                    allProperties.Add(prop.Name);
+            }
+        }
+
+        // Second pass: build table and fill missing properties with null
+        foreach (DmsIndex item in index)
+        {
+            if (!string.IsNullOrEmpty(item.JsonData))
+            {
+                JObject token = JObject.Parse(item.JsonData);
+                foreach (string prop in allProperties)
+                {
+                    if (token.Property(prop) == null)
+                        token.Add(new JProperty(prop, JValue.CreateNull()));
+                }
                 token.Add(new JProperty("Children", item.NumberOfDataObjects));
                 token.Add(new JProperty("Id", item.Id));
                 dataTable.Add(token);
