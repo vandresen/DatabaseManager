@@ -20,3 +20,10 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: 'Resolve Project Dependencies Using Dotnet'
+      shell: pwsh # For Linux, use bash
+      run: |
+        pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+        dotnet build DatabaseManager.Services.DataQuality/DatabaseManager.Services.DataQuality.csproj --configuration Release --output ./output
+        popd
