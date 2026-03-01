@@ -28,6 +28,9 @@ jobs:
         dotnet build DatabaseManager.Services.Predictions/DatabaseManager.Services.Predictions.csproj --configuration Release --output ./output
         popd
 
+    - name: Debug publish profile
+      run: echo "${{ secrets.PREDICTION_PROFILE }}" | head
+
     - name: 'Run Azure Functions Action'
       uses: Azure/functions-action@v1
       id: fa
