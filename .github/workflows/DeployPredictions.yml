@@ -32,7 +32,7 @@ jobs:
       run: echo "${{ secrets.PREDICTION_PROFILE }}" | head
 
     - name: 'Run Azure Functions Action'
-      uses: Azure/functions-action@vv1.5.2
+      uses: Azure/functions-action@v1.5.2
       id: fa
       with:
         app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
