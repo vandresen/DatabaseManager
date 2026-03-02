@@ -37,4 +37,4 @@ jobs:
       shell: pwsh
       run: |
         Compress-Archive -Path './output/*' -DestinationPath './predictions.zip'
-        az functionapp deployment source config-zip --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --resource-group <your-rg> --src './predictions.zip'
+        az functionapp deployment source config-zip --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --resource-group petrodataonlineappfunctions --src './predictions.zip'
