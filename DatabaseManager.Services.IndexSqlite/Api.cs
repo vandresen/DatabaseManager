@@ -56,14 +56,19 @@
 
         private static async Task<IResult> GetDescendants(int id, string project, IIndexAccess idxAccess)
         {
+            ResponseDto response = new();
             try
             {
-                return Results.Ok(await idxAccess.GetDescendants(id, project));
+                var result = await idxAccess.GetDescendants(id, project);
+                response.IsSuccess = true;
+                response.Result = result;
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                response.IsSuccess = false;
+                response.ErrorMessages.Insert(0, $"GetNeighbors: Could not get neighbors for id {id}, {ex}");
             }
+            return Results.Ok(response);
         }
 
         private static async Task<IResult> GetNeighbors(int id, string project, IIndexAccess idxAccess)
