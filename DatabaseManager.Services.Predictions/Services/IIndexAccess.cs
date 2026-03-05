@@ -11,5 +11,6 @@ namespace DatabaseManager.Services.Predictions.Services
     {
         Task<T> GetIndexes<T>(string dataSource, string project, string dataType, string storageConnection);
         Task<T> UpdateIndexes<T>(List<IndexDto> indexes, string dataSource, string project, string storageConnection);
+        Task<T> GetDescendants<T>(int id, string dataSource, string project, string storageConnection);
     }
 }

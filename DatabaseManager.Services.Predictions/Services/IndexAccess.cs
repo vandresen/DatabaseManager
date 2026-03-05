@@ -2,7 +2,9 @@
 using DatabaseManager.Services.Predictions.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.ComponentModel.DataAnnotations;
 using System.Configuration;
+using System.Data.Common;
 
 namespace DatabaseManager.Services.Predictions.Services
 {
@@ -21,6 +23,18 @@ namespace DatabaseManager.Services.Predictions.Services
 
             _indexApiKey = configuration["IndexKey"]
                 ?? throw new InvalidOperationException("IndexKey is not configured");
+        }
+
+        public async Task<T> GetDescendants<T>(int id, string dataSource, string project, string storageConnection)
+        {
+            string url = _indexAPIBase.BuildFunctionUrl($"/GetDescendants/{id}", $"Name={dataSource}&Project={project}", _indexApiKey);
+            _logger.LogInformation($"Retrieving index data from url {url}");
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                AzureStorage = storageConnection,
+                Url = url
+            });
         }
 
         public async Task<T> GetIndexes<T>(string dataSource, string project, string dataType, string storageConnection)

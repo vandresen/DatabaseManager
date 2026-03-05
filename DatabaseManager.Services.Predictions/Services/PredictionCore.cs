@@ -73,7 +73,7 @@ namespace DatabaseManager.Services.Predictions.Services
                     }
                     if (result.Status == "Passed")
                     {
-                        UpdateQCString(index, rule, result);
+                        await UpdateQCString(index, rule, result, parms);
                         correctedIndexes.Add(index);
                         correctedObjects.Add(result.IndexId); 
                     }
@@ -99,7 +99,7 @@ namespace DatabaseManager.Services.Predictions.Services
             return result;
         }
 
-        private void UpdateQCString(IndexDto index, RuleModelDto rule, PredictionResult result)
+        private async Task UpdateQCString(IndexDto index, RuleModelDto rule, PredictionResult result, PredictionParameters parms)
         {
             string qcStr = index.QC_String;
             string failRule = rule.FailRule + ";";
@@ -113,6 +113,121 @@ namespace DatabaseManager.Services.Predictions.Services
                 qcStr = qcStr.Replace(failRule, pCode);
             }
             index.QC_String = qcStr;
+            await SavePrediction(index, result, qcStr, parms);
+        }
+
+        private async Task SavePrediction(IndexDto index, PredictionResult result, string qcStr, PredictionParameters parms)
+        {
+            if (result.SaveType == "Update")
+            {
+                await UpdateAction(result, qcStr);
+            }
+            else if (result.SaveType == "Insert")
+            {
+                await InsertAction(result);
+            }
+            else if (result.SaveType == "Delete")
+            {
+                await DeleteAction(index, result, parms);
+            }
+            else
+            {
+                _logger.LogWarning($"Save type {result.SaveType} is not supported");
+            }
+        }
+
+        private async Task UpdateAction(PredictionResult result, string qcStr)
+        {
+            //string idxQuery = $" where INDEXID = {result.IndexId}";
+            //IndexModel idxResult = await _indexData.GetIndex(result.IndexId, databaseConnectionString);
+            //if (idxResult != null)
+            //{
+            //    string condition = $"INDEXID={result.IndexId}";
+            //    var rows = indexTable.Select(condition);
+            //    rows[0]["JSONDATAOBJECT"] = result.DataObject;
+            //    rows[0]["QC_STRING"] = qcStr;
+            //    indexTable.AcceptChanges();
+
+            //    if (syncPredictions)
+            //    {
+            //        string jsonDataObject = result.DataObject;
+            //        JObject dataObject = JObject.Parse(jsonDataObject);
+            //        dataObject["ROW_CHANGED_BY"] = Environment.UserName;
+            //        jsonDataObject = dataObject.ToString();
+            //        jsonDataObject = Helpers.Common.SetJsonDataObjectDate(jsonDataObject, "ROW_CHANGED_DATE");
+            //        string dataType = idxResult.DataType;
+            //        try
+            //        {
+            //            await UpdateReferenceTables(dataType, dataObject);
+            //            string storedProcedure = "dbo.spUpdate" + dataType;
+            //            await _dp.SaveData(storedProcedure, new { json = jsonDataObject }, syncConnectionString);
+            //        }
+            //        catch (Exception ex)
+            //        {
+            //            string error = ex.ToString();
+            //            _log.LogError($"Error updating data object: {error}");
+            //            throw;
+            //        }
+            //    }
+            //}
+            //else
+            //{
+            //    //logger.LogWarning("Cannot find data key during update");
+            //}
+        }
+
+        private async Task InsertAction(PredictionResult result)
+        {
+            //await InsertMissingObjectToIndex(result);
+            //if (syncPredictions)
+            //{
+            //    await InsertMissingObjectToDatabase(result);
+            //}
+        }
+
+        private async Task DeleteAction(IndexDto index, PredictionResult result, PredictionParameters parms)
+        {
+            await DeleteChildren(index.IndexId, index.QC_String, parms);
+            //DeleteParent(qcStr, idxResults);
+
+        }
+
+        private async Task DeleteChildren(int id, string qcStr, PredictionParameters parms)
+        {
+            ResponseDto response = await _idxAccess.GetDescendants<ResponseDto>(id, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+            if (!response.IsSuccess)
+            {
+                throw new InvalidOperationException($"Failed to children: {string.Join(", ", response.ErrorMessages)}");
+            }
+            var indexElement = (JsonElement)response.Result!;
+            var indexes = indexElement.Deserialize<List<IndexDto>>(_jsonOptions)!;
+            foreach (IndexDto index in indexes)
+            {
+                index.JsonDataObject = "";
+                index.QC_String = qcStr;
+                //await _indexData.UpdateIndex(index, databaseConnectionString);
+            }
+        }
+
+        private void DeleteParent(string qcStr, IndexDto idxResults)
+        {
+            //string condition = $"INDEXID={idxResults.IndexId}";
+            //var rows = indexTable.Select(condition);
+            //rows[0]["JSONDATAOBJECT"] = "";
+            //rows[0]["QC_STRING"] = qcStr;
+            //indexTable.AcceptChanges();
+
+            //if (syncPredictions)
+            //{
+            //    string dataType = idxResults.DataType;
+            //    string dataKey = idxResults.DataKey;
+            //    DataAccessDef objectAccessDef = _accessDefs.First(x => x.DataType == dataType);
+            //    string select = objectAccessDef.Select;
+            //    string dataTable = GetTable(select);
+            //    string dataQuery = "where " + dataKey;
+            //    string sql = "Delete from " + dataTable + " " + dataQuery;
+            //    _db.ExecuteSQL(sql, syncConnectionString);
+            //}
         }
     }
 }
