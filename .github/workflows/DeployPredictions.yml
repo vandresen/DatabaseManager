@@ -1,0 +1,40 @@
+name: DeployPrediction
+
+on:
+  workflow_dispatch:
+  
+env:
+  AZURE_FUNCTIONAPP_NAME: 'PetrodataOnlinePredictions'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'
+  DOTNET_VERSION: '8.0.x'
+  
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    environment: dev
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v4
+
+    - name: Setup DotNet ${{ env.DOTNET_VERSION }} Environment
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: 'Resolve Project Dependencies Using Dotnet'
+      shell: pwsh
+      run: |
+        pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+        dotnet build DatabaseManager.Services.Predictions/DatabaseManager.Services.Predictions.csproj --configuration Release --output ./output
+        popd
+
+    - name: 'Azure Login'
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.PREDICTION_CREDENTIAL }}
+
+    - name: 'Deploy via Azure CLI'
+      shell: pwsh
+      run: |
+        Compress-Archive -Path './output/*' -DestinationPath './predictions.zip'
+        az functionapp deployment source config-zip --name ${{ env.AZURE_FUNCTIONAPP_NAME }} --resource-group petrodataonlineappfunctions --src './predictions.zip'
