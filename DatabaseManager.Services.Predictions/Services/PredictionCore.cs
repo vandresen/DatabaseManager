@@ -188,7 +188,7 @@ namespace DatabaseManager.Services.Predictions.Services
         private async Task DeleteAction(IndexDto index, PredictionResult result, PredictionParameters parms)
         {
             await DeleteChildren(index.IndexId, index.QC_String, parms);
-            //DeleteParent(qcStr, idxResults);
+            index.JsonDataObject = "";
 
         }
 
@@ -205,29 +205,15 @@ namespace DatabaseManager.Services.Predictions.Services
             {
                 index.JsonDataObject = "";
                 index.QC_String = qcStr;
-                //await _indexData.UpdateIndex(index, databaseConnectionString);
             }
-        }
-
-        private void DeleteParent(string qcStr, IndexDto idxResults)
-        {
-            //string condition = $"INDEXID={idxResults.IndexId}";
-            //var rows = indexTable.Select(condition);
-            //rows[0]["JSONDATAOBJECT"] = "";
-            //rows[0]["QC_STRING"] = qcStr;
-            //indexTable.AcceptChanges();
-
-            //if (syncPredictions)
-            //{
-            //    string dataType = idxResults.DataType;
-            //    string dataKey = idxResults.DataKey;
-            //    DataAccessDef objectAccessDef = _accessDefs.First(x => x.DataType == dataType);
-            //    string select = objectAccessDef.Select;
-            //    string dataTable = GetTable(select);
-            //    string dataQuery = "where " + dataKey;
-            //    string sql = "Delete from " + dataTable + " " + dataQuery;
-            //    _db.ExecuteSQL(sql, syncConnectionString);
-            //}
+            if (indexes.Count > 0)  
+            {
+                ResponseDto updateResponse = await _idxAccess.UpdateIndexes<ResponseDto>(indexes, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+                if (!updateResponse.IsSuccess)
+                {
+                    throw new InvalidOperationException($"Failed to save child index updates: {string.Join(", ", updateResponse.ErrorMessages)}");
+                }
+            }
         }
     }
 }
