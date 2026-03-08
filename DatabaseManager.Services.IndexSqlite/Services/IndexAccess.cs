@@ -1,13 +1,9 @@
 ﻿using DatabaseManager.Services.IndexSqlite.Helpers;
-using DatabaseManager.Services.IndexSqlite.Models;
 using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
 using System.Data;
 using System.Linq;
-using System.Xml.Linq;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace DatabaseManager.Services.IndexSqlite.Services
 {

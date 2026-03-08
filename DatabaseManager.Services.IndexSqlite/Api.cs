@@ -1,4 +1,8 @@
-﻿namespace DatabaseManager.Services.IndexSqlite
+﻿using DatabaseManager.Services.IndexSqlite.Helpers;
+using Microsoft.Extensions.Logging;
+using System.Threading.Channels;
+
+namespace DatabaseManager.Services.IndexSqlite
 {
     public static class Api
     {

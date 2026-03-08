@@ -1,7 +1,8 @@
 using DatabaseManager.Services.IndexSqlite;
-using DatabaseManager.Services.IndexSqlite.Services;
+using DatabaseManager.Services.IndexSqlite.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Threading.Channels;
 
 var builder = WebApplication.CreateBuilder(args);
 

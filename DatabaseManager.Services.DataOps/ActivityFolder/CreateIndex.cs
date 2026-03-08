@@ -19,40 +19,45 @@ namespace DatabaseManager.Services.DataOps.ActivityFolder
         public async Task<string> ManageDataOps_CreateIndex([ActivityTrigger] DataOpParameters pipe, FunctionContext executionContext)
         {
             ILogger log = executionContext.GetLogger("ManageDataOps_CreateIndex");
-            log.LogInformation($"CreateIndex: Starting indexing");
+            log.LogInformation("CreateIndex: Starting indexing");
 
             try
             {
                 var parms = JsonSerializer.Deserialize<BuildIndexParameters>(pipe.JsonParameters);
                 if (parms == null)
                 {
-                    log.LogError("DataTransfer: Failed to deserialize TransferParameters.");
-                    return $"DataTransfer Completed with failure";
+                    log.LogError("CreateIndex: Failed to deserialize BuildIndexParameters.");
+                    return "CreateIndex completed with failure: deserialization error";
                 }
 
                 parms.StorageAccount = pipe.StorageAccount;
                 ResponseDto response = await _indexAccess.BuildIndex<ResponseDto>(parms);
-                if (response != null && response.IsSuccess)
-                {
-                    log.LogInformation($"CreateIndex: Index created");
-                }
-                else
-                {
-                    string separator = ";";
-                    string errors = response?.ErrorMessages != null
-                        ? string.Join(separator, response.ErrorMessages)
-                        : "Unknown error";
 
-                    log.LogInformation($"CreateIndex: Error {errors}");
+                if (response is { IsSuccess: true })
+                {
+                    log.LogInformation("CreateIndex: Index created successfully");
+                    return "OK index complete";
                 }
+
+                string errors = response?.ErrorMessages != null
+                    ? string.Join(";", response.ErrorMessages)
+                    : "Unknown error";
+
+                log.LogError("CreateIndex: Error - {Errors}", errors);
+                return $"CreateIndex completed with failure: {errors}";
+            }
+            catch (TaskCanceledException ex)
+            {
+                log.LogError(ex, "CreateIndex: Index build timed out after 6 minutes");
+                return "CreateIndex timed out: the index is too large to build in the allowed time. " +
+                       "Please reduce the size of your index by applying a more restrictive filter " +
+                       "such as a smaller lat/lon window or a single county.";
             }
             catch (Exception ex)
             {
-                log.LogInformation($"CreateIndex: Serious exception {ex}");
+                log.LogError(ex, "CreateIndex: Unhandled exception");
+                return $"CreateIndex completed with failure: {ex.Message}";
             }
-
-            log.LogInformation($"CreateIndex: Complete");
-            return $"OK index complete";
         }
-    }
+     }
 }
