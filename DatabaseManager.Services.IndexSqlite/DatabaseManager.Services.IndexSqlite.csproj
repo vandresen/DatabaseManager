@@ -21,6 +21,7 @@
     <PackageReference Include="mod_spatialite" Version="4.3.0.1" />
     <PackageReference Include="NetTopologySuite" Version="2.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Polly" Version="8.6.6" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>

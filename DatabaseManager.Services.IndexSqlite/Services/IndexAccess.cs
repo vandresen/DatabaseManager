@@ -1,7 +1,10 @@
 ﻿using DatabaseManager.Services.IndexSqlite.Helpers;
+using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Polly;
 using System.Data;
 using System.Linq;
 
@@ -31,12 +34,14 @@ namespace DatabaseManager.Services.IndexSqlite.Services
         private IndexFileData _currentItem;
         private Location _location;
         private IndexFileData _parentItem;
+        private readonly ILogger _log;
 
-        public IndexAccess(IDataAccess id, IDataSourceService ds, IFileStorageService fs)
+        public IndexAccess(IDataAccess id, IDataSourceService ds, IFileStorageService fs, ILogger<IndexAccess> log)
         {
             _id = id;
             _ds = ds;
             _fs = fs;
+            _log = log;
             _connectionString = @"Data Source=" + _databaseFile;
             getSql = "Select " + _selectAttributes + " From " + _table;
         }
@@ -284,8 +289,32 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             _fs.SetConnectionString(idxParms.StorageAccount);
             target.DataAccessDefinition = await _fs.ReadFile("connectdefinition", "PPDMDataAccess.json");
             target.ConnectionString = _connectionString;
-            
+
             int parentNodes = await Initialize(target, source, idxParms);
+
+            //Wake up source database
+            if (source.SourceType == "DataBase")
+            {
+                try
+                {
+                    var retryPolicy = Policy
+                        .Handle<SqlException>()
+                        .WaitAndRetry(
+                            retryCount: 3,
+                            sleepDurationProvider: attempt => TimeSpan.FromSeconds(attempt * 10),
+                            onRetry: (e, wait, i, ctx) =>
+                                _log.LogInformation("WakeUpDatabase: Retry {Retry} after {Wait}s due to {Message}",
+                                    i, wait.TotalSeconds, e.Message)
+                        );
+                    retryPolicy.Execute(() => _sourceAccess.WakeUpDatabase(source.ConnectionString));
+                }
+                catch (SqlException ex)
+                {
+                    _log.LogError(ex, "WakeUpDatabase: Source database failed to wake up after 3 retries");
+                    throw new Exception($"Could not connect to source database '{idxParms.SourceName}' after 3 attempts. " +
+                                        "The database may be unavailable. Please try again later.");
+                }
+            }
 
             List<ParentIndexNodes> nodes = await IndexParent(parentNodes, idxParms.Filter);
             for (int j = 0; j < nodes.Count; j++)
