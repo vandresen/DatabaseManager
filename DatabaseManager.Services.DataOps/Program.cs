@@ -15,10 +15,7 @@ var host = new HostBuilder()
         services.AddScoped<IDataQc, DataQc>();
         services.AddHttpClient<IDataTransferAccess, DataTransferAccess>();
         services.AddScoped<IDataTransferAccess, DataTransferAccess>();
-        services.AddHttpClient<IIndexAccess, IndexAccess>(client =>
-        {
-            client.Timeout = TimeSpan.FromMinutes(6);
-        });
+        services.AddHttpClient<IIndexAccess, IndexAccess>();
         services.AddScoped<IIndexAccess, IndexAccess>();
     })
     .Build();

@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Data;
-using System.Threading.Tasks;
+﻿using System.Data;
 
 namespace DatabaseManager.Services.IndexSqlite.Services
 {
@@ -15,5 +13,6 @@ namespace DatabaseManager.Services.IndexSqlite.Services
         Task<T> Count<T, U>(string sql, U parameters, string connectionString);
         Task<DataTable> GetDataTable(string select, string query, string dataType);
         void OpenConnection(ConnectParameters source, ConnectParameters target);
+        void WakeUpDatabase(string connectionString);
     }
 }

@@ -1,8 +1,6 @@
 ﻿using DatabaseManager.Services.DataOps.Extensions;
 using DatabaseManager.Services.DataOps.Models;
 using Microsoft.Extensions.Configuration;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.Eventing.Reader;
 
 namespace DatabaseManager.Services.DataOps.Services
 {
@@ -30,7 +28,7 @@ namespace DatabaseManager.Services.DataOps.Services
                 ApiType = SD.ApiType.POST,
                 Data = idxParms,
                 Url = url
-            });
+            }, TimeSpan.FromMinutes(6));
         }
 
         public async Task<T> GetIndexes<T>(string dataSource, string project, string dataType)

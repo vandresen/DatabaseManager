@@ -15,10 +15,15 @@ namespace DatabaseManager.Services.DataOps.Services
             this.httpClient = httpClient;
         }
 
-        public async Task<T> SendAsync<T>(ApiRequest apiRequest)
+        public async Task<T> SendAsync<T>(ApiRequest apiRequest, TimeSpan? timeout = null)
         {
             try
             {
+                var client = httpClient.CreateClient("DatabaseManager");
+                if (timeout.HasValue)
+                {
+                    client.Timeout = timeout.Value;
+                }
                 var httpMethod = new HttpMethod("GET");
                 switch (apiRequest.ApiType)
                 {
@@ -32,7 +37,6 @@ namespace DatabaseManager.Services.DataOps.Services
                         httpMethod = HttpMethod.Delete;
                         break;
                 }
-                var client = httpClient.CreateClient("DatabaseManager");
                 HttpRequestMessage message = new HttpRequestMessage(httpMethod, apiRequest.Url);
                 message.Headers.Add("Accept", "application/json");
                 client.DefaultRequestHeaders.Clear();

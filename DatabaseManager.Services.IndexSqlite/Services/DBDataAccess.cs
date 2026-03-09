@@ -69,5 +69,15 @@ namespace DatabaseManager.Services.IndexSqlite.Services
         {
             throw new NotImplementedException();
         }
+
+        public void WakeUpDatabase(string connectionString)
+        {
+            SqlConnection conn = null;
+            using (conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+                conn.Close();
+            }
+        }
     }
 }

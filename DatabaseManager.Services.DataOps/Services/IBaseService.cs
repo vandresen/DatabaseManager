@@ -5,6 +5,6 @@ namespace DatabaseManager.Services.DataOps.Services
     public interface IBaseService : IDisposable
     {
         ResponseDto responseModel { get; set; }
-        Task<T> SendAsync<T>(ApiRequest apiRequest);
+        Task<T> SendAsync<T>(ApiRequest apiRequest, TimeSpan? timeout = null);
     }
 }

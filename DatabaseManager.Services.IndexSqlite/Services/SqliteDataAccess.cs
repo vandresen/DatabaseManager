@@ -74,5 +74,10 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             SpatialiteLoader.Load((System.Data.Common.DbConnection)cnn);
             await cnn.ExecuteAsync(sql, parameters);
         }
+
+        public void WakeUpDatabase(string connectionString)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

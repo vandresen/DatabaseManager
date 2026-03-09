@@ -83,5 +83,10 @@ namespace DatabaseManager.Services.IndexSqlite.Services
         {
             throw new NotImplementedException();
         }
+
+        public void WakeUpDatabase(string connectionString)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
