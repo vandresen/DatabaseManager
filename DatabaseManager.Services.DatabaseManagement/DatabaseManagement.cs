@@ -17,6 +17,7 @@ namespace DatabaseManager.Services.DatabaseManagement
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
         private readonly IDataSourceService _ds;
+        private readonly IFileStorageService _embeddedStorage;
         protected ResponseDto _response;
 
         public DatabaseManagement(ILoggerFactory loggerFactory, IConfiguration configuration,
@@ -25,6 +26,7 @@ namespace DatabaseManager.Services.DatabaseManagement
             _logger = loggerFactory.CreateLogger<DatabaseManagement>();
             _response = new ResponseDto();
             _configuration = configuration;
+            _embeddedStorage = new EmbeddedFileStorageService();
             _ds = ds;
             SD.DataSourceAPIBase = _configuration.GetValue<string>("DataSourceAPI");
             SD.DataSourceKey = _configuration["DataSourceKey"];
@@ -58,6 +60,32 @@ namespace DatabaseManager.Services.DatabaseManagement
             await response.WriteAsJsonAsync(_response);
 
             _logger.LogInformation("Create: Complete");
+            return response;
+        }
+
+        [Function("GetDatabaseAccessDefinition")]
+        public async Task<HttpResponseData> GetDatabaseAccessDef([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req)
+        {
+            _logger.LogInformation("GetDatabaseAccessDefinition: Starting");
+
+            try
+            {
+                string fileName = "PPDMDataAccess.json";
+                string definition = await _embeddedStorage.ReadFile("", fileName);
+                _response.Result = definition;
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"GetDatabaseAccessDefinition: Error getting data configuration from folder: {ex}");
+            }
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(_response);
+
+            _logger.LogInformation("GetDatabaseAccessDefinition: Complete");
             return response;
         }
     }
