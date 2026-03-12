@@ -25,5 +25,6 @@ namespace DatabaseManager.Services.Predictions.Models
 
         public string IndexNode { get; set; }
         public string ConsistencyConnectorString { get; set; }
+        public string SourceDataAccessDef { get; set; }
     }
 }

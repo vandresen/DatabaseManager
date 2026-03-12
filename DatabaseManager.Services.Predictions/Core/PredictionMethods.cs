@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using static Azure.Core.HttpHeader;
 
@@ -175,51 +176,49 @@ namespace DatabaseManager.Services.Predictions.Core
         //    return result;
         //}
 
-        //public static PredictionResult PredictMissingDataObjects(PredictionRuleSetup qcSetup, DapperDataAccess dp, IndexDBAccess idxdata)
-        //{
-        //    PredictionResult result = new PredictionResult
-        //    {
-        //        Status = "Failed"
-        //    };
-        //    RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
-        //    string rulePar = rule.RuleParameters;
-        //    JObject ruleParObject = JObject.Parse(rulePar);
-        //    string dataType = ruleParObject["DataType"].ToString();
-        //    if (string.IsNullOrEmpty(rulePar))
-        //    {
-        //        throw new NullReferenceException("Rule parameter is null.");
-        //    }
-        //    IndexRootJson rootJson = RuleMethodUtilities.GetIndexRoot(idxdata, qcSetup.DataConnector);
-        //    DataAccessDef accessDef = rootJson.Source.GetDataAccessDefintionFromSourceJson(dataType);
-        //    //DataAccessDef accessDef = RuleMethodUtilities.GetDataAccessDefintionFromRoot(idxdata, qcSetup.DataConnector, dataType);
-        //    string table = Common.GetTable(accessDef.Select);
-        //    //IDapperDataAccess dp;
-        //    ISystemData systemData;
-        //    dp = new DapperDataAccess();
-        //    systemData = new SystemDBData(dp);
-        //    IEnumerable<TableSchema> attributeProperties = (IEnumerable<TableSchema>)Task.Run(() => systemData.GetColumnInfo(qcSetup.DataConnector, table)).GetAwaiter().GetResult();
+        public static PredictionResult PredictMissingDataObjects(PredictionRuleSetup qcSetup, IDatabaseAccess dp, IIndexAccess idxdata)
+        {
+            PredictionResult result = new PredictionResult
+            {
+                Status = "Failed"
+            };
+            RuleModelDto rule = System.Text.Json.JsonSerializer.Deserialize<RuleModelDto>(qcSetup.RuleObject);
+            string rulePar = rule.RuleParameters;
+            JsonDocument doc = JsonDocument.Parse(rulePar);
+            string dataType = doc.RootElement.GetProperty("DataType").GetString();
+            if (string.IsNullOrEmpty(rulePar))
+            {
+                throw new NullReferenceException("Rule parameter is null.");
+            }
+            List<DataAccessDef> accessDefs = JsonSerializer.Deserialize<List<DataAccessDef>>(qcSetup.SourceDataAccessDef);
+            DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
+            //string table = Common.GetTable(accessDef.Select);
+            //ISystemData systemData;
+            //dp = new DapperDataAccess();
+            //systemData = new SystemDBData(dp);
+            //IEnumerable<TableSchema> attributeProperties = (IEnumerable<TableSchema>)Task.Run(() => systemData.GetColumnInfo(qcSetup.DataConnector, table)).GetAwaiter().GetResult();
 
-        //    string emptyJson = RuleMethodUtilities.GetJsonForMissingDataObject(rulePar, accessDef, attributeProperties);
-        //    if (emptyJson == "Error")
-        //    {
-        //        throw new NullReferenceException("Could not create an empty json data object, maybe you are missing Datatype in parameters");
-        //    }
-        //    string json = RuleMethodUtilities.PopulateJsonForMissingDataObject(rulePar, emptyJson, qcSetup.DataObject);
-        //    if (json == "Error")
-        //    {
-        //        throw new NullReferenceException("Could not create an json data object, problems with keys in parameters");
-        //    }
-        //    json = RuleMethodUtilities.AddDefaultsForMissingDataObjects(rulePar, json);
-        //    if (json == "Error")
-        //    {
-        //        throw new NullReferenceException("Could not create an json data object, problems with defaults in parameters");
-        //    }
-        //    result.DataObject = json;
-        //    result.DataType = dataType;
-        //    result.SaveType = "Insert";
-        //    result.IndexId = qcSetup.IndexId;
-        //    result.Status = "Passed";
-        //    return result;
-        //}
+            //string emptyJson = RuleMethodUtilities.GetJsonForMissingDataObject(rulePar, accessDef, attributeProperties);
+            //if (emptyJson == "Error")
+            //{
+            //    throw new NullReferenceException("Could not create an empty json data object, maybe you are missing Datatype in parameters");
+            //}
+            //string json = RuleMethodUtilities.PopulateJsonForMissingDataObject(rulePar, emptyJson, qcSetup.DataObject);
+            //if (json == "Error")
+            //{
+            //    throw new NullReferenceException("Could not create an json data object, problems with keys in parameters");
+            //}
+            //json = RuleMethodUtilities.AddDefaultsForMissingDataObjects(rulePar, json);
+            //if (json == "Error")
+            //{
+            //    throw new NullReferenceException("Could not create an json data object, problems with defaults in parameters");
+            //}
+            //result.DataObject = json;
+            result.DataType = dataType;
+            result.SaveType = "Insert";
+            result.IndexId = qcSetup.IndexId;
+            result.Status = "Passed";
+            return result;
+        }
     }
 }

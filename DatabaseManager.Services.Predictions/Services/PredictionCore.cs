@@ -1,6 +1,10 @@
-﻿using DatabaseManager.Services.Predictions.Core;
+﻿using Azure;
+using DatabaseManager.Services.Predictions.Core;
 using DatabaseManager.Services.Predictions.Models;
 using Microsoft.Extensions.Logging;
+using System.Data;
+using System.IO.Pipelines;
+using System.Net;
 using System.Reflection;
 using System.Text.Json;
 
@@ -39,7 +43,32 @@ namespace DatabaseManager.Services.Predictions.Services
                 throw new InvalidOperationException($"No indexes found for rule '{rule.RuleName}'");
             }
 
-            PredictionRuleSetup setup = new ();
+            PredictionRuleSetup setup = new();
+
+            if (rule.RuleFunction == "PredictMissingDataObjects")
+            {
+                var idxRootResponse = await _idxAccess.GetIndex<ResponseDto>(1, parms.IndexProject, parms.AzureStorageKey);
+                if (!idxRootResponse.IsSuccess)
+                {
+                    throw new InvalidOperationException($"Prediction method '{rule.RuleFunction}' could not get the root index object");
+                }
+                JsonElement element = (JsonElement)idxRootResponse.Result;
+                IndexDto idx = element.Deserialize<IndexDto>(new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                if (!string.IsNullOrEmpty(idx.JsonDataObject))
+                {
+                    IndexRootJson rootJson = JsonSerializer.Deserialize<IndexRootJson>(idx.JsonDataObject);
+                    setup.SourceDataAccessDef = rootJson.Source;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Failed to get data access definition for prediction method '{rule.RuleFunction}'");
+                }
+            }
+
+            
             string jsonRules = JsonSerializer.Serialize(rule, _jsonOptions);
             setup.RuleObject = jsonRules;
             List<int> correctedObjects = new List<int>();
@@ -65,7 +94,12 @@ namespace DatabaseManager.Services.Predictions.Services
                     if (externalQcMethod)
                     {
                         result = ProcessPrediction(setup, rule);
-                        if (result.Status == "Server error") break;
+                        if (result.Status == "Server error")
+                        {
+                            _logger.LogWarning($"Server error for extrenal rule");
+                            break; 
+                        }
+                        
                     }
                     else
                     {
