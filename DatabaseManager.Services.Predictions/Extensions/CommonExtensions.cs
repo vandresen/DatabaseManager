@@ -128,5 +128,13 @@ namespace DatabaseManager.Services.Predictions.Extensions
             if (url.EndsWith("&")) url = url.Substring(0, url.Length - 1);
             return url;
         }
+
+        public static string GetTable(this string select)
+        {
+            select = select.ToUpper();
+            int from = select.IndexOf(" FROM ") + 6;
+            string table = select.Substring(from);
+            return table;
+        }
     }
 }

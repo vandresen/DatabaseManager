@@ -15,17 +15,20 @@ namespace DatabaseManager.Services.Predictions.Services
         private readonly ILogger<PredictionCore> _logger;
         private readonly IIndexAccess _idxAccess;
         private readonly IDatabaseAccess _dp;
+        private readonly IDatabaseManagementService _dmService;
 
         private static readonly JsonSerializerOptions _jsonOptions = new()
         {
             PropertyNameCaseInsensitive = true
         };
 
-        public PredictionCore(ILogger<PredictionCore> logger, IIndexAccess idxAccess, IDatabaseAccess dp)
+        public PredictionCore(ILogger<PredictionCore> logger, IIndexAccess idxAccess, IDatabaseAccess dp,
+            IDatabaseManagementService dmService)
         {
             _logger = logger;
             _idxAccess = idxAccess;
             _dp = dp;
+            _dmService = dmService;
         }
 
         public async Task<List<int>> ExecutePredictionAsync(List<IndexDto> indexes, RuleModelDto rule, PredictionParameters parms)
@@ -47,28 +50,21 @@ namespace DatabaseManager.Services.Predictions.Services
 
             if (rule.RuleFunction == "PredictMissingDataObjects")
             {
-                var idxRootResponse = await _idxAccess.GetIndex<ResponseDto>(1, parms.IndexProject, parms.AzureStorageKey);
-                if (!idxRootResponse.IsSuccess)
+                var dmResponse = await _dmService.GetDataAccessDef<ResponseDto>();
+                if (!dmResponse.IsSuccess)
                 {
-                    throw new InvalidOperationException($"Prediction method '{rule.RuleFunction}' could not get the root index object");
+                    throw new InvalidOperationException($"Prediction method '{rule.RuleFunction}' could not get the data access definition");
                 }
-                JsonElement element = (JsonElement)idxRootResponse.Result;
-                IndexDto idx = element.Deserialize<IndexDto>(new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-                if (!string.IsNullOrEmpty(idx.JsonDataObject))
-                {
-                    IndexRootJson rootJson = JsonSerializer.Deserialize<IndexRootJson>(idx.JsonDataObject);
-                    setup.SourceDataAccessDef = rootJson.Source;
-                }
-                else
+                if (dmResponse.Result == null)
                 {
                     throw new InvalidOperationException($"Failed to get data access definition for prediction method '{rule.RuleFunction}'");
                 }
+                else
+                {
+                    setup.SourceDataAccessDef = dmResponse.Result.ToString()!;
+                }
             }
 
-            
             string jsonRules = JsonSerializer.Serialize(rule, _jsonOptions);
             setup.RuleObject = jsonRules;
             List<int> correctedObjects = new List<int>();

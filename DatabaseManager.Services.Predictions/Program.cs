@@ -16,6 +16,7 @@ builder.Services.AddScoped<IRuleAccess, RuleAccess>();
 builder.Services.AddScoped<IIndexAccess, IndexAccess>();
 builder.Services.AddScoped<IPrediction, PredictionCore>();
 builder.Services.AddScoped<IDatabaseAccess, DapperDataAccess>();
+builder.Services.AddScoped<IDatabaseManagementService, DatabaseManagementService>();
 //builder.Services.AddScoped<IConfigFileService, ConfigFileService>();
 //builder.Services.AddScoped<IDataQc, DataQcCore>();
 //builder.Services.AddScoped<IDataSourceService, DataSourceService>();

@@ -1,4 +1,5 @@
-﻿using DatabaseManager.Services.Predictions.Models;
+﻿using DatabaseManager.Services.Predictions.Extensions;
+using DatabaseManager.Services.Predictions.Models;
 using DatabaseManager.Services.Predictions.Services;
 using System;
 using System.Collections.Generic;
@@ -192,7 +193,7 @@ namespace DatabaseManager.Services.Predictions.Core
             }
             List<DataAccessDef> accessDefs = JsonSerializer.Deserialize<List<DataAccessDef>>(qcSetup.SourceDataAccessDef);
             DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
-            //string table = Common.GetTable(accessDef.Select);
+            string table = accessDef.Select.GetTable();
             //ISystemData systemData;
             //dp = new DapperDataAccess();
             //systemData = new SystemDBData(dp);
