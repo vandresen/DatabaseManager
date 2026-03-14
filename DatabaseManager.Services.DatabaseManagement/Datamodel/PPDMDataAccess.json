@@ -2,37 +2,125 @@
   {
     "DataType": "WellBore",
     "Keys": "UWI",
-    "Select": "Select UWI, COMPLETION_DATE, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE, LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS, GROUND_ELEV, REMARK, SPUD_DATE, ROW_CREATED_DATE, ROW_CREATED_BY, ROW_CHANGED_DATE, ROW_CHANGED_BY from WELL"
+    "Select": "Select UWI, COMPLETION_DATE, FINAL_TD, WELL_NAME, SURFACE_LATITUDE, SURFACE_LONGITUDE, LEASE_NAME, DEPTH_DATUM_ELEV, DEPTH_DATUM, OPERATOR, ASSIGNED_FIELD, CURRENT_STATUS, GROUND_ELEV, REMARK, SPUD_DATE, ROW_CREATED_DATE, ROW_CREATED_BY, ROW_CHANGED_DATE, ROW_CHANGED_BY from WELL",
+    "AttributeTypes": {
+      "UWI": "string",
+      "COMPLETION_DATE": "date",
+      "FINAL_TD": "number",
+      "WELL_NAME": "string",
+      "SURFACE_LATITUDE": "number",
+      "SURFACE_LONGITUDE": "number",
+      "LEASE_NAME": "string",
+      "DEPTH_DATUM_ELEV": "number",
+      "DEPTH_DATUM": "string",
+      "OPERATOR": "string",
+      "ASSIGNED_FIELD": "string",
+      "CURRENT_STATUS": "string",
+      "GROUND_ELEV": "number",
+      "REMARK": "string",
+      "SPUD_DATE": "date",
+      "ROW_CREATED_DATE": "date",
+      "ROW_CREATED_BY": "string",
+      "ROW_CHANGED_DATE": "date",
+      "ROW_CHANGED_BY": "string"
+    }
   },
   {
     "DataType": "MarkerPick",
     "Keys": "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID",
     "Constants": "STRAT_NAME_SET_ID=UNKNOWN; INTERP_ID=UNKNOWN; DOMINANT_LITHOLOGY=UNKNOWN",
-    "Select": "Select STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH, REMARK, ROW_CREATED_DATE, ROW_CREATED_BY, ROW_CHANGED_DATE, ROW_CHANGED_BY from STRAT_WELL_SECTION"
+    "Select": "Select STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH, REMARK, ROW_CREATED_DATE, ROW_CREATED_BY, ROW_CHANGED_DATE, ROW_CHANGED_BY from STRAT_WELL_SECTION",
+    "AttributeTypes": {
+      "STRAT_NAME_SET_ID": "string",
+      "STRAT_UNIT_ID": "string",
+      "UWI": "string",
+      "INTERP_ID": "string",
+      "DOMINANT_LITHOLOGY": "string",
+      "PICK_DEPTH": "number",
+      "REMARK": "string",
+      "ROW_CREATED_DATE": "date",
+      "ROW_CREATED_BY": "string",
+      "ROW_CHANGED_DATE": "date",
+      "ROW_CHANGED_BY": "string"
+    }
   },
   {
     "DataType": "MarkerWell",
     "Keys": "STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI",
-    "Select": "Select STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH, REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY from STRAT_WELL_SECTION"
+    "Select": "Select STRAT_NAME_SET_ID, STRAT_UNIT_ID, UWI, INTERP_ID, DOMINANT_LITHOLOGY, PICK_DEPTH, REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY from STRAT_WELL_SECTION",
+    "AttributeTypes": {
+      "STRAT_NAME_SET_ID": "string",
+      "STRAT_UNIT_ID": "string",
+      "UWI": "string",
+      "INTERP_ID": "string",
+      "DOMINANT_LITHOLOGY": "string",
+      "PICK_DEPTH": "number",
+      "REMARK": "string",
+      "ROW_CHANGED_DATE": "date",
+      "ROW_CHANGED_BY": "string"
+    }
   },
   {
     "DataType": "WellTop",
     "Keys": "STRAT_NAME_SET_ID, STRAT_UNIT_ID",
-    "Select": "Select STRAT_NAME_SET_ID, STRAT_UNIT_ID, LONG_NAME, ORDINAL_AGE_CODE, REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY from STRAT_UNIT"
+    "Select": "Select STRAT_NAME_SET_ID, STRAT_UNIT_ID, LONG_NAME, ORDINAL_AGE_CODE, REMARK, ROW_CHANGED_DATE, ROW_CHANGED_BY from STRAT_UNIT",
+    "AttributeTypes": {
+      "STRAT_NAME_SET_ID": "string",
+      "STRAT_UNIT_ID": "string",
+      "LONG_NAME": "string",
+      "ORDINAL_AGE_CODE": "string",
+      "REMARK": "string",
+      "ROW_CHANGED_DATE": "date",
+      "ROW_CHANGED_BY": "string"
+    }
   },
   {
     "DataType": "Log",
     "Keys": "UWI, CURVE_ID",
-    "Select": "Select UWI, CURVE_ID, NULL_REPRESENTATION, VALUE_COUNT, MAX_INDEX, MIN_INDEX, REPORTED_DESC, SOURCE,ROW_CHANGED_DATE, ROW_CHANGED_BY, ROW_CREATED_BY, ROW_CREATED_DATE from well_log_curve"
+    "Select": "Select UWI, CURVE_ID, NULL_REPRESENTATION, VALUE_COUNT, MAX_INDEX, MIN_INDEX, REPORTED_DESC, SOURCE, ROW_CHANGED_DATE, ROW_CHANGED_BY, ROW_CREATED_BY, ROW_CREATED_DATE from well_log_curve",
+    "AttributeTypes": {
+      "UWI": "string",
+      "CURVE_ID": "string",
+      "NULL_REPRESENTATION": "number",
+      "VALUE_COUNT": "number",
+      "MAX_INDEX": "number",
+      "MIN_INDEX": "number",
+      "REPORTED_DESC": "string",
+      "SOURCE": "string",
+      "ROW_CHANGED_DATE": "date",
+      "ROW_CHANGED_BY": "string",
+      "ROW_CREATED_BY": "string",
+      "ROW_CREATED_DATE": "date"
+    }
   },
   {
     "DataType": "LogCurve",
     "Keys": "UWI, CURVE_ID, SAMPLE_ID",
-    "Select": "Select UWI, CURVE_ID, SAMPLE_ID, INDEX_VALUE, MEASURED_VALUE, ROW_CHANGED_DATE, ROW_CHANGED_BY, ROW_CREATED_BY, ROW_CREATED_DATE from well_log_curve_value"
+    "Select": "Select UWI, CURVE_ID, SAMPLE_ID, INDEX_VALUE, MEASURED_VALUE, ROW_CHANGED_DATE, ROW_CHANGED_BY, ROW_CREATED_BY, ROW_CREATED_DATE from well_log_curve_value",
+    "AttributeTypes": {
+      "UWI": "string",
+      "CURVE_ID": "string",
+      "SAMPLE_ID": "number",
+      "INDEX_VALUE": "number",
+      "MEASURED_VALUE": "number",
+      "ROW_CHANGED_DATE": "date",
+      "ROW_CHANGED_BY": "string",
+      "ROW_CREATED_BY": "string",
+      "ROW_CREATED_DATE": "date"
+    }
   },
   {
     "DataType": "Production",
     "Keys": "PDEN_SUBTYPE, PDEN_ID, SOURCE",
-    "Select": "Select PDEN_SUBTYPE, PDEN_ID, SOURCE, ROW_CHANGED_DATE, ROW_CHANGED_BY, ROW_CREATED_BY, ROW_CREATED_DATE from pden"
+    "Select": "Select PDEN_SUBTYPE, PDEN_ID, SOURCE, ROW_CHANGED_DATE, ROW_CHANGED_BY, ROW_CREATED_BY, ROW_CREATED_DATE from pden",
+    "AttributeTypes": {
+      "PDEN_SUBTYPE": "string",
+      "PDEN_ID": "string",
+      "SOURCE": "string",
+      "ROW_CHANGED_DATE": "date",
+      "ROW_CHANGED_BY": "string",
+      "ROW_CREATED_BY": "string",
+      "ROW_CREATED_DATE": "date"
+    }
   }
 ]
