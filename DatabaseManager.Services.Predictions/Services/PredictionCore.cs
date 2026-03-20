@@ -120,14 +120,6 @@ namespace DatabaseManager.Services.Predictions.Services
             }
             if (correctedIndexes.Count > 0)
             {
-                if (_newIndexes.Count() > 0)
-                {
-                    ResponseDto insertResponse = await _idxAccess.InsertIndexes<ResponseDto>(_newIndexes, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
-                    if (!insertResponse.IsSuccess)
-                    {
-                        throw new InvalidOperationException($"Failed to save new indexes: {string.Join(", ", insertResponse.ErrorMessages)}");
-                    }
-                }
                 ResponseDto updateResponse = await _idxAccess.UpdateIndexes<ResponseDto>(correctedIndexes, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
                 if (!updateResponse.IsSuccess)
                 {
@@ -396,17 +388,17 @@ namespace DatabaseManager.Services.Predictions.Services
                 nodeIndex.Longitude = 0.0;
                 nodeIndex.DataType = nodeName;
                 nodeIndex.DataName = nodeName;
-                //nodeid = await _idxAccess.InsertIndex(nodeIndex, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+                ResponseDto response = await _idxAccess.InsertIndex<ResponseDto>(nodeIndex, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
 
                 //nodeid = await _idxAccess.InsertIndex(nodeIndex, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
 
-                _newIndexes.Add(new IndexDto
-                {
-                    Latitude = 0.0,
-                    Longitude = 0.0,
-                    DataType = nodeName,
-                    DataName = nodeName
-                });
+                //_newIndexes.Add(new IndexDto
+                //{
+                //    Latitude = 0.0,
+                //    Longitude = 0.0,
+                //    DataType = nodeName,
+                //    DataName = nodeName
+                //});
             }
             
             return nodeid;

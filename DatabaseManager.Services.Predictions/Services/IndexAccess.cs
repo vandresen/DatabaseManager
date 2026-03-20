@@ -86,9 +86,25 @@ namespace DatabaseManager.Services.Predictions.Services
             });
         }
 
-        public Task<T> InsertIndex<T>(IndexDto index, string dataSource, string project, string storageConnection)
+        public async Task<T> InsertIndex<T>(IndexDto index, string dataSource, string project, string storageConnection)
         {
-            throw new NotImplementedException();
+            string url = "";
+            if (_sqlLite)
+            {
+                url = _indexAPIBase.BuildFunctionUrl($"/Index", $"project={project}", _indexApiKey);
+            }
+            else
+            {
+                throw new NotImplementedException();
+                //url = _indexAPIBase.BuildFunctionUrl("/DmIndexes", $"Name={dataSource}&Node=/&Level=0", _indexApiKey);
+            }
+            _logger.LogInformation($"Url = {url}");
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.POST,
+                AzureStorage = storageConnection,
+                Url = url
+            });
         }
 
         public Task<T> InsertIndexes<T>(List<IndexDto> indexes, string dataSource, string project, string storageConnection)
