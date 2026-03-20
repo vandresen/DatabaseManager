@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using static Azure.Core.HttpHeader;
 
@@ -14,6 +15,12 @@ namespace DatabaseManager.Services.Predictions.Core
     static class PredictionMethods
     {
         private static Dictionary<string, int> _ageLookupCache;
+
+        private static readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+        };
 
         public static PredictionResult DeleteDataObject(PredictionRuleSetup qcSetup, IDatabaseAccess dp, IIndexAccess idxdata)
         {
@@ -191,30 +198,20 @@ namespace DatabaseManager.Services.Predictions.Core
             {
                 throw new NullReferenceException("Rule parameter is null.");
             }
-            List<DataAccessDef> accessDefs = JsonSerializer.Deserialize<List<DataAccessDef>>(qcSetup.SourceDataAccessDef);
+            List<DataAccessDef> accessDefs = JsonSerializer.Deserialize<List<DataAccessDef>>(qcSetup.SourceDataAccessDef, _jsonOptions);
             DataAccessDef accessDef = accessDefs.First(x => x.DataType == dataType);
             string table = accessDef.Select.GetTable();
-            //ISystemData systemData;
-            //dp = new DapperDataAccess();
-            //systemData = new SystemDBData(dp);
-            //IEnumerable<TableSchema> attributeProperties = (IEnumerable<TableSchema>)Task.Run(() => systemData.GetColumnInfo(qcSetup.DataConnector, table)).GetAwaiter().GetResult();
 
-            //string emptyJson = RuleMethodUtilities.GetJsonForMissingDataObject(rulePar, accessDef, attributeProperties);
-            //if (emptyJson == "Error")
-            //{
-            //    throw new NullReferenceException("Could not create an empty json data object, maybe you are missing Datatype in parameters");
-            //}
-            //string json = RuleMethodUtilities.PopulateJsonForMissingDataObject(rulePar, emptyJson, qcSetup.DataObject);
-            //if (json == "Error")
-            //{
-            //    throw new NullReferenceException("Could not create an json data object, problems with keys in parameters");
-            //}
-            //json = RuleMethodUtilities.AddDefaultsForMissingDataObjects(rulePar, json);
-            //if (json == "Error")
-            //{
-            //    throw new NullReferenceException("Could not create an json data object, problems with defaults in parameters");
-            //}
-            //result.DataObject = json;
+            string emptyJson = RuleMethodUtilities.GetJsonForMissingDataObject(rulePar, accessDef);
+            if (emptyJson == "{}")
+            {
+                throw new NullReferenceException("Could not create an empty json data object, maybe you are missing Datatype in parameters");
+            }
+            string json = RuleMethodUtilities.PopulateJsonForMissingDataObject(rulePar, emptyJson, qcSetup.DataObject);
+
+            json = RuleMethodUtilities.AddDefaultsForMissingDataObjects(rulePar, json);
+
+            result.DataObject = json;
             result.DataType = dataType;
             result.SaveType = "Insert";
             result.IndexId = qcSetup.IndexId;

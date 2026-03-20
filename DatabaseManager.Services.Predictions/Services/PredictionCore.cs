@@ -2,11 +2,14 @@
 using DatabaseManager.Services.Predictions.Core;
 using DatabaseManager.Services.Predictions.Models;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using System.Data;
 using System.IO.Pipelines;
 using System.Net;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace DatabaseManager.Services.Predictions.Services
 {
@@ -16,10 +19,13 @@ namespace DatabaseManager.Services.Predictions.Services
         private readonly IIndexAccess _idxAccess;
         private readonly IDatabaseAccess _dp;
         private readonly IDatabaseManagementService _dmService;
+        private List<DataAccessDef> _accessDefs;
+        private List<IndexDto> _newIndexes;
 
         private static readonly JsonSerializerOptions _jsonOptions = new()
         {
-            PropertyNameCaseInsensitive = true
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
         };
 
         public PredictionCore(ILogger<PredictionCore> logger, IIndexAccess idxAccess, IDatabaseAccess dp,
@@ -62,6 +68,7 @@ namespace DatabaseManager.Services.Predictions.Services
                 else
                 {
                     setup.SourceDataAccessDef = dmResponse.Result.ToString()!;
+                    _accessDefs = JsonSerializer.Deserialize<List<DataAccessDef>>(setup.SourceDataAccessDef, _jsonOptions)!;
                 }
             }
 
@@ -70,6 +77,7 @@ namespace DatabaseManager.Services.Predictions.Services
             List<int> correctedObjects = new List<int>();
             bool externalQcMethod = rule.RuleFunction.StartsWith("http");
             List<IndexDto> correctedIndexes = new List<IndexDto>();
+            _newIndexes = new List<IndexDto>();
 
             MethodInfo info = null;
             if (!externalQcMethod)
@@ -112,6 +120,14 @@ namespace DatabaseManager.Services.Predictions.Services
             }
             if (correctedIndexes.Count > 0)
             {
+                if (_newIndexes.Count() > 0)
+                {
+                    ResponseDto insertResponse = await _idxAccess.InsertIndexes<ResponseDto>(_newIndexes, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+                    if (!insertResponse.IsSuccess)
+                    {
+                        throw new InvalidOperationException($"Failed to save new indexes: {string.Join(", ", insertResponse.ErrorMessages)}");
+                    }
+                }
                 ResponseDto updateResponse = await _idxAccess.UpdateIndexes<ResponseDto>(correctedIndexes, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
                 if (!updateResponse.IsSuccess)
                 {
@@ -154,7 +170,7 @@ namespace DatabaseManager.Services.Predictions.Services
             }
             else if (result.SaveType == "Insert")
             {
-                await InsertAction(result);
+                await InsertAction(result, parms, index);
             }
             else if (result.SaveType == "Delete")
             {
@@ -206,15 +222,6 @@ namespace DatabaseManager.Services.Predictions.Services
             //}
         }
 
-        private async Task InsertAction(PredictionResult result)
-        {
-            //await InsertMissingObjectToIndex(result);
-            //if (syncPredictions)
-            //{
-            //    await InsertMissingObjectToDatabase(result);
-            //}
-        }
-
         private async Task DeleteAction(IndexDto index, PredictionResult result, PredictionParameters parms)
         {
             await DeleteChildren(index.IndexId, index.QC_String, parms);
@@ -244,6 +251,165 @@ namespace DatabaseManager.Services.Predictions.Services
                     throw new InvalidOperationException($"Failed to save child index updates: {string.Join(", ", updateResponse.ErrorMessages)}");
                 }
             }
+        }
+
+        private async Task InsertAction(PredictionResult result, PredictionParameters parms, IndexDto parentIndex)
+        {
+            List<IndexFileData> idxData = await GetIndexFileData(result.DataType, parms);
+            IndexFileData indexdata = idxData.FirstOrDefault(s => s.DataName == result.DataType)
+                ?? throw new InvalidOperationException($"No index file data found for type '{result.DataType}'");
+
+            JsonObject dataObject = JsonNode.Parse(result.DataObject)!.AsObject();
+            string dataName = dataObject[indexdata.NameAttribute]?.ToString()
+                ?? throw new InvalidOperationException($"Name attribute '{indexdata.NameAttribute}' not found in data object");
+
+            DataAccessDef dataAccessDef = _accessDefs.First(x => x.DataType == result.DataType);
+            string dataKey = GetDataKey(dataObject, dataAccessDef.Keys);
+
+            double latitude = indexdata.UseParentLocation ? (parentIndex.Latitude ?? -99999.0) : -99999.0;
+            double longitude = indexdata.UseParentLocation ? (parentIndex.Longitude ?? -99999.0) : -99999.0;
+
+            int nodeId = await GetIndexNode(result.DataType, parentIndex, parms);
+            if (nodeId == 0) return;
+
+            _newIndexes.Add(new IndexDto
+            {
+                Latitude = latitude,
+                Longitude = longitude,
+                DataType = result.DataType,
+                DataName = dataName,
+                DataKey = dataKey,
+                JsonDataObject = result.DataObject
+            });
+        }
+
+        private async Task<List<IndexFileData>> GetIndexFileData(string dataType, PredictionParameters parms)
+        {
+            IndexFileData indexdata = new IndexFileData();
+            IndexRootJson rootJson = await GetIndexRootData(parms);
+            string taxonomy = rootJson.Taxonomy;
+            List<IndexFileData> idxData = GetIndexArray(taxonomy);
+            indexdata = idxData.FirstOrDefault(s => s.DataName == dataType);
+            return idxData;
+        }
+
+        private async Task<IndexRootJson> GetIndexRootData(PredictionParameters parms)
+        {
+            IndexRootJson rootJson = new IndexRootJson();
+            ResponseDto response = await _idxAccess.GetRootIndex<ResponseDto>(parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+            if (!response.IsSuccess)
+            {
+                throw new InvalidOperationException($"Failed to get root index: {string.Join(", ", response.ErrorMessages)}");
+            }
+            //IndexDto idxResult = await _idxAccess.GetIndexRoot(databaseConnectionString);
+            var indexElement = (JsonElement)response.Result!;
+            var index = indexElement.Deserialize<IndexDto>(_jsonOptions)!;
+            string jsonStringObject = index.JsonDataObject;
+            rootJson = JsonSerializer.Deserialize<IndexRootJson>(jsonStringObject);
+            return rootJson;
+        }
+
+        private List<IndexFileData> GetIndexArray(string taxonomy)
+        {
+            List<IndexFileData> idxData;
+            JArray result = new JArray();
+            JArray JsonIndexArray = JArray.Parse(taxonomy);
+            idxData = new List<IndexFileData>();
+            foreach (JToken level in JsonIndexArray)
+            {
+                idxData.Add(ProcessJTokens(level));
+                idxData = ProcessIndexArray(JsonIndexArray, level, idxData);
+            }
+            return idxData;
+        }
+
+        private static IndexFileData ProcessJTokens(JToken token)
+        {
+            IndexFileData idxDataObject = new IndexFileData();
+            idxDataObject.DataName = (string)token["DataName"];
+            idxDataObject.NameAttribute = token["NameAttribute"]?.ToString();
+            idxDataObject.LatitudeAttribute = token["LatitudeAttribute"]?.ToString();
+            idxDataObject.LongitudeAttribute = token["LongitudeAttribute"]?.ToString();
+            idxDataObject.ParentKey = token["ParentKey"]?.ToString();
+            if (token["UseParentLocation"] != null) idxDataObject.UseParentLocation = (Boolean)token["UseParentLocation"];
+            if (token["Arrays"] != null)
+            {
+                idxDataObject.Arrays = token["Arrays"];
+            }
+            return idxDataObject;
+        }
+
+        private List<IndexFileData> ProcessIndexArray(JArray JsonIndexArray, JToken parent, List<IndexFileData> idxData)
+        {
+            List<IndexFileData> result = idxData;
+            if (parent["DataObjects"] != null)
+            {
+                foreach (JToken level in parent["DataObjects"])
+                {
+                    result.Add(ProcessJTokens(level));
+                    result = ProcessIndexArray(JsonIndexArray, level, result);
+                }
+            }
+            return result;
+        }
+
+        private string GetDataKey(JsonObject dataObject, string dbKeys)
+        {
+            string dataKey = "";
+            string and = "";
+            string[] keys = dbKeys.Split(',');
+            foreach (string key in keys)
+            {
+                string attribute = key.Trim();
+                string attributeValue = "'" + dataObject[attribute].ToString() + "'";
+                dataKey = dataKey + and + key.Trim() + " = " + attributeValue;
+                and = " AND ";
+            }
+            return dataKey;
+        }
+
+        private async Task<int> GetIndexNode(string dataType, IndexDto idxResult, PredictionParameters parms)
+        {
+            if (idxResult == null) return 0;
+
+            int nodeid = 0;
+            string nodeName = dataType + "s";
+
+            ResponseDto response = await _idxAccess.GetDescendants<ResponseDto>(idxResult.IndexId, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+            if (!response.IsSuccess)
+            {
+                throw new InvalidOperationException($"Failed to children: {string.Join(", ", response.ErrorMessages)}");
+            }
+            var indexElement = (JsonElement)response.Result!;
+            var indexes = indexElement.Deserialize<List<IndexDto>>(_jsonOptions)!;
+
+            var nodeIndex = indexes.FirstOrDefault(x => x.DataType == nodeName);
+            if (nodeIndex != null)
+            {
+                nodeid = nodeIndex.IndexId;
+            }
+
+            if (nodeid == 0)
+            {
+                nodeIndex = new IndexDto();
+                nodeIndex.Latitude = 0.0;
+                nodeIndex.Longitude = 0.0;
+                nodeIndex.DataType = nodeName;
+                nodeIndex.DataName = nodeName;
+                //nodeid = await _idxAccess.InsertIndex(nodeIndex, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+
+                //nodeid = await _idxAccess.InsertIndex(nodeIndex, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+
+                _newIndexes.Add(new IndexDto
+                {
+                    Latitude = 0.0,
+                    Longitude = 0.0,
+                    DataType = nodeName,
+                    DataName = nodeName
+                });
+            }
+            
+            return nodeid;
         }
     }
 }

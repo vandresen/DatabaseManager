@@ -9,6 +9,7 @@ namespace DatabaseManager.Services.Predictions.Models
     public class IndexDto
     {
         public int IndexId { get; set; }
+        public int ParentId { get; set; }
         public string TextIndexNode { get; set; }
         public int IndexLevel { get; set; }
         public string DataName { get; set; }

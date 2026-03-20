@@ -11,6 +11,7 @@ namespace DatabaseManager.Services.Predictions.Services
         private readonly ILogger<IndexAccess> _logger;
         private readonly string _indexAPIBase;
         private readonly string _indexApiKey;
+        private readonly bool _sqlLite;
 
         public IndexAccess(IHttpClientFactory clientFactory, ILogger<IndexAccess> logger, IConfiguration configuration) : base(clientFactory)
         {
@@ -21,6 +22,11 @@ namespace DatabaseManager.Services.Predictions.Services
 
             _indexApiKey = configuration["IndexKey"]
                 ?? throw new InvalidOperationException("IndexKey is not configured");
+
+            if (!bool.TryParse(configuration["Sqlite"], out _sqlLite))
+            {
+                throw new InvalidOperationException("Sqlite is not configured or is not a valid boolean");
+            }
         }
 
         public async Task<T> GetDescendants<T>(int id, string dataSource, string project, string storageConnection)
@@ -58,6 +64,36 @@ namespace DatabaseManager.Services.Predictions.Services
                 Url = url
             });
 
+        }
+
+        public async Task<T> GetRootIndex<T>(string dataSource, string project, string storageConnection)
+        {
+            string url = "";
+            if (_sqlLite)
+            {
+                url = _indexAPIBase.BuildFunctionUrl($"/Index/1", $"project={project}", _indexApiKey);
+            }
+            else
+            {
+                url = _indexAPIBase.BuildFunctionUrl("/DmIndexes", $"Name={dataSource}&Node=/&Level=0", _indexApiKey);
+            }
+            _logger.LogInformation($"Url = {url}");
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                AzureStorage = storageConnection,
+                Url = url
+            });
+        }
+
+        public Task<T> InsertIndex<T>(IndexDto index, string dataSource, string project, string storageConnection)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<T> InsertIndexes<T>(List<IndexDto> indexes, string dataSource, string project, string storageConnection)
+        {
+            throw new NotImplementedException();
         }
 
         public async Task<T> UpdateIndexes<T>(List<IndexDto> indexes, string dataSource, string project, string storageConnection)

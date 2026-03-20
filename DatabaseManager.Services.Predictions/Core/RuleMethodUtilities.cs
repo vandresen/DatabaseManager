@@ -3,8 +3,11 @@ using DatabaseManager.Services.Predictions.Services;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using static Azure.Core.HttpHeader;
 
@@ -12,7 +15,10 @@ namespace DatabaseManager.Services.Predictions.Core
 {
     public class RuleMethodUtilities
     {
-
+        private static readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
 
         //public class IdwPoint
         //{
@@ -49,24 +55,24 @@ namespace DatabaseManager.Services.Predictions.Core
         //    public string Source { get; set; }
         //}
 
-        //public class MissingObjectsParameters
-        //{
-        //    public string DataType { get; set; }
-        //    public List<MissingObjectKey> Keys { get; set; }
-        //    public List<MissingObjectDefault> Defaults { get; set; }
-        //}
+        public class MissingObjectsParameters
+        {
+            public string DataType { get; set; }
+            public List<MissingObjectKey> Keys { get; set; }
+            public List<MissingObjectDefault> Defaults { get; set; }
+        }
 
-        //public class MissingObjectKey
-        //{
-        //    public string Key { get; set; }
-        //    public string Value { get; set; }
-        //}
+        public class MissingObjectKey
+        {
+            public string Key { get; set; }
+            public string Value { get; set; }
+        }
 
-        //public class MissingObjectDefault
-        //{
-        //    public string Default { get; set; }
-        //    public string Value { get; set; }
-        //}
+        public class MissingObjectDefault
+        {
+            public string Default { get; set; }
+            public string Value { get; set; }
+        }
 
         //public static double? CalculateDepthUsingIdw(IEnumerable<NeighbourIndex> nb, QcRuleSetup qcSetup)
         //{
@@ -293,101 +299,69 @@ namespace DatabaseManager.Services.Predictions.Core
         //    }
         //}
 
-        //public static string GetJsonForMissingDataObject(string parameters, DataAccessDef accessDef,
-        //    IEnumerable<TableSchema> attributeProperties)
-        //{
-        //    string json = "{}";
-        //    MissingObjectsParameters missingObjectParms = new MissingObjectsParameters();
-        //    missingObjectParms = JsonConvert.DeserializeObject<MissingObjectsParameters>(parameters);
+        public static string GetJsonForMissingDataObject(string parameters, DataAccessDef accessDef)
+        {
+            JsonObject dataObject = new();
 
-        //    string[] columns = Common.GetAttributes(accessDef.Select);
-        //    JObject dataObject = JObject.Parse(json);
-        //    foreach (string column in columns)
-        //    {
-        //        TableSchema tableSchema = attributeProperties.FirstOrDefault(x => x.COLUMN_NAME == column.Trim());
-        //        if (tableSchema == null)
-        //        {
-        //            break;
-        //        }
-        //        else
-        //        {
-        //            string type = tableSchema.TYPE_NAME.ToLower();
-        //            if (type == "numeric")
-        //            {
-        //                dataObject[column.Trim()] = -99999.0;
-        //            }
-        //            else if (type == "datetime")
-        //            {
-        //                dataObject[column.Trim()] = DateTime.Now.ToString("yyyy-MM-dd");
-        //            }
-        //            else
-        //            {
-        //                dataObject[column.Trim()] = "";
-        //            }
-        //        }
-        //    }
-        //    json = dataObject.ToString();
+            foreach (var (key, type) in accessDef.AttributeTypes)
+            {
+                dataObject[key.Trim()] = type switch
+                {
+                    AttributeType.String => JsonValue.Create(""),
+                    AttributeType.Number => JsonValue.Create(-99999.0),
+                    AttributeType.Date => JsonValue.Create(DateTime.Now.ToString("yyyy-MM-dd")),
+                    _ => throw new InvalidOperationException($"Unknown attribute type '{type}' for key '{key}'")
+                };
+            }
 
-        //    return json;
-        //}
+            return dataObject.ToJsonString();
+        }
 
-        //public static string PopulateJsonForMissingDataObject(string parameters, string emptyJson, string parentData)
-        //{
-        //    string json = emptyJson;
-        //    try
-        //    {
-        //        MissingObjectsParameters missingObjectParms = new MissingObjectsParameters();
-        //        missingObjectParms = JsonConvert.DeserializeObject<MissingObjectsParameters>(parameters);
-        //        JObject dataObject = JObject.Parse(emptyJson);
-        //        JObject parentObject = JObject.Parse(parentData);
-        //        foreach (var key in missingObjectParms.Keys)
-        //        {
-        //            var tagName = key.Key;
-        //            var variable = key.Value;
-        //            if (variable.Substring(0, 1) == "!")
-        //            {
-        //                string parentTag = key.Value.Substring(1);
-        //                variable = parentObject[parentTag].ToString();
-        //            }
-        //            dataObject[tagName] = variable;
-        //        }
-        //        dataObject["REMARK"] = $"Has been predicted and created by QCEngine;";
-        //        json = dataObject.ToString();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        json = "Error";
-        //    }
+        public static string PopulateJsonForMissingDataObject(string parameters, string emptyJson, string parentData)
+        {
+            MissingObjectsParameters missingObjectParms = JsonSerializer.Deserialize<MissingObjectsParameters>(parameters, _jsonOptions)
+                ?? throw new InvalidOperationException("Failed to deserialize missing object parameters");
 
-        //    return json;
-        //}
+            JsonObject dataObject = JsonNode.Parse(emptyJson)!.AsObject();
+            JsonObject parentObject = JsonNode.Parse(parentData)!.AsObject();
 
-        //public static string AddDefaultsForMissingDataObjects(string parameters, string inputJson)
-        //{
-        //    string json = inputJson;
-        //    try
-        //    {
-        //        MissingObjectsParameters missingObjectParms = new MissingObjectsParameters();
-        //        missingObjectParms = JsonConvert.DeserializeObject<MissingObjectsParameters>(parameters);
-        //        if (missingObjectParms.Defaults != null)
-        //        {
-        //            JObject dataObject = JObject.Parse(inputJson);
-        //            foreach (var key in missingObjectParms.Defaults)
-        //            {
-        //                var tagName = key.Default;
-        //                var variable = key.Value;
-        //                dataObject[tagName] = variable;
-        //            }
-        //            json = dataObject.ToString();
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        json = "Error";
-        //    }
+            foreach (var key in missingObjectParms.Keys)
+            { 
+                var tagName = key.Key;
+                var variable = key.Value;
+                if (variable.StartsWith("!"))
+                {
+                    string parentTag = key.Value.Substring(1);
+                    variable = parentObject[parentTag]?.ToString()
+                        ?? throw new InvalidOperationException($"Parent tag '{parentTag}' not found in parent data");
+                }
+                dataObject[tagName] = variable;
+            }
 
-        //    return json;
-        //}
+            dataObject["REMARK"] = "Has been predicted and created by QCEngine";
+
+            return dataObject.ToJsonString();
+        }
+
+        public static string AddDefaultsForMissingDataObjects(string parameters, string inputJson)
+        {
+            MissingObjectsParameters missingObjectParms = JsonSerializer.Deserialize<MissingObjectsParameters>(parameters, _jsonOptions)
+                ?? throw new InvalidOperationException("Failed to deserialize missing object parameters");
+
+            if (missingObjectParms.Defaults == null || missingObjectParms.Defaults.Count == 0)
+            {
+                return inputJson;
+            }
+
+            JsonObject dataObject = JsonNode.Parse(inputJson)!.AsObject();
+
+            foreach (var item in missingObjectParms.Defaults)
+            {
+                dataObject[item.Default] = item.Value;
+            }
+
+            return dataObject.ToJsonString();
+        }
 
         //public static DataAccessDef GetDataAccessDefintionFromRoot(IndexDBAccess idxdata, string dataConnector, string dataType)
         //{
