@@ -12,7 +12,7 @@
         Task<IndexModel> GetIndexRoot(string connectionString);
         Task UpdateIndex(IndexModel indexModel, string connectionString);
         Task UpdateIndexes(List<IndexModel> indexes, string connectionString);
-        Task InsertSingleIndex(IndexModel indexModel, int parentid, string connectionString, string project);
+        Task<int> InsertSingleIndex(IndexModel indexModel, string project);
         Task InsertIndexes(List<IndexModel> indexModel, int parentid, string connectionString, string project);
         void ClearAllQCFlags(string connectionString);
         Task<IEnumerable<IndexModel>> GetDescendants(int id, string project);

@@ -23,6 +23,11 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             throw new NotImplementedException();
         }
 
+        public Task<T> ExecuteScalar<T>(string sql, object parameters, string connectionString)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task ExecuteSQL(string sql, string connectionString)
         {
             throw new NotImplementedException();

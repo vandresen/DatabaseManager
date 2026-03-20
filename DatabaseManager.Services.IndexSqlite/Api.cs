@@ -10,6 +10,7 @@ namespace DatabaseManager.Services.IndexSqlite
         {
             app.MapGet("/Index", GetIndexes);
             app.MapGet("/Index/{id}", GetIndex);
+            app.MapPost("/Index", SaveIndex);
             app.MapPost("/CreateDatabase", CreateIndexDatabase);
             app.MapPost("/BuildIndex", BuildIndex);
             app.MapGet("/GetDescendants/{id}", GetDescendants);
@@ -265,6 +266,24 @@ namespace DatabaseManager.Services.IndexSqlite
             {
                 response.IsSuccess = false;
                 string newString = $"UpdateIndexes: Could not update indexes in project, {ex}";
+                response.ErrorMessages.Insert(0, newString);
+            }
+
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> SaveIndex(IndexModel index, string Project, IIndexAccess idxAccess)
+        {
+            ResponseDto response = new();
+            try
+            {
+                await idxAccess.InsertSingleIndex(index, Project);
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"SaveIndex: Could not insert index in project, {ex}";
                 response.ErrorMessages.Insert(0, newString);
             }
 

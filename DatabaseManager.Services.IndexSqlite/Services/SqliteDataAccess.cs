@@ -31,6 +31,13 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             }
         }
 
+        public async Task<T> ExecuteScalar<T>(string sql, object parameters, string connectionString)
+        {
+            using IDbConnection cnn = new SqliteConnection(connectionString);
+            SpatialiteLoader.Load((System.Data.Common.DbConnection)cnn);
+            return await cnn.ExecuteScalarAsync<T>(sql, parameters);
+        }
+
         public async Task ExecuteSQL(string sql, string connectionString)
         {
             

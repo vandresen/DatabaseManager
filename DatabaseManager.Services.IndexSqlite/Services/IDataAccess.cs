@@ -10,6 +10,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
         Task SaveDataSQL<T>(string sql, T parameters, string connectionString);
         Task DeleteDataSQL<T>(string sql, T parameters, string connectionString);
         Task ExecuteSQL(string sql, string connectionString);
+        Task<T> ExecuteScalar<T>(string sql, object parameters, string connectionString);
         Task<T> Count<T, U>(string sql, U parameters, string connectionString);
         Task<DataTable> GetDataTable(string select, string query, string dataType);
         void OpenConnection(ConnectParameters source, ConnectParameters target);

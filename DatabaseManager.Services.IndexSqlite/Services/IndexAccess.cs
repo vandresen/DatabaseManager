@@ -238,14 +238,15 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             await _id.ExecuteSQL(sql, _connectionString);
         }
 
-        public async Task InsertSingleIndex(IndexModel indexModel, int parentid, string connectionString, string project)
+        public async Task<int> InsertSingleIndex(IndexModel indexModel, string project)
         {
             _project = project;
             _projectTable = GetProjectTable();
             string sql = $"INSERT INTO {_projectTable} " +
-                "(IndexId, DataName, DataType, JsonDataObject, ParentId, Locations) " +
-                "VALUES(@IndexId, @DataName, @DataType, @JsonDataObject, @ParentId, MakePoint(@Longitude, @Latitude, 4326))";
-            await _id.SaveDataSQL(sql, indexModel, connectionString);
+                "(DataName, DataType, JsonDataObject, ParentId, Locations) " +
+                "VALUES(@DataName, @DataType, @JsonDataObject, @ParentId, MakePoint(@Longitude, @Latitude, 4326)); " +
+                "SELECT last_insert_rowid();";
+            return await _id.ExecuteScalar<int>(sql, indexModel, _connectionString);
         }
 
         public async Task InsertIndexes(List<IndexModel> indexModel, int parentid, string connectionString, string project)
