@@ -388,7 +388,7 @@ namespace DatabaseManager.Services.Predictions.Services
                 nodeIndex.Longitude = 0.0;
                 nodeIndex.DataType = nodeName;
                 nodeIndex.DataName = nodeName;
-                ResponseDto response = await _idxAccess.InsertIndex<ResponseDto>(nodeIndex, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+                ResponseDto insertResponse = await _idxAccess.InsertIndex<ResponseDto>(nodeIndex, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
 
                 //nodeid = await _idxAccess.InsertIndex(nodeIndex, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
 

@@ -277,8 +277,9 @@ namespace DatabaseManager.Services.IndexSqlite
             ResponseDto response = new();
             try
             {
-                await idxAccess.InsertSingleIndex(index, Project);
+                var result = await idxAccess.InsertSingleIndex(index, Project);
                 response.IsSuccess = true;
+                response.Result = result;
             }
             catch (Exception ex)
             {
