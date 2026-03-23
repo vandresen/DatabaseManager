@@ -7,6 +7,7 @@ using System.Data;
 using System.IO.Pipelines;
 using System.Net;
 using System.Reflection;
+using System.Reflection.Metadata.Ecma335;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -264,15 +265,22 @@ namespace DatabaseManager.Services.Predictions.Services
             int nodeId = await GetIndexNode(result.DataType, parentIndex, parms);
             if (nodeId == 0) return;
 
-            _newIndexes.Add(new IndexDto
+            IndexDto insertIndex = (new IndexDto
             {
                 Latitude = latitude,
                 Longitude = longitude,
                 DataType = result.DataType,
                 DataName = dataName,
                 DataKey = dataKey,
-                JsonDataObject = result.DataObject
+                JsonDataObject = result.DataObject,
+                ParentId = nodeId,
             });
+
+            ResponseDto insertResponse = await _idxAccess.InsertIndex<ResponseDto>(insertIndex, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+            if (!insertResponse.IsSuccess)
+            {
+                throw new InvalidOperationException($"Failed to insert node: {string.Join(", ", insertResponse.ErrorMessages)}");
+            }
         }
 
         private async Task<List<IndexFileData>> GetIndexFileData(string dataType, PredictionParameters parms)
@@ -378,30 +386,23 @@ namespace DatabaseManager.Services.Predictions.Services
             var nodeIndex = indexes.FirstOrDefault(x => x.DataType == nodeName);
             if (nodeIndex != null)
             {
-                nodeid = nodeIndex.IndexId;
+                return nodeIndex.IndexId;
             }
 
-            if (nodeid == 0)
+            nodeIndex = new IndexDto();
+            nodeIndex.Latitude = 0.0;
+            nodeIndex.Longitude = 0.0;
+            nodeIndex.DataType = nodeName;
+            nodeIndex.DataName = nodeName;
+            nodeIndex.ParentId = idxResult.IndexId;
+            ResponseDto insertResponse = await _idxAccess.InsertIndex<ResponseDto>(nodeIndex, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+            if (!insertResponse.IsSuccess)
             {
-                nodeIndex = new IndexDto();
-                nodeIndex.Latitude = 0.0;
-                nodeIndex.Longitude = 0.0;
-                nodeIndex.DataType = nodeName;
-                nodeIndex.DataName = nodeName;
-                ResponseDto insertResponse = await _idxAccess.InsertIndex<ResponseDto>(nodeIndex, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
-
-                //nodeid = await _idxAccess.InsertIndex(nodeIndex, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
-
-                //_newIndexes.Add(new IndexDto
-                //{
-                //    Latitude = 0.0,
-                //    Longitude = 0.0,
-                //    DataType = nodeName,
-                //    DataName = nodeName
-                //});
+                throw new InvalidOperationException($"Failed to insert node: {string.Join(", ", insertResponse.ErrorMessages)}");
             }
-            
-            return nodeid;
+
+            var insertElement = (JsonElement)insertResponse.Result!;
+            return insertElement.Deserialize<int>();
         }
     }
 }

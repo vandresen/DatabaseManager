@@ -103,7 +103,8 @@ namespace DatabaseManager.Services.Predictions.Services
             {
                 ApiType = SD.ApiType.POST,
                 AzureStorage = storageConnection,
-                Url = url
+                Url = url,
+                Data = index
             });
         }
 
