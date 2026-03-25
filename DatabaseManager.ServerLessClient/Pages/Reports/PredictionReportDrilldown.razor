@@ -69,9 +69,11 @@ else
     protected override async Task OnInitializedAsync()
     {
         Console.WriteLine($"Rule id = {Id}");
-        ruleModel = await rules.GetRuleAsync(singleton.TargetConnector, Id);
+        string source = singleton.TargetConnector;
+        if (SD.Sqlite) source = singleton.Project;
+        ruleModel = await rules.GetRuleAsync(source, Id);
         header = ruleModel.RuleName;
-        dataIndex = await rp.GetResult(singleton.TargetConnector, Id);
+        dataIndex = await rp.GetResult(source, Id);
         if (dataIndex != null)
         {
             DmsIndex firstObject = dataIndex.First();
