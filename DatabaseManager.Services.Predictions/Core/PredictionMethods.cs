@@ -73,40 +73,41 @@ namespace DatabaseManager.Services.Predictions.Core
             public double MAX { get; set; }
         }
 
-        //public static PredictionResult PredictDepthUsingIDW(PredictionRuleSetup qcSetup, DapperDataAccess dp, IndexDBAccess idxdata)
-        //{
-        //    double? depth = null;
-        //    PredictionResult result = new PredictionResult
-        //    {
-        //        Status = "Failed"
-        //    };
-        //    RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+        public static PredictionResult PredictDepthUsingIDW(PredictionRuleSetup qcSetup, IDatabaseAccess dp, IIndexAccess idxdata)
+        {
+            double? depth = null;
+            PredictionResult result = new PredictionResult
+            {
+                Status = "Failed"
+            };
+            RuleModelDto rule = System.Text.Json.JsonSerializer.Deserialize<RuleModelDto>(qcSetup.RuleObject);
 
-        //    string path = $"$.{rule.DataAttribute}";
-        //    string failRule = $"%{rule.FailRule}%";
-        //    IEnumerable<NeighbourIndex> nbs = Task.Run(() => idxdata.GetNeighbors(qcSetup.IndexId, failRule, path, qcSetup.DataConnector)).
-        //        GetAwaiter().GetResult();
-        //    if (nbs.Count() > 0)
-        //    {
-        //        depth = RuleMethodUtilities.CalculateDepthUsingIdw(nbs, qcSetup);
-        //    }
+            string path = $"$.{rule.DataAttribute}";
+            string failRule = $"%{rule.FailRule}%";
+            //ResponseDto updateResponse = await _idxAccess.UpdateIndexes<ResponseDto>(correctedIndexes, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+            //IEnumerable<NeighbourIndex> nbs = Task.Run(() => idxdata.GetNeighbors(qcSetup.IndexId, failRule, path, qcSetup.DataConnector)).
+            //    GetAwaiter().GetResult();
+            //if (nbs.Count() > 0)
+            //{
+            //    depth = RuleMethodUtilities.CalculateDepthUsingIdw(nbs, qcSetup);
+            //}
 
-        //    if (depth != null)
-        //    {
+            //if (depth != null)
+            //{
 
-        //        JObject dataObject = JObject.Parse(qcSetup.DataObject);
-        //        dataObject[rule.DataAttribute] = depth;
-        //        string remark = dataObject["REMARK"] + $";{rule.DataAttribute} has been predicted by QCEngine;";
-        //        dataObject["REMARK"] = remark;
-        //        result.DataObject = dataObject.ToString();
-        //        result.DataType = rule.DataType;
-        //        result.SaveType = "Update";
-        //        result.IndexId = qcSetup.IndexId;
-        //        result.Status = "Passed";
-        //    }
+            //    JObject dataObject = JObject.Parse(qcSetup.DataObject);
+            //    dataObject[rule.DataAttribute] = depth;
+            //    string remark = dataObject["REMARK"] + $";{rule.DataAttribute} has been predicted by QCEngine;";
+            //    dataObject["REMARK"] = remark;
+            //    result.DataObject = dataObject.ToString();
+            //    result.DataType = rule.DataType;
+            //    result.SaveType = "Update";
+            //    result.IndexId = qcSetup.IndexId;
+            //    result.Status = "Passed";
+            //}
 
-        //    return result;
-        //}
+            return result;
+        }
 
         //public static PredictionResult PredictDominantLithology(PredictionRuleSetup qcSetup, DapperDataAccess dp, IndexDBAccess idxdata)
         //{

@@ -66,6 +66,11 @@ namespace DatabaseManager.Services.Predictions.Services
 
         }
 
+        public Task<T> GetNeighbors<T>(int id, string dataSource, string project, string storageConnection)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<T> GetRootIndex<T>(string dataSource, string project, string storageConnection)
         {
             string url = "";
