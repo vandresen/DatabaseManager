@@ -32,11 +32,6 @@ namespace DatabaseManager.ServerLessClient
                 SD.EsriKey = builder.Configuration["ArcGISApiKey"];
             }
 
-            builder.Services.AddHttpClient("DataOpsAPI", client =>
-            {
-                client.Timeout = TimeSpan.FromMinutes(5);
-            });
-
             builder.Services.AddGeoBlazor(builder.Configuration);
             ConfigureServices(builder.Services, sqlite);
 
@@ -59,29 +54,23 @@ namespace DatabaseManager.ServerLessClient
 
         private static void ConfigureServices(IServiceCollection services, bool sqlite)
         {
+            services.AddHttpClient("DatabaseManager", client =>
+                client.Timeout = TimeSpan.FromMinutes(5));
+            services.AddHttpClient("DataOpsAPI", client =>
+                client.Timeout = TimeSpan.FromMinutes(5));
+
             services.AddSingleton<BlazorSingletonService>();
             services.AddBlazoredLocalStorage();
 
             services.AddHttpClient();
-            services.AddHttpClient<IDataSources, DataSources>();
-            services.AddHttpClient<IRuleService, RuleService>();
-            services.AddHttpClient<IReport, ReportService>();
 
             services.AddScoped<IDataSources, DataSources>();
-            //services.AddScoped<IDataModelService, DataModelService>();
-            //services.AddScoped<IDisplayMessage, DisplayMessage>();
             services.AddScoped<IPopupMessage, PopupMessage>();
-            //services.AddScoped<IHttpService, HttpService>();
             services.AddScoped<IDataOps, DataOps>();
-            //services.AddScoped<IDataTransfer, DataTransferServerLess>();
-            //services.AddScoped<IDataModelCreate, DataModelCreateServerless>();
-            //services.AddScoped<IDataIndexer, DataIndexerServerLess>();
             services.AddScoped<IReport, ReportService>();
             services.AddScoped<IRuleService, RuleService>();
-            //services.AddScoped<IReportEdit, ReportEdit>();
-            //services.AddScoped<ISync, Sync>();
-            //services.AddScoped<ICookies, Cookies>();
             services.AddScoped<Services.IDataConfigurationService, Services.DataConfigurationService>();
+            services.AddScoped<IDatabaseManagementService, DatabaseManagementService>();
 
             if (sqlite)
             {

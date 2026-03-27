@@ -135,9 +135,29 @@ else
         Console.WriteLine($"We are here");
         if (canEdit)
         {
-            List<TableSchema> info = await rp.GetAttributeInfo(singleton.TargetConnector, dataType);
-            Console.WriteLine($"Number of attributes: {info.Count}");
-            TableSchema attributeInfo = info.FirstOrDefault(p => p.COLUMN_NAME == columnName);
+            TableSchema attributeInfo = null;
+            if (SD.Sqlite)
+            {
+                if (dataDef != null && dataDef.AttributeTypes.TryGetValue(columnName, out AttributeType attrType))
+                {
+                    attributeInfo = new TableSchema
+                    {
+                        COLUMN_NAME = columnName,
+                        TYPE_NAME = attrType == AttributeType.Number ? "numeric" : "varchar"
+                    };
+                }
+                else
+                {
+                    Console.WriteLine($"Error: Could not find {columnName} in AttributeTypes");
+                }
+            }
+            else
+            {
+                List<TableSchema> info = await rp.GetAttributeInfo(singleton.TargetConnector, dataType);
+                Console.WriteLine($"Number of attributes: {info.Count}");
+                attributeInfo = info.FirstOrDefault(p => p.COLUMN_NAME == columnName);
+            }
+            
             if (attributeInfo != null)
             {
                 if (attributeInfo.TYPE_NAME == "numeric") { valueType = "number"; }
@@ -154,7 +174,9 @@ else
 
     private async Task<List<ReportData>> CreateReportList()
     {
-        dataIndex = await rp.GetResult(singleton.TargetConnector, Id);
+        string source = singleton.TargetConnector;
+        if (SD.Sqlite) source = singleton.Project;
+        dataIndex = await rp.GetResult(source, Id);
         if (dataIndex.Count == 0) dataDeleted = true;
         else if (dataIndex != null)
         {
@@ -232,7 +254,9 @@ else
             Console.WriteLine($"RowEditCommit event: Changes to Element {((ReportData)item).Key} committed");
             string json = JsonConvert.SerializeObject((ReportData)item);
             Console.WriteLine(json);
-            await rp.Update(singleton.TargetConnector, (ReportData)item);
+            string source = singleton.TargetConnector;
+            if (SD.Sqlite) source = singleton.Project;
+            await rp.Update(source, (ReportData)item);
         }
         catch (Exception ex)
         {
@@ -246,7 +270,9 @@ else
     private async Task Delete(int id)
     {
         Console.WriteLine($"Delete index id {id}");
-        await rp.Delete(id, singleton.TargetConnector);
+        string source = singleton.TargetConnector;
+        if (SD.Sqlite) source = singleton.Project;
+        await rp.Delete(id, source);
         List<ReportData> reportList = await CreateReportList();
         this.StateHasChanged();
     }

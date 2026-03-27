@@ -5,6 +5,7 @@
 @inject IPopupMessage displayMessage
 @inject NavigationManager navigationManager
 @inject IIndexView idxView
+@inject IDatabaseManagementService dmService
 @inject DatabaseManager.ServerLessClient.Services.IDataSources dataSourceService
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration Configuration
@@ -112,6 +113,7 @@ else
                 projects = await idxView.GetIndexProjects();
                 if (string.IsNullOrEmpty(settings.Project) == true) settings.Project = "Default";
                 await GetIndexData();
+                settings.DataAccessDefinition = await GetDataAccessDef();
             }
             else
             {
@@ -189,6 +191,17 @@ else
             indexStatus = "No index found";
             StateHasChanged();
         }
+    }
+
+    private async Task<string> GetDataAccessDef()
+    {
+        ResponseDto response = await dmService.GetDataAccessDef<ResponseDto>();
+        if (!response.IsSuccess)
+        {
+            await displayMessage.DisplayErrorMessage("Cannot get data access definition");
+            throw new InvalidOperationException($"Cannot get data access definition");
+        }
+        return response.Result.ToString()!;
     }
 
     private void DataTypes(DmsIndex item)
