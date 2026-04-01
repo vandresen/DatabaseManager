@@ -76,11 +76,11 @@ namespace DatabaseManager.Services.IndexSqlite
             return Results.Ok(response);
         }
 
-        private static async Task<IResult> GetNeighbors(int id, string project, IIndexAccess idxAccess)
+        private static async Task<IResult> GetNeighbors(int id, string failRule,string project, IIndexAccess idxAccess)
         {
             try
             {
-                return Results.Ok(await idxAccess.GetNeighbors(id, project));
+                return Results.Ok(await idxAccess.GetNeighbors(id, failRule, project));
             }
             catch (Exception ex)
             {

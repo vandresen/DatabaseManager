@@ -159,30 +159,44 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             throw new NotImplementedException();
         }
 
-        public async Task<IEnumerable<IndexModel>> GetNeighbors(int id, string project)
+        public async Task<IEnumerable<IndexModel>> GetNeighbors(int id, string failRule, string project)
         {
             _project = project;
             _projectTable = GetProjectTable();
-            string sql = getSql.Replace(_table, _projectTable) + $" WHERE IndexId = {id}";
-            var results = await _id.ReadData<IndexModel>(sql, _connectionString);
+
+            // Get target record
+            string targetSql = getSql.Replace(_table, _projectTable) + $" WHERE IndexId = {id}";
+            var results = await _id.ReadData<IndexModel>(targetSql, _connectionString);
             var target = results.FirstOrDefault();
-            if (target == null) 
-            {
+
+            if (target == null)
                 throw new Exception("Index object does not exist.");
-            }
+
             if (target.NoIndexLocation())
-            {
                 throw new Exception("Index object does not have a proper location.");
-            }
-            sql = $"SELECT " +
-                _selectAttributes +
-                $", Distance(Locations, MakePoint({target.Longitude}, {target.Latitude})) AS Distance " +
-                $"FROM {_projectTable} " +
-                $" WHERE distance IS NOT NULL AND IndexId != {id} " +
-                "ORDER BY Distance " +
-                "LIMIT 24";
-            IEnumerable<IndexModel> result = await _id.ReadData<IndexModel>(sql, _connectionString);
-            return result;
+
+            string qcFilter = string.IsNullOrEmpty(failRule)
+                ? "AND (QC_String = '' OR QC_String IS NULL)"
+                : $"AND (QC_String IS NULL OR QC_String = '' OR QC_String NOT LIKE '%{failRule}%')";
+
+            // Get neighbors using subquery so Distance alias can be used in WHERE
+            string neighborSql =
+                $"SELECT * FROM (" +
+                    $"SELECT {_selectAttributes}, " +
+                    $"Distance(Locations, MakePoint({target.Longitude}, {target.Latitude})) AS Distance " +
+                    $"FROM {_projectTable} " +
+                    $"WHERE IndexId != {id} " +
+                    $"AND DataType = '{target.DataType}' " +
+                    $"AND DataName = '{target.DataName}' " +
+                    qcFilter +
+                //$"AND QC_String not like '%{failRule}%'" +
+                $") " +
+                $"WHERE Distance IS NOT NULL " +
+                $"ORDER BY Distance " +
+                $"LIMIT 24";
+
+            var neighbors = await _id.ReadData<IndexModel>(neighborSql, _connectionString);
+            return neighbors;
         }
 
         public Task<IndexModel> GetIndexRoot(string connectionString)
