@@ -18,6 +18,8 @@
         public static string DataRuleKey { get; set; }
         public static string DataTransferAPIBase { get; set; }
         public static string DataTransferKey { get; set; }
+        public static string DatabaseManagerAPIBase { get; set; }
+        public static string DatabaseManagerKey { get; set; }
         public static bool Sqlite { get; set; }
         public static string EsriKey { get; set; }
         public enum ApiType

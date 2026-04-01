@@ -12,11 +12,9 @@ namespace DatabaseManager.ServerLessClient.Services
         public DatabaseManagementService(IHttpClientFactory clientFactory, ILogger<DatabaseManagementService> logger, IConfiguration configuration) : base(clientFactory)
         {
             _logger = logger;
-
-            _databaseManagerAPIBase = configuration["ServiceUrls:DatabaseManagerAPI"]
+            _databaseManagerAPIBase = SD.DatabaseManagerAPIBase
                 ?? throw new InvalidOperationException("DatabaseManagerAPI is not configured");
-
-            _databaseManagerKey = configuration["ServiceUrls:DatabaseManagerKey"]
+            _databaseManagerKey = SD.DatabaseManagerKey
                 ?? throw new InvalidOperationException("DatabaseManagerKey is not configured");
         }
 

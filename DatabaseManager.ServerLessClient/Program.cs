@@ -48,6 +48,8 @@ namespace DatabaseManager.ServerLessClient
             SD.DataTransferKey = builder.Configuration["ServiceUrls:DataTransferKey"];
             SD.DataOpsManageAPIBase = builder.Configuration["ServiceUrls:DataOpsManageAPI"];
             SD.DataOpsManageKey = builder.Configuration["ServiceUrls:DataOpsManageKey"];
+            SD.DatabaseManagerAPIBase = builder.Configuration["ServiceUrls:DatabaseManagerAPI"];
+            SD.DatabaseManagerKey = builder.Configuration["ServiceUrls:DatabaseManagerKey"];
 
             await builder.Build().RunAsync();
         }
