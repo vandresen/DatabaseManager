@@ -84,7 +84,8 @@ namespace DatabaseManager.Services.Predictions.Core
 
             string path = $"$.{rule.DataAttribute}";
             string failRule = $"%{rule.FailRule}%";
-            //ResponseDto updateResponse = await _idxAccess.UpdateIndexes<ResponseDto>(correctedIndexes, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+            ResponseDto response = Task.Run(() => idxdata.GetNeighbors<ResponseDto>(qcSetup.IndexId, qcSetup.DataConnector, failRule, qcSetup.Project))
+                .GetAwaiter().GetResult();
             //IEnumerable<NeighbourIndex> nbs = Task.Run(() => idxdata.GetNeighbors(qcSetup.IndexId, failRule, path, qcSetup.DataConnector)).
             //    GetAwaiter().GetResult();
             //if (nbs.Count() > 0)

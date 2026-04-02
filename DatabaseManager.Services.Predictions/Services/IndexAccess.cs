@@ -2,6 +2,7 @@
 using DatabaseManager.Services.Predictions.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.ComponentModel.DataAnnotations;
 using System.Data.Common;
 
 namespace DatabaseManager.Services.Predictions.Services
@@ -66,9 +67,14 @@ namespace DatabaseManager.Services.Predictions.Services
 
         }
 
-        public Task<T> GetNeighbors<T>(int id, string dataSource, string project, string storageConnection)
+        public async Task<T> GetNeighbors<T>(int id, string dataSource, string failRule, string project)
         {
-            throw new NotImplementedException();
+            string url = _indexAPIBase.BuildFunctionUrl($"/GetNeighbors/{id}", $"Name={dataSource}&Project={project}&failRule={failRule}", _indexApiKey);
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                Url = url
+            });
         }
 
         public async Task<T> GetRootIndex<T>(string dataSource, string project, string storageConnection)

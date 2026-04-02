@@ -15,7 +15,8 @@ namespace DatabaseManager.Services.Predictions.Models
         //public string DatabaseUser { get; set; }
 
         //public string DatabasePassword { get; set; }
-        //public string DataConnector { get; set; }
+        public string DataConnector { get; set; }
+        public string Project { get; set; }
 
         public string DataObject { get; set; }
 

@@ -14,7 +14,7 @@ namespace DatabaseManager.Services.Predictions.Services
         Task<T> InsertIndexes<T>(List<IndexDto> indexes, string dataSource, string project, string storageConnection);
         Task<T> InsertIndex<T>(IndexDto index, string dataSource, string project, string storageConnection);
         Task<T> GetDescendants<T>(int id, string dataSource, string project, string storageConnection);
-        Task<T> GetNeighbors<T>(int id, string dataSource, string project, string storageConnection);
+        Task<T> GetNeighbors<T>(int id, string dataSource, string failRule, string project);
         Task<T> GetIndex<T>(int id, string project, string storageConnection);
         Task<T> GetRootIndex<T>(string dataSource, string project, string storageConnection);
     }

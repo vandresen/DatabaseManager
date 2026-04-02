@@ -71,21 +71,26 @@ namespace DatabaseManager.Services.IndexSqlite
             catch (Exception ex)
             {
                 response.IsSuccess = false;
-                response.ErrorMessages.Insert(0, $"GetNeighbors: Could not get neighbors for id {id}, {ex}");
+                response.ErrorMessages.Insert(0, $"GetDescendants: Could not get descendents for id {id}, {ex}");
             }
             return Results.Ok(response);
         }
 
         private static async Task<IResult> GetNeighbors(int id, string failRule,string project, IIndexAccess idxAccess)
         {
+            ResponseDto response = new();
             try
             {
-                return Results.Ok(await idxAccess.GetNeighbors(id, failRule, project));
+                var result = await idxAccess.GetNeighbors(id, failRule, project);
+                response.IsSuccess = true;
+                response.Result = result;
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                response.IsSuccess = false;
+                response.ErrorMessages.Insert(0, $"GetNeighbors: Could not get neighbors for id {id}, {ex}");
             }
+            return Results.Ok(response);
         }
 
         private static async Task<IResult> CreateIndexDatabase(IIndexAccess idxAccess)
