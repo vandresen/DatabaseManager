@@ -68,31 +68,35 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine($"Rule id = {Id}");
-        string source = singleton.TargetConnector;
-        if (SD.Sqlite) source = singleton.Project;
+        string source = SD.Sqlite ? singleton.Project : singleton.TargetConnector;
+
         ruleModel = await rules.GetRuleAsync(source, Id);
+        if (ruleModel == null) throw new Exception($"Rule {Id} not found.");
         header = ruleModel.RuleName;
+
         dataIndex = await rp.GetResult(source, Id);
-        if (dataIndex != null)
+
+        if (dataIndex == null || dataIndex.Count == 0)
         {
-            DmsIndex firstObject = dataIndex.First();
-            string jsonData = firstObject.JsonData;
-            if (string.IsNullOrEmpty(jsonData)) dataDeleted = true;
+            reportList = new List<ReportData>();
+            return;
         }
-        reportList = new List<ReportData>();
-        foreach (var item in dataIndex)
+
+        if (string.IsNullOrEmpty(dataIndex.First().JsonData))
         {
-            string key = item.DataKey;
-            reportList.Add(new ReportData
-                {
-                    Id = item.Id,
-                    JsonData = item.JsonData,
-                    Key = key,
-                    RuleKey = ruleModel.RuleKey
-                });
+            dataDeleted = true;
+            return;
         }
-        Console.WriteLine($"Number of predictions are {dataIndex.Count}");
+
+        reportList = dataIndex.Select(item => new ReportData
+        {
+            Id = item.Id,
+            JsonData = item.JsonData,
+            Key = item.DataKey,
+            RuleKey = ruleModel.RuleKey
+        }).ToList();
+
+        Console.WriteLine($"Number of predictions: {reportList.Count}");
     }
 
     private void ShowBtnPress(int id)
