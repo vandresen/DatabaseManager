@@ -382,14 +382,15 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             if (level["DataObjects"] != null)
             {
                 int nodeId = 1;
+                int originalParentIndexId = parentIndexId;
                 foreach (JToken subLevel in level["DataObjects"])
                 {
                     _parentItem = GetIndexData(level);
                     _currentItem = GetIndexData(subLevel);
                     string childNodeId = parentNodeId + $"{nodeId}/";
-                    if (await CreateChildNodeIndex(subLevel, parentId, childNodeId, parentIndexId))
+                    if (await CreateChildNodeIndex(subLevel, parentId, childNodeId, originalParentIndexId))
                     {
-                        parentIndexId = _indexId;
+                        int childNodeIndexId = _indexId;
                         nodeId++;
                         int childCount = _currentItem.DataTable.Rows.Count;
                         DataRow pr = _parentItem.DataTable.Rows[parentId];
@@ -399,8 +400,8 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                             _currentItem = GetIndexData(subLevel);
                             _location = GetIndexLocation(pr);
                             string indexNode = childNodeId + $"{i + 1}/";
-                            await PopulateIndexItem(_currentItem.DataTable.Rows[i], indexNode, parentIndexId);
-                            await PopulateChildIndex(subLevel, i, indexNode, parentIndexId);
+                            await PopulateIndexItem(_currentItem.DataTable.Rows[i], indexNode, childNodeIndexId);
+                            await PopulateChildIndex(subLevel, i, indexNode, childNodeIndexId);
                         }
                     }
                 }
@@ -680,7 +681,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                         NodeCount = parentCount,
                         ParentNodeId = strNodeId,
                         Name = (string)token["DataName"],
-                        ParentId = nodeId + 1
+                        ParentId = _indexId
                     });
                 }
             }
@@ -718,7 +719,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                 {
                     IndexId = _indexId,
                     DataName = parentNodeName,
-                    ParentId = parentId,
+                    ParentId = 1,
                     DataType = parentNodeName,
                     IndexNode = nodeId
                 });

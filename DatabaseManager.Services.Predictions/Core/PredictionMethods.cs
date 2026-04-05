@@ -4,6 +4,7 @@ using DatabaseManager.Services.Predictions.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -86,26 +87,30 @@ namespace DatabaseManager.Services.Predictions.Core
             string failRule = $"%{rule.FailRule}%";
             ResponseDto response = Task.Run(() => idxdata.GetNeighbors<ResponseDto>(qcSetup.IndexId, qcSetup.DataConnector, failRule, qcSetup.Project))
                 .GetAwaiter().GetResult();
-            //IEnumerable<NeighbourIndex> nbs = Task.Run(() => idxdata.GetNeighbors(qcSetup.IndexId, failRule, path, qcSetup.DataConnector)).
-            //    GetAwaiter().GetResult();
-            //if (nbs.Count() > 0)
-            //{
-            //    depth = RuleMethodUtilities.CalculateDepthUsingIdw(nbs, qcSetup);
-            //}
+            if (!response.IsSuccess)
+            {
+                return result;
+            }
+            var indexElement = (JsonElement)response.Result!;
+            var nbs = indexElement.Deserialize<List<NeighbourIndex>>(_jsonOptions)!;
+            if (nbs.Count() > 0)
+            {
+                depth = RuleMethodUtilities.CalculateDepthUsingIdw(nbs, qcSetup);
+            }
 
-            //if (depth != null)
-            //{
+            if (depth != null)
+            {
 
-            //    JObject dataObject = JObject.Parse(qcSetup.DataObject);
-            //    dataObject[rule.DataAttribute] = depth;
-            //    string remark = dataObject["REMARK"] + $";{rule.DataAttribute} has been predicted by QCEngine;";
-            //    dataObject["REMARK"] = remark;
-            //    result.DataObject = dataObject.ToString();
-            //    result.DataType = rule.DataType;
-            //    result.SaveType = "Update";
-            //    result.IndexId = qcSetup.IndexId;
-            //    result.Status = "Passed";
-            //}
+                //JObject dataObject = JObject.Parse(qcSetup.DataObject);
+                //dataObject[rule.DataAttribute] = depth;
+                //string remark = dataObject["REMARK"] + $";{rule.DataAttribute} has been predicted by QCEngine;";
+                //dataObject["REMARK"] = remark;
+                //result.DataObject = dataObject.ToString();
+                //result.DataType = rule.DataType;
+                //result.SaveType = "Update";
+                //result.IndexId = qcSetup.IndexId;
+                //result.Status = "Passed";
+            }
 
             return result;
         }

@@ -1,15 +1,6 @@
 ﻿using DatabaseManager.Services.Predictions.Models;
-using DatabaseManager.Services.Predictions.Services;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Data.Common;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Threading.Tasks;
-using static Azure.Core.HttpHeader;
 
 namespace DatabaseManager.Services.Predictions.Core
 {
@@ -20,11 +11,11 @@ namespace DatabaseManager.Services.Predictions.Core
             PropertyNameCaseInsensitive = true
         };
 
-        //public class IdwPoint
-        //{
-        //    public double Distance { get; set; }
-        //    public double Depth { get; set; }
-        //}
+        public class IdwPoint
+        {
+            public double Distance { get; set; }
+            public double Depth { get; set; }
+        }
 
         //public class CurveSpikeParameters
         //{
@@ -74,67 +65,67 @@ namespace DatabaseManager.Services.Predictions.Core
             public string Value { get; set; }
         }
 
-        //public static double? CalculateDepthUsingIdw(IEnumerable<NeighbourIndex> nb, QcRuleSetup qcSetup)
-        //{
-        //    double? depth = null;
+        public static double? CalculateDepthUsingIdw(IEnumerable<NeighbourIndex> nb, PredictionRuleSetup qcSetup)
+        {
+            double? depth = null;
 
-        //    double prevLat = -99999.0;
-        //    double prevLon = -99999.0;
+            double prevLat = -99999.0;
+            double prevLon = -99999.0;
 
-        //    List<NeighbourIndex> validNbs = new List<NeighbourIndex>();
-        //    foreach (NeighbourIndex neighbour in nb)
-        //    {
-        //        Boolean deleteRow = false;
-        //        if (neighbour.Latitude == -99999.0 && neighbour.Longitude == -99999.0) deleteRow = true;
-        //        if (Math.Abs(prevLat - neighbour.Latitude) < 0.0001 & Math.Abs(prevLon - neighbour.Longitude) < 0.0001) deleteRow = true;
-        //        if (neighbour.Distance < 0.1) deleteRow = true;
-        //        if (!deleteRow)
-        //        {
-        //            validNbs.Add(neighbour);
-        //        }
-        //        prevLat = neighbour.Latitude;
-        //        prevLon = neighbour.Longitude;
-        //    }
+            List<NeighbourIndex> validNbs = new List<NeighbourIndex>();
+            foreach (NeighbourIndex neighbour in nb)
+            {
+                Boolean deleteRow = false;
+                if (neighbour.Latitude == -99999.0 && neighbour.Longitude == -99999.0) deleteRow = true;
+                if (Math.Abs(prevLat - neighbour.Latitude) < 0.0001 & Math.Abs(prevLon - neighbour.Longitude) < 0.0001) deleteRow = true;
+                if (neighbour.Distance < 0.1) deleteRow = true;
+                if (!deleteRow)
+                {
+                    validNbs.Add(neighbour);
+                }
+                prevLat = neighbour.Latitude;
+                prevLon = neighbour.Longitude;
+            }
 
-        //    JObject ruleObject = JObject.Parse(qcSetup.RuleObject);
-        //    string depthAttribute = ruleObject["DataAttribute"].ToString();
-        //    List<IdwPoint> idwPoints = new List<IdwPoint>();
+            //JObject ruleObject = JObject.Parse(qcSetup.RuleObject);
+            //string depthAttribute = ruleObject["DataAttribute"].ToString();
+            List<IdwPoint> idwPoints = new List<IdwPoint>();
 
-        //    foreach (NeighbourIndex nbi in validNbs)
-        //    {
-        //        if (nbi.Depth != -99999.0)
-        //        {
-        //            idwPoints.Add(new IdwPoint
-        //            {
-        //                Distance = nbi.Distance,
-        //                Depth = nbi.Depth
-        //            });
-        //        }
-        //    }
+            foreach (NeighbourIndex nbi in validNbs)
+            {
+                if (nbi.Depth != -99999.0)
+                {
+                    idwPoints.Add(new IdwPoint
+                    {
+                        Distance = nbi.Distance,
+                        Depth = nbi.Depth
+                    });
+                }
+            }
 
-        //    if (idwPoints.Count > 2) depth = IdwCalculate(idwPoints);
-        //    return depth;
-        //}
+            if (idwPoints.Count > 2) depth = IdwCalculate(idwPoints);
+            return depth;
+        }
 
-        //private static double? IdwCalculate(List<IdwPoint> idwPoints)
-        //{
-        //    double? depth = 0.0;
-        //    int power = 4;
-        //    double top = 0.0;
-        //    for (int j = 0; j < idwPoints.Count; j++)
-        //    {
-        //        top = top + (idwPoints[j].Depth / Math.Pow(idwPoints[j].Distance, power));
-        //    }
+        private static double? IdwCalculate(List<IdwPoint> idwPoints)
+        {
+            double? depth = 0.0;
+            int power = 4;
+            double top = 0.0;
+            for (int j = 0; j < idwPoints.Count; j++)
+            {
+                top = top + (idwPoints[j].Depth / Math.Pow(idwPoints[j].Distance, power));
+            }
 
-        //    double bottom = 0.0;
-        //    for (int j = 0; j < idwPoints.Count; j++)
-        //    {
-        //        bottom = bottom + (1 / Math.Pow(idwPoints[j].Distance, power));
-        //    }
-        //    depth = top / bottom;
+            double bottom = 0.0;
+            for (int j = 0; j < idwPoints.Count; j++)
+            {
+                bottom = bottom + (1 / Math.Pow(idwPoints[j].Distance, power));
+            }
+            depth = top / bottom;
 
-        //    return depth;
-        //}
+            return depth;
+        }
 
         //public static string ConsistencyCheck(string strValue, string strRefValue, string valueType)
         //{
