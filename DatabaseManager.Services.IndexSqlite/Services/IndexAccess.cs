@@ -183,7 +183,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             string neighborSql =
                 $"SELECT * FROM (" +
                     $"SELECT {_selectAttributes}, " +
-                    $"json_extract(JsonData, '$.{depthAttribute}') AS Depth, " +
+                    $"json_extract(JsonDataObject, '$.{depthAttribute}') AS Depth, " +
                     $"Distance(Locations, MakePoint({target.Longitude}, {target.Latitude})) AS Distance " +
                     $"FROM {_projectTable} " +
                     $"WHERE IndexId != {id} " +
