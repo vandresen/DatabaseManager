@@ -22,7 +22,7 @@
         Task<IEnumerable<IndexModel>> GetIndexesWithQcStringFromSP(string qcString, string connectionString);
         Task<IEnumerable<IndexModel>> GetChildrenWithName(string connectionString, string indexNode, string name);
         Task<IEnumerable<EntiretyListModel>> GetEntiretyIndexes(string project, string dataType, string entiretyName, string parentType);
-        Task<IEnumerable<IndexModel>> GetNeighbors(int id, string failRule, string depthAttribute, string project);
+        Task<IEnumerable<NeighbourIndex>> GetNeighbors(int id, string failRule, string depthAttribute, string project);
         Task<IEnumerable<IndexModel>> QueriedIndexes(string project, string dataType, string qcString);
         Task<int> GetCount(string connectionString, string query);
         Task<List<string>> GetProjects();

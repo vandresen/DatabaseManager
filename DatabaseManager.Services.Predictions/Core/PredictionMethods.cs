@@ -85,7 +85,7 @@ namespace DatabaseManager.Services.Predictions.Core
 
             string path = $"$.{rule.DataAttribute}";
             string failRule = $"%{rule.FailRule}%";
-            ResponseDto response = Task.Run(() => idxdata.GetNeighbors<ResponseDto>(qcSetup.IndexId, qcSetup.DataConnector, failRule, qcSetup.Project))
+            ResponseDto response = Task.Run(() => idxdata.GetNeighbors<ResponseDto>(qcSetup.IndexId, qcSetup.DataConnector, failRule, path, qcSetup.Project))
                 .GetAwaiter().GetResult();
             if (!response.IsSuccess)
             {

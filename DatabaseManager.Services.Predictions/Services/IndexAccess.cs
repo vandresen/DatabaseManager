@@ -67,9 +67,10 @@ namespace DatabaseManager.Services.Predictions.Services
 
         }
 
-        public async Task<T> GetNeighbors<T>(int id, string dataSource, string failRule, string project)
+        public async Task<T> GetNeighbors<T>(int id, string dataSource, string failRule, string path, string project)
         {
-            string url = _indexAPIBase.BuildFunctionUrl($"/GetNeighbors/{id}", $"Name={dataSource}&Project={project}&failRule={failRule}", _indexApiKey);
+            string url = _indexAPIBase.BuildFunctionUrl($"/GetNeighbors/{id}", $"Name={dataSource}&Project={project}&failRule={failRule}&depthAttribute={path}", 
+                _indexApiKey);
             return await this.SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,

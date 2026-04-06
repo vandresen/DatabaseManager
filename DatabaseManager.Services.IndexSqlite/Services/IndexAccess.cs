@@ -159,7 +159,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             throw new NotImplementedException();
         }
 
-        public async Task<IEnumerable<IndexModel>> GetNeighbors(int id, string failRule, string depthAttribute, string project)
+        public async Task<IEnumerable<NeighbourIndex>> GetNeighbors(int id, string failRule, string depthAttribute, string project)
         {
             _project = project;
             _projectTable = GetProjectTable();
@@ -195,7 +195,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                 $"ORDER BY Distance " +
                 $"LIMIT 24";
 
-            var neighbors = await _id.ReadData<IndexModel>(neighborSql, _connectionString);
+            var neighbors = await _id.ReadData<NeighbourIndex>(neighborSql, _connectionString);
             return neighbors;
         }
 
