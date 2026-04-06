@@ -159,7 +159,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             throw new NotImplementedException();
         }
 
-        public async Task<IEnumerable<IndexModel>> GetNeighbors(int id, string failRule, string project)
+        public async Task<IEnumerable<IndexModel>> GetNeighbors(int id, string failRule, string depthAttribute, string project)
         {
             _project = project;
             _projectTable = GetProjectTable();
@@ -183,13 +183,13 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             string neighborSql =
                 $"SELECT * FROM (" +
                     $"SELECT {_selectAttributes}, " +
+                    $"json_extract(JsonData, '$.{depthAttribute}') AS Depth, " +
                     $"Distance(Locations, MakePoint({target.Longitude}, {target.Latitude})) AS Distance " +
                     $"FROM {_projectTable} " +
                     $"WHERE IndexId != {id} " +
                     $"AND DataType = '{target.DataType}' " +
                     $"AND DataName = '{target.DataName}' " +
                     qcFilter +
-                //$"AND QC_String not like '%{failRule}%'" +
                 $") " +
                 $"WHERE Distance IS NOT NULL " +
                 $"ORDER BY Distance " +

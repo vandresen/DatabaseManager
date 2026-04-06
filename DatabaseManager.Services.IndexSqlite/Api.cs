@@ -76,12 +76,12 @@ namespace DatabaseManager.Services.IndexSqlite
             return Results.Ok(response);
         }
 
-        private static async Task<IResult> GetNeighbors(int id, string failRule,string project, IIndexAccess idxAccess)
+        private static async Task<IResult> GetNeighbors(int id, string failRule, string depthAttribute, string project, IIndexAccess idxAccess)
         {
             ResponseDto response = new();
             try
             {
-                var result = await idxAccess.GetNeighbors(id, failRule, project);
+                var result = await idxAccess.GetNeighbors(id, failRule, depthAttribute, project);
                 response.IsSuccess = true;
                 response.Result = result;
             }
