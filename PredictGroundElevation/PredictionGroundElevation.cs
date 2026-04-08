@@ -36,48 +36,44 @@ namespace PredictGroundElevation
                 if (string.IsNullOrEmpty(inputParms.DataObject))
                 {
                     _logger.LogError("Data Object is missing");
-                    Exception error = new Exception($"Data Object is missing");
-                    throw error;
+                    throw new Exception("Data Object is missing");
                 }
 
-                //Get location data
+                // Get location data
                 JObject dataObject = JObject.Parse(inputParms.DataObject);
                 string lat = dataObject["SURFACE_LATITUDE"].ToString();
                 string lon = dataObject["SURFACE_LONGITUDE"].ToString();
                 if (lat == "-99999.0" && lon == "-99999.0")
                 {
                     _logger.LogError("Can't find a good location");
-                    Exception error = new Exception($"Can't find a good location");
-                    throw error;
+                    throw new Exception("Can't find a good location");
                 }
 
-                HttpClient Client = new HttpClient();
-                string elevationKey = Environment.GetEnvironmentVariable("ElevationKey");
-                string elevationApi = Environment.GetEnvironmentVariable("ElevationApi");
-                string elevationUrl = elevationApi + lat + "," + lon + @"&key=" + elevationKey;
-                if (string.IsNullOrEmpty(elevationUrl)) 
-                {
-                    _logger.LogError("URL for elevation api is missing");
-                    Exception error = new Exception($"URL for elevation api is missing");
-                    throw error;
-                }
-                StringContent content = new StringContent("", Encoding.UTF8, "application/json");
-                HttpResponseMessage elevationResponse = Client.PostAsync(elevationUrl, content).Result;
-                if(elevationResponse.StatusCode == HttpStatusCode.OK)
+                // Open-Meteo does not require an API key
+                HttpClient client = new HttpClient();
+                string elevationUrl = $"https://api.open-meteo.com/v1/elevation?latitude={lat}&longitude={lon}";
+
+                _logger.LogInformation($"Calling elevation API: {elevationUrl}");
+
+                HttpResponseMessage elevationResponse = await client.GetAsync(elevationUrl);
+                if (elevationResponse.StatusCode == HttpStatusCode.OK)
                 {
                     using (HttpContent respContent = elevationResponse.Content)
                     {
-                        string tr = respContent.ReadAsStringAsync().Result;
+                        string tr = await respContent.ReadAsStringAsync();
                         _logger.LogInformation(tr);
+
+                        // Open-Meteo returns: {"elevation":[1607.0]}
                         JObject root = JObject.Parse(tr);
-                        string elevationsToken = root.SelectToken("resourceSets[0].resources[0].elevations").ToString();
-                        JArray elevations = JArray.Parse(elevationsToken);
+                        JArray elevations = (JArray)root["elevation"];
                         string strElevation = elevations[0].ToString();
                         _logger.LogInformation(strElevation);
+
+                        // Convert meters to feet
                         double ftElevation = Convert.ToDouble(strElevation) * 3.28084;
                         dataObject["GROUND_ELEV"] = ftElevation;
-                        //dataObject["DEPTH_DATUM"] = "GL";
-                        string remark = dataObject["REMARK"] + ";Ground elevation calculated by Bing;";
+
+                        string remark = dataObject["REMARK"] + ";Ground elevation calculated by Open-Meteo;";
                         dataObject["REMARK"] = remark;
                         result.DataObject = dataObject.ToString();
                         result.DataType = "WellBore";
@@ -85,6 +81,11 @@ namespace PredictGroundElevation
                         result.IndexId = inputParms.IndexId;
                         result.Status = "Passed";
                     }
+                }
+                else
+                {
+                    _logger.LogError($"Elevation API returned status: {elevationResponse.StatusCode}");
+                    throw new Exception($"Elevation API returned status: {elevationResponse.StatusCode}");
                 }
 
                 var response = req.CreateResponse(HttpStatusCode.OK);
@@ -101,11 +102,6 @@ namespace PredictGroundElevation
                 response.WriteString($"PredictionGroundElevation: Error processing prediction, {ex}");
                 return response;
             }
-
-            
-
-            
-            
         }
     }
 }

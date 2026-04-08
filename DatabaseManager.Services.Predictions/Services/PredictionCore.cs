@@ -160,7 +160,7 @@ namespace DatabaseManager.Services.Predictions.Services
         {
             if (result.SaveType == "Update")
             {
-                await UpdateAction(result, qcStr);
+                await UpdateAction(index, result, qcStr);
             }
             else if (result.SaveType == "Insert")
             {
@@ -176,44 +176,10 @@ namespace DatabaseManager.Services.Predictions.Services
             }
         }
 
-        private async Task UpdateAction(PredictionResult result, string qcStr)
+        private async Task UpdateAction(IndexDto index, PredictionResult result, string qcStr)
         {
-            //string idxQuery = $" where INDEXID = {result.IndexId}";
-            //IndexModel idxResult = await _indexData.GetIndex(result.IndexId, databaseConnectionString);
-            //if (idxResult != null)
-            //{
-            //    string condition = $"INDEXID={result.IndexId}";
-            //    var rows = indexTable.Select(condition);
-            //    rows[0]["JSONDATAOBJECT"] = result.DataObject;
-            //    rows[0]["QC_STRING"] = qcStr;
-            //    indexTable.AcceptChanges();
-
-            //    if (syncPredictions)
-            //    {
-            //        string jsonDataObject = result.DataObject;
-            //        JObject dataObject = JObject.Parse(jsonDataObject);
-            //        dataObject["ROW_CHANGED_BY"] = Environment.UserName;
-            //        jsonDataObject = dataObject.ToString();
-            //        jsonDataObject = Helpers.Common.SetJsonDataObjectDate(jsonDataObject, "ROW_CHANGED_DATE");
-            //        string dataType = idxResult.DataType;
-            //        try
-            //        {
-            //            await UpdateReferenceTables(dataType, dataObject);
-            //            string storedProcedure = "dbo.spUpdate" + dataType;
-            //            await _dp.SaveData(storedProcedure, new { json = jsonDataObject }, syncConnectionString);
-            //        }
-            //        catch (Exception ex)
-            //        {
-            //            string error = ex.ToString();
-            //            _log.LogError($"Error updating data object: {error}");
-            //            throw;
-            //        }
-            //    }
-            //}
-            //else
-            //{
-            //    //logger.LogWarning("Cannot find data key during update");
-            //}
+            index.JsonDataObject = result.DataObject;
+            index.QC_String = qcStr;
         }
 
         private async Task DeleteAction(IndexDto index, PredictionResult result, PredictionParameters parms)

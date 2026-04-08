@@ -9,10 +9,19 @@
 <div class="form-group">
     <a class="btn btn-info" href="rules/savepredictionset">Save Prediction Set</a>
     <a class="btn btn-info" href="rules/getrulepredictions">Get Prediction Set</a>
-</div>
+    <a class="btn btn-warning" href="/rules/getrulefunctions">Manage Rule Functions</a>
 
-<div class="form-group">
-    <a class="btn btn-info" href="/rules/getrulefunctions">Manage Rule Functions</a>
+    <span class="d-inline-block">
+        <MudFileUpload T="IBrowserFile" Accept=".json" FilesChanged="ImportRuleFile">
+            <ActivatorContent>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Success"
+                           StartIcon="@Icons.Material.Filled.Upload">
+                    Import Rule File
+                </MudButton>
+            </ActivatorContent>
+        </MudFileUpload>
+    </span>
 </div>
 
 <MudMenu Label="New Rule" Color="Color.Secondary">
@@ -21,6 +30,8 @@
         <MudMenuItem Href="@($"createdatarule/{rule}")">@rule</MudMenuItem>
     }
 </MudMenu>
+
+
 
 @if (RuleList == null)
 {
@@ -104,6 +115,7 @@ else
     private string filterRuleName = string.Empty;
     private string filterActive = string.Empty;
     private string filterRuleKey = string.Empty;
+    private bool isImporting = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -166,5 +178,73 @@ else
     private void EditRule(int id)
     {
         navigationManager.NavigateTo($"/editdatarules/{id}");
+    }
+
+    private async Task ImportRuleFile(IBrowserFile file)
+    {
+        if (file == null) return;
+
+        isImporting = true;
+        StateHasChanged();
+
+        try
+        {
+            // Read the file content (cap at 5MB to be safe)
+            using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            using var reader = new StreamReader(stream);
+            var json = await reader.ReadToEndAsync();
+
+            List<RuleModelDto> importedRules = System.Text.Json.JsonSerializer.Deserialize<List<RuleModelDto>>(json,
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (importedRules == null || importedRules.Count == 0)
+            {
+                await displayMessage.DisplayErrorMessage("No valid rules found in the file.");
+                return;
+            }
+
+            List<RuleModelDto> currentRules = await rules.GetRulesAsync();
+            foreach (RuleModelDto currRule in currentRules)
+            {
+                try
+                {
+                    await rules.DeleteRuleAsync(currRule.Id);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to delete existing rule '{currRule.RuleName}': {ex.Message}");
+                }   
+            }
+
+            // // Save each rule via the service
+            int successCount = 0;
+            foreach (var rule in importedRules)
+            {
+                try
+                {
+                    RuleModel mappedRule = rule.FromRuleModelDto();
+                    await rules.InsertRuleAsync(mappedRule);
+                    successCount++;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to import rule '{rule.RuleName}': {ex.Message}");
+                }
+            }
+
+            // Refresh the list
+            RuleList = await rules.GetRulesAsync();
+            await displayMessage.DisplaySuccessMessage($"Successfully imported {successCount} of {importedRules.Count} rule(s).");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error importing rule file: {ex}");
+            await displayMessage.DisplayErrorMessage($"Failed to import rule file: {ex.Message}");
+        }
+        finally
+        {
+            isImporting = false;
+            StateHasChanged();
+        }
     }
 }

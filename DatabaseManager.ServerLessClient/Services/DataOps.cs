@@ -83,8 +83,6 @@ namespace DatabaseManager.ServerLessClient.Services
                 throw;
             }
 
-            
-            
         }
 
         public async Task<T> SavePipeline<T>(DataOpsPipes pipe, List<PipeLine> tubes)
@@ -138,17 +136,7 @@ namespace DatabaseManager.ServerLessClient.Services
             });
         }
 
-        //public async Task<List<PipeLine>> GetPipeline(string name)
-        //{
-        //    string url = baseUrl.BuildFunctionUrl("GetDataOpsPipe", $"name={name}", apiKey);
-        //    Console.WriteLine(url);
-        //    var response = await httpService.Get<List<PipeLine>>(url);
-        //    if (!response.Success)
-        //    {
-        //        throw new ApplicationException(await response.GetBody());
-        //    }
-        //    return response.Response;
-        //}
+        
 
         //public async Task CreatePipeline(DataOpsPipes pipe)
         //{

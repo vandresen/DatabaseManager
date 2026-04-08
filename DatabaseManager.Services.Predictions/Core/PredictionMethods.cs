@@ -1,6 +1,7 @@
 ﻿using DatabaseManager.Services.Predictions.Extensions;
 using DatabaseManager.Services.Predictions.Models;
 using DatabaseManager.Services.Predictions.Services;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -83,7 +84,7 @@ namespace DatabaseManager.Services.Predictions.Core
             };
             RuleModelDto rule = System.Text.Json.JsonSerializer.Deserialize<RuleModelDto>(qcSetup.RuleObject);
 
-            string path = $"$.{rule.DataAttribute}";
+            string path = rule.DataAttribute;
             string failRule = $"%{rule.FailRule}%";
             ResponseDto response = Task.Run(() => idxdata.GetNeighbors<ResponseDto>(qcSetup.IndexId, qcSetup.DataConnector, failRule, path, qcSetup.Project))
                 .GetAwaiter().GetResult();
@@ -101,15 +102,15 @@ namespace DatabaseManager.Services.Predictions.Core
             if (depth != null)
             {
 
-                //JObject dataObject = JObject.Parse(qcSetup.DataObject);
-                //dataObject[rule.DataAttribute] = depth;
-                //string remark = dataObject["REMARK"] + $";{rule.DataAttribute} has been predicted by QCEngine;";
-                //dataObject["REMARK"] = remark;
-                //result.DataObject = dataObject.ToString();
-                //result.DataType = rule.DataType;
-                //result.SaveType = "Update";
-                //result.IndexId = qcSetup.IndexId;
-                //result.Status = "Passed";
+                JObject dataObject = JObject.Parse(qcSetup.DataObject);
+                dataObject[rule.DataAttribute] = depth;
+                string remark = dataObject["REMARK"] + $";{rule.DataAttribute} has been predicted by QCEngine;";
+                dataObject["REMARK"] = remark;
+                result.DataObject = dataObject.ToString();
+                result.DataType = rule.DataType;
+                result.SaveType = "Update";
+                result.IndexId = qcSetup.IndexId;
+                result.Status = "Passed";
             }
 
             return result;
