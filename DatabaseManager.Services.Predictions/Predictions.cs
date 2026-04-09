@@ -79,8 +79,8 @@ public class Predictions
                 await response.WriteAsJsonAsync(idxResponse);
                 return response;
             }
-            var indexElement = (JsonElement)idxResponse.Result!;
-            var indexes = indexElement.Deserialize<List<IndexDto>>(_jsonOptions)!;
+            var json = idxResponse.Result!.ToString()!;
+            var indexes = JsonSerializer.Deserialize<List<IndexDto>>(json, _jsonOptions)!;
             _logger.LogInformation($"Predictions: Number of indexes are {indexes.Count}");
             var failedIndexes = indexes.Where(i => !string.IsNullOrEmpty(i.QC_String) && i.QC_String.Contains(rule.FailRule + ";")).ToList();
 

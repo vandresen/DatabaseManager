@@ -1,8 +1,5 @@
-﻿using DatabaseManager.Services.RulesSqlite.Services;
-using DatabaseManager.Services.RulesSqlite.Models;
-using Microsoft.AspNetCore.Builder;
-using System.Data;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+﻿using DatabaseManager.Services.RulesSqlite.Models;
+using DatabaseManager.Services.RulesSqlite.Services;
 
 namespace DatabaseManager.Services.RulesSqlite
 {
@@ -12,6 +9,7 @@ namespace DatabaseManager.Services.RulesSqlite
         {
             app.MapGet("/Rules", GetRules);
             app.MapGet("/Rule", GetRule);
+            app.MapGet("/RuleAndFunction", GetRuleAndFunction);
             app.MapPost("/CreateDatabase", CreateRulesDatabase);
             app.MapPost("/CreateStandardRules", CreateStandardRules);
             app.MapPost("/Rules", SaveRules);
@@ -309,8 +307,35 @@ namespace DatabaseManager.Services.RulesSqlite
             }
             catch (Exception ex)
             {
+                
                 response.IsSuccess = false;
                 string newString = $"GetRule: Could not get rule, {ex}";
+                if (response.ErrorMessages == null) response.ErrorMessages = new List<string>();
+                response.ErrorMessages.Add(newString);
+            }
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> GetRuleAndFunction(int Id, IRuleAccess ra, IFunctionAccess fa)
+        {
+            ResponseDto response = new();
+            try
+            {
+                var rule = await ra.GetRule(Id);
+                IEnumerable<RuleFunctionsDto> functions = await fa.GetFunctions();
+                RuleFunctionsDto function = functions.FirstOrDefault(x => x.FunctionName == rule.RuleFunction);
+                if (function != null)
+                {
+                    if (!string.IsNullOrEmpty(function.FunctionKey))
+                        rule.RuleFunction = function.FunctionUrl + "?code=" + function.FunctionKey;
+                }
+                response.Result = rule;
+                response.IsSuccess = true;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                string newString = $"GetRuleAndFunction: Could not get rule and function, {ex}";
                 if (response.ErrorMessages == null) response.ErrorMessages = new List<string>();
                 response.ErrorMessages.Add(newString);
             }
