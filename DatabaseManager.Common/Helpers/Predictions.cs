@@ -118,7 +118,7 @@ namespace DatabaseManager.Common.Helpers
                     PredictionResult result = new PredictionResult();
                     if (externalQcMethod)
                     {
-                        result = ProcessPrediction(qcSetup, predictionURL, rule);
+                        result = await ProcessPrediction(qcSetup, predictionURL, rule);
                         if (result.Status == "Server error") break;
                     }
                     else
@@ -134,14 +134,14 @@ namespace DatabaseManager.Common.Helpers
             //_log.LogInformation($"Finished process all rows");
         }
 
-        private PredictionResult ProcessPrediction(QcRuleSetup qcSetup, string predictionURL, RuleModel rule)
+        private async Task<PredictionResult> ProcessPrediction(QcRuleSetup qcSetup, string predictionURL, RuleModel rule)
         {
             PredictionResult result = new PredictionResult();
             try
             {
                 var jsonString = JsonConvert.SerializeObject(qcSetup);
                 var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
-                HttpResponseMessage response = Client.PostAsync(predictionURL, content).Result;
+                HttpResponseMessage response = await Client.PostAsync(predictionURL, content);
                 if (!response.IsSuccessStatusCode)
                 {
                     result.Status = "Server error";
@@ -149,7 +149,7 @@ namespace DatabaseManager.Common.Helpers
                 }
                 using (HttpContent respContent = response.Content)
                 {
-                    string tr = respContent.ReadAsStringAsync().Result;
+                    string tr = await respContent.ReadAsStringAsync();
                     result = JsonConvert.DeserializeObject<PredictionResult>(tr);
                 }
             }

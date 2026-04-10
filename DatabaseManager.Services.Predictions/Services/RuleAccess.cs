@@ -36,5 +36,16 @@ namespace DatabaseManager.Services.Predictions.Services
                 Url = url
             });
         }
+
+        public async Task<T> GetRuleAndFunction<T>(int id, string sourceName)
+        {
+            string url = _ruleApiBase.BuildFunctionUrl($"/RuleAndFunction", $"Name={sourceName}&Id={id}", _ruleApiKey);
+            _logger.LogInformation("Retrieving rule and function {RuleId} from {Source}", id, sourceName);
+            return await this.SendAsync<T>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                Url = url
+            });
+        }
     }
 }

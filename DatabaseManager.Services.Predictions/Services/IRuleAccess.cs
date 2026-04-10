@@ -9,5 +9,6 @@ namespace DatabaseManager.Services.Predictions.Services
     public interface IRuleAccess
     {
         Task<T> GetRule<T>(int id, string sourceName);
+        Task<T> GetRuleAndFunction<T>(int id, string sourceName);
     }
 }

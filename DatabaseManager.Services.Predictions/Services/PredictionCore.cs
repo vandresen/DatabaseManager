@@ -2,12 +2,14 @@
 using DatabaseManager.Services.Predictions.Core;
 using DatabaseManager.Services.Predictions.Models;
 using Microsoft.Extensions.Logging;
+//using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Data;
 using System.IO.Pipelines;
 using System.Net;
 using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -22,6 +24,7 @@ namespace DatabaseManager.Services.Predictions.Services
         private readonly IDatabaseManagementService _dmService;
         private List<DataAccessDef> _accessDefs;
         private List<IndexDto> _newIndexes;
+        private static HttpClient Client = new HttpClient();
 
         private static readonly JsonSerializerOptions _jsonOptions = new()
         {
@@ -134,8 +137,27 @@ namespace DatabaseManager.Services.Predictions.Services
         private PredictionResult ProcessPrediction(PredictionRuleSetup setup, RuleModelDto rule)
         {
             PredictionResult result = new PredictionResult();
-            string predictionURL = rule.RuleFunction;
-
+            try
+            {
+                var jsonString = JsonSerializer.Serialize(setup, _jsonOptions);
+                //var jsonString = JsonConvert.SerializeObject(setup);
+                var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+                HttpResponseMessage response = Client.PostAsync(rule.RuleFunction, content).Result;
+                if (!response.IsSuccessStatusCode)
+                {
+                    result.Status = "Server error";
+                    return result;
+                }
+                using (HttpContent respContent = response.Content)
+                {
+                    string tr = respContent.ReadAsStringAsync().Result;
+                    result = JsonSerializer.Deserialize<PredictionResult>(tr, _jsonOptions);
+                }
+            }
+            catch (Exception)
+            {
+                _logger.LogWarning("ProcessDataObject: Problems with URL");
+            }
             return result;
         }
 

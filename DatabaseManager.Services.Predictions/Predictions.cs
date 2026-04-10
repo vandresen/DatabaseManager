@@ -59,7 +59,7 @@ public class Predictions
                 return response;
             }
 
-            ResponseDto ruleResponse = await _rules.GetRule<ResponseDto>(parms.PredictionId, parms.DataConnector);
+            ResponseDto ruleResponse = await _rules.GetRuleAndFunction<ResponseDto>(parms.PredictionId, parms.DataConnector);
             if (!ruleResponse.IsSuccess)
             {
                 response.StatusCode = HttpStatusCode.BadRequest;
