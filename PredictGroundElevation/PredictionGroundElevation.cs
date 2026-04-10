@@ -1,12 +1,10 @@
-using System.Net;
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PredictGroundElevation.Models;
+using System.Net;
 
 namespace PredictGroundElevation
 {
@@ -14,6 +12,7 @@ namespace PredictGroundElevation
     {
         private readonly ILogger _logger;
         private static readonly HttpClient _httpClient = new HttpClient();
+        private static int maxRetries = 3;
 
         public PredictionGroundElevation(ILoggerFactory loggerFactory)
         {
@@ -42,8 +41,8 @@ namespace PredictGroundElevation
 
                 // Get location data
                 JObject dataObject = JObject.Parse(inputParms.DataObject);
-                string lat = dataObject["SURFACE_LATITUDE"].ToString();
-                string lon = dataObject["SURFACE_LONGITUDE"].ToString();
+                string lat = dataObject["SURFACE_LATITUDE"].ToString().Trim();
+                string lon = dataObject["SURFACE_LONGITUDE"].ToString().Trim();
                 if (lat == "-99999.0" && lon == "-99999.0")
                 {
                     _logger.LogError("Can't find a good location");
@@ -52,10 +51,20 @@ namespace PredictGroundElevation
 
                 // Open-Meteo does not require an API key
                 string elevationUrl = $"https://api.open-meteo.com/v1/elevation?latitude={lat}&longitude={lon}";
-
                 _logger.LogInformation($"Calling elevation API: {elevationUrl}");
 
-                HttpResponseMessage elevationResponse = await _httpClient.GetAsync(elevationUrl);
+                // Retry logic
+                HttpResponseMessage elevationResponse = null;
+                for (int i = 0; i < maxRetries; i++)
+                {
+                    elevationResponse = await _httpClient.GetAsync(elevationUrl);
+                    if (elevationResponse.StatusCode == HttpStatusCode.OK)
+                        break;
+
+                    _logger.LogWarning($"Attempt {i + 1} of {maxRetries} failed with {elevationResponse.StatusCode}, retrying...");
+                    await Task.Delay(1100);
+                }
+
                 if (elevationResponse.StatusCode == HttpStatusCode.OK)
                 {
                     using (HttpContent respContent = elevationResponse.Content)
@@ -84,8 +93,8 @@ namespace PredictGroundElevation
                 }
                 else
                 {
-                    _logger.LogError($"Elevation API returned status: {elevationResponse.StatusCode}");
-                    throw new Exception($"Elevation API returned status: {elevationResponse.StatusCode}");
+                    _logger.LogError($"Elevation API failed after {maxRetries} attempts, last status: {elevationResponse.StatusCode}");
+                    throw new Exception($"Elevation API failed after {maxRetries} attempts, last status: {elevationResponse.StatusCode}");
                 }
 
                 var response = req.CreateResponse(HttpStatusCode.OK);
