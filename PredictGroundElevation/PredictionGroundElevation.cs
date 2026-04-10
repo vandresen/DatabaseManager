@@ -13,6 +13,7 @@ namespace PredictGroundElevation
     public class PredictionGroundElevation
     {
         private readonly ILogger _logger;
+        private static readonly HttpClient _httpClient = new HttpClient();
 
         public PredictionGroundElevation(ILoggerFactory loggerFactory)
         {
@@ -50,12 +51,11 @@ namespace PredictGroundElevation
                 }
 
                 // Open-Meteo does not require an API key
-                HttpClient client = new HttpClient();
                 string elevationUrl = $"https://api.open-meteo.com/v1/elevation?latitude={lat}&longitude={lon}";
 
                 _logger.LogInformation($"Calling elevation API: {elevationUrl}");
 
-                HttpResponseMessage elevationResponse = await client.GetAsync(elevationUrl);
+                HttpResponseMessage elevationResponse = await _httpClient.GetAsync(elevationUrl);
                 if (elevationResponse.StatusCode == HttpStatusCode.OK)
                 {
                     using (HttpContent respContent = elevationResponse.Content)
