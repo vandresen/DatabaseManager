@@ -98,6 +98,7 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
                         pipeParm.PredictionId = id;
                         pipe.JsonParameters = JsonConvert.SerializeObject(pipeParm);
                         string stat = await context.CallActivityAsync<string>("DataOps_Prediction", pipe);
+                        log.LogInformation(stat);
                     }
                 }
                 else

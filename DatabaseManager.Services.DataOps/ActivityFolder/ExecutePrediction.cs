@@ -36,12 +36,19 @@ namespace DatabaseManager.Services.DataOps.ActivityFolder
             if (!response.IsSuccess)
             {
                 string error = string.Join(";", response.ErrorMessages);
+
+                if (error.Contains("no indexes found", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning("DataOps_Prediction: No indexes found for prediction {PredictionId}, skipping.", parms.PredictionId);
+                    return $"Skipped Prediction Rule {pipe.Id} - No indexes found";
+                }
+
                 _logger.LogError("DataOps_Prediction: Error {Error}", error);
                 throw new InvalidOperationException($"Prediction failed: {error}");
             }
 
             _logger.LogInformation("Prediction: Complete");
-            return $"Prediction Rule {pipe.Id}";
+            return $"Completed Prediction Rule {pipe.Id}";
         }
     }
 }
