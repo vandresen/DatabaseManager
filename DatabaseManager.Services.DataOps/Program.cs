@@ -9,15 +9,18 @@ var host = new HostBuilder()
     {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
-        services.AddHttpClient<IRuleAccess, RuleAccess>();
+
+        // Just register IHttpClientFactory once — AddHttpClient() does this
+        services.AddHttpClient();
+
+        // Register services as scoped — they resolve IHttpClientFactory themselves
         services.AddScoped<IRuleAccess, RuleAccess>();
-        services.AddHttpClient<IDataQc, DataQc>();
         services.AddScoped<IDataQc, DataQc>();
-        services.AddHttpClient<IDataTransferAccess, DataTransferAccess>();
         services.AddScoped<IDataTransferAccess, DataTransferAccess>();
-        services.AddHttpClient<IIndexAccess, IndexAccess>();
         services.AddScoped<IIndexAccess, IndexAccess>();
+        services.AddScoped<IPredictionService, PredictionService>();
     })
     .Build();
+
 
 host.Run();

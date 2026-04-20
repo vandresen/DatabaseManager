@@ -6,19 +6,14 @@ using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.DataOps.Models
 {
-    public class QcResult
+    public class PredictionCorrection
     {
         public int Id { get; set; }
 
         public string RuleName { get; set; }
 
-        public string RuleType { get; set; }
-
-        public string DataType { get; set; }
+        public int NumberOfCorrections { get; set; }
 
         public string RuleKey { get; set; }
-        public int PredictionOrder { get; set; }
-
-        public int Failures { get; set; }
     }
 }

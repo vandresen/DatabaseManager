@@ -81,16 +81,24 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
                 else if (pipe.Name == "Predictions")
                 {
                     log.LogInformation($"Starting Predictions");
-                    //List<PredictionCorrection> predictionList = await context.CallActivityAsync<List<PredictionCorrection>>("ManageDataOps_InitPredictions", pipe);
-                    //var tasks = new Task<string>[predictionList.Count];
-                    //JObject pipeParm = JObject.Parse(pipe.JsonParameters);
-                    //for (int i = 0; i < predictionList.Count; i++)
-                    //{
-                    //    int id = predictionList[i].Id;
-                    //    pipeParm["PredictionId"] = id;
-                    //    pipe.JsonParameters = pipeParm.ToString();
-                    //    string stat = await context.CallActivityAsync<string>("ManageDataOps_Prediction", pipe);
-                    //}
+                    List<QcResult> predictionList = await context.CallActivityAsync<List<QcResult>>("DataOps_InitPredictions", pipe);
+                    if (predictionList is null || predictionList.Count == 0)
+                    {
+                        log.LogInformation("No predictions to process, skipping.");
+                        return "No predictions to process";
+                    }
+
+                    //PredictionParameters pipeParm = JObject.Parse(pipe.JsonParameters).ToObject<PredictionParameters>();
+                    PredictionParameters pipeParm = JObject.Parse(pipe.JsonParameters).ToObject<PredictionParameters>()
+                        ?? throw new InvalidOperationException("Failed to deserialize PredictionParameters.");
+
+                    for (int i = 0; i < predictionList.Count; i++)
+                    {
+                        int id = predictionList[i].Id;
+                        pipeParm.PredictionId = id;
+                        pipe.JsonParameters = JsonConvert.SerializeObject(pipeParm);
+                        string stat = await context.CallActivityAsync<string>("DataOps_Prediction", pipe);
+                    }
                 }
                 else
                 {
