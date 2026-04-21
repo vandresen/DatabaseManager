@@ -53,12 +53,20 @@ input {
         try
         {
             response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
-            pipeList = JsonConvert.DeserializeObject<List<DataOpsPipes>>(Convert.ToString(response.Result));
-            Console.WriteLine($"Pipes: {pipeList.Count}");
+            if (response.IsSuccess)
+            {
+                pipeList = JsonConvert.DeserializeObject<List<DataOpsPipes>>(Convert.ToString(response.Result));
+                Console.WriteLine($"Pipes: {pipeList.Count}");
+            }
+            else
+            {
+                string error = string.Join(";", response.ErrorMessages);
+                Console.WriteLine($"Dataops: error getting pipelines; {error}");
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Errors {ex.ToString()}");
+            Console.WriteLine($"Dataops: Errors getting pipelines {ex.ToString()}");
         }
     }
 

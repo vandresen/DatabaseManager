@@ -35,7 +35,7 @@ namespace DatabaseManager.ServerLessClient.Services
                 var client = httpClient.CreateClient("DatabaseManager");
                 HttpRequestMessage message = new HttpRequestMessage(httpMethod, apiRequest.Url);
                 message.Headers.Add("Accept", "application/json");
-                client.DefaultRequestHeaders.Clear();
+                //client.DefaultRequestHeaders.Clear();
                 if (apiRequest.Data != null)
                 {
                     message.Content = new StringContent(JsonConvert.SerializeObject(apiRequest.Data),
@@ -44,7 +44,12 @@ namespace DatabaseManager.ServerLessClient.Services
 
                 if (!string.IsNullOrEmpty(apiRequest.AzureStorage))
                 {
-                    client.DefaultRequestHeaders.Add("azurestorageconnection", apiRequest.AzureStorage);
+                    Console.WriteLine($"DEBUG: AzureStorage is set, adding header");
+                    message.Headers.Add("azurestorageconnection", apiRequest.AzureStorage);
+                }
+                else
+                {
+                    Console.WriteLine($"DEBUG: AzureStorage is NULL or EMPTY - header not added");
                 }
 
                 HttpResponseMessage apiResponse = null;

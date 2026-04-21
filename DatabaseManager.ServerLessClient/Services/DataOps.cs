@@ -26,6 +26,7 @@ namespace DatabaseManager.ServerLessClient.Services
             List<DataOpsPipes> results = new List<DataOpsPipes>();
             string url = SD.DataOpsManageAPIBase.BuildFunctionUrl($"/api/GetDataOpsList", "", SD.DataOpsManageKey);
             Console.WriteLine($"GetPipelines: url = {url}");
+            Console.WriteLine($"GetPipelines: AzureStorage = {_settings.AzureStorage}");
             return await SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,

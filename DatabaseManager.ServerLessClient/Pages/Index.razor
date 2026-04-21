@@ -96,17 +96,11 @@ else
     {
         try
         {
-            Console.WriteLine($"SD.DataOpsManageAPIBase = {SD.DataOpsManageAPIBase}");
-            Console.WriteLine($"SD.DataConfigurationAPIBase = {SD.DataConfigurationAPIBase}");
-            Console.WriteLine($"SD.DataModelAPI = {SD.DataModelAPIBase}");
-            Console.WriteLine($"SD.EsriKey = {SD.EsriKey}");
             settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
-            Console.WriteLine($"Azure settings: {settings.AzureStorage}");
-            Console.WriteLine($"Sqlite = {SD.Sqlite}");
             sqlite = SD.Sqlite;
 
-            client.DefaultRequestHeaders.Remove("azurestorageconnection");
-            client.DefaultRequestHeaders.Add("azurestorageconnection", settings.AzureStorage);
+            // client.DefaultRequestHeaders.Remove("azurestorageconnection");
+            // client.DefaultRequestHeaders.Add("azurestorageconnection", settings.AzureStorage);
 
             if (sqlite)
             {
@@ -136,6 +130,10 @@ else
                 {
                     await GetIndexData();
                 }
+            }
+            if (string.IsNullOrEmpty(settings.AzureStorage))
+            {
+                await displayMessage.DisplayErrorMessage("Azure Storage connection string is required. Go to Settings dialog to set it.");
             }
         }
         catch (Exception ex)
