@@ -8,10 +8,10 @@ jobs:
     name: Build release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
           
@@ -25,7 +25,7 @@ jobs:
         run: dotnet publish DatabaseManager.ServerLessClient/DatabaseManager.ServerLessClient.csproj --configuration Release -o ./publish --no-build --self-contained true
         
       - name: Deploy to Azure Storage Blob
-        uses: azure/CLI@v1
+        uses: azure/CLI@v2
         with:
           azcliversion: latest
           inlineScript: |
