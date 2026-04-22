@@ -70,7 +70,7 @@ public class Predictions
             var ruleElement = (JsonElement)ruleResponse.Result!;
             var rule = ruleElement.Deserialize<RuleModelDto>(_jsonOptions)!;
 
-            _logger.LogInformation("Predictions: RuleName={RuleName}", rule.RuleName);
+            _logger.LogInformation($"Predictions: RuleName={rule.RuleName} with Id={rule.Id}");
 
             var idxResponse = await _idxAccess.GetIndexes<ResponseDto>(parms.DataConnector, parms.IndexProject, rule.DataType, parms.AzureStorageKey);
             if (!idxResponse.IsSuccess)

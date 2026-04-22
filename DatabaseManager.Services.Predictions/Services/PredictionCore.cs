@@ -125,6 +125,11 @@ namespace DatabaseManager.Services.Predictions.Services
             }
             if (correctedIndexes.Count > 0)
             {
+                foreach (IndexDto idx in correctedIndexes)
+                {
+                    _logger.LogInformation($"Index {idx.IndexId} updated. QC_String: {idx.QC_String}");
+                }
+
                 ResponseDto updateResponse = await _idxAccess.UpdateIndexes<ResponseDto>(correctedIndexes, parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
                 if (!updateResponse.IsSuccess)
                 {

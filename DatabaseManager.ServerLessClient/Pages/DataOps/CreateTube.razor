@@ -74,6 +74,7 @@ else
         }
         else if (TubeType == "Predictions")
         {
+            predictionParms.AzureStorageKey = singleton.AzureStorage;
             predictionParms.DataConnector = singleton.TargetConnector;
         }
 
