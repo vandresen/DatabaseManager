@@ -51,9 +51,9 @@ namespace DatabaseManager.Services.Predictions.Services
             {
                 throw new InvalidOperationException($"Rule type '{rule.RuleType}' is not a Predictions rule.");
             }
-            if (indexes  == null || indexes.Count == 0)
+            if (indexes  == null)
             {
-                throw new InvalidOperationException($"No indexes found for rule '{rule.RuleName}'");
+                throw new InvalidOperationException($"Null index found for rule '{rule.RuleName}'");
             }
 
             PredictionRuleSetup setup = new();
@@ -108,7 +108,11 @@ namespace DatabaseManager.Services.Predictions.Services
                             _logger.LogWarning($"Server error for extrenal rule");
                             break; 
                         }
-                        
+                        if (result.Status == "Bad data")
+                        {
+                            _logger.LogWarning($"Bad data for index {index.IndexId}, skipping");
+                            continue;
+                        }
                     }
                     else
                     {
@@ -145,14 +149,24 @@ namespace DatabaseManager.Services.Predictions.Services
             try
             {
                 var jsonString = JsonSerializer.Serialize(setup, _jsonOptions);
-                //var jsonString = JsonConvert.SerializeObject(setup);
                 var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
                 HttpResponseMessage response = Client.PostAsync(rule.RuleFunction, content).Result;
+
                 if (!response.IsSuccessStatusCode)
                 {
-                    result.Status = "Server error";
+                    string errorBody = response.Content.ReadAsStringAsync().Result;
+                    _logger.LogWarning($"ProcessPrediction warning: {errorBody}");
+                    if (response.StatusCode == HttpStatusCode.NotAcceptable || response.StatusCode == HttpStatusCode.BadRequest)
+                    {
+                        result.Status = "Bad data";
+                    }
+                    else
+                    {
+                        result.Status = "Server error";
+                    }
                     return result;
                 }
+
                 using (HttpContent respContent = response.Content)
                 {
                     string tr = respContent.ReadAsStringAsync().Result;

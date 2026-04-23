@@ -108,7 +108,7 @@ namespace PredictGroundElevation
                 _logger.LogError($"PredictionGroundElevation: Error processing prediction: {ex}");
                 var response = req.CreateResponse(HttpStatusCode.NotAcceptable);
                 response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
-                response.WriteString($"PredictionGroundElevation: Error processing prediction, {ex}");
+                response.WriteString($"PredictionGroundElevation: Error processing prediction, {ex.Message}");
                 return response;
             }
         }
