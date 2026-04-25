@@ -5,6 +5,6 @@
         public string DataConnector { get; set; }
         public string TargetConnector { get; set; }
         public string AzureStorageKey { get; set; }
-        public int IndexProject { get; set; }
+        public string IndexProject { get; set; }
     }
 }
