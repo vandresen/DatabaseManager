@@ -3,7 +3,6 @@
 @inject DatabaseManager.ServerLessClient.Services.IDataOps dataOps
 @inject BlazorSingletonService settings
 @implements IDisposable
-@* @using System.Text *@
 
 <h3>Data Ops</h3>
 
@@ -116,7 +115,7 @@ input {
 
     private async Task ExecutePipeline(string name)
     {
-        const int maxPollAttempts = 100;
+        const int maxPollAttempts = 200;
         const int pollIntervalMs = 1000;
 
         _cts = new CancellationTokenSource();
