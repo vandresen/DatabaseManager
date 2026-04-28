@@ -1,9 +1,9 @@
 ﻿@page "/dataops"
-@* @inject IDisplayMessage displayMessage *@
 @inject IPopupMessage displayMessage
 @inject DatabaseManager.ServerLessClient.Services.IDataOps dataOps
 @inject BlazorSingletonService settings
-@using System.Text
+@implements IDisposable
+@* @using System.Text *@
 
 <h3>Data Ops</h3>
 
@@ -28,7 +28,7 @@ input {
         <Template>
             <a class="btn btn-primary" href="/dataops/edit/@context.Name">Edit</a>
             <button class="btn btn-danger" @onclick="@(() => DeletePipeline(context.Name))">Delete</button>
-            <button class="btn btn-success" @onclick="@(() => ExecutePipeline(context.Name))">Execute</button>
+            <button class="btn btn-success" @onclick="@(() => ExecutePipeline(context.Name))" disabled="@(_cts != null)">Execute</button>
         </Template>
     </Column>
     <Column TableItem="DataOpsPipes" Title="Pipe Name" Field="@(x => x.Name)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
@@ -37,6 +37,12 @@ input {
 
 <div>
     <p>DataOps status: @statusMessage</p>
+    @if (_cts != null)
+    {
+        <button class="btn btn-warning mt-2" @onclick="CancelPipeline">
+            ⏹ Cancel
+        </button>
+    }
 </div>
 
 @code {
@@ -45,7 +51,8 @@ input {
     List<DataOpsPipes> pipeList;
     List<PipeLine> pipelines;
     int pageSize = 10;
-    DatabaseManager.ServerLessClient.Models.ResponseDto response;
+    ResponseDto response;
+    private CancellationTokenSource? _cts;
 
 
     protected override async Task OnInitializedAsync()
@@ -77,6 +84,7 @@ input {
             if (string.IsNullOrEmpty(pipelineName))
             {
                 await displayMessage.DisplayErrorMessage("Please enter a new pipeline name");
+                return;
             }
             response = await dataOps.CreatePipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(pipelineName);
             response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
@@ -108,7 +116,13 @@ input {
 
     private async Task ExecutePipeline(string name)
     {
+        const int maxPollAttempts = 100;
+        const int pollIntervalMs = 1000;
+
+        _cts = new CancellationTokenSource();
+        StateHasChanged();
         Console.WriteLine($"excute pipeline {name}");
+
         try
         {
             response = await dataOps.GetPipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(name);
@@ -132,8 +146,9 @@ input {
             StateHasChanged();
             var result = await dataOps.ProcessPipeline(parms);
             Console.WriteLine(result.statusQueryGetUri);
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < maxPollAttempts; i++)
             {
+                _cts.Token.ThrowIfCancellationRequested();
                 DataOpsStatus status = await dataOps.GetStatus(result.statusQueryGetUri);
                 Console.WriteLine($"Runtime status: {status.runtimeStatus}");
                 statusMessage = status.runtimeStatus + ": " + status.customStatus;
@@ -146,15 +161,47 @@ input {
                 }
                 if (status.runtimeStatus == "Failed")
                 {
-                    Console.WriteLine("Pipeline failed");
+                    Console.WriteLine("Pipeline failed.");
+                    statusMessage = $"Failed: {status.customStatus}";
+                    StateHasChanged();
+                    break;
                 }
-                await Task.Delay(1000);
+                await Task.Delay(pollIntervalMs, _cts.Token);
             }
+
+            if (statusMessage.StartsWith("Starting") ||
+            (!statusMessage.StartsWith("Completed") && !statusMessage.StartsWith("Failed")))
+            {
+                statusMessage = "Timed out waiting for pipeline to complete.";
+                StateHasChanged();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            statusMessage = "Cancelled";
+            StateHasChanged();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Errors: {ex}");
         }
+        finally
+        {
+            _cts?.Dispose();
+            _cts = null;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelPipeline()
+    {
+        _cts?.Cancel();
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
     }
 
 }
