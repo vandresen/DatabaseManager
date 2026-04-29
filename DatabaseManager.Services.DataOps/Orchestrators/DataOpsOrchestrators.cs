@@ -22,7 +22,18 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
                 context.SetCustomStatus($"Starting pipe number {pipe.Id} with name {pipe.Name}");
                 if (pipe.Name == "CreateIndex")
                 {
-                    response = await context.CallActivityAsync<string>("ManageDataOps_CreateIndex", pipe);
+                    try
+                    {
+                        response = await context.CallActivityAsync<string>("ManageDataOps_CreateIndex", pipe);
+                    }
+                    catch (TaskFailedException ex)
+                    {
+                        string errorMessage = $"Pipeline '{pipe.Name}' (Id: {pipe.Id}) failed: {ex.Message}";
+                        log.LogError(ex, errorMessage);
+                        context.SetCustomStatus(errorMessage);
+                        return errorMessage;
+                    }
+                    
                 }
                 else if (pipe.Name == "DataQC")
                 {

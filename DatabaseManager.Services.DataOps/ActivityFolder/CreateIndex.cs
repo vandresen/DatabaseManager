@@ -27,7 +27,7 @@ namespace DatabaseManager.Services.DataOps.ActivityFolder
                 if (parms == null)
                 {
                     log.LogError("CreateIndex: Failed to deserialize BuildIndexParameters.");
-                    return "CreateIndex completed with failure: deserialization error";
+                    throw new InvalidOperationException("CreateIndex failed: deserialization error");
                 }
 
                 parms.StorageAccount = pipe.StorageAccount;
@@ -44,19 +44,14 @@ namespace DatabaseManager.Services.DataOps.ActivityFolder
                     : "Unknown error";
 
                 log.LogError("CreateIndex: Error - {Errors}", errors);
-                return $"CreateIndex completed with failure: {errors}";
+                throw new InvalidOperationException($"CreateIndex failed: {errors}");
             }
             catch (TaskCanceledException ex)
             {
                 log.LogError(ex, "CreateIndex: Index build timed out after 6 minutes");
-                return "CreateIndex timed out: the index is too large to build in the allowed time. " +
-                       "Please reduce the size of your index by applying a more restrictive filter " +
-                       "such as a smaller lat/lon window or a single county.";
-            }
-            catch (Exception ex)
-            {
-                log.LogError(ex, "CreateIndex: Unhandled exception");
-                return $"CreateIndex completed with failure: {ex.Message}";
+                throw new TimeoutException($"CreateIndex timed out: the index is too large to build in the allowed time. " +
+                       $"Please reduce the size of your index by applying a more restrictive filter " +
+                       $"such as a smaller lat/lon window or a single county.", ex);
             }
         }
      }
