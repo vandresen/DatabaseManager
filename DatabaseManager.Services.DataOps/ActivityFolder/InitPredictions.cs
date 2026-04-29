@@ -35,7 +35,7 @@ namespace DatabaseManager.Services.DataOps.ActivityFolder
                 List<QcResult> fullList = JsonConvert.DeserializeObject<List<QcResult>>(response.Result.ToString())
                     ?? throw new InvalidOperationException("Failed to deserialize QcResult list.");
                 List<QcResult> qcList = fullList
-                    .Where(x => x.RuleType == "Predictions")
+                    .Where(x => x.RuleType == "Predictions" && x.Active == "Y")
                     .OrderBy(x => x.PredictionOrder)
                     .ToList();
                 _logger.LogInformation($"DataOps_InitPredictions: Prediction list count = {qcList.Count}");

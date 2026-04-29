@@ -18,6 +18,7 @@ namespace DatabaseManager.Services.DataOps.Models
 
         public string RuleKey { get; set; }
         public int PredictionOrder { get; set; }
+        public string Active { get; set; }
 
         public int Failures { get; set; }
     }
