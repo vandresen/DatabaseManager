@@ -35,37 +35,74 @@ namespace DatabaseManager.Services.Predictions.Core
             return result;
         }
 
-        //public static PredictionResult PredictFormationOrder(PredictionRuleSetup qcSetup, DapperDataAccess dp, IndexDBAccess idxdata)
-        //{
-        //    if (_ageLookupCache == null)
-        //    {
-        //        var picks = dp.LoadData<FormationPick, dynamic>(
-        //        "spGetMinMaxAllFormationPick",
-        //        new { },
-        //        qcSetup.DataConnector).GetAwaiter().GetResult(); ;
+        public static PredictionResult PredictFormationOrder(PredictionRuleSetup qcSetup, IDatabaseAccess dp, IIndexAccess idxdata)
+        {
+            var result = new PredictionResult { Status = "Failed" };
+            if (_ageLookupCache == null)
+            {
+                if (string.IsNullOrEmpty(qcSetup.DataConnector))
+                {
+                    ResponseDto response = Task.Run(() => idxdata.GetIndexes<ResponseDto>(qcSetup.DataConnector, qcSetup.Project, "MarkerWell", "Unknown"))
+                        .GetAwaiter().GetResult();
+                    if (!response.IsSuccess)
+                    {
+                        return result;
+                    }
+                    var json = response.Result!.ToString()!;
+                    var indexes = JsonSerializer.Deserialize<List<IndexDto>>(json, _jsonOptions)!;
+                    _ageLookupCache = indexes
+                        .Where(idx => !string.IsNullOrEmpty(idx.JsonDataObject))
+                        .Select(idx => {
+                            var data = JObject.Parse(idx.JsonDataObject);
+                            return new
+                            {
+                                StratUnitId = (string)data["STRAT_UNIT_ID"],
+                                Depth = (double?)data["PICK_DEPTH"]
+                            };
+                        })
+                        .Where(x => x.StratUnitId != null && x.Depth.HasValue)
+                        .GroupBy(x => x.StratUnitId)
+                        .Select(g => new FormationPick
+                        {
+                            STRAT_UNIT_ID = g.Key,
+                            MIN = g.Min(x => x.Depth.Value),
+                            MAX = g.Max(x => x.Depth.Value)
+                        })
+                        .OrderBy(x => x.MIN)
+                        .Select((fp, i) => { fp.AGE = i + 1; return fp; })
+                        .ToDictionary(p => p.STRAT_UNIT_ID, p => p.AGE);
+                }
+                else
+                {
+                    var picks = dp.LoadData<FormationPick, dynamic>(
+                    "spGetMinMaxAllFormationPick",
+                    new { },
+                    qcSetup.DataConnector).GetAwaiter().GetResult(); ;
 
-        //        _ageLookupCache = picks.ToDictionary(p => p.STRAT_UNIT_ID, p => p.AGE);
-        //    }
+                    _ageLookupCache = picks.ToDictionary(p => p.STRAT_UNIT_ID, p => p.AGE);
+                }
+            }
 
-        //    var result = new PredictionResult { Status = "Failed" };
-        //    var dataObject = JObject.Parse(qcSetup.DataObject);
-        //    var formation = Common.FixAposInStrings((string)dataObject["STRAT_UNIT_ID"]);
+            
+            var dataObject = JObject.Parse(qcSetup.DataObject);
+            var formation = (string)dataObject["STRAT_UNIT_ID"];
+            formation = formation.FixAposInStrings();
 
-        //    if (!_ageLookupCache.TryGetValue(formation, out var age))
-        //        return result;
+            if (!_ageLookupCache.TryGetValue(formation, out var age))
+                return result;
 
-        //    var rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
-        //    dataObject[rule.DataAttribute] = age;
-        //    dataObject["REMARK"] = $"{dataObject["REMARK"]};{rule.DataAttribute} predicted by QCEngine;";
+            RuleModelDto rule = JsonSerializer.Deserialize<RuleModelDto>(qcSetup.RuleObject);
+            dataObject[rule.DataAttribute] = age;
+            dataObject["REMARK"] = $"{dataObject["REMARK"]};{rule.DataAttribute} predicted by QCEngine;";
 
-        //    result.DataObject = dataObject.ToString();
-        //    result.DataType = rule.DataType;
-        //    result.SaveType = "Update";
-        //    result.IndexId = qcSetup.IndexId;
-        //    result.Status = "Passed";
+            result.DataObject = dataObject.ToString();
+            result.DataType = rule.DataType;
+            result.SaveType = "Update";
+            result.IndexId = qcSetup.IndexId;
+            result.Status = "Passed";
 
-        //    return result;
-        //}
+            return result;
+        }
 
         public class FormationPick
         {
@@ -198,7 +235,7 @@ namespace DatabaseManager.Services.Predictions.Core
             {
                 Status = "Failed"
             };
-            RuleModelDto rule = System.Text.Json.JsonSerializer.Deserialize<RuleModelDto>(qcSetup.RuleObject);
+            RuleModelDto rule = JsonSerializer.Deserialize<RuleModelDto>(qcSetup.RuleObject);
             string rulePar = rule.RuleParameters;
             JsonDocument doc = JsonDocument.Parse(rulePar);
             string dataType = doc.RootElement.GetProperty("DataType").GetString();
@@ -226,5 +263,13 @@ namespace DatabaseManager.Services.Predictions.Core
             result.Status = "Passed";
             return result;
         }
+
+        private static List<FormationPick> LoadMinMaxAllFormationPick(IIndexAccess idxdata)
+        {
+            List<FormationPick> picks = new List<FormationPick>();
+
+            return picks;
+        }
     }
 }
+        

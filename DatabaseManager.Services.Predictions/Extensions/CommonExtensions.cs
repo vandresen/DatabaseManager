@@ -9,6 +9,24 @@ namespace DatabaseManager.Services.Predictions.Extensions
 {
     public static class CommonExtensions
     {
+        public static string FixAposInStrings(this string st)
+        {
+            string fixString = st;
+            int length;
+            int start = 0;
+            int end = st.IndexOf("'");
+            while (end >= 0)
+            {
+                length = end;
+                string s1 = fixString.Substring(0, length);
+                string s2 = fixString.Substring(end);
+                fixString = s1 + "'" + s2;
+                start = end + 2;
+                end = fixString.IndexOf("'", start);
+            }
+            return fixString;
+        }
+
         //public static double CalculateStdDev(this List<double> values)
         //{
         //    double stdDev = 0;
