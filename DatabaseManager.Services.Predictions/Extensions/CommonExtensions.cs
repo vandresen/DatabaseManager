@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -153,6 +154,29 @@ namespace DatabaseManager.Services.Predictions.Extensions
             int from = select.IndexOf(" FROM ") + 6;
             string table = select.Substring(from);
             return table;
+        }
+
+        public static T[] GetArrayFromString<T>(this string input) where T : IConvertible
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return [];
+
+            return input
+                .Split(',')
+                .Select(item =>
+                {
+                    item = item.Trim();
+                    try
+                    {
+                        return (T)Convert.ChangeType(item, typeof(T), CultureInfo.InvariantCulture);
+                    }
+                    catch (Exception ex) when (ex is InvalidCastException or FormatException or OverflowException)
+                    {
+                        throw new InvalidOperationException(
+                            $"Could not convert '{item}' to type {typeof(T).Name}.", ex);
+                    }
+                })
+                .ToArray();
         }
     }
 }

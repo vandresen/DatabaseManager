@@ -2,15 +2,8 @@
 using DatabaseManager.Services.Predictions.Models;
 using DatabaseManager.Services.Predictions.Services;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using static Azure.Core.HttpHeader;
 
 namespace DatabaseManager.Services.Predictions.Core
 {
@@ -119,7 +112,7 @@ namespace DatabaseManager.Services.Predictions.Core
             {
                 Status = "Failed"
             };
-            RuleModelDto rule = System.Text.Json.JsonSerializer.Deserialize<RuleModelDto>(qcSetup.RuleObject);
+            RuleModelDto rule = JsonSerializer.Deserialize<RuleModelDto>(qcSetup.RuleObject);
 
             string path = rule.DataAttribute;
             string failRule = $"%{rule.FailRule}%";
@@ -204,30 +197,30 @@ namespace DatabaseManager.Services.Predictions.Core
         //    return result;
         //}
 
-        //public static PredictionResult PredictLogDepthAttributes(PredictionRuleSetup qcSetup, DapperDataAccess dp, IndexDBAccess idxdata)
-        //{
-        //    PredictionResult result = new PredictionResult
-        //    {
-        //        Status = "Failed"
-        //    };
-        //    JObject dataObject = JObject.Parse(qcSetup.DataObject);
-        //    RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
-        //    string jsonLog = RuleMethodUtilities.GetLogCurveDepths(qcSetup.DataObject);
-        //    if (!string.IsNullOrEmpty(jsonLog))
-        //    {
-        //        JObject logObject = JObject.Parse(jsonLog);
-        //        string attribute = rule.DataAttribute;
-        //        dataObject[attribute] = logObject[attribute];
-        //        string remark = dataObject["REMARK"] + $";{attribute} was calculated from curve array;";
-        //        dataObject["REMARK"] = remark;
-        //        result.DataObject = dataObject.ToString();
-        //        result.DataType = rule.DataType;
-        //        result.SaveType = "Update";
-        //        result.IndexId = qcSetup.IndexId;
-        //        result.Status = "Passed";
-        //    }
-        //    return result;
-        //}
+        public static PredictionResult PredictLogDepthAttributes(PredictionRuleSetup qcSetup, DapperDataAccess dp, IIndexAccess idxdata)
+        {
+            PredictionResult result = new PredictionResult
+            {
+                Status = "Failed"
+            };
+            JObject dataObject = JObject.Parse(qcSetup.DataObject);
+            RuleModelDto rule = JsonSerializer.Deserialize<RuleModelDto>(qcSetup.RuleObject);
+            string jsonLog = RuleMethodUtilities.GetLogCurveDepths(qcSetup.DataObject);
+            if (!string.IsNullOrEmpty(jsonLog))
+            {
+                JObject logObject = JObject.Parse(jsonLog);
+                string attribute = rule.DataAttribute;
+                dataObject[attribute] = logObject[attribute];
+                string remark = dataObject["REMARK"] + $";{attribute} was calculated from curve array;";
+                dataObject["REMARK"] = remark;
+                result.DataObject = dataObject.ToString();
+                result.DataType = rule.DataType;
+                result.SaveType = "Update";
+                result.IndexId = qcSetup.IndexId;
+                result.Status = "Passed";
+            }
+            return result;
+        }
 
         public static PredictionResult PredictMissingDataObjects(PredictionRuleSetup qcSetup, IDatabaseAccess dp, IIndexAccess idxdata)
         {
@@ -262,13 +255,6 @@ namespace DatabaseManager.Services.Predictions.Core
             result.IndexId = qcSetup.IndexId;
             result.Status = "Passed";
             return result;
-        }
-
-        private static List<FormationPick> LoadMinMaxAllFormationPick(IIndexAccess idxdata)
-        {
-            List<FormationPick> picks = new List<FormationPick>();
-
-            return picks;
         }
     }
 }

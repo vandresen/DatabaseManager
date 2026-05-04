@@ -1,4 +1,6 @@
-﻿using DatabaseManager.Services.Predictions.Models;
+﻿using DatabaseManager.Services.Predictions.Extensions;
+using DatabaseManager.Services.Predictions.Models;
+using Newtonsoft.Json.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -269,26 +271,26 @@ namespace DatabaseManager.Services.Predictions.Core
         //    }
         //}
 
-        //public static string GetLogCurveDepths(string dataObject)
-        //{
-        //    JObject logObject = JObject.Parse(dataObject);
-        //    string uwi = logObject["UWI"].ToString();
-        //    string curveName = logObject["CURVE_ID"].ToString();
-        //    string indexValues = logObject["INDEX_VALUE"].ToString();
-        //    if (string.IsNullOrEmpty(indexValues))
-        //    {
-        //        return "";
-        //    }
-        //    else
-        //    {
-        //        double[] indexValue = Common.GetArrayFromString<double>(indexValues);
-        //        double topDepth = indexValue.Min();
-        //        logObject["MIN_INDEX"] = topDepth;
-        //        double bottomDepth = indexValue.Max();
-        //        logObject["MAX_INDEX"] = bottomDepth;
-        //        return logObject.ToString();
-        //    }
-        //}
+        public static string GetLogCurveDepths(string dataObject)
+        {
+            JObject logObject = JObject.Parse(dataObject);
+            string uwi = logObject["UWI"].ToString();
+            string curveName = logObject["CURVE_ID"].ToString();
+            string indexValues = logObject["INDEX_VALUE"].ToString();
+            if (string.IsNullOrEmpty(indexValues))
+            {
+                return "";
+            }
+            else
+            {
+                double[] indexValue = indexValues.GetArrayFromString<double>();
+                double topDepth = indexValue.Min();
+                logObject["MIN_INDEX"] = topDepth;
+                double bottomDepth = indexValue.Max();
+                logObject["MAX_INDEX"] = bottomDepth;
+                return logObject.ToString();
+            }
+        }
 
         public static string GetJsonForMissingDataObject(string parameters, DataAccessDef accessDef)
         {
