@@ -99,12 +99,12 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
                         return "No predictions to process";
                     }
 
-                    //PredictionParameters pipeParm = JObject.Parse(pipe.JsonParameters).ToObject<PredictionParameters>();
                     PredictionParameters pipeParm = JObject.Parse(pipe.JsonParameters).ToObject<PredictionParameters>()
                         ?? throw new InvalidOperationException("Failed to deserialize PredictionParameters.");
 
                     for (int i = 0; i < predictionList.Count; i++)
                     {
+                        log.LogInformation($"Processing prediction {i + 1} of {predictionList.Count}, RuleId: {predictionList[i].Id}");
                         int id = predictionList[i].Id;
                         pipeParm.PredictionId = id;
                         pipe.JsonParameters = JsonConvert.SerializeObject(pipeParm);
