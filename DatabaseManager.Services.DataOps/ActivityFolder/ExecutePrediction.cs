@@ -48,7 +48,7 @@ namespace DatabaseManager.Services.DataOps.ActivityFolder
             }
 
             _logger.LogInformation("Prediction: Complete");
-            return $"Completed Prediction Rule {pipe.Id}";
+            return $"Completed Prediction Rule {parms.PredictionId}";
         }
     }
 }
