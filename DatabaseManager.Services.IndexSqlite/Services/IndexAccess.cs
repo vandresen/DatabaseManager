@@ -1,4 +1,5 @@
-﻿using DatabaseManager.Services.IndexSqlite.Helpers;
+﻿using Dapper;
+using DatabaseManager.Services.IndexSqlite.Helpers;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -7,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using Polly;
 using System.Data;
 using System.Linq;
+using System.Text;
 
 namespace DatabaseManager.Services.IndexSqlite.Services
 {
@@ -838,6 +840,46 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                 }
             }
             IEnumerable<EntiretyListModel> result = listResult;
+            return result;
+        }
+
+        public async Task<IEnumerable<IndexModel>> SearchIndexes(IndexSearchCriteria searchTerm, string project)
+        {
+            _project = project;
+            _projectTable = GetProjectTable();
+
+            // 1. Establish base query with a safe 'AND' chain starter
+            var sqlBuilder = new StringBuilder($"SELECT {_selectAttributes} FROM {_projectTable} WHERE 1=1 ");
+            var parameters = new DynamicParameters();
+
+            // 2. Conditionally append strict 'AND' rules
+            if (!string.IsNullOrWhiteSpace(searchTerm.DataName))
+            {
+                sqlBuilder.Append(" AND DataName = @DataName");
+                parameters.Add("DataName", $"{searchTerm.DataName.Trim()}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchTerm.DataType))
+            {
+                sqlBuilder.Append(" AND DataType = @DataType");
+                parameters.Add("DataType", $"{searchTerm.DataType.Trim()}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchTerm.QCString))
+            {
+                sqlBuilder.Append(" AND QCString LIKE @QCString");
+                parameters.Add("QCString", $"%{searchTerm.QCString.Trim()}%");
+            }
+
+            // 3. Dispatch safe, compiled query string down to Dapper
+            string finalSql = sqlBuilder.ToString();
+
+            IEnumerable<IndexModel> result = await _id.ReadData<IndexModel>(
+                finalSql,
+                parameters,
+                _connectionString
+            );
+
             return result;
         }
     }

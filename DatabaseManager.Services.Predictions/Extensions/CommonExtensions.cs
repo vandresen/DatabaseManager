@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Newtonsoft.Json.Linq;
 using System.Data;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.Predictions.Extensions
 {
@@ -63,20 +59,20 @@ namespace DatabaseManager.Services.Predictions.Extensions
         //    return nullValue;
         //}
 
-        //public static double? GetNumberFromJToken(this JToken token)
-        //{
-        //    double? number = null;
-        //    if (token != null)
-        //    {
-        //        string strNumber = token.ToString();
-        //        if (!string.IsNullOrWhiteSpace(strNumber))
-        //        {
-        //            double value;
-        //            if (double.TryParse(strNumber, out value)) number = value;
-        //        }
-        //    }
-        //    return number;
-        //}
+        public static double? GetNumberFromJToken(this JToken token)
+        {
+            double? number = null;
+            if (token != null)
+            {
+                string strNumber = token.ToString();
+                if (!string.IsNullOrWhiteSpace(strNumber))
+                {
+                    double value;
+                    if (double.TryParse(strNumber, out value)) number = value;
+                }
+            }
+            return number;
+        }
 
         //public static string ConsistencyCheck(this string strValue, string strRefValue, string valueType)
         //{

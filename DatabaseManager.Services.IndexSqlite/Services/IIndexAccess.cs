@@ -24,6 +24,7 @@
         Task<IEnumerable<EntiretyListModel>> GetEntiretyIndexes(string project, string dataType, string entiretyName, string parentType);
         Task<IEnumerable<NeighbourIndex>> GetNeighbors(int id, string failRule, string depthAttribute, string project);
         Task<IEnumerable<IndexModel>> QueriedIndexes(string project, string dataType, string qcString);
+        Task<IEnumerable<IndexModel>> SearchIndexes(IndexSearchCriteria query, string? project);
         Task<int> GetCount(string connectionString, string query);
         Task<List<string>> GetProjects();
         Task CreateProject(string project);

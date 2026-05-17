@@ -146,56 +146,56 @@ namespace DatabaseManager.Services.Predictions.Core
             return result;
         }
 
-        //public static PredictionResult PredictDominantLithology(PredictionRuleSetup qcSetup, DapperDataAccess dp, IndexDBAccess idxdata)
-        //{
-        //    PredictionResult result = new PredictionResult
-        //    {
-        //        Status = "Failed"
-        //    };
+        public static PredictionResult PredictDominantLithology(PredictionRuleSetup qcSetup, DapperDataAccess dp, IIndexAccess idxdata)
+        {
+            PredictionResult result = new PredictionResult
+            {
+                Status = "Failed"
+            };
 
-        //    JObject dataObject = JObject.Parse(qcSetup.DataObject);
-        //    string uwi = dataObject["UWI"].ToString();
-        //    string curveName = "GR";
-        //    JToken value = dataObject.GetValue("PICK_DEPTH");
-        //    double? pickDepth = value.GetNumberFromJToken();
-        //    if (pickDepth == null || pickDepth == -99999.0) return result;
+            JObject dataObject = JObject.Parse(qcSetup.DataObject);
+            string uwi = dataObject["UWI"].ToString();
+            string curveName = "GR";
+            JToken value = dataObject.GetValue("PICK_DEPTH");
+            double? pickDepth = value.GetNumberFromJToken();
+            if (pickDepth == null || pickDepth == -99999.0) return result;
 
-        //    string dataKey = $"UWI = ''{uwi}'' and CURVE_ID = ''{curveName}''";
-        //    string query = $" where DataKey = '{dataKey}'";
-        //    string select = idxdata.GetSelectSQL() + query;
-        //    var lc = dp.ReadData<IndexModel>(select, qcSetup.DataConnector).GetAwaiter().GetResult();
+            string dataKey = $"UWI = ''{uwi}'' and CURVE_ID = ''{curveName}''";
+            string query = $" where DataKey = '{dataKey}'";
+            //string select = idxdata.GetSelectSQL() + query;
+            //var lc = dp.ReadData<IndexModel>(select, qcSetup.DataConnector).GetAwaiter().GetResult();
 
-        //    if (lc?.Count() != 1) return result;
+            //if (lc?.Count() != 1) return result;
 
-        //    string logJson = lc.FirstOrDefault()?.JsonDataObject;
-        //    JObject logObject = JObject.Parse(logJson);
-        //    value = logObject.GetValue("NULL_REPRESENTATION");
-        //    double? logNullValue = value.GetNumberFromJToken();
-        //    double[] logArray = logObject["MEASURED_VALUE"].ToString().ConvertStringToArray();
-        //    double[] indexArray = logObject["INDEX_VALUE"].ToString().ConvertStringToArray();
+            //string logJson = lc.FirstOrDefault()?.JsonDataObject;
+            //JObject logObject = JObject.Parse(logJson);
+            //value = logObject.GetValue("NULL_REPRESENTATION");
+            //double? logNullValue = value.GetNumberFromJToken();
+            //double[] logArray = logObject["MEASURED_VALUE"].ToString().ConvertStringToArray();
+            //double[] indexArray = logObject["INDEX_VALUE"].ToString().ConvertStringToArray();
 
-        //    if (logArray.Count() > 0)
-        //    {
-        //        int rowNumber = RuleMethodUtilities.GetRowNumberForPickDepth(indexArray, (double)pickDepth);
+            //if (logArray.Count() > 0)
+            //{
+            //    int rowNumber = RuleMethodUtilities.GetRowNumberForPickDepth(indexArray, (double)pickDepth);
 
-        //        double? smoothLogValue = RuleMethodUtilities.GetSmoothLogValue(logArray, (double)logNullValue, rowNumber);
+            //    double? smoothLogValue = RuleMethodUtilities.GetSmoothLogValue(logArray, (double)logNullValue, rowNumber);
 
-        //        var rockType = LithologyInfo.GetLithology(smoothLogValue);
-        //        dataObject["DOMINANT_LITHOLOGY"] = rockType.ToString();
+            //    var rockType = LithologyInfo.GetLithology(smoothLogValue);
+            //    dataObject["DOMINANT_LITHOLOGY"] = rockType.ToString();
 
-        //        string remark = (dataObject["REMARK"]?.ToString() ?? "") + "; Pick depth has been predicted by QCEngine";
-        //        dataObject["REMARK"] = remark;
+            //    string remark = (dataObject["REMARK"]?.ToString() ?? "") + "; Pick depth has been predicted by QCEngine";
+            //    dataObject["REMARK"] = remark;
 
-        //        RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
-        //        result.DataObject = dataObject.ToString();
-        //        result.DataType = rule.DataType;
-        //        result.SaveType = "Update";
-        //        result.IndexId = qcSetup.IndexId;
-        //        result.Status = "Passed";
-        //    }
+            //    RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
+            //    result.DataObject = dataObject.ToString();
+            //    result.DataType = rule.DataType;
+            //    result.SaveType = "Update";
+            //    result.IndexId = qcSetup.IndexId;
+            //    result.Status = "Passed";
+            //}
 
-        //    return result;
-        //}
+            return result;
+        }
 
         public static PredictionResult PredictLogDepthAttributes(PredictionRuleSetup qcSetup, DapperDataAccess dp, IIndexAccess idxdata)
         {

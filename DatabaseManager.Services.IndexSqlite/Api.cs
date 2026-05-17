@@ -1,6 +1,4 @@
-﻿using DatabaseManager.Services.IndexSqlite.Helpers;
-using Microsoft.Extensions.Logging;
-using System.Threading.Channels;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace DatabaseManager.Services.IndexSqlite
 {
@@ -22,6 +20,7 @@ namespace DatabaseManager.Services.IndexSqlite
             app.MapPost("/Project", CreateProject);
             app.MapDelete("/Project", DeleteProject);
             app.MapPut("/Indexes", UpdateIndexes);
+            app.MapGet("/api/indexes/search", SearchIndexes);
         }
 
         private static async Task<IResult> GetIndexes(string project, IIndexAccess idxAccess)
@@ -57,6 +56,42 @@ namespace DatabaseManager.Services.IndexSqlite
                 response.ErrorMessages.Insert(0, newString);
             }
             return Results.Ok(response);
+        }
+
+        private static async Task<IResult> SearchIndexes(
+            [AsParameters] IndexSearchCriteria criteria,
+            [FromQuery(Name = "project")] string? project,
+            IIndexAccess idxAccess)
+        {
+            // 1. Validate that at least one search attribute is provided
+            if (string.IsNullOrWhiteSpace(criteria.DataName) &&
+                string.IsNullOrWhiteSpace(criteria.DataType) &&
+                string.IsNullOrWhiteSpace(criteria.QCString))
+            {
+                return Results.BadRequest(new
+                {
+                    Error = "Invalid search parameters.",
+                    Message = "You must provide at least one search filter: 'DataName', 'DataType', or 'QCString'."
+                });
+            }
+
+            try
+            {
+                // 2. Sanitize optional project string
+                string? sanitizedProject = project?.Trim();
+
+                // 3. Forward the strongly-typed filters down to your repository
+                var results = await idxAccess.SearchIndexes(criteria, sanitizedProject);
+
+                return results == null ? Results.NotFound() : Results.Ok(results);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(
+                    detail: "An unexpected error occurred while executing the index search.",
+                    statusCode: StatusCodes.Status500InternalServerError
+                );
+            }
         }
 
         private static async Task<IResult> GetDescendants(int id, string project, IIndexAccess idxAccess)

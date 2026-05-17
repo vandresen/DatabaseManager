@@ -2,6 +2,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Data;
+using System.Data.Common;
 
 namespace DatabaseManager.Services.IndexSqlite.Services
 {
@@ -66,8 +67,17 @@ namespace DatabaseManager.Services.IndexSqlite.Services
         public async Task<IEnumerable<T>> ReadData<T>(string sql, string connectionString)
         {
             using IDbConnection cnn = new SqliteConnection(connectionString);
-            SpatialiteLoader.Load((System.Data.Common.DbConnection)cnn);
+            SpatialiteLoader.Load((DbConnection)cnn);
             return await cnn.QueryAsync<T>(sql);
+        }
+
+        public async Task<IEnumerable<T>> ReadData<T>(string sql, object? parameters, string connectionString)
+        {
+            using IDbConnection cnn = new SqliteConnection(connectionString);
+
+            SpatialiteLoader.Load((DbConnection)cnn);
+
+            return await cnn.QueryAsync<T>(sql, parameters);
         }
 
         public Task SaveData<T>(string storedProcedure, T parameters, string connectionString)

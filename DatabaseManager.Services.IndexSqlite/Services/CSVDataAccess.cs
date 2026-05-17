@@ -70,6 +70,11 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             throw new NotImplementedException();
         }
 
+        public Task<IEnumerable<T>> ReadData<T>(string sql, object parameters, string connectionString)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task SaveData<T>(string storedProcedure, T parameters, string connectionString)
         {
             throw new NotImplementedException();
