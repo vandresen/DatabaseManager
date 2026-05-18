@@ -9,7 +9,7 @@ namespace DatabaseManager.Services.Predictions.Services
 {
     public interface IIndexAccess
     {
-        Task<T> GetIndexes<T>(string dataSource, string project, string dataType, string storageConnection);
+        Task<T> GetIndexes<T>(string dataSource, string project, string dataType, string dataName, string storageConnection);
         Task<T> UpdateIndexes<T>(List<IndexDto> indexes, string dataSource, string project, string storageConnection);
         Task<T> InsertIndexes<T>(List<IndexDto> indexes, string dataSource, string project, string storageConnection);
         Task<T> InsertIndex<T>(IndexDto index, string dataSource, string project, string storageConnection);

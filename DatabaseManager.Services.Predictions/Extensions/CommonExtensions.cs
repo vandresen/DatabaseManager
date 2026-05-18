@@ -24,6 +24,25 @@ namespace DatabaseManager.Services.Predictions.Extensions
             return fixString;
         }
 
+        public static double[] ConvertStringToArray(this string input)
+        {
+            double[] output = new double[] { -99999.0 }; ;
+            try
+            {
+                input = input.Trim();
+                input = input.TrimStart('[').TrimEnd(']');
+                string[] strOutputArray = input.Split(',')
+                    .Select(x => x.Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToArray();
+                output = Array.ConvertAll(strOutputArray, Double.Parse);
+            }
+            catch (Exception)
+            {
+            }
+            return output;
+        }
+
         //public static double CalculateStdDev(this List<double> values)
         //{
         //    double stdDev = 0;

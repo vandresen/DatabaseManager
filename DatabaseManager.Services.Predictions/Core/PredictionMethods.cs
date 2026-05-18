@@ -2,6 +2,7 @@
 using DatabaseManager.Services.Predictions.Models;
 using DatabaseManager.Services.Predictions.Services;
 using Newtonsoft.Json.Linq;
+using System.Data;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -35,7 +36,7 @@ namespace DatabaseManager.Services.Predictions.Core
             {
                 if (string.IsNullOrEmpty(qcSetup.DataConnector))
                 {
-                    ResponseDto response = Task.Run(() => idxdata.GetIndexes<ResponseDto>(qcSetup.DataConnector, qcSetup.Project, "MarkerWell", "Unknown"))
+                    ResponseDto response = Task.Run(() => idxdata.GetIndexes<ResponseDto>(qcSetup.DataConnector, qcSetup.Project, "MarkerWell", "", "Unknown"))
                         .GetAwaiter().GetResult();
                     if (!response.IsSuccess)
                     {
@@ -155,44 +156,43 @@ namespace DatabaseManager.Services.Predictions.Core
 
             JObject dataObject = JObject.Parse(qcSetup.DataObject);
             string uwi = dataObject["UWI"].ToString();
+
             string curveName = "GR";
+            string dataType = "Log";
+
             JToken value = dataObject.GetValue("PICK_DEPTH");
             double? pickDepth = value.GetNumberFromJToken();
             if (pickDepth == null || pickDepth == -99999.0) return result;
 
-            string dataKey = $"UWI = ''{uwi}'' and CURVE_ID = ''{curveName}''";
-            string query = $" where DataKey = '{dataKey}'";
-            //string select = idxdata.GetSelectSQL() + query;
-            //var lc = dp.ReadData<IndexModel>(select, qcSetup.DataConnector).GetAwaiter().GetResult();
+            var indexes = idxdata.GetIndexes<List<IndexDto>>(qcSetup.DataConnector, qcSetup.Project, dataType, curveName, "").GetAwaiter().GetResult();
+            if (indexes?.Count() != 1) return result;
 
-            //if (lc?.Count() != 1) return result;
+            string logJson = indexes.FirstOrDefault()?.JsonDataObject;
+            JObject logObject = JObject.Parse(logJson);
+            value = logObject.GetValue("NULL_REPRESENTATION");
+            double? logNullValue = value.GetNumberFromJToken();
+            double[] logArray = logObject["MEASURED_VALUE"].ToString().ConvertStringToArray();
+            double[] indexArray = logObject["INDEX_VALUE"].ToString().ConvertStringToArray();
 
-            //string logJson = lc.FirstOrDefault()?.JsonDataObject;
-            //JObject logObject = JObject.Parse(logJson);
-            //value = logObject.GetValue("NULL_REPRESENTATION");
-            //double? logNullValue = value.GetNumberFromJToken();
-            //double[] logArray = logObject["MEASURED_VALUE"].ToString().ConvertStringToArray();
-            //double[] indexArray = logObject["INDEX_VALUE"].ToString().ConvertStringToArray();
+            if (logArray.Count() > 0)
+            {
+                int rowNumber = RuleMethodUtilities.GetRowNumberForPickDepth(indexArray, (double)pickDepth);
 
-            //if (logArray.Count() > 0)
-            //{
-            //    int rowNumber = RuleMethodUtilities.GetRowNumberForPickDepth(indexArray, (double)pickDepth);
+                double? smoothLogValue = RuleMethodUtilities.GetSmoothLogValue(logArray, (double)logNullValue, rowNumber);
 
-            //    double? smoothLogValue = RuleMethodUtilities.GetSmoothLogValue(logArray, (double)logNullValue, rowNumber);
+                var rockType = LithologyInfo.GetLithology(smoothLogValue);
+                dataObject["DOMINANT_LITHOLOGY"] = rockType.ToString();
 
-            //    var rockType = LithologyInfo.GetLithology(smoothLogValue);
-            //    dataObject["DOMINANT_LITHOLOGY"] = rockType.ToString();
+                string remark = (dataObject["REMARK"]?.ToString() ?? "") + "; Pick depth has been predicted by QCEngine";
+                dataObject["REMARK"] = remark;
 
-            //    string remark = (dataObject["REMARK"]?.ToString() ?? "") + "; Pick depth has been predicted by QCEngine";
-            //    dataObject["REMARK"] = remark;
-
-            //    RuleModel rule = JsonConvert.DeserializeObject<RuleModel>(qcSetup.RuleObject);
-            //    result.DataObject = dataObject.ToString();
-            //    result.DataType = rule.DataType;
-            //    result.SaveType = "Update";
-            //    result.IndexId = qcSetup.IndexId;
-            //    result.Status = "Passed";
-            //}
+                RuleModelDto rule = JsonSerializer.Deserialize<RuleModelDto>(qcSetup.RuleObject, _jsonOptions);
+                result.DataObject = dataObject.ToString();
+                result.DataType = rule.DataType;
+                result.SaveType = "Update";
+                result.IndexId = qcSetup.IndexId;
+                result.Status = "Passed";
+            }
 
             return result;
         }

@@ -54,9 +54,9 @@ namespace DatabaseManager.Services.Predictions.Services
             });
         }
 
-        public async Task<T> GetIndexes<T>(string dataSource, string project, string dataType, string storageConnection)
+        public async Task<T> GetIndexes<T>(string dataSource, string project, string dataType, string dataName, string storageConnection)
         {
-            string url = _indexAPIBase.BuildFunctionUrl($"/QueryIndex", $"Name={dataSource}&DataType={dataType}&Project={project}", _indexApiKey);
+            string url = _indexAPIBase.BuildFunctionUrl($"/api/indexes/search", $"Name={dataSource}&DataType={dataType}&Project={project}&DataName={dataName}", _indexApiKey);
             _logger.LogInformation($"Retrieving index data from url {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {

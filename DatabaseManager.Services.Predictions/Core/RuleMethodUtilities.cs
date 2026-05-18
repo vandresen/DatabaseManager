@@ -219,57 +219,57 @@ namespace DatabaseManager.Services.Predictions.Core
         //    return sortedCurve;
         //}
 
-        //public static int GetRowNumberForPickDepth(double[] indexArray, double pickDepth)
-        //{
-        //    if (indexArray == null || indexArray.Length == 0)
-        //        return -1;
+        public static int GetRowNumberForPickDepth(double[] indexArray, double pickDepth)
+        {
+            if (indexArray == null || indexArray.Length == 0)
+                return -1;
 
-        //    for (int j = 0; j < indexArray.Length - 1; j++)
-        //    {
-        //        double current = indexArray[j];
-        //        double next = indexArray[j + 1];
+            for (int j = 0; j < indexArray.Length - 1; j++)
+            {
+                double current = indexArray[j];
+                double next = indexArray[j + 1];
 
-        //        if (pickDepth >= current && pickDepth < next)
-        //            return j;
-        //    }
+                if (pickDepth >= current && pickDepth < next)
+                    return j;
+            }
 
-        //    if (pickDepth == indexArray[^1])
-        //        return indexArray.Length - 1;
+            if (pickDepth == indexArray[^1])
+                return indexArray.Length - 1;
 
-        //    return -1;
-        //}
+            return -1;
+        }
 
-        //public static double? GetSmoothLogValue(double[] logArray, double logNullValue, int rowNumber)
-        //{
-        //    const int windowSize = 25;
-        //    const double stdWeight = 2.0;
+        public static double? GetSmoothLogValue(double[] logArray, double logNullValue, int rowNumber)
+        {
+            const int windowSize = 25;
+            const double stdWeight = 2.0;
 
-        //    if (logArray == null || logArray.Length == 0)
-        //        return null;
+            if (logArray == null || logArray.Length == 0)
+                return null;
 
-        //    if (rowNumber < 0 || rowNumber >= logArray.Length)
-        //        return null;
+            if (rowNumber < 0 || rowNumber >= logArray.Length)
+                return null;
 
-        //    try
-        //    {
-        //        double?[] XPointMember = new double?[logArray.Length];
-        //        for (int j = 0; j < logArray.Length; j++)
-        //        {
-        //            double measuredValue = logArray[j];
-        //            XPointMember[j] = measuredValue == logNullValue ? (double?)null : measuredValue;
-        //        }
+            try
+            {
+                double?[] XPointMember = new double?[logArray.Length];
+                for (int j = 0; j < logArray.Length; j++)
+                {
+                    double measuredValue = logArray[j];
+                    XPointMember[j] = measuredValue == logNullValue ? (double?)null : measuredValue;
+                }
 
-        //        var hatFunction = new HatFunction(XPointMember, windowSize);
-        //        double?[] smoothedValues = hatFunction.SmoothFunction(XPointMember, stdWeight);
+                var hatFunction = new HatFunction(XPointMember, windowSize);
+                double?[] smoothedValues = hatFunction.SmoothFunction(XPointMember, stdWeight);
 
-        //        return smoothedValues[rowNumber].GetValueOrDefault();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"Error in GetSmoothLogValue: {ex.Message}");
-        //        return null;
-        //    }
-        //}
+                return smoothedValues[rowNumber].GetValueOrDefault();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetSmoothLogValue: {ex.Message}");
+                return null;
+            }
+        }
 
         public static string GetLogCurveDepths(string dataObject)
         {

@@ -66,6 +66,7 @@ namespace DatabaseManager.Services.IndexSqlite
             // 1. Validate that at least one search attribute is provided
             if (string.IsNullOrWhiteSpace(criteria.DataName) &&
                 string.IsNullOrWhiteSpace(criteria.DataType) &&
+                string.IsNullOrWhiteSpace(criteria.DataKey) &&
                 string.IsNullOrWhiteSpace(criteria.QCString))
             {
                 return Results.BadRequest(new

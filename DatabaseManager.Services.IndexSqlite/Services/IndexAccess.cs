@@ -259,8 +259,8 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             _project = project;
             _projectTable = GetProjectTable();
             string sql = $"INSERT INTO {_projectTable} " +
-                "(DataName, DataType, JsonDataObject, ParentId, Locations) " +
-                "VALUES(@DataName, @DataType, @JsonDataObject, @ParentId, MakePoint(@Longitude, @Latitude, 4326)); " +
+                "(DataName, DataKey, DataType, JsonDataObject, ParentId, Locations) " +
+                "VALUES(@DataName, @DataKey, @DataType, @JsonDataObject, @ParentId, MakePoint(@Longitude, @Latitude, 4326)); " +
                 "SELECT last_insert_rowid();";
             return await _id.ExecuteScalar<int>(sql, indexModel, _connectionString);
         }
@@ -270,8 +270,8 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             _project = project;
             _projectTable = GetProjectTable();
             string sql = $"INSERT INTO {_projectTable} " +
-                "(IndexId, DataName, DataType, JsonDataObject, ParentId, Latitude, Longitude, Locations) " +
-                "VALUES(@IndexId, @DataName, @DataType, @JsonDataObject, @ParentId, @Latitude, @Longitude, MakePoint(@Longitude, @Latitude, 4326))";
+                "(IndexId, DataKey,DataName, DataType, JsonDataObject, ParentId, Latitude, Longitude, Locations) " +
+                "VALUES(@IndexId, @DataKey, @DataName, @DataType, @JsonDataObject, @ParentId, @Latitude, @Longitude, MakePoint(@Longitude, @Latitude, 4326))";
             await _id.SaveDataSQL(sql, indexModel, connectionString);
         }
 
@@ -863,6 +863,12 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             {
                 sqlBuilder.Append(" AND DataType = @DataType");
                 parameters.Add("DataType", $"{searchTerm.DataType.Trim()}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchTerm.DataKey))
+            {
+                sqlBuilder.Append(" AND DataKey = @DataKey");
+                parameters.Add("DataKey", $"{searchTerm.DataKey.Trim()}");
             }
 
             if (!string.IsNullOrWhiteSpace(searchTerm.QCString))
