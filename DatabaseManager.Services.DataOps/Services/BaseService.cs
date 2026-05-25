@@ -19,11 +19,7 @@ namespace DatabaseManager.Services.DataOps.Services
         {
             try
             {
-                var client = httpClient.CreateClient("DatabaseManager");
-                if (timeout.HasValue)
-                {
-                    client.Timeout = timeout.Value;
-                }
+                var client = httpClient.CreateClient("DataOps");
                 var httpMethod = new HttpMethod("GET");
                 switch (apiRequest.ApiType)
                 {
@@ -39,7 +35,6 @@ namespace DatabaseManager.Services.DataOps.Services
                 }
                 HttpRequestMessage message = new HttpRequestMessage(httpMethod, apiRequest.Url);
                 message.Headers.Add("Accept", "application/json");
-                client.DefaultRequestHeaders.Clear();
                 if (apiRequest.Data != null)
                 {
                     message.Content = new StringContent(JsonConvert.SerializeObject(apiRequest.Data),
@@ -48,7 +43,7 @@ namespace DatabaseManager.Services.DataOps.Services
 
                 if (!string.IsNullOrEmpty(apiRequest.AzureStorage))
                 {
-                    client.DefaultRequestHeaders.Add("azurestorageconnection", apiRequest.AzureStorage);
+                    message.Headers.Add("azurestorageconnection", apiRequest.AzureStorage);
                 }
 
                 HttpResponseMessage apiResponse = null;
