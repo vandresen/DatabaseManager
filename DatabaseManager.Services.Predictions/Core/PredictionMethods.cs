@@ -36,7 +36,7 @@ namespace DatabaseManager.Services.Predictions.Core
             {
                 if (string.IsNullOrEmpty(qcSetup.DataConnector))
                 {
-                    ResponseDto response = Task.Run(() => idxdata.GetIndexes<ResponseDto>(qcSetup.DataConnector, qcSetup.Project, "MarkerWell", "", "Unknown"))
+                    ResponseDto response = Task.Run(() => idxdata.GetIndexes<ResponseDto>(qcSetup.DataConnector, qcSetup.Project, "MarkerWell", "", "", "Unknown"))
                         .GetAwaiter().GetResult();
                     if (!response.IsSuccess)
                     {
@@ -164,7 +164,8 @@ namespace DatabaseManager.Services.Predictions.Core
             double? pickDepth = value.GetNumberFromJToken();
             if (pickDepth == null || pickDepth == -99999.0) return result;
 
-            var indexes = idxdata.GetIndexes<List<IndexDto>>(qcSetup.DataConnector, qcSetup.Project, dataType, curveName, "").GetAwaiter().GetResult();
+            string dataKey = $"UWI = '{uwi}' AND CURVE_ID = '{curveName}'";
+            var indexes = idxdata.GetIndexes<List<IndexDto>>(qcSetup.DataConnector, qcSetup.Project, dataType, "", dataKey, "").GetAwaiter().GetResult();
             if (indexes?.Count() != 1) return result;
 
             string logJson = indexes.FirstOrDefault()?.JsonDataObject;

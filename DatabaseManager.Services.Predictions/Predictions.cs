@@ -72,7 +72,7 @@ public class Predictions
 
             _logger.LogInformation($"Predictions: RuleName={rule.RuleName} with Id={rule.Id}");
 
-            var indexes = await _idxAccess.GetIndexes<List<IndexDto>>(parms.DataConnector, parms.IndexProject, rule.DataType, "", parms.AzureStorageKey);
+            var indexes = await _idxAccess.GetIndexes<List<IndexDto>>(parms.DataConnector, parms.IndexProject, rule.DataType, "", "", parms.AzureStorageKey);
             _logger.LogInformation($"Predictions: Number of indexes are {indexes.Count}");
             var failedIndexes = indexes.Where(i => !string.IsNullOrEmpty(i.QC_String) && i.QC_String.Contains(rule.FailRule + ";")).ToList();
 
