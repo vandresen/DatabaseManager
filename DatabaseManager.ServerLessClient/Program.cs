@@ -50,6 +50,7 @@ namespace DatabaseManager.ServerLessClient
             SD.DataOpsManageKey = builder.Configuration["ServiceUrls:DataOpsManageKey"];
             SD.DatabaseManagerAPIBase = builder.Configuration["ServiceUrls:DatabaseManagerAPI"];
             SD.DatabaseManagerKey = builder.Configuration["ServiceUrls:DatabaseManagerKey"];
+            SD.OpenAIKey = builder.Configuration["OpenAI:ApiKey"];
 
             await builder.Build().RunAsync();
         }

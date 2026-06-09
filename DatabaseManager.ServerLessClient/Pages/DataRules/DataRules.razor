@@ -24,11 +24,25 @@
         </MudFileUpload>
     </span>
 
-    <RuleCopilotComponent
-        SelectedRule="@_copilotSelectedRule"
-        CurrentRuleset="@_copilotRuleset"
-        OnRuleLoaded="HandleCopilotRuleLoaded"
-        OnRulesetChanged="HandleCopilotRulesetChanged" />
+    @if (!string.IsNullOrEmpty(SD.OpenAIKey))
+    {
+        <RuleCopilotComponent SelectedRule="@_copilotSelectedRule"
+                              CurrentRuleset="@_copilotRuleset"
+                              OnRuleLoaded="HandleCopilotRuleLoaded"
+                              OnRulesetChanged="HandleCopilotRulesetChanged" />
+    }
+    else
+    {
+        <MudTooltip Text="AI Copilot is unavailable — no API key configured">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Default"
+                       StartIcon="@Icons.Material.Filled.SmartToy"
+                       Disabled="true">
+                Rule Copilot
+            </MudButton>
+        </MudTooltip>
+    }
+
 </div>
 
 <MudMenu Label="New Rule" Color="Color.Secondary">

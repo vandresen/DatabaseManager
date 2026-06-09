@@ -22,6 +22,7 @@
         public static string DatabaseManagerKey { get; set; }
         public static bool Sqlite { get; set; }
         public static string EsriKey { get; set; }
+        public static string? OpenAIKey { get; set; }
         public enum ApiType
         {
             GET,

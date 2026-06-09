@@ -39,9 +39,9 @@ namespace DatabaseManager.ServerLessClient.Services
             _dmService = dmService;
             _logger = logger;
 
-            _apiKey = _config["OpenAI:ApiKey"]
-                ?? throw new InvalidOperationException(
-                    "Missing OpenAI API key.");
+            _apiKey = SD.OpenAIKey;
+            if (string.IsNullOrEmpty(_apiKey))
+                throw new InvalidOperationException("AI key is not configured.");
 
             _systemPrompt = PromptLoader.Load("DatabaseManager.ServerLessClient.AIPrompts.RuleCopilotSystemPrompt.txt");
             _canonicalExamplesPrompt = PromptLoader.Load("DatabaseManager.ServerLessClient.AIPrompts.CanonicalRuleExamples.txt");
