@@ -1,6 +1,7 @@
 ﻿@page "/datarules"
 @inject IRuleService rules
 @inject IPopupMessage displayMessage
+@inject CopilotStateService copilotState
 @inject NavigationManager navigationManager
 @using MudBlazor
 
@@ -22,6 +23,12 @@
             </ActivatorContent>
         </MudFileUpload>
     </span>
+
+    <RuleCopilotComponent
+        SelectedRule="@_copilotSelectedRule"
+        CurrentRuleset="@_copilotRuleset"
+        OnRuleLoaded="HandleCopilotRuleLoaded"
+        OnRulesetChanged="HandleCopilotRulesetChanged" />
 </div>
 
 <MudMenu Label="New Rule" Color="Color.Secondary">
@@ -107,7 +114,7 @@ else
 
 @code {
     private List<string> RuleTypes = new();
-    private List<RuleModelDto> RuleList = new();
+    private List<RuleModelDto>? RuleList;
     private bool expandedState = false;
     private string showMenu = null;
     private string filterDataType = string.Empty;
@@ -116,6 +123,9 @@ else
     private string filterActive = string.Empty;
     private string filterRuleKey = string.Empty;
     private bool isImporting = false;
+    private RuleModel? _copilotSelectedRule;
+    private List<RuleModel> _copilotRuleset = new();
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -127,8 +137,8 @@ else
             {
                 RuleTypes.Add(item.Key);
             }
-            RuleList = await rules.GetRulesAsync();
-            Console.WriteLine(RuleList.Count);
+            await RefreshRules();
+
         }
         catch (Exception ex)
         {
@@ -148,8 +158,7 @@ else
         try
         {
             await rules.DeleteRuleAsync(id);
-            RuleList = await rules.GetRulesAsync();
-            this.StateHasChanged();
+            await RefreshRules();
         }
         catch (Exception ex)
         {
@@ -177,6 +186,10 @@ else
 
     private void EditRule(int id)
     {
+        var dto = RuleList.FirstOrDefault(r => r.Id == id);
+        if (dto != null)
+            _copilotSelectedRule = dto.FromRuleModelDto();
+
         navigationManager.NavigateTo($"/editdatarules/{id}");
     }
 
@@ -233,7 +246,7 @@ else
             }
 
             // Refresh the list
-            RuleList = await rules.GetRulesAsync();
+            await RefreshRules();
             await displayMessage.DisplaySuccessMessage($"Successfully imported {successCount} of {importedRules.Count} rule(s).");
         }
         catch (Exception ex)
@@ -247,4 +260,28 @@ else
             StateHasChanged();
         }
     }
+
+    // Copilot "Load into editor" — navigates to the create page
+    // You may prefer to open a dialog instead, depending on your UX
+    private void HandleCopilotRuleLoaded(RuleModel rule)
+    {
+        copilotState.PendingRule = rule;
+
+        navigationManager.NavigateTo(
+            $"/editcopilotrules/");
+    }
+
+    // Copilot "Save all" has persisted rules — refresh the table
+    private async Task HandleCopilotRulesetChanged()
+    {
+        await RefreshRules();
+    }
+
+    private async Task RefreshRules()
+    {
+        RuleList = await rules.GetRulesAsync();
+        _copilotRuleset = RuleList.Select(r => r.FromRuleModelDto()).ToList();
+        StateHasChanged();
+    }
+
 }

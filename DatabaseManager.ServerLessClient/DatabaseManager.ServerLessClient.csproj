@@ -8,6 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="AIPrompts\CanonicalRuleExamples.txt" />
+    <None Remove="AIPrompts\RuleCopilotSystemPrompt.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="AIPrompts\CanonicalRuleExamples.txt" />
+    <EmbeddedResource Include="AIPrompts\RuleCopilotSystemPrompt.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
     <PackageReference Include="BlazorTable" Version="1.17.0" />
 	<PackageReference Include="dymaptic.GeoBlazor.Core" Version="4.4.0" />

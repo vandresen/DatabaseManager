@@ -1,36 +1,38 @@
-﻿@page "/createdatarule/{RuleType}"
+﻿@page "/editcopilotrules"
 
 @inject IDataConfigurationService dcs
 @inject IPopupMessage dm
+@inject CopilotStateService copilotState
 @inject IRuleService rules
 @inject NavigationManager navigationManager
-@using DatabaseManager.ServerLessClient.Helpers;
 
-<h3>New @RuleType Rule</h3>
+<h3>Edit Copilot Rule</h3>
 
-@if (ruleInfo != null)
+@if (ruleInfo == null || ruleModel == null)
 {
-    <NewDataRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" Type="@type" OnValidSubmit="Create" FunctionMethods="functionMethods"/>
+    <p>Loading...</p>
+}
+else
+{
+    <EditDataRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" OnValidSubmit="Edit" />
 }
 
 @code {
-    [Parameter] public string RuleType { get; set; }
-    public RuleModel ruleModel = new RuleModel();
     public RuleInfo ruleInfo;
-    private List<RuleFunctionDto> FunctionList;
-    public string type;
-    public List<string> functionMethods;
+    public RuleModel ruleModel;
+    public RuleModelDto ruleModelDto;
 
     protected override async Task OnInitializedAsync()
     {
         ruleInfo = await GetRuleInfo();
-        FunctionList = await rules.GetFunctionsAsync();
-        type = RuleType;
-        Console.WriteLine($"New Rule: {type}");
-        string shortType = "";
-        if (type == "Validity") shortType = "V";
-        if (type == "Predictions") shortType = "P";
-        functionMethods = FunctionList.Where(s => s.FunctionType == shortType).Select(s => s.FunctionName).ToList();
+        ruleModel = copilotState.PendingRule;
+
+        if (ruleModel == null)
+        {
+            await dm.DisplayErrorMessage(
+                "No Copilot rule is available.");
+            return;
+        }
     }
 
     private async Task<RuleInfo> GetRuleInfo()
@@ -62,11 +64,11 @@
         return ruleInfo;
     }
 
-    private async Task Create()
+    private async Task Edit()
     {
         try
         {
-            await rules.InsertRuleAsync(ruleModel);
+            await rules.UpdateRuleAsync(ruleModel);
             navigationManager.NavigateTo("datarules");
         }
         catch (Exception ex)

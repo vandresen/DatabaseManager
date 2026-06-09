@@ -1,0 +1,95 @@
+﻿# EXAMPLE RULES
+
+These are EXAMPLES of valid rules.
+Do not copy them exactly unless the user asks for similar logic.
+
+Rules do NOT always require a prediction pair.
+Predictions are optional and only used when automatic remediation exists.
+
+## Example: Completeness rule only
+
+{
+  "Active": "Y",
+  "DataType": "MarkerPick",
+  "DataAttribute": "PICK_DEPTH",
+  "RuleType": "Completeness",
+  "RuleName": "Missing pick value",
+  "RuleDescription": "",
+  "RuleFunction": "Completeness",
+  "RuleKey": "C4",
+  "KeyNumber": 0,
+  "RuleParameters": "",
+  "RuleFilter": "",
+  "FailRule": "",
+  "PredictionOrder": 0
+}
+
+## Example: Validity rule only
+
+{
+  "Active": "Y",
+  "DataType": "WellBore",
+  "DataAttribute": "DEPTH_DATUM_ELEV",
+  "RuleType": "Validity",
+  "RuleName": "Elevation not in range",
+  "RuleDescription": "",
+  "RuleFunction": "ValidityRange",
+  "RuleKey": "V1",
+  "KeyNumber": 0,
+  "RuleParameters": "{\"MinRange\":0,\"MaxRange\":5000}",
+  "RuleFilter": "",
+  "FailRule": "",
+  "PredictionOrder": 0
+}
+
+## Example: Prediction linked to DQ rule
+
+{
+  "Active": "Y",
+  "DataType": "MarkerPick",
+  "DataAttribute": "PICK_DEPTH",
+  "RuleType": "Predictions",
+  "RuleName": "Predict a pick value",
+  "RuleDescription": "",
+  "RuleFunction": "PredictDepthUsingIDW",
+  "RuleKey": "P6",
+  "KeyNumber": 0,
+  "RuleParameters": "",
+  "RuleFilter": "",
+  "FailRule": "C4",
+  "PredictionOrder": 5
+}
+
+## Example: Entirety + PredictMissingDataObjects
+
+{
+  "Active": "Y",
+  "DataType": "WellBore",
+  "DataAttribute": "INDEXID",
+  "RuleType": "Entirety",
+  "RuleName": "Missing Formation",
+  "RuleDescription": "",
+  "RuleFunction": "Entirety",
+  "RuleKey": "E1",
+  "KeyNumber": 0,
+  "RuleParameters": "{\"DataType\":\"MarkerPick\",\"Name\":\"Heebner Shale Member\"}",
+  "RuleFilter": "",
+  "FailRule": "",
+  "PredictionOrder": 0
+}
+
+{
+  "Active": "Y",
+  "DataType": "WellBore",
+  "DataAttribute": "INDEXID",
+  "RuleType": "Predictions",
+  "RuleName": "Predict missing formation",
+  "RuleDescription": "",
+  "RuleFunction": "PredictMissingDataObjects",
+  "RuleKey": "P9",
+  "KeyNumber": 0,
+  "RuleParameters": "{\"DataType\":\"MarkerPick\",\"Keys\":[{\"Key\":\"UWI\",\"Value\":\"!UWI\"}],\"Defaults\":[{\"Default\":\"DOMINANT_LITHOLOGY\",\"Value\":\"UNKNOWN\"}]}",
+  "RuleFilter": "",
+  "FailRule": "E1",
+  "PredictionOrder": 4
+}

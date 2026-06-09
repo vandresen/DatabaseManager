@@ -1,0 +1,675 @@
+﻿@using MudBlazor
+@inject ICopilotService CopilotService
+@inject IRuleService RuleService
+@inject IPopupMessage DisplayMessage
+@inject IJSRuntime JS
+
+@* ── Toggle button (shown when panel is closed) ───────────────────────────── *@
+@if (!_isOpen)
+{
+    <MudButton Variant="Variant.Outlined"
+               Color="Color.Secondary"
+               StartIcon="@Icons.Material.Filled.AutoAwesome"
+               OnClick="OpenPanel"
+               Size="Size.Small">
+        Rule Copilot
+    </MudButton>
+}
+else
+{
+    @* ── Panel ────────────────────────────────────────────────────────────── *@
+    <MudPaper Elevation="3" Style="width:600px;" Class="pa-0">
+
+        @* Header *@
+        <MudStack Row="true" AlignItems="AlignItems.Center" Class="copilot-header pa-3">
+            <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Color="Color.Secondary" Size="Size.Small" />
+            <MudText Typo="Typo.subtitle2" Class="flex-grow-1">Rule Copilot</MudText>
+            <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Filled">AI</MudChip>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           OnClick="ClosePanel" />
+        </MudStack>
+
+        <MudDivider />
+
+        @* Mode tabs *@
+        <MudTabs ActivePanelIndex="@_activeModeIndex"
+                 ActivePanelIndexChanged="OnModeChanged"
+                 Rounded="false"
+                 Border="false"
+                 PanelClass="pa-0">
+            <MudTabPanel Text="Generate" />
+            <MudTabPanel Text="Explain" />
+            <MudTabPanel Text="Review" />
+        </MudTabs>
+
+        <MudDivider />
+
+        @* Message thread *@
+        <div class="copilot-messages" @ref="_messagesRef">
+            @foreach (var msg in _messages)
+            {
+                @if (msg.Role == "result" && msg.Rules?.Count > 0)
+                {
+                    <MudPaper Outlined="true" Square="false" Class="ma-2 pa-0">
+                        
+                        <MudText Typo="Typo.caption"
+                                 Color="Color.Secondary"
+                                 Class="px-3 pt-2 pb-1 d-block"
+                                 Style="font-weight:600">
+                            Generated @msg.Rules.Count rule(s)
+                        </MudText>
+                        <MudDivider />
+                        @foreach (var r in msg.Rules)
+                        {
+                            <MudStack Row="true"
+                                      AlignItems="AlignItems.Center"
+                                      Class="px-3 py-1"
+                                      Style="border-bottom:1px solid var(--mud-palette-divider)">
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Variant="Variant.Filled"
+                                         Color="@GetChipColor(r.RuleKey)"
+                                         Class="ma-0">
+                                    @r.RuleKey
+                                </MudChip>
+                                <MudText Typo="Typo.body2" Class="flex-grow-1">@r.RuleName</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Tertiary">@r.RuleFunction</MudText>
+                            </MudStack>
+                        }
+                        <MudStack Row="true" Class="pa-2" Spacing="1">
+                            <MudButton Size="Size.Small"
+                                       Variant="Variant.Filled"
+                                       Color="Color.Secondary"
+                                       OnClick="@(() => LoadFirstRule(msg.Rules))">
+                                Load into editor
+                            </MudButton>
+                        </MudStack>
+                    </MudPaper>
+                }
+                else if (msg.Role == "user")
+                {
+                    <div class="copilot-msg copilot-msg--user ma-2">
+                        <MudText Typo="Typo.body2">@msg.Text</MudText>
+                    </div>
+                }
+                else
+                {
+                    <div class="copilot-msg copilot-msg--assistant ma-2">
+                        <MudText Typo="Typo.body2">@msg.Text</MudText>
+                    </div>
+                }
+            }
+
+            @* Streaming indicator *@
+            @if (_isStreaming)
+            {
+                <div class="copilot-msg copilot-msg--assistant ma-2">
+                    @if (!string.IsNullOrEmpty(_streamBuffer))
+                    {
+                        <MudText Typo="Typo.body2">@_streamBuffer</MudText>
+                    }
+                    else
+                    {
+                        <MudProgressLinear Color="Color.Secondary" Indeterminate="true" Class="my-1" />
+                    }
+                </div>
+            }
+
+            @* Error *@
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Class="ma-2">@_errorMessage</MudAlert>
+            }
+        </div>
+
+        @* Suggestion chips *@
+        @if (_suggestions.Count > 0 && !_isStreaming)
+        {
+            <MudDivider />
+            <div class="copilot-suggestions pa-2">
+                @foreach (var s in _suggestions)
+                {
+                    <MudChip T="string"
+                             Size="Size.Small"
+                             Variant="Variant.Outlined"
+                             Color="Color.Default"
+                             OnClick="@(() => SendSuggestion(s))"
+                             Class="ma-1"
+                             Style="cursor:pointer; height:auto; white-space:normal; text-align:left;">
+                        @s
+                    </MudChip>
+                }
+            </div>
+        }
+
+        <MudDivider />
+
+        @* Rule key prompt (shown when explain is requested with no rule selected) *@
+        @if (_showRuleKeyDialog)
+        {
+            <MudDivider />
+            <MudPaper Outlined="true" Class="ma-2 pa-3">
+                <MudText Typo="Typo.body2" Class="mb-2">
+                    No rule is selected. Enter a rule key to explain:
+                </MudText>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudTextField @bind-Value="_ruleKeyInput"
+                                  Placeholder="e.g. C4"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Class="flex-grow-1"
+                                  Immediate="true" />
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Secondary"
+                               Size="Size.Small"
+                               OnClick="OnRuleKeyDialogSubmit">
+                        Go
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Default"
+                               Size="Size.Small"
+                               OnClick="OnRuleKeyDialogCancel">
+                        Cancel
+                    </MudButton>
+                </MudStack>
+            </MudPaper>
+        }
+
+        <MudDivider />
+
+        @* Input row *@
+        <MudStack Row="true" AlignItems="AlignItems.End" Class="pa-2" Spacing="1">
+            <MudTextField @bind-Value="_inputText"
+                          Placeholder="@_inputPlaceholder"
+                          Lines="2"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Class="flex-grow-1"
+                          Disabled="@(_isStreaming || _showRuleKeyDialog)"
+                          OnKeyDown="HandleKeyDown"
+                          Immediate="true" />
+            <MudIconButton Icon="@Icons.Material.Filled.Send"
+                           Color="Color.Secondary"
+                           Variant="Variant.Filled"
+                           Size="Size.Medium"
+                           Disabled="@(string.IsNullOrWhiteSpace(_inputText) || _isStreaming || _showRuleKeyDialog)"
+                           OnClick="Send" />
+        </MudStack>
+
+    </MudPaper>
+}
+
+<style>
+    .copilot-header { flex-shrink: 0; }
+
+    .copilot-messages {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        padding: 4px 0;
+    }
+
+    .copilot-msg {
+        padding: 8px 12px;
+        border-radius: 10px;
+        max-width: 92%;
+        word-break: break-word;
+    }
+
+    .copilot-msg--assistant {
+        background-color: var(--mud-palette-background-grey);
+        align-self: flex-start;
+    }
+
+    .copilot-msg--user {
+        background-color: var(--mud-palette-secondary);
+        align-self: flex-end;
+        color: var(--mud-palette-secondary-text);
+    }
+
+    .copilot-suggestions {
+        display: flex;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+    }
+</style>
+@code {
+    // ── Parameters ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// The rule currently open in the editor — supplied by the host page.
+    /// Used by Explain mode to explain the selected rule.
+    /// </summary>
+    [Parameter] public RuleModel? SelectedRule { get; set; }
+
+    /// <summary>
+    /// The full ruleset currently loaded — supplied by the host page.
+    /// Used by Review mode for gap analysis.
+    /// </summary>
+    [Parameter] public List<RuleModel> CurrentRuleset { get; set; } = new();
+
+    /// <summary>
+    /// Fired when the user clicks "Load into editor" (first generated rule).
+    /// The host page should populate its editor form with this rule.
+    /// </summary>
+    [Parameter] public EventCallback<RuleModel> OnRuleLoaded { get; set; }
+
+    /// <summary>
+    /// Fired after "Save all" has persisted rules via IRuleService.
+    /// The host page should refresh its rule list.
+    /// </summary>
+    [Parameter] public EventCallback OnRulesetChanged { get; set; }
+
+    // ── Private state ────────────────────────────────────────────────────
+    private bool _isOpen = false;
+    private int _activeModeIndex = 0;  // 0=Generate, 1=Explain, 2=Review
+
+    private readonly List<CopilotMessage> _messages = new();
+    private List<string> _suggestions = new();
+    private string _inputText = string.Empty;
+    private string _inputPlaceholder = "Describe a rule in plain English...";
+    private string _streamBuffer = string.Empty;
+    private bool _isStreaming = false;
+    private string _errorMessage = string.Empty;
+
+    private ElementReference _messagesRef;
+    private CancellationTokenSource? _cts;
+
+    private bool _showRuleKeyDialog = false;
+    private string _ruleKeyInput = string.Empty;
+    private string _ruleKeyDialogIntent = string.Empty; // "explain" | "predict"
+    private RuleModel? _copilotSelectedRule;
+    private RuleModel? ActiveSelectedRule => _copilotSelectedRule ?? SelectedRule;
+
+    // ── Lifecycle ────────────────────────────────────────────────────────
+
+    protected override void OnInitialized() => ApplyModeDefaults(0);
+
+    // ── Panel open/close ─────────────────────────────────────────────────
+
+    private void OpenPanel() => _isOpen = true;
+    private void ClosePanel()
+    {
+        _isOpen = false;
+        _cts?.Cancel();
+    }
+
+    // ── Tab / mode switching ─────────────────────────────────────────────
+
+    private void OnModeChanged(int index)
+    {
+        _activeModeIndex = index;
+        _messages.Clear();
+        _suggestions.Clear();
+        _errorMessage = string.Empty;
+        _streamBuffer = string.Empty;
+        ApplyModeDefaults(index);
+    }
+
+    private void ApplyModeDefaults(int index)
+    {
+        switch (index)
+        {
+            case 0: // Generate
+                _inputPlaceholder = "Describe a rule in plain English...";
+                AddAssistantMessage(
+                    "Describe what you want to check and I'll generate a single DQ rule. " +
+                    "To add a prediction rule, reference an existing rule key — e.g. \"add a prediction for C4\".");
+                _suggestions = new()
+                {
+                    "Check well depth is between 0 and 50,000",
+                    "Ensure every well has a ground elevation",
+                    "Check well type is OIL, GAS or WATER",
+                    "Add a prediction for selected quality rule"
+                };
+                break;
+
+            case 1: // Explain
+                _inputPlaceholder = "Ask me to explain the selected rule...";
+                AddAssistantMessage("Select a rule and ask me to explain it, or ask about any rule function.");
+                _suggestions = new()
+                    {
+                        "Explain the selected rule",
+                        "What does PredictDepthUsingIDW do?",
+                        "Why is PredictionOrder important?",
+                        "What is the -99999 sentinel value?"
+                    };
+                break;
+
+            case 2: // Review
+                _inputPlaceholder = "Ask me to review your ruleset...";
+                AddAssistantMessage("I can analyse your loaded ruleset for gaps or missing prediction pairs. What would you like me to check?");
+                _suggestions = new()
+                    {
+                        "Find DQ rules with no prediction pair",
+                        "Which DQ dimensions have no coverage?",
+                        "Check lat/lon dependencies for IDW predictions",
+                        "Summarise coverage by DataType"
+                    };
+                break;
+        }
+    }
+
+    // ── Input handling ───────────────────────────────────────────────────
+
+    private async Task Send()
+    {
+        if (string.IsNullOrWhiteSpace(_inputText) || _isStreaming) return;
+
+        string text = _inputText.Trim();
+        _inputText = string.Empty;
+        _suggestions.Clear();
+        _errorMessage = string.Empty;
+
+        AddUserMessage(text);
+        await ProcessMessage(text);
+    }
+
+    private async Task SendSuggestion(string suggestion)
+    {
+        _inputText = suggestion;
+        await Send();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+            await Send();
+    }
+
+    // ── Core processing ──────────────────────────────────────────────────
+
+    private async Task ProcessMessage(string userText)
+    {
+        _cts = new CancellationTokenSource();
+        _isStreaming = true;
+        _streamBuffer = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            switch (_activeModeIndex)
+            {
+                case 0: await ProcessGenerate(userText); break;
+                case 1: await ProcessExplain(userText); break;
+                case 2: await ProcessReview(userText); break;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Panel was closed mid-stream — silently swallow
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Copilot error: {ex.Message}";
+        }
+        finally
+        {
+            _isStreaming = false;
+            _streamBuffer = string.Empty;
+            StateHasChanged();
+            await ScrollToBottom();
+        }
+    }
+
+    private async Task ProcessGenerate(string prompt)
+    {
+        if (RequestsBothRuleTypes(prompt))
+        {
+            AddAssistantMessage(
+                "Only one rule can be generated at a time. " +
+                "Please create your DQ rule first, then ask me to add a prediction for it.");
+            return;
+        }
+
+        // Prediction requested but no rule key referenced and nothing selected
+        bool isPredictionRequest =
+            prompt.Contains("prediction", StringComparison.OrdinalIgnoreCase) ||
+            prompt.Contains("predict", StringComparison.OrdinalIgnoreCase);
+
+        bool hasRuleKeyReference = CurrentRuleset.Any(r =>
+            prompt.Contains(r.RuleKey, StringComparison.OrdinalIgnoreCase));
+
+        if (isPredictionRequest && !hasRuleKeyReference && ActiveSelectedRule == null)
+        {
+            AddAssistantMessage(
+                "Which rule should the prediction be linked to?");
+            PromptForRuleKey("predict");
+            return;
+        }
+
+        AddAssistantMessage("Generating rule…");
+        StateHasChanged();
+
+        var rulesetContext = CurrentRuleset.Select(r => new
+        {
+            r.RuleKey,
+            r.RuleName,
+            r.DataType,
+            r.DataAttribute,
+            r.RuleFunction,
+            r.RuleType
+        });
+
+        // ── Build enriched prompt including the current ruleset ──────────
+        string enrichedPrompt = CurrentRuleset.Count > 0
+        ? $"Existing ruleset for context: " +
+        $"{System.Text.Json.JsonSerializer.Serialize(rulesetContext)}\n\n" +
+        $"User request: {prompt}"
+        : prompt;
+
+        var rules = await CopilotService.GenerateRulesAsync(enrichedPrompt, _cts!.Token);
+
+        _messages.RemoveAt(_messages.Count - 1);
+
+        if (rules.Count == 0)
+        {
+            AddAssistantMessage(
+                "I couldn't generate a valid rule for that description. " +
+                "Try being more specific — include the DataType (e.g. WellBore) and field name.");
+        }
+        else if (rules.Count > 1)
+        {
+            AddAssistantMessage(
+                "I received more than one rule from the AI — only one rule at a time is supported. " +
+                "Please try again with a more specific description.");
+        }
+        else
+        {
+            AddAssistantMessage("Rule generated. Review below:");
+            _messages.Add(new CopilotMessage { Role = "result", Rules = rules });
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ProcessExplain(string userText)
+    {
+        AddAssistantMessage("Thinking…");
+        StateHasChanged();
+
+        if (ActiveSelectedRule == null &&
+            (userText.Contains("selected", StringComparison.OrdinalIgnoreCase) ||
+            userText.StartsWith("explain", StringComparison.OrdinalIgnoreCase)))
+            {
+                _messages.RemoveAt(_messages.Count - 1);
+                PromptForRuleKey("explain");
+                return;
+            }
+
+        string explanation;
+
+        if (ActiveSelectedRule != null)
+        {
+            // Explain a specific rule object
+            explanation = await CopilotService.ExplainRuleAsync(ActiveSelectedRule, null, _cts!.Token);
+        }
+        else
+        {
+            // General question — plain English answer, no JSON expected
+            explanation = await CopilotService.AskQuestionAsync(userText, _cts!.Token);
+        }
+
+        _messages.RemoveAt(_messages.Count - 1);
+        AddAssistantMessage(explanation);
+    }
+
+    private void PromptForRuleKey(string intent)
+    {
+        _ruleKeyDialogIntent = intent;
+        _showRuleKeyDialog = true;
+        _ruleKeyInput = string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task OnRuleKeyDialogSubmit()
+    {
+        _showRuleKeyDialog = false;
+
+        var found = CurrentRuleset.FirstOrDefault(r =>
+            r.RuleKey.Equals(_ruleKeyInput.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        if (found == null)
+        {
+            AddAssistantMessage(
+                $"Rule '{_ruleKeyInput}' not found in the loaded ruleset. " +
+                "Check the rule key and try again.");
+            return;
+        }
+
+        _copilotSelectedRule = found;
+
+        if (_ruleKeyDialogIntent == "explain")
+        {
+            string explanation = await CopilotService.ExplainRuleAsync(found, null, _cts!.Token);
+            AddAssistantMessage(explanation);
+        }
+        else if (_ruleKeyDialogIntent == "predict")
+        {
+            // Forward to generate with the found rule as context
+            string prompt =
+                $"Add a prediction rule for {found.RuleKey} — {found.RuleName}";
+            await ProcessGenerate(prompt);
+        }
+    }
+
+    private void OnRuleKeyDialogCancel()
+    {
+        _showRuleKeyDialog = false;
+        AddAssistantMessage(_ruleKeyDialogIntent == "predict"
+            ? "No rule selected — prediction cancelled."
+            : "No rule selected — explanation cancelled.");
+    }
+
+    private async Task ProcessReview(string userText)
+    {
+        if (CurrentRuleset.Count == 0)
+        {
+            AddAssistantMessage("No rules are loaded yet. Load a ruleset on the Rules page first.");
+            return;
+        }
+
+        AddAssistantMessage("Reviewing ruleset…");
+        StateHasChanged();
+
+        string review = await CopilotService.ReviewRulesetAsync(
+            CurrentRuleset, userText, _cts!.Token);
+
+        _messages.RemoveAt(_messages.Count - 1);
+        AddAssistantMessage(review);
+    }
+
+    /// <summary>Streams a response token-by-token, captures it, then adds as a message.</summary>
+    private async Task StreamAndCapture(string prompt)
+    {
+        await foreach (var token in CopilotService.StreamAsync(prompt, _cts!.Token))
+        {
+            _streamBuffer += token;
+            StateHasChanged();
+        }
+
+        if (!string.IsNullOrEmpty(_streamBuffer))
+            AddAssistantMessage(_streamBuffer);
+    }
+
+    // ── Rule loading / saving ────────────────────────────────────────────
+
+    /// <summary>
+    /// Fires OnRuleLoaded so the host editor page can populate its form
+    /// with the first generated rule (for review before saving).
+    /// </summary>
+    private async Task LoadFirstRule(List<RuleModel> rules)
+    {
+        if (rules.Count == 0) return;
+        await OnRuleLoaded.InvokeAsync(rules[0]);
+        AddAssistantMessage("First rule loaded into the editor. Review the fields, then save.");
+    }
+
+    /// <summary>
+    /// Returns true if the prompt appears to request both a DQ rule
+    /// and a prediction rule in the same message.
+    /// </summary>
+    private static bool RequestsBothRuleTypes(string prompt)
+    {
+        bool hasDq = prompt.Contains("completeness", StringComparison.OrdinalIgnoreCase)
+                  || prompt.Contains("validity", StringComparison.OrdinalIgnoreCase)
+                  || prompt.Contains("check", StringComparison.OrdinalIgnoreCase)
+                  || prompt.Contains("flag", StringComparison.OrdinalIgnoreCase)
+                  || prompt.Contains("ensure", StringComparison.OrdinalIgnoreCase)
+                  || prompt.Contains("validate", StringComparison.OrdinalIgnoreCase)
+                  || prompt.Contains("dq rule", StringComparison.OrdinalIgnoreCase);
+
+        bool hasPrediction = prompt.Contains("prediction", StringComparison.OrdinalIgnoreCase)
+                          || prompt.Contains("predict", StringComparison.OrdinalIgnoreCase)
+                          || prompt.Contains("remediat", StringComparison.OrdinalIgnoreCase)
+                          || prompt.Contains("fix", StringComparison.OrdinalIgnoreCase)
+                          || prompt.Contains("repair", StringComparison.OrdinalIgnoreCase);
+
+        return hasDq && hasPrediction;
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+
+    private void AddAssistantMessage(string text)
+        => _messages.Add(new CopilotMessage { Role = "assistant", Text = text });
+
+    private void AddUserMessage(string text)
+        => _messages.Add(new CopilotMessage { Role = "user", Text = text });
+
+    /// <summary>Maps RuleKey prefix to a MudBlazor Color for the chip badge.</summary>
+    private static Color GetChipColor(string? ruleKey)
+    {
+        if (string.IsNullOrEmpty(ruleKey)) return Color.Default;
+        return ruleKey[0] switch
+        {
+            'C' => Color.Success,    // Completeness — green
+            'V' => Color.Info,       // Validity     — blue
+            'E' => Color.Warning,    // Entirety     — amber
+            'U' => Color.Error,      // Uniqueness   — red
+            'K' => Color.Tertiary,   // Consistency  — teal-ish
+            'P' => Color.Secondary,  // Prediction   — purple
+            _ => Color.Default
+        };
+    }
+
+    private async Task ScrollToBottom()
+    {
+        try { await JS.InvokeVoidAsync("scrollToBottom", _messagesRef); }
+        catch { /* non-critical */ }
+    }
+
+    public void Dispose() => _cts?.Cancel();
+
+    // ── Message model ────────────────────────────────────────────────────────
+    public class CopilotMessage
+    {
+        /// <summary>assistant | user | result</summary>
+        public string Role { get; set; } = "assistant";
+        public string Text { get; set; } = string.Empty;
+        /// <summary>Populated only when Role == "result".</summary>
+        public List<RuleModel>? Rules { get; set; }
+    }
+
+}

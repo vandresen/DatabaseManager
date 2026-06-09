@@ -71,8 +71,11 @@ namespace DatabaseManager.ServerLessClient
             services.AddScoped<IDataOps, DataOps>();
             services.AddScoped<IReport, ReportService>();
             services.AddScoped<IRuleService, RuleService>();
-            services.AddScoped<Services.IDataConfigurationService, Services.DataConfigurationService>();
+            services.AddScoped<IDataConfigurationService, DataConfigurationService>();
             services.AddScoped<IDatabaseManagementService, DatabaseManagementService>();
+            services.AddScoped<ILLMBaseService, LLMBaseService>();
+            services.AddScoped<ICopilotService, CopilotService>();
+            services.AddScoped<CopilotStateService>();
 
             if (sqlite)
             {
