@@ -1,89 +1,217 @@
 # DatabaseManager
 
-Database Manager is a free, open source web based tool to manage 
-PPDM database, Data Quality and Data Science projects. So far this version provides functionality to:
-* Load the PPDM model
-* Manage PPDM, CSV and LAS data connectors
-* Transfer well data from one PPDM database, LAS or csv files to a PPDM database 
-* Create a index for repository
-* Manage data QC and prediction rules
-* Dataops that includes data transfer, indexing data qc and predictions
-* result viewer for data qc issues and predictions
+![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
+![.NET](https://img.shields.io/badge/.NET-6.0-purple.svg)
+![Blazor](https://img.shields.io/badge/Blazor-WebAssembly-512BD4.svg)
 
-The database is configurable so in practice any database model should work.
-This tool is built for the cloud generation. It has two flavors:
-* A blazor MVC version
-* A serverless client version using microservices
+**DatabaseManager** is a free, open-source web-based tool for managing [PPDM](https://ppdm.org/) databases, Data Quality, and Data Science projects. It enables well data transfer, data indexing, QC rule management, and predictive analytics — all from a configurable, cloud-ready interface.
 
-## Serverless client
-The serverless client requires an appsettings.json file that has the foolowing keys:
+---
 
-Sqlite: This is true or false. If true then you will be using the Sqlite microservices versions
-ArcGISApiKey: This is a key that you will get from Esri in order to get the basemap tab to work.
-ServiceUrls: These are the keys and API endpoints for all the services used by the serverless client such as:
+## Table of Contents
 
-DataSourceAPI
-DataSourceKey
-IndexAPI
-IndexKey
-DataConfigurationAPI
-DataConfigurationKey
-DataModelAPI
-DataModelKey
-DataRuleAPI
-DataRuleKey
-DataTransferAPI
-DataTransferKey
+- [Features](#features)
+- [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+- [Getting Started](#getting-started)
+- [Configuration](#configuration)
+- [Project Structure](#project-structure)
+- [Deployment](#deployment)
+- [Data Model](#data-model)
+- [API & Microservices](#api--microservices)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Projects and folders
-* Services - Contains micro services
-* DatabaseManager.Common - Common dll's used by all projects 
-* DatabaseManager.BlazorComponents - Common blazor components that can be used in custom User Interaces
-* DatabaseManager.ServerLessClient - Serverless client using App functions to manage PPDM
-* DatabaseManager.Appfunctions - App functions used for serverless DatabaseManager version
-* DatabaseManager.LocalDataTransfer - A data transfer services for remote data access
-* DatabaseManager - Standard Blazor MVC client server application
+---
 
-## License 
-Database Manager is released under the GPLv3 or higher license.
+## Features
 
-## Contribution 
-You can contribute to the enhancement of Database Manager either by providing 
-bug fixes or enhancements to the Database Manager source code following the 
-usual Github Fork-Pull Request process.
+- Load and manage the PPDM data model
+- Manage PPDM, CSV, and LAS data connectors
+- Transfer well data between PPDM databases, LAS files, and CSV files
+- Create and manage a data repository index
+- Define and run Data QC and prediction rules
+- End-to-end DataOps pipeline: transfer → index → QC → predict
+- View data QC issues and prediction results
 
-## Building the software
-The software is based on .NET 6 using Blazor webassembly. You should use
-Visual Studio 2022 or newer for building this. You can also use Azure Devops to build the software.
+---
+
+## Architecture
+
+DatabaseManager ships in two flavors:
+
+| Flavor | Description |
+|---|---|
+| **Blazor MVC** | Traditional client-server Blazor application |
+| **Serverless Client** | Blazor WebAssembly frontend backed by Azure microservices |
+
+---
+
+## Prerequisites
+
+Before building or running DatabaseManager, ensure you have the following:
+
+- [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/6)
+- [Visual Studio 2022](https://visualstudio.microsoft.com/) or newer (or Azure DevOps for CI builds)
+- **Microsoft SQL Server 2019** (recommended)
+- An **Azure Storage Account** (required for connectors, models, rules, and data files)
+- An **Esri ArcGIS API Key** (required for the basemap tab)
+- The **PPDM DDL files**, downloadable from the [PPDM website](https://ppdm.org/)
+
+---
+
+## Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-org/DatabaseManager.git
+cd DatabaseManager
+```
+
+### 2. Set up Azure Storage
+
+DatabaseManager requires an Azure Storage Account. Create one in the Azure Portal, then:
+
+- Create a file share folder named **`PPDM39`** and upload your PPDM DDL files there.
+- Note your storage connection string — you will need it in the next step.
+
+### 3. Configure the application
+
+For the **Serverless Client**, create or update `appsettings.json` (see [Configuration](#configuration) below).
+
+For the **MVC version**, set the `AzureStorageConnection` key in your `appsettings.json` or via the Setup option in the UI.
+
+### 4. Build and run
+
+Open the solution in Visual Studio 2022 and press **F5**, or build from the CLI:
+
+```bash
+dotnet build
+dotnet run --project DatabaseManager
+```
+
+---
+
+## Configuration
+
+### Serverless Client — `appsettings.json`
+
+```json
+{
+  "Sqlite": false,
+  "ArcGISApiKey": "<your-esri-arcgis-api-key>",
+  "ServiceUrls": {
+    "DataSourceAPI": "<url>",
+    "DataSourceKey": "<key>",
+    "IndexAPI": "<url>",
+    "IndexKey": "<key>",
+    "DataConfigurationAPI": "<url>",
+    "DataConfigurationKey": "<key>",
+    "DataModelAPI": "<url>",
+    "DataModelKey": "<key>",
+    "DataRuleAPI": "<url>",
+    "DataRuleKey": "<key>",
+    "DataTransferAPI": "<url>",
+    "DataTransferKey": "<key>"
+  }
+}
+```
+
+| Key | Type | Description |
+|---|---|---|
+| `Sqlite` | `bool` | Set to `true` to use SQLite-backed microservices instead of SQL Server |
+| `ArcGISApiKey` | `string` | API key from Esri — required for the basemap tab |
+| `ServiceUrls.*API` | `string` | Base URL for the corresponding microservice endpoint |
+| `ServiceUrls.*Key` | `string` | API key or access key for the corresponding microservice |
+
+### Azure Storage Connection
+
+Set the `AzureStorageConnection` key in your configuration or via the **Setup** option in the UI. This connection string grants access to data connectors, models, rules, and LAS/CSV files.
+
+---
+
+## Project Structure
+
+```
+/
+├── Services/                          # Microservices
+├── DatabaseManager.Common/            # Shared libraries used across all projects
+├── DatabaseManager.BlazorComponents/  # Reusable Blazor UI components
+├── DatabaseManager.ServerLessClient/  # Serverless Blazor WebAssembly client
+├── DatabaseManager.Appfunctions/      # Azure Functions for the serverless version
+├── DatabaseManager.LocalDataTransfer/ # Data transfer service for remote data access
+└── DatabaseManager/                   # Standard Blazor MVC client-server application
+```
+
+---
 
 ## Deployment
-One way to publish this is to use the publish option in Visual Studio.
 
-Under Releases there is a zip file of the MVC version. This you can unzip on your web server. If you use Azure app service then you can also use Kudos and zip it there.
+### Option 1: Visual Studio Publish
 
-## Datamodel
-The system does not ship with a data model. You must create a folder in your Azure File Storage called PPDM39. This is where you put the PPDM dll files that
-you can download from the PPDM web site. In theory you can put any kind of ddl files here, but then you also need to update some of the other configuration
-files. It is recommended that you use MS SQL Server 2019.
+Use the **Publish** option in Visual Studio to deploy to your target environment.
 
-## Azure Storage Account Required
-Database Manager requires an azure storage account. You define this with the key word AzureStorageConnection in your configuration or in the Setup option in the User Interface. This is where the system access data connectors, data models, rules, data access definitions and data files for loading such as LAS and csv files.
+### Option 2: Azure App Service (zip deploy)
 
-## API
-The user interface is based on Blazor. An option for you is to build your own user interface but use our Web API. Here is a [Swagger Link](https://petrodataonline.azurewebsites.net/swagger) to the web api 
+1. Build and publish the MVC version to a local folder.
+2. Zip the output folder.
+3. Deploy via [Kudu](https://github.com/projectkudu/kudu) in your Azure App Service:
+   - Navigate to `https://<your-app>.scm.azurewebsites.net`
+   - Use the **Zip Deploy** tool to upload your zip file.
 
-## Microservices
-Some of the functionality is being converted into microservices. The following microservices are available:
+### Option 3: Self-hosted Web Server
 
-### Data Sources
-This is a CRUD for data sources used by Database Manager. The data sources are stored in a table in Azure storage. You need to define this in the header or a Connectionstring called AzurestorageConnection.
+Download the pre-built zip from the [Releases](../../releases) page and extract it to your web server's root directory.
 
-### Data configurations
-This is a CRUD for data configuration files
+---
 
-### Indexer
-This is a CRUD for the data index used by Data Manager.
+## Data Model
 
-### Rules
-This is a CRUD for rules, functions and prediction sets
+DatabaseManager does not ship with a data model. To set one up:
 
+1. Download the PPDM DDL files from the [PPDM website](https://ppdm.org/).
+2. In your Azure File Storage account, create a folder named **`PPDM39`**.
+3. Upload the DDL files to that folder.
+
+> **Note:** In principle, any DDL files can be used, but additional configuration files may also need to be updated. SQL Server 2019 is the recommended database engine.
+
+---
+
+## API & Microservices
+
+### Swagger / Web API
+
+The UI is built on Blazor, but you can build your own frontend against the Web API.  
+📄 [View the Swagger documentation](https://petrodataonline.azurewebsites.net/swagger)
+
+### Available Microservices
+
+| Service | Description |
+|---|---|
+| **Data Sources** | CRUD operations for data source connectors (stored in Azure Storage) |
+| **Data Configurations** | CRUD operations for data configuration files |
+| **Indexer** | CRUD operations for the data repository index |
+| **Rules** | CRUD operations for rules, functions, and prediction sets |
+
+All microservices require the `AzureStorageConnection` connection string, either in the request header or in the application configuration.
+
+---
+
+## Contributing
+
+Contributions are welcome! To get started:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-improvement`
+3. Commit your changes: `git commit -m 'Add my improvement'`
+4. Push to the branch: `git push origin feature/my-improvement`
+5. Open a Pull Request
+
+Please open an issue first for major changes so we can discuss the approach.
+
+---
+
+## License
+
+DatabaseManager is released under the [GNU General Public License v3.0 or later](LICENSE).
