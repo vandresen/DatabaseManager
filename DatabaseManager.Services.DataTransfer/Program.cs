@@ -12,12 +12,15 @@ var host = new HostBuilder()
     })
     .ConfigureServices(services =>
     {
+        services.AddHttpClient("DatabaseManager");
         services.AddHttpClient<IDataSourceService, DataSourceService>();
         services.AddHttpClient<IConfigurationFileService, ConfigurationFileService>();
         services.AddScoped<IDataSourceService, DataSourceService>();
         services.AddScoped<IConfigurationFileService, ConfigurationFileService>();
         services.AddScoped<IFileStorageService, AzureFileStorageService>();
         services.AddScoped<IQueueService, AzureQueueService>();
+        services.AddScoped<SqlServerIndexTransferProvider>();
+        services.AddScoped<SqliteIndexTransferProvider>();
     })
     .Build();
 

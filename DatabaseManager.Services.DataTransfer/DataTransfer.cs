@@ -33,7 +33,9 @@ namespace DatabaseManager.Services.DataTransfer
 
         public DataTransfer(ILoggerFactory loggerFactory, IDataSourceService ds,
             IConfigurationFileService configurationFile, IConfiguration configuration,
-            IFileStorageService fileStorage, IQueueService queueService)
+            IFileStorageService fileStorage, IQueueService queueService,
+            SqlServerIndexTransferProvider sqlServerProvider,
+            SqliteIndexTransferProvider sqliteProvider)
         {
             _logger = loggerFactory.CreateLogger<DataTransfer>();
             _response = new ResponseDto();
@@ -45,7 +47,8 @@ namespace DatabaseManager.Services.DataTransfer
             _databaseTransfer = new DatabaseTransfer();
             _csvTransfer = new CSVTransfer(_fileStorage);
             _lasTransfer = new LASTransfer(_fileStorage);
-            _indexTransfer = new IndexDataTransfer(_logger, _fileStorage);
+            _indexTransfer = new IndexDataTransfer(_logger, _fileStorage, sqlServerProvider, sqliteProvider);
+
             SD.DataSourceAPIBase = _configuration.GetValue<string>("DataSourceAPI");
             SD.DataSourceKey = _configuration["DataSourceKey"];
             SD.DataConfigurationAPIBase = _configuration["DataConfigurationAPI"];
@@ -106,33 +109,36 @@ namespace DatabaseManager.Services.DataTransfer
             _logger.LogInformation("Data transfer Get Index Data Objects: Starting.");
             try
             {
-                string name = req.GetQuery("Name", true);
-                string storageAccount = req.GetStorageKey();
-                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name, storageAccount);
-                if (dsResponse != null && dsResponse.IsSuccess)
+                string name = req.GetQuery("Name", false);
+                string project = req.GetQuery("Project", false);
+                ConnectParametersDto connectParameter = new ConnectParametersDto();
+                if (!string.IsNullOrEmpty(name))
                 {
-                    List<string> containers = new List<string>();
-                    ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
-                    if (connectParameter.SourceType == "DataBase")
-                    {
-                        containers = await _indexTransfer.GetContainers(connectParameter);
-                    }
-                    else
+                    string storageAccount = req.GetStorageKey();
+                    ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name, storageAccount);
+
+                    if (dsResponse == null)
                     {
                         _response.IsSuccess = false;
-                        string message = $"Data transfer Get Data Objects: Source is not a database";
-                        _response.ErrorMessages
-                            = new List<string>() { message };
-                        _logger.LogError(message);
+                        _response.ErrorMessages = new List<string> { "No response received from data source lookup." };
+                        _logger.LogError("Data transfer GetIndexDataObjects: GetDataSourceByNameAsync returned null for '{Name}'.", name);
+                        return _response;
                     }
-                    _response.Result = containers;
+
+                    if (!dsResponse.IsSuccess)
+                    {
+                        _response.IsSuccess = false;
+                        _response.ErrorMessages = dsResponse.ErrorMessages;
+                        _logger.LogError($"Data transfer Get Index Data Objects: Could not get the data source");
+                        return _response;
+                    }
+                    connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(
+                        Convert.ToString(dsResponse.Result))
+                        ?? new ConnectParametersDto();
                 }
-                else
-                {
-                    _response.IsSuccess = false;
-                    _response.ErrorMessages = dsResponse.ErrorMessages;
-                    _logger.LogError($"Data transfer Get Data Objects: Could not get the data source");
-                }
+
+                List<string> containers = await _indexTransfer.GetContainers(connectParameter);
+                _response.Result = containers;
             }
             catch (Exception ex)
             {
@@ -277,31 +283,41 @@ namespace DatabaseManager.Services.DataTransfer
                     return _response;
                 }
                 
-                ResponseDto sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.SourceName, SD.AzureStorageKey);
+                ResponseDto sourceResponse = null;
+                if (!string.IsNullOrEmpty(transParm.SourceName))
+                {
+                    sourceResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.SourceName, SD.AzureStorageKey);
+                }
                 ResponseDto targetResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(transParm.TargetName, SD.AzureStorageKey);
                 ResponseDto conFileResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("PPDMReferenceTables.json");
                 ResponseDto accessDefResponse = await _configurationFile.GetConfigurationFileAsync<ResponseDto>("PPDMDataAccess.json");
+
                 bool sourceAccepted = sourceResponse != null && sourceResponse.IsSuccess;
-                bool targetAccepted = sourceResponse != null && sourceResponse.IsSuccess;
+                bool targetAccepted = targetResponse != null && targetResponse.IsSuccess;
                 bool conFileAccepted = conFileResponse != null && conFileResponse.IsSuccess;
                 bool accessDefAccepted = accessDefResponse != null && accessDefResponse.IsSuccess;
-                if (sourceAccepted && targetAccepted && conFileAccepted && accessDefAccepted)
-                {
-                    ConnectParametersDto sourceParm = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(sourceResponse.Result));
-                    ConnectParametersDto targetParm = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(targetResponse.Result));
-                    targetParm.DataAccessDefinition = Convert.ToString(accessDefResponse.Result);
-                    string referenceJson = Convert.ToString(conFileResponse.Result);
-                    TransferParameters transfer = new();
-                    transfer.Table = transParm.DataObjectType;
-                    await _indexTransfer.CopyData(transfer, sourceParm, targetParm, referenceJson);
-                }
-                else
+
+                if (!targetAccepted || !conFileAccepted || !accessDefAccepted)
                 {
                     _response.IsSuccess = false;
-                    _response.ErrorMessages = sourceResponse.ErrorMessages;
-                    _response.ErrorMessages = targetResponse.ErrorMessages;
-                    _logger.LogError($"Data transfer copy Index Object: could not get data source");
+                    _response.ErrorMessages = new List<string> { "Could not get target, configuration file or access definition" };
+                    _logger.LogError("CopyIndex: could not get required data sources");
+                    return _response;
                 }
+
+                ConnectParametersDto sourceParm = sourceResponse?.IsSuccess == true
+                    ? JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(sourceResponse.Result))
+                    : new ConnectParametersDto();
+                ConnectParametersDto targetParm = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(targetResponse.Result));
+                targetParm.DataAccessDefinition = Convert.ToString(accessDefResponse.Result);
+                string referenceJson = Convert.ToString(conFileResponse.Result);
+
+                TransferParameters transfer = new()
+                {
+                    Table = transParm.DataObjectType,
+                    SourceName = transParm.SourceName
+                };
+                await _indexTransfer.CopyData(transfer, sourceParm, targetParm, referenceJson);
             }
             catch (Exception ex)
             {

@@ -1,47 +1,48 @@
-﻿using DatabaseManager.Services.DataTransfer.Models;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using System.Runtime.Intrinsics.Arm;
-using System.ComponentModel.DataAnnotations;
-using DatabaseManager.Services.DataTransfer.Extensions;
-using Microsoft.Data.SqlClient;
-using System.Data;
+﻿using DatabaseManager.Services.DataTransfer.Extensions;
 using DatabaseManager.Services.DataTransfer.Helpers;
+using DatabaseManager.Services.DataTransfer.Models;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Data;
 using System.Text;
 
 namespace DatabaseManager.Services.DataTransfer.Services
 {
     public class IndexDataTransfer : IDataTransfer
     {
+        private readonly SqlServerIndexTransferProvider _sqlServerProvider;
+        private readonly SqliteIndexTransferProvider _sqliteProvider;
         private readonly IDatabaseAccess _dbAccess;
         private readonly ILogger _log;
         private readonly IFileStorageService _fileStorage;
         private List<ReferenceTable> _references;
         private List<DataAccessDef> _accessDefs;
         private DataAccessDef _objectAccessDef;
-        private string getSql = "Select IndexId, IndexNode.ToString() AS TextIndexNode, " +
-            "IndexLevel, DataName, DataType, DataKey, QC_String, UniqKey, JsonDataObject, " +
-            "Latitude, Longitude " +
-            "from pdo_qc_index";
 
         private JArray JsonIndexArray { get; set; }
 
-        public IndexDataTransfer(ILogger log, IFileStorageService fileStorage)
+        public IndexDataTransfer(ILogger log, IFileStorageService fileStorage,
+            SqlServerIndexTransferProvider sqlServerProvider,
+            SqliteIndexTransferProvider sqliteProvider)
         {
             _fileStorage = fileStorage;
             _dbAccess = new DatabaseAccess();
             _log = log;
+            _sqlServerProvider = sqlServerProvider;
+            _sqliteProvider = sqliteProvider;
         }
 
         public async Task CopyData(TransferParameters transferParameters, ConnectParametersDto sourceConnector, ConnectParametersDto targetConnector, string referenceJson)
         {
+            IIndexDataTransferProvider provider = GetProvider(transferParameters.SourceName);
             _log.LogInformation($"Setting up for index to database transfer");
             _references = JsonConvert.DeserializeObject<List<ReferenceTable>>(referenceJson);
             _accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(targetConnector.DataAccessDefinition);
             _objectAccessDef = _accessDefs.FirstOrDefault(x => x.DataType == transferParameters.Table);
 
-            IEnumerable<IndexModel> indexes = await GetIndexesWithDataType(transferParameters.Table, sourceConnector.ConnectionString);
+            IEnumerable<IndexModel> indexes = await provider.GetIndexesWithDataType(transferParameters.Table, sourceConnector.ConnectionString);
             if (indexes.Count() > 0)
             {
                 await SyncObjectDelete(indexes, targetConnector.ConnectionString);
@@ -54,9 +55,15 @@ namespace DatabaseManager.Services.DataTransfer.Services
             throw new NotImplementedException();
         }
 
+        private IIndexDataTransferProvider GetProvider(string sourceName)
+        {
+            return string.IsNullOrWhiteSpace(sourceName) ? _sqliteProvider : _sqlServerProvider;
+        }
+
         public async Task<List<string>> GetContainers(ConnectParametersDto source)
         {
-            IndexModel root = await GetIndexRoot(source.ConnectionString);
+            IIndexDataTransferProvider provider = GetProvider(source.SourceName);
+            IndexModel root = await provider.GetIndexRoot(source?.ConnectionString);
             IndexRootJson rootJson = JsonConvert.DeserializeObject<IndexRootJson>(root.JsonDataObject);
             JsonIndexArray = JArray.Parse(rootJson.Taxonomy);
             List<string> dataObjects = new List<string>();
@@ -79,22 +86,6 @@ namespace DatabaseManager.Services.DataTransfer.Services
                     result = ProcessIndexArray(JsonIndexArray, level, result);
                 }
             }
-            return result;
-        }
-
-        private async Task<IndexModel> GetIndexRoot(string connectionString)
-        {
-            IndexModel idx = new();
-            var results = await _dbAccess.LoadData<IndexModel, dynamic>("dbo.spGetIndexWithINDEXNODE", new { query = '/' }, connectionString);
-            idx =  results.FirstOrDefault();
-            return idx;
-        }
-
-        private async Task<IEnumerable<IndexModel>> GetIndexesWithDataType(string dataType, string connectionString)
-        {
-            string sql = getSql + $" WHERE DATATYPE = '{dataType}'";
-            IEnumerable<IndexModel> result = await _dbAccess.ReadData<IndexModel>(sql, connectionString);
-
             return result;
         }
 
@@ -155,77 +146,6 @@ namespace DatabaseManager.Services.DataTransfer.Services
                     dataTable.Rows.Add(dataRow);
                 }
             }
-
-            // Extract the JSON properties and their types
-            //Dictionary<string, Type> columnDefinitions = new Dictionary<string, Type>();
-            //foreach (var property in jsonObject.Properties())
-            //{
-            //    JTokenType propertyType = property.Value.Type;
-            //    if (attributes.Contains(property.Name))
-            //    {
-            //        Type columnType;
-            //        switch (propertyType)
-            //        {
-            //            case JTokenType.String:
-            //                columnType = typeof(string);
-            //                break;
-            //            case JTokenType.Integer:
-            //                columnType = typeof(int);
-            //                break;
-            //            case JTokenType.Float:
-            //                columnType = typeof(double);
-            //                break;
-            //            case JTokenType.Boolean:
-            //                columnType = typeof(bool);
-            //                break;
-            //            default:
-            //                columnType = typeof(string); // Default to string if the type is not recognized
-            //                break;
-            //        }
-
-            //        columnDefinitions.Add(property.Name, columnType);
-            //    }
-            //}
-
-            // Create the temporary table in the SQL Server database
-            //string tempTableName = "#TempTable";
-            //string createTableQuery = $"CREATE TABLE {tempTableName} (";
-
-            //foreach (var column in columnDefinitions)
-            //{
-            //    createTableQuery += $"{column.Key} {Common.GetSqlDbTypeString(column.Value)}, ";
-            //}
-
-            //createTableQuery = createTableQuery.TrimEnd(',', ' ') + ")";
-
-            // Convert the JSON to a DataTable
-            //DataTable dataTable = new DataTable();
-            //foreach (var column in columnDefinitions)
-            //{
-            //    dataTable.Columns.Add(column.Key, column.Value);
-            //}
-
-            // Deserialize JSON and insert data into the DataTable
-            //foreach (var index in indexes)
-            //{
-            //    json = index.JsonDataObject;
-            //    if (!string.IsNullOrEmpty(json))
-            //    {
-            //        jsonObject = JObject.Parse(json);
-            //        DataRow dataRow = dataTable.NewRow();
-            //        foreach (var property in jsonObject.Properties())
-            //        {
-            //            if (attributes.Contains(property.Name))
-            //            {
-            //                if (property.Value.Type != JTokenType.Null)
-            //                {
-            //                    dataRow[property.Name] = property.Value.ToObject(columnDefinitions[property.Name]);
-            //                }
-            //            }
-            //        }
-            //        dataTable.Rows.Add(dataRow);
-            //    }
-            //}
 
             LoadNewReferences(datatype, connectionString, dataTable);
 

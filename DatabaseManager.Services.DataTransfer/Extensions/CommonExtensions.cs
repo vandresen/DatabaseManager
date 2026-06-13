@@ -225,5 +225,10 @@ namespace DatabaseManager.Services.DataTransfer.Extensions
                 .Select(attr => attr.Trim())
                 .ToArray();
         }
+
+        public static bool IsEmpty(this ConnectParametersDto source)
+        {
+            return source == null || string.IsNullOrWhiteSpace(source.ConnectionString);
+        }
     }
 }
