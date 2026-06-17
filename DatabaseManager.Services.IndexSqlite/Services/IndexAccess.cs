@@ -2,6 +2,7 @@
 using DatabaseManager.Services.IndexSqlite.Helpers;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -177,6 +178,8 @@ namespace DatabaseManager.Services.IndexSqlite.Services
             if (target.NoIndexLocation())
                 throw new Exception("Index object does not have a proper location.");
 
+            string dataNameFilter = "";
+            if (target.ParentId != 2) dataNameFilter = "AND DataName = '{target.DataName}' ";
             string qcFilter = string.IsNullOrEmpty(failRule)
                 ? "AND (QC_String = '' OR QC_String IS NULL)"
                 : $"AND (QC_String IS NULL OR QC_String = '' OR QC_String NOT LIKE '%{failRule}%')";
@@ -190,13 +193,14 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                     $"FROM {_projectTable} " +
                     $"WHERE IndexId != {id} " +
                     $"AND DataType = '{target.DataType}' " +
-                    $"AND DataName = '{target.DataName}' " +
+                    dataNameFilter +
                     qcFilter +
                 $") " +
                 $"WHERE Distance IS NOT NULL " +
                 $"ORDER BY Distance " +
                 $"LIMIT 24";
 
+            _log.LogInformation(neighborSql);
             var neighbors = await _id.ReadData<NeighbourIndex>(neighborSql, _connectionString);
             return neighbors;
         }
