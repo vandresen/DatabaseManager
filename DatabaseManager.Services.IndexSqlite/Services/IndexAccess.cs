@@ -179,7 +179,7 @@ namespace DatabaseManager.Services.IndexSqlite.Services
                 throw new Exception("Index object does not have a proper location.");
 
             string dataNameFilter = "";
-            if (target.ParentId != 2) dataNameFilter = "AND DataName = '{target.DataName}' ";
+            if (target.ParentId != 2) dataNameFilter = $"AND DataName = '{target.DataName}' ";
             string qcFilter = string.IsNullOrEmpty(failRule)
                 ? "AND (QC_String = '' OR QC_String IS NULL)"
                 : $"AND (QC_String IS NULL OR QC_String = '' OR QC_String NOT LIKE '%{failRule}%')";
