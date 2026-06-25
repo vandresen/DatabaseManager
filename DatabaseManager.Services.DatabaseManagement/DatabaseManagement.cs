@@ -8,7 +8,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Net;
-using System.Reflection;
 
 namespace DatabaseManager.Services.DatabaseManagement
 {

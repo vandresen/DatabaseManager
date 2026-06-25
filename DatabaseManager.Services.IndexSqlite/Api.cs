@@ -134,11 +134,15 @@ namespace DatabaseManager.Services.IndexSqlite
             try
             {
                 await idxAccess.CreateDatabaseIndex();
-                return Results.Ok();
+                return Results.Ok(new ResponseDto { IsSuccess = true });
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                return Results.Ok(new ResponseDto
+                {
+                    IsSuccess = false,
+                    ErrorMessages = new List<string> { ex.Message }
+                });
             }
         }
 

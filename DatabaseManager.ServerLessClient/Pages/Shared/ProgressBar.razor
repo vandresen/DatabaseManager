@@ -1,0 +1,18 @@
+﻿@using MudBlazor
+
+<MudProgressLinear Value="@ValueNow"
+                   Min="0"
+                   Max="100"
+                   Color="Color.Primary"
+                   Size="Size.Large"
+                   Rounded="true"
+                   Style="margin-top: 20px; height: 28px;">
+    <MudText Typo="Typo.caption" Style="color: black; font-weight: 600;">
+        @ValueNow%
+    </MudText>
+</MudProgressLinear>
+
+@code {
+    [Parameter]
+    public int ValueNow { get; set; }
+}

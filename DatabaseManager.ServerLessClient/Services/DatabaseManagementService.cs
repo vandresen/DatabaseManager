@@ -8,14 +8,53 @@ namespace DatabaseManager.ServerLessClient.Services
         private readonly ILogger<DatabaseManagementService> _logger;
         private readonly string _databaseManagerAPIBase;
         private readonly string _databaseManagerKey;
+        private readonly BlazorSingletonService _settings;
 
-        public DatabaseManagementService(IHttpClientFactory clientFactory, ILogger<DatabaseManagementService> logger, IConfiguration configuration) : base(clientFactory)
+        public DatabaseManagementService(IHttpClientFactory clientFactory, ILogger<DatabaseManagementService> logger, 
+            IConfiguration configuration, BlazorSingletonService settings) : base(clientFactory)
         {
             _logger = logger;
+            _settings = settings;
             _databaseManagerAPIBase = SD.DatabaseManagerAPIBase
                 ?? throw new InvalidOperationException("DatabaseManagerAPI is not configured");
             _databaseManagerKey = SD.DatabaseManagerKey
                 ?? throw new InvalidOperationException("DatabaseManagerKey is not configured");
+        }
+
+        public async Task Create(DataModelParameters modelParameters)
+        {
+            string url = _databaseManagerAPIBase.BuildFunctionUrl($"/Create", "", _databaseManagerKey);
+            Console.WriteLine($"Create data mode: url = {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.POST,
+                AzureStorage = _settings.AzureStorage,
+                Url = url,
+                Data = modelParameters
+            });
+            if (!response.IsSuccess)
+            {
+
+                Console.WriteLine(String.Join("There is a problem creating the data model; ", response.ErrorMessages));
+                throw new ApplicationException(String.Join("There is a problem creating the data model; ", response.ErrorMessages));
+            }
+        }
+
+        public async Task CreateSqlite()
+        {
+            string url = SD.DatabaseManagerAPIBase.BuildFunctionUrl("/api/CreateSqliteModel", "", SD.DatabaseManagerKey);
+            _logger.LogInformation($"Creating SQLite model from url {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.GET,
+                Url = url
+            });
+            if (!response.IsSuccess)
+            {
+
+                Console.WriteLine(String.Join("There is a problem creating the SqlLite index; ", response.ErrorMessages));
+                throw new ApplicationException(String.Join("There is a problem creating the SqlLite index; ", response.ErrorMessages));
+            }
         }
 
         public async Task<T> GetDataAccessDef<T>()

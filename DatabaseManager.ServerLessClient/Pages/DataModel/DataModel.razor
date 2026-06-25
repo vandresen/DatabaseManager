@@ -1,0 +1,202 @@
+﻿@page "/datamodel"
+@inject BlazorSingletonService settings
+@inject IPopupMessage displayMessage
+@inject IDataSources dataSourceService
+@inject IDatabaseManagementService dmService
+
+<h2>Data Model</h2>
+
+<p>Target Database: @settings.TargetConnector</p>
+
+@foreach (var item in new string[] { "PPDM Model", "PPDM Modifications", "DSM Model" })
+{
+    <div class="form-check">
+        <label for="@item" class="form-check-label">
+            <input type="radio" class="form-check-input" name="optradio" @onchange="ModelSelection"
+                   id="@item" value="@item"
+                   checked=@(selectedAnswer.Equals(item, StringComparison.OrdinalIgnoreCase)) />@item
+        </label>
+    </div>
+}
+
+@if (NeedsConnector)
+{
+    <p class="mt-3">Target Database:</p>
+    <GenericSelector Options="availableConnectors" Label="Select a data connector"
+                     Selection="ConnectorSelected" />
+}
+
+<button class="btn btn-primary mt-3" @onclick="CreateModel" disabled="@(!CanCreate || isRunning)">
+    @(isRunning ? "Running…" : "Create")
+</button>
+
+<div style="margin-top:20px">
+    <ProgressBar ValueNow="barValue" />
+</div>
+
+<div style="margin-top:20px">
+    <p>Current status: @statusMessage</p>
+</div>
+
+@code {
+    private string selectedAnswer = string.Empty;
+    private List<ConnectParameters> connectParameters;
+    private List<string> availableConnectors = new();
+    private string statusMessage = "Not started";
+    private int barValue = 0;
+    private bool isRunning = false;
+
+    private bool IsPpdmOption => selectedAnswer is "PPDM Model" or "PPDM Modifications";
+    private bool IsDsmOption => selectedAnswer is "DSM Model";
+    private bool NeedsConnector => (IsPpdmOption || (IsDsmOption && !SD.Sqlite)) && string.IsNullOrEmpty(settings.TargetConnector);
+    private bool CanCreate => !string.IsNullOrEmpty(selectedAnswer) && !NeedsConnector;
+
+    private DataModelParameters dmParameters = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(settings.TargetConnector))
+        {
+            Models.ResponseDto response = await dataSourceService.GetSources<Models.ResponseDto>();
+            if (response != null && response.IsSuccess)
+            {
+                connectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
+                availableConnectors = connectParameters.Select(c => c.SourceName).ToList();
+            }
+            else
+            {
+                await displayMessage.DisplayErrorMessage("There is a problem accessing data source server");
+            }
+        }
+    }
+
+    private void ModelSelection(ChangeEventArgs e)
+    {
+        selectedAnswer = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private void ConnectorSelected(string value)
+    {
+        settings.TargetConnector = value;
+    }
+
+    private async Task CreateModel()
+    {
+        isRunning = true;
+        barValue = 1;
+
+        try
+        {
+            if (SD.Sqlite && selectedAnswer == "DSM Model")
+            {
+                await CreateSqliteModel();
+            }
+            else
+            {
+                dmParameters.ModelOption = selectedAnswer;
+                dmParameters.DataConnector = settings.TargetConnector;
+
+                if (selectedAnswer == "PPDM Model") await CreatePPDMModel();
+                else if (selectedAnswer == "PPDM Modifications") await CreatePpdmModifications();
+                else if (selectedAnswer == "DSM Model") await CreateDSMModel();
+            }
+        }
+        finally
+        {
+            isRunning = false;
+        }
+    }
+
+    private async Task CreateSqliteModel()
+    {
+        try
+        {
+            Progress("Creating SQLite model");
+            await dmService.CreateSqlite();
+            Progress("SQLite model complete");
+        }
+        catch (Exception ex)
+        {
+            Progress($"Error creating SQLite model: {ex.Message}");
+        }
+        barValue = 100;
+    }
+
+    private async Task CreatePPDMModel()
+    {
+        try
+        {
+            dmParameters.FileShare = "ppdm39";
+            int interval = 100 / DataModelSqlFiles.Names.Count();
+            foreach (string sqlFile in DataModelSqlFiles.Names)
+            {
+                dmParameters.FileName = sqlFile;
+                Progress($"Executing {sqlFile}");
+                await dmService.Create(dmParameters);
+                barValue += interval;
+            }
+            Progress("Model creation complete");
+        }
+        catch (Exception ex)
+        {
+            string msg = ex.Message.Contains("There is already an object")
+                ? "PPDM model already exists"
+                : $"Error creating data model: {ex.Message}";
+            await displayMessage.DisplayErrorMessage(msg);
+            Progress(msg);
+        }
+        barValue = 100;
+    }
+
+    private async Task CreateDSMModel()
+    {
+        try
+        {
+            dmParameters.FileShare = "taxonomy";
+
+            Progress("Starting DSM model creation");
+            dmParameters.ModelOption = "DSM Model";
+            await dmService.Create(dmParameters);
+            barValue = 33;
+
+            Progress("Creating stored procedures");
+            dmParameters.ModelOption = "Stored Procedures";
+            await dmService.Create(dmParameters);
+            barValue = 66;
+
+            Progress("Loading DSM rules");
+            dmParameters.ModelOption = "DSM Rules";
+            await dmService.Create(dmParameters);
+            barValue = 100;
+
+            Progress("DSM model completed");
+        }
+        catch (Exception ex)
+        {
+            Progress($"Error creating DSM model: {ex.Message}");
+            barValue = 100;
+        }
+    }
+
+    private async Task CreatePpdmModifications()
+    {
+        try
+        {
+            Progress("Starting PPDM modifications");
+            await dmService.Create(dmParameters);
+            Progress("PPDM modifications complete");
+        }
+        catch (Exception ex)
+        {
+            Progress($"Error applying PPDM modifications: {ex.Message}");
+        }
+        barValue = 100;
+    }
+
+    private void Progress(string message)
+    {
+        statusMessage = message;
+        StateHasChanged();
+    }
+}
+
