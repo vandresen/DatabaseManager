@@ -8,6 +8,7 @@ namespace DatabaseManager.ServerLessClient.Services
         private readonly ILogger<DatabaseManagementService> _logger;
         private readonly string _databaseManagerAPIBase;
         private readonly string _databaseManagerKey;
+        private readonly string _indexAPIBase;
         private readonly BlazorSingletonService _settings;
 
         public DatabaseManagementService(IHttpClientFactory clientFactory, ILogger<DatabaseManagementService> logger, 
@@ -15,6 +16,8 @@ namespace DatabaseManager.ServerLessClient.Services
         {
             _logger = logger;
             _settings = settings;
+            _indexAPIBase = configuration["ServiceUrls:IndexAPI"]
+                ?? throw new InvalidOperationException("Missing ServiceUrls:IndexAPI");
             _databaseManagerAPIBase = SD.DatabaseManagerAPIBase
                 ?? throw new InvalidOperationException("DatabaseManagerAPI is not configured");
             _databaseManagerKey = SD.DatabaseManagerKey
@@ -42,11 +45,11 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task CreateSqlite()
         {
-            string url = SD.DatabaseManagerAPIBase.BuildFunctionUrl("/api/CreateSqliteModel", "", SD.DatabaseManagerKey);
+            string url = _indexAPIBase.BuildFunctionUrl("/CreateDatabase", "", "");
             _logger.LogInformation($"Creating SQLite model from url {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
-                ApiType = SD.ApiType.GET,
+                ApiType = SD.ApiType.POST,
                 Url = url
             });
             if (!response.IsSuccess)
