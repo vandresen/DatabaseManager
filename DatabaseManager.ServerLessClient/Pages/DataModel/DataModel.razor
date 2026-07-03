@@ -91,15 +91,13 @@
             {
                 await CreateSqliteModel();
             }
-            else
-            {
-                dmParameters.ModelOption = selectedAnswer;
-                dmParameters.DataConnector = settings.TargetConnector;
+            
+            dmParameters.ModelOption = selectedAnswer;
+            dmParameters.DataConnector = settings.TargetConnector;
 
-                if (selectedAnswer == "PPDM Model") await CreatePPDMModel();
-                else if (selectedAnswer == "PPDM Modifications") await CreatePpdmModifications();
-                else if (selectedAnswer == "DSM Model") await CreateDSMModel();
-            }
+            if (selectedAnswer == "PPDM Model") await CreatePPDMModel();
+            else if (selectedAnswer == "PPDM Modifications") await CreatePpdmModifications();
+            else if (selectedAnswer == "DSM Model") await CreateDSMModel();
         }
         finally
         {
