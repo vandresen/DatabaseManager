@@ -2,12 +2,15 @@
 @inject SingletonServices singleton
 @inject IRules rf
 @inject NavigationManager navigationManager
+@inject IDisplayMessage displayMessage
 
 <h3>Edit Function</h3>
 
 @if (ruleFunction != null)
 {
-    <FunctionForm RuleFunctions="ruleFunction" OnValidSubmit="Edit" />
+    <FunctionForm RuleFunctions="ruleFunction"
+                  OnValidSubmit="Edit"
+                  OnCancel="Cancel" />
 }
 
 @code {
@@ -17,6 +20,11 @@
     protected override async Task OnInitializedAsync()
     {
         ruleFunction = await rf.GetFunction(singleton.TargetConnector, Id);
+        if (ruleFunction.FunctionType == null)
+        {
+            await displayMessage.DisplayErrorMessage("You cannot edit system functions");
+            navigationManager.NavigateTo("/rules/functions");
+        }
     }
 
     private async Task Edit()
@@ -24,11 +32,16 @@
         try
         {
             await rf.UpdateFunction(ruleFunction, singleton.TargetConnector, Id);
-            navigationManager.NavigateTo("rules");
+            navigationManager.NavigateTo("/rules/functions");
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
         }
+    }
+
+    private void Cancel()
+    {
+        navigationManager.NavigateTo("/rules/functions");
     }
 }

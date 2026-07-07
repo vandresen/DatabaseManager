@@ -34,14 +34,17 @@
         </div>
     </div>
 
-    <button class="btn btn-success" type="submit">Save Changes</button>
+    <div class="mt-3">
+        <button class="btn btn-success" type="submit">Save Changes</button>
+        <button class="btn btn-secondary ms-2" type="button" @onclick="Cancel">Cancel</button>
+    </div>
 </EditForm>
 
 @code {
     [Parameter] public RuleFunctions RuleFunctions { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public bool ReadOnlyName { get; set; }
-    private List<string> FunctionTypeOptions = new List<string> { "None", "Validity", "Predictions"};
+    [Parameter] public EventCallback OnCancel { get; set; }
     public List<FunctionTypeOption> typeOptions;
 
     protected override void OnInitialized()
@@ -52,5 +55,10 @@
             new FunctionTypeOption(){Id = "V", Type = "Validity"},
             new FunctionTypeOption(){Id = "P", Type = "Predictions"}
         };
+    }
+
+    private async Task Cancel()
+    {
+        await OnCancel.InvokeAsync();
     }
 }

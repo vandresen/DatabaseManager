@@ -1,17 +1,30 @@
 ﻿@page "/rules/functions"
 @inject SingletonServices singleton
 @inject IRules rf
+@inject NavigationManager navigationManager
 @using MudBlazor
 
 <h3>Manage Rule Functions</h3>
 
-<div class="form-group">
-    <a class="btn btn-info" href="rules/newfunction">New Function</a>
-</div>
+<MudStack Row="true" Spacing="2" Class="mb-3">
+    <MudButton Variant="Variant.Outlined"
+               Color="Color.Secondary"
+               StartIcon="@Icons.Material.Filled.ArrowBack"
+               Href="/rules">
+        Back to Rules
+    </MudButton>
+
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               Href="/rules/newfunction">
+        New Function
+    </MudButton>
+</MudStack>
 
 <MudTable Items="@FunctionList" Dense="true" Hover="true">
     <ColGroup>
-        <col style="width:50px;" />
+        <col style="width:90px;" />
         <col />
         <col />
     </ColGroup>
@@ -22,7 +35,17 @@
     </HeaderContent>
     <RowTemplate>
         <MudTd>
-            <MudFab @onclick="@(() => Delete(context.Id))" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+            <MudStack Row="true" Spacing="0">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Color="Color.Info"
+                               Size="Size.Small"
+                               OnClick="@(() => Edit(context.Id))" />
+
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Color="Color.Error"
+                               Size="Size.Small"
+                               OnClick="@(() => Delete(context.Id))" />
+            </MudStack>
         </MudTd>
         <MudTd DataLabel="Function Name">@context.FunctionName</MudTd>
         <MudTd DataLabel="Data Key">@context.FunctionUrl</MudTd>
@@ -53,5 +76,10 @@
         await rf.DeleteFunction(singleton.TargetConnector, id);
         FunctionList = await rf.GetFunctions(singleton.TargetConnector);
         this.StateHasChanged();
+    }
+
+    private void Edit(int id)
+    {
+        navigationManager.NavigateTo($"/rules/editfunction/{id}");
     }
 }
