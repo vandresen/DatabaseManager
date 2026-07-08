@@ -64,6 +64,9 @@
                     <MudButton Color="Color.Success" Variant="Variant.Filled" OnClick="(() => HandleValidSubmit())">
                         Save Changes
                     </MudButton>
+                    <MudButton Color="Color.Default" Variant="Variant.Filled" OnClick="(() => Cancel())">
+                        Cancel
+                    </MudButton>
                 </MudItem>
 
             </MudGrid>
@@ -77,6 +80,7 @@
     [Parameter] public RuleFunction RuleFunction { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public bool ReadOnlyName { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
     public List<RuleFunctionTypeOption> typeOptions;
 
     protected override void OnInitialized()
@@ -97,5 +101,10 @@
         {
             await OnValidSubmit.InvokeAsync();
         }
+    }
+
+    private async Task Cancel()
+    {
+        await OnCancel.InvokeAsync();
     }
 }

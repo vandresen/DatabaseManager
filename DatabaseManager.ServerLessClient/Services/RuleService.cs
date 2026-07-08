@@ -65,6 +65,11 @@ namespace DatabaseManager.ServerLessClient.Services
             }
         }
 
+        public Task<RuleFunction> GetFunctionAsync(int id)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<List<RuleFunctionDto>> GetFunctionsAsync()
         {
             List<RuleFunctionDto> result = new List<RuleFunctionDto>();
@@ -237,6 +242,24 @@ namespace DatabaseManager.ServerLessClient.Services
                 
                 Console.WriteLine(String.Join("There is a problem inserting rule; ", response.ErrorMessages));
                 throw new ApplicationException(String.Join("There is a problem inserting rule; ", response.ErrorMessages));
+            }
+        }
+
+        public async Task UpdateFunctionAsync(RuleFunction function)
+        {
+            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Function", $"", SD.DataRuleKey);
+            Console.WriteLine($"UpdateFunctionAsync: url = {url}");
+            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+            {
+                ApiType = SD.ApiType.PUT,
+                Data = function,
+                Url = url
+            });
+            if (!response.IsSuccess)
+            {
+
+                Console.WriteLine(String.Join("There is a problem updating function; ", response.ErrorMessages));
+                throw new ApplicationException(String.Join("There is a problem updating function; ", response.ErrorMessages));
             }
         }
 

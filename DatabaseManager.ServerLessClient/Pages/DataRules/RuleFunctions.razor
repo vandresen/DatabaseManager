@@ -1,12 +1,25 @@
 ﻿@page "/rules/getrulefunctions"
 @inject IRuleService rules
+@inject NavigationManager navigationManager
 @using MudBlazor
 
 <h3>Manage Rule Functions</h3>
 
-<div class="form-group">
-    <a class="btn btn-info" href="rules/newrulefunction">New Function</a>
-</div>
+<MudStack Row="true" Spacing="2" Class="mb-3">
+    <MudButton Variant="Variant.Outlined"
+               Color="Color.Secondary"
+               StartIcon="@Icons.Material.Filled.ArrowBack"
+               Href="/datarules">
+        Back to Rules
+    </MudButton>
+
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               Href="/rules/newrulefunction">
+        New Function
+    </MudButton>
+</MudStack>
 
 <MudTable Items="@FunctionList" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
     
@@ -32,7 +45,14 @@
                         Class="me-1"
                         @onclick="@(() => Delete(context.Id))" />
             </MudTooltip>
-            @* <MudFab @onclick="@(() => Delete(context.Id))" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" /> *@
+            <MudTooltip Text="Edit this prediction set">
+                <MudFab StartIcon="@Icons.Material.Filled.Edit"
+                        Color="Color.Primary"
+                        Size="Size.Small"
+                        IconSize="Size.Small"
+                        Class="me-1"
+                        @onclick="@(() => Edit(context.Id))" />
+            </MudTooltip>
         </MudTd>
         <MudTd DataLabel="Function Name">@context.FunctionName</MudTd>
         <MudTd DataLabel="Data Key">@context.FunctionUrl</MudTd>
@@ -63,5 +83,10 @@
         await rules.DeleteFunctionAsync(id);
         FunctionList = await rules.GetFunctionsAsync();
         this.StateHasChanged();
+    }
+
+    private void Edit(int id)
+    {
+        navigationManager.NavigateTo($"/rules/editfunction/{id}");
     }
 }

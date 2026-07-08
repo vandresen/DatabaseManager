@@ -1,0 +1,59 @@
+﻿@page  "/rules/editfunction/{Id:int}"
+@inject IRuleService rules
+@inject NavigationManager navigationManager
+@inject IPopupMessage displayMessage
+
+<h3>Edit Function</h3>
+
+@if (ruleFunction != null)
+{
+    <RuleFunctionForm RuleFunction="ruleFunction"
+                  OnValidSubmit="Edit"
+                  OnCancel="Cancel" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private RuleFunction ruleFunction;
+    private List<RuleFunctionDto> ruleFunctions;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ruleFunctions = await rules.GetFunctionsAsync();
+        var dto = ruleFunctions.FirstOrDefault(f => f.Id == Id);
+
+        if (dto is null)
+        {
+            await displayMessage.DisplayErrorMessage("Function not found");
+            navigationManager.NavigateTo("/rules/functions");
+            return;
+        }
+
+        if (dto.FunctionType == null)
+        {
+            await displayMessage.DisplayErrorMessage("You cannot edit system functions");
+            navigationManager.NavigateTo("/rules/functions");
+            return;
+        }
+
+        ruleFunction = dto.ToRuleFunction();
+    }
+
+    private async Task Edit()
+    {
+        try
+        {
+            await rules.UpdateFunctionAsync(ruleFunction);
+            navigationManager.NavigateTo("/rules/getrulefunctions");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    private void Cancel()
+    {
+        navigationManager.NavigateTo("/rules/getrulefunctions");
+    }
+}
