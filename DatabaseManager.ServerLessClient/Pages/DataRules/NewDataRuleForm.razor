@@ -50,10 +50,29 @@
         </div>
     }
 
+    @if (Type == "Validity" || Type == "Predictions")
+    {
+        <div class="form-group">
+            <label>Rule Function:</label>
+            <div>
+                <select @bind="RuleToEdit.RuleFunction" @bind:after="OnRuleFunctionChanged">
+                    @foreach (var func in FunctionMethods)
+                    {
+                        <option>@func</option>
+                    }
+                </select>
+                <ValidationMessage For="@(() => RuleToEdit.RuleFunction)" />
+            </div>
+        </div>
+    }
+
     <div class="form-group">
         <label>Rule Parameters:</label>
         <div>
-            <InputText class="form-control" @bind-Value="@RuleToEdit.RuleParameters" />
+            <RuleParametersEditor RuleFunction="@RuleToEdit.RuleFunction"
+                                   DataAttributeOptions="@DataAttributeOptions"
+                                   DataTypeOptions="@DataRef.DataTypeOptions"
+                                   @bind-RuleParameters="@RuleToEdit.RuleParameters" />
             <ValidationMessage For="@(() => RuleToEdit.RuleParameters)" />
         </div>
     </div>
@@ -84,22 +103,6 @@
         </div>
     }
 
-    @if (Type == "Validity" || Type == "Predictions")
-    {
-        <div class="form-group">
-            <label>Rule Function:</label>
-            <div>
-                <select @bind="RuleToEdit.RuleFunction">
-                    @foreach (var func in FunctionMethods)
-                    {
-                        <option>@func</option>
-                    }
-                </select>
-                <ValidationMessage For="@(() => RuleToEdit.RuleFunction)" />
-            </div>
-        </div>
-    }
-
     <div class="form-group">
         <label>Description:</label>
         <div>
@@ -109,10 +112,11 @@
     </div>
 
     <button class="btn btn-success" type="submit">Save Changes</button>
+
 </EditForm>
 
 @code {
-    [Parameter] public DatabaseManager.ServerLessClient.Models.RuleModel RuleToEdit { get; set; }
+    [Parameter] public RuleModel RuleToEdit { get; set; }
     [Parameter] public RuleInfo DataRef { get; set; }
     [Parameter] public string Type { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
@@ -132,6 +136,7 @@
         if (Type == "Entirety" || Type == "Uniqueness") noDataAttributes = true;
     }
 
+
     private void SelectedDataType(ChangeEventArgs e)
     {
         string dataType = e.Value.ToString();
@@ -144,4 +149,12 @@
         List<string> attributes = attributeList.Split(',').ToList();
         return attributes;
     }
+
+    private void OnRuleFunctionChanged()
+    {
+        // Switching rule functions means any previously entered parameters no longer
+        // apply - let RuleParametersEditor populate fresh defaults for the new function.
+        RuleToEdit.RuleParameters = null;
+    }
+
 }

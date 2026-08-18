@@ -1,0 +1,476 @@
+﻿@inject IDataSources dataSources
+@using MudBlazor
+
+
+@if (RuleFunction == "Completeness")
+{
+    <MudAlert Severity="Severity.Normal" Variant="Variant.Text" Dense="true">This rule type does not use any parameters.</MudAlert>
+}
+else if (RuleFunction == "Entirety")
+{
+    <MudStack Spacing="3">
+        <MudTextField @bind-Value="_entirety.Name" @bind-Value:after="Emit"
+                      Label="Entirety List Name" Variant="Variant.Outlined" />
+        <MudSelect T="string" @bind-Value="_entirety.DataType" @bind-Value:after="Emit"
+                   Label="Compare Against Data Type" Variant="Variant.Outlined">
+            @if (DataTypeOptions != null)
+            {
+                @foreach (var option in DataTypeOptions)
+                {
+                    <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                }
+            }
+        </MudSelect>
+    </MudStack>
+}
+
+else if (RuleFunction == "Uniqueness")
+{
+    <MudText Typo="Typo.subtitle2">Key Attributes</MudText>
+    <MudText Typo="Typo.body2" Class="mb-2">The combination of these attributes (after any normalization) must be unique across the data set.</MudText>
+    @for (int i = 0; i < _uniquenessParts.Count; i++)
+    {
+        var index = i;
+        var part = _uniquenessParts[index];
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="mb-2">
+            <MudSelect T="string" @bind-Value="part.Attribute" @bind-Value:after="Emit"
+                       Label="Attribute" Variant="Variant.Outlined" Margin="Margin.Dense">
+                @if (DataAttributeOptions != null)
+                {
+                    @foreach (var att in DataAttributeOptions)
+                    {
+                        <MudSelectItem T="string" Value="@att">@att</MudSelectItem>
+                    }
+                }
+            </MudSelect>
+            <MudSelect T="string" @bind-Value="part.Function" @bind-Value:after="Emit"
+                       Label="Normalization" Variant="Variant.Outlined" Margin="Margin.Dense">
+                <MudSelectItem T="string" Value="@("None")">No normalization</MudSelectItem>
+                <MudSelectItem T="string" Value="@("*NORMALIZE")">Normalize</MudSelectItem>
+                <MudSelectItem T="string" Value="@("*NORMALIZE14")">Normalize14</MudSelectItem>
+            </MudSelect>
+            @if (part.Function == "*NORMALIZE")
+            {
+                <MudTextField @bind-Value="part.NormalizeParameter" @bind-Value:after="Emit"
+                              Label="Normalize Parameter" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            }
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                           OnClick="() => RemoveUniquenessPart(index)" />
+        </MudStack>
+    }
+    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small"
+               StartIcon="@Icons.Material.Filled.Add" OnClick="AddUniquenessPart">
+        Add key attribute
+    </MudButton>
+}
+
+
+else if (RuleFunction == "Consistency")
+{
+    @if (_dataSourceOptions == null)
+    {
+        <MudText Typo="Typo.body2">Loading data sources...</MudText>
+    }
+    else if (_dataSourceOptions.Count == 0)
+    {
+        <MudTextField @bind-Value="_consistency.Source" @bind-Value:after="Emit"
+                      Label="Compare Against Data Source" Variant="Variant.Outlined" />
+    }
+    else
+    {
+        <MudSelect T="string" @bind-Value="_consistency.Source" @bind-Value:after="Emit"
+                   Label="Compare Against Data Source" Variant="Variant.Outlined">
+            @foreach (var source in _dataSourceOptions)
+            {
+                <MudSelectItem T="string" Value="@source">@source</MudSelectItem>
+            }
+        </MudSelect>
+    }
+}
+
+else if (RuleFunction == "PredictMissingDataObjects")
+{
+    <MudSelect T="string" @bind-Value="_missingObjects.DataType" @bind-Value:after="Emit"
+               Label="Data Type to Create" Variant="Variant.Outlined" Class="mb-3">
+        @if (DataTypeOptions != null)
+        {
+            @foreach (var option in DataTypeOptions)
+            {
+                <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+            }
+        }
+    </MudSelect>
+
+    <MudText Typo="Typo.subtitle2">Attribute Values</MudText>
+    <MudText Typo="Typo.body2" Class="mb-2">Each key is set on the new object. Prefix a value with "!" to copy it from the parent object instead of using it literally.</MudText>
+    @for (int i = 0; i < _missingObjects.Keys.Count; i++)
+    {
+        var index = i;
+        var key = _missingObjects.Keys[index];
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="mb-2">
+            <MudTextField @bind-Value="key.Key" @bind-Value:after="Emit"
+                          Label="Attribute" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <MudTextField @bind-Value="key.Value" @bind-Value:after="Emit"
+                          Label="Value (or !ParentAttribute)" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                           OnClick="() => RemoveMissingObjectKey(index)" />
+        </MudStack>
+    }
+    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small"
+               StartIcon="@Icons.Material.Filled.Add" OnClick="AddMissingObjectKey" Class="mb-4">
+        Add attribute
+    </MudButton>
+
+    <MudText Typo="Typo.subtitle2">Defaults</MudText>
+    <MudText Typo="Typo.body2" Class="mb-2">Applied after the attribute values above, overriding whatever was set for that attribute.</MudText>
+    @for (int i = 0; i < _missingObjects.Defaults.Count; i++)
+    {
+        var index = i;
+        var def = _missingObjects.Defaults[index];
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="mb-2">
+            <MudTextField @bind-Value="def.Default" @bind-Value:after="Emit"
+                          Label="Attribute" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <MudTextField @bind-Value="def.Value" @bind-Value:after="Emit"
+                          Label="Default Value" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                           OnClick="() => RemoveMissingObjectDefault(index)" />
+        </MudStack>
+    }
+    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small"
+               StartIcon="@Icons.Material.Filled.Add" OnClick="AddMissingObjectDefault">
+        Add default
+    </MudButton>
+}
+
+
+else if (TryGetDescriptor(RuleFunction, out var descriptor))
+{
+    @* Generic renderer: any rule function registered in ValidityRuleRegistry or
+       PredictionRuleRegistry gets its fields drawn from here - no dedicated
+       markup or C# model needed per rule. *@
+    @if (descriptor.Count == 0)
+    {
+        <MudAlert Severity="Severity.Normal" Variant="Variant.Text" Dense="true">This rule type does not use any parameters.</MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var field in descriptor)
+            {
+                <MudItem xs="6">
+                    @if (field.Type == RuleParameterFieldType.Number)
+                    {
+                        <MudNumericField T="double?" Value="GetNumberValue(field.Key)" ValueChanged="v => SetValue(field.Key, v)"
+                                         Label="@field.Label" Variant="Variant.Outlined" HelperText="@field.HelperText" />
+                    }
+                    else if (field.Type == RuleParameterFieldType.Select)
+                    {
+                        <MudSelect T="string" Value="GetStringValue(field.Key)" ValueChanged="v => SetValue(field.Key, v)"
+                                   Label="@field.Label" Variant="Variant.Outlined" HelperText="@field.HelperText">
+                            @foreach (var opt in field.Options ?? new List<string>())
+                            {
+                                <MudSelectItem T="string" Value="@opt">@opt</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+                    else
+                    {
+                        <MudTextField T="string" Value="GetStringValue(field.Key)" ValueChanged="v => SetValue(field.Key, v)"
+                                      Label="@field.Label" Variant="Variant.Outlined" HelperText="@field.HelperText" />
+                    }
+                </MudItem>
+            }
+        </MudGrid>
+    }
+}
+
+
+
+else
+{
+    <MudTextField @bind-Value="_rawParameters" @bind-Value:after="Emit"
+                  Label="Rule Parameters" Variant="Variant.Outlined"
+                  HelperText="@($"No structured editor is available for \"{RuleFunction}\" (likely a custom or external rule function). Enter the raw parameter value it expects.")" />
+}
+
+
+
+@code {
+    [Parameter] public string RuleFunction { get; set; }
+    [Parameter] public List<string> DataAttributeOptions { get; set; }
+    [Parameter] public List<string> DataTypeOptions { get; set; }
+    [Parameter] public string RuleParameters { get; set; }
+    [Parameter] public EventCallback<string> RuleParametersChanged { get; set; }
+
+    private string _lastRuleFunction;
+    private List<string> _dataSourceOptions;
+    private string _rawParameters;
+
+    private EntiretyRuleParameters _entirety = new();
+    private List<UniquenessKeyPart> _uniquenessParts = new();
+    private ConsistencyRuleParameters _consistency = new();
+    private MissingObjectsRuleParameters _missingObjects = new();
+
+
+    // Backing store for any rule function found in ValidityRuleRegistry - keyed by
+    // field.Key, values are double for Number fields and string for Text/Select fields.
+    private Dictionary<string, object> _dynamicValues = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (RuleFunction != _lastRuleFunction)
+        {
+            _lastRuleFunction = RuleFunction;
+            LoadFromRuleParameters();
+
+            if (RuleFunction == "Consistency" && _dataSourceOptions == null)
+            {
+                await LoadDataSourceOptions();
+            }
+        }
+    }
+
+    private async Task LoadDataSourceOptions()
+    {
+        try
+        {
+            var response = await dataSources.GetSources<Models.ResponseDto>();
+            var names = new List<string>();
+            if (response != null && response.IsSuccess && response.Result != null)
+            {
+                var connectors = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Models.ConnectParameters>>(Convert.ToString(response.Result));
+                names = connectors?.Select(c => c.SourceName).Where(n => !string.IsNullOrEmpty(n)).ToList() ?? new List<string>();
+            }
+            _dataSourceOptions = names;
+        }
+        catch
+        {
+            // If the data source list can't be loaded, fall back to a free-text Source field.
+            _dataSourceOptions = new List<string>();
+        }
+    }
+
+    private void LoadFromRuleParameters()
+    {
+        _rawParameters = RuleParameters;
+        try
+        {
+            switch (RuleFunction)
+            {
+                case "Entirety":
+                    _entirety = string.IsNullOrWhiteSpace(RuleParameters)
+                        ? new EntiretyRuleParameters()
+                        : Newtonsoft.Json.JsonConvert.DeserializeObject<EntiretyRuleParameters>(RuleParameters) ?? new EntiretyRuleParameters();
+                    if (string.IsNullOrEmpty(_entirety.DataType) && DataTypeOptions?.Count > 0)
+                        _entirety.DataType = DataTypeOptions[0];
+                    break;
+                case "Uniqueness":
+                    _uniquenessParts = ParseUniquenessKey(RuleParameters);
+                    if (_uniquenessParts.Count == 0) AddUniquenessPart();
+                    break;
+                case "Consistency":
+                    _consistency = string.IsNullOrWhiteSpace(RuleParameters)
+                        ? new ConsistencyRuleParameters()
+                        : Newtonsoft.Json.JsonConvert.DeserializeObject<ConsistencyRuleParameters>(RuleParameters) ?? new ConsistencyRuleParameters();
+                    break;
+                case "PredictMissingDataObjects":
+                    _missingObjects = string.IsNullOrWhiteSpace(RuleParameters)
+                        ? new MissingObjectsRuleParameters()
+                        : Newtonsoft.Json.JsonConvert.DeserializeObject<MissingObjectsRuleParameters>(RuleParameters) ?? new MissingObjectsRuleParameters();
+                    if (string.IsNullOrEmpty(_missingObjects.DataType) && DataTypeOptions?.Count > 0)
+                        _missingObjects.DataType = DataTypeOptions[0];
+                    if (_missingObjects.Keys == null) _missingObjects.Keys = new List<MissingObjectKeyPart>();
+                    if (_missingObjects.Defaults == null) _missingObjects.Defaults = new List<MissingObjectDefaultPart>();
+                    break;
+                default:
+                    if (TryGetDescriptor(RuleFunction, out var descriptor))
+                    {
+                        LoadDynamicValues(descriptor, RuleParameters);
+                    }
+                    break;
+            }
+        }
+        catch
+        {
+            // Existing value didn't match the expected shape (e.g. hand-typed before this
+            // editor existed) - reset to defaults rather than crash the form.
+        }
+
+        // Push the parsed defaults straight back out so RuleParameters always reflects
+        // a value that matches what's currently displayed.
+        _ = Emit();
+    }
+
+
+    private static bool TryGetDescriptor(string ruleFunction, out List<RuleParameterFieldDescriptor> fields)
+    {
+        if (ValidityRuleRegistry.Descriptors.TryGetValue(ruleFunction ?? "", out fields)) return true;
+        if (PredictionRuleRegistry.Descriptors.TryGetValue(ruleFunction ?? "", out fields)) return true;
+        return false;
+    }
+
+    private void LoadDynamicValues(List<RuleParameterFieldDescriptor> descriptor, string raw)
+    {
+        _dynamicValues = new Dictionary<string, object>();
+        Newtonsoft.Json.Linq.JObject parsed = null;
+        if (!string.IsNullOrWhiteSpace(raw))
+        {
+            try { parsed = Newtonsoft.Json.Linq.JObject.Parse(raw); } catch { /* fall through to defaults below */ }
+        }
+
+        foreach (var field in descriptor)
+        {
+            object value = field.DefaultValue;
+            if (parsed != null && parsed.TryGetValue(field.Key, out var token))
+            {
+                value = field.Type == RuleParameterFieldType.Number
+                    ? (object)token.Value<double?>()
+                    : token.Value<string>();
+            }
+            _dynamicValues[field.Key] = value;
+        }
+    }
+
+    private double? GetNumberValue(string key)
+    {
+        if (_dynamicValues.TryGetValue(key, out var v) && v != null)
+        {
+            return Convert.ToDouble(v);
+        }
+        return null;
+    }
+
+    private string GetStringValue(string key)
+    {
+        return _dynamicValues.TryGetValue(key, out var v) ? v?.ToString() : null;
+    }
+
+    private void SetValue(string key, object value)
+    {
+        _dynamicValues[key] = value;
+        _ = Emit();
+    }
+
+    private void AddUniquenessPart()
+    {
+        _uniquenessParts.Add(new UniquenessKeyPart
+        {
+            Attribute = DataAttributeOptions?.FirstOrDefault()
+        });
+        _ = Emit();
+    }
+
+    private void RemoveUniquenessPart(int index)
+    {
+        _uniquenessParts.RemoveAt(index);
+        _ = Emit();
+    }
+
+    private static List<UniquenessKeyPart> ParseUniquenessKey(string raw)
+    {
+        var parts = new List<UniquenessKeyPart>();
+        if (string.IsNullOrWhiteSpace(raw)) return parts;
+
+        foreach (var segment in raw.Split(';'))
+        {
+            var trimmed = segment.Trim();
+            if (string.IsNullOrEmpty(trimmed)) continue;
+
+            if (trimmed.StartsWith("*"))
+            {
+                var start = trimmed.IndexOf('(') + 1;
+                var end = trimmed.IndexOf(')', start);
+                if (start <= 0 || end < 0)
+                {
+                    parts.Add(new UniquenessKeyPart { Attribute = trimmed, Function = "None" });
+                    continue;
+                }
+                var function = trimmed.Substring(0, start - 1);
+                var csv = trimmed.Substring(start, end - start);
+                var csvParts = csv.Split(',');
+                parts.Add(new UniquenessKeyPart
+                {
+                    Attribute = csvParts[0].Trim(),
+                    Function = function,
+                    NormalizeParameter = csvParts.Length > 1 ? csvParts[1].Trim() : null
+                });
+            }
+            else
+            {
+                parts.Add(new UniquenessKeyPart { Attribute = trimmed, Function = "None" });
+            }
+        }
+        return parts;
+    }
+
+    private static string BuildUniquenessKey(List<UniquenessKeyPart> parts)
+    {
+        var segments = new List<string>();
+        foreach (var part in parts)
+        {
+            if (string.IsNullOrWhiteSpace(part.Attribute)) continue;
+            if (string.IsNullOrEmpty(part.Function) || part.Function == "None")
+            {
+                segments.Add(part.Attribute);
+            }
+            else if (part.Function == "*NORMALIZE")
+            {
+                var param = string.IsNullOrEmpty(part.NormalizeParameter) ? "" : "," + part.NormalizeParameter;
+                segments.Add($"*NORMALIZE({part.Attribute}{param})");
+            }
+            else if (part.Function == "*NORMALIZE14")
+            {
+                segments.Add($"*NORMALIZE14({part.Attribute})");
+            }
+        }
+        return string.Join(";", segments);
+    }
+
+    private void AddMissingObjectKey()
+    {
+        _missingObjects.Keys.Add(new MissingObjectKeyPart());
+        _ = Emit();
+    }
+
+    private void RemoveMissingObjectKey(int index)
+    {
+        _missingObjects.Keys.RemoveAt(index);
+        _ = Emit();
+    }
+
+    private void AddMissingObjectDefault()
+    {
+        _missingObjects.Defaults.Add(new MissingObjectDefaultPart());
+        _ = Emit();
+    }
+
+    private void RemoveMissingObjectDefault(int index)
+    {
+        _missingObjects.Defaults.RemoveAt(index);
+        _ = Emit();
+    }
+
+
+    private async Task Emit()
+    {
+        string json = RuleFunction switch
+        {
+            "Entirety" => Newtonsoft.Json.JsonConvert.SerializeObject(_entirety),
+            "Uniqueness" => BuildUniquenessKey(_uniquenessParts),
+            "Consistency" => Newtonsoft.Json.JsonConvert.SerializeObject(_consistency),
+            "PredictMissingDataObjects" => Newtonsoft.Json.JsonConvert.SerializeObject(_missingObjects),
+            "Completeness" => "",
+            _ when TryGetDescriptor(RuleFunction, out var descriptor)
+                => descriptor.Count == 0 ? "" : Newtonsoft.Json.JsonConvert.SerializeObject(_dynamicValues),
+            _ => _rawParameters
+        };
+
+        if (json != RuleParameters)
+        {
+            RuleParameters = json;
+            await RuleParametersChanged.InvokeAsync(json);
+        }
+    }
+
+
+}

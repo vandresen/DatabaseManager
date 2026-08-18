@@ -78,7 +78,7 @@ namespace DatabaseManager.Services.DataQuality.Services
             foreach (IndexDto idxRow in indexes)
             {
                 string jsonData = idxRow.JsonDataObject;
-                if (string.IsNullOrEmpty(jsonData)) break;
+                if (string.IsNullOrEmpty(jsonData)) continue;
 
                 qcSetup.IndexId = idxRow.IndexId;
 
@@ -90,7 +90,7 @@ namespace DatabaseManager.Services.DataQuality.Services
 
                 string outcome = "Passed";
 
-                if (Filter(jsonData, ruleFilter)) break;
+                if (Filter(jsonData, ruleFilter)) continue;
 
                 if (externalQcMethod)
                 {
