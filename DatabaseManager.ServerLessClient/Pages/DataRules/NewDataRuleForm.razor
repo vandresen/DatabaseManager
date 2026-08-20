@@ -1,126 +1,134 @@
-﻿
-<EditForm Model="RuleToEdit" OnValidSubmit="OnValidSubmit">
-    <DataAnnotationsValidator />
-    <div class="form-group">
-        <label>Rule Name:</label>
-        <div>
-            <InputText class="form-control" @bind-Value="RuleToEdit.RuleName" />
-            <ValidationMessage For="@(() => RuleToEdit.RuleName)" />
-        </div>
-    </div>
+﻿@using MudBlazor
 
-    <div class="form-group">
-        <label>Active:</label>
-        <select @bind="RuleToEdit.Active">
-            <option>Y</option>
-            <option>N</option>
-        </select>
-    </div>
+<MudCard Class="mx-auto my-4" Style="max-width: 700px;">
+    <MudCardContent>
+        <MudText Typo="Typo.h5" Class="mb-4">New @Type Rule</MudText>
 
-    <div class="form-group">
-        <label>Data Type:</label>
-        <select @onchange="SelectedDataType">
-            @foreach (var option in DataRef.DataTypeOptions)
-            {
-                <option>@option</option>
-            }
-        </select>
-    </div>
+        <MudForm @ref="form" Model="@RuleToEdit" OnValidSubmit="HandleValidSubmit">
+            <MudGrid Spacing="2">
 
-    @if (!noDataAttributes)
-    {
-        <div class="form-group">
-            <label>Data Attribute:</label>
-            @if (DataAttributeOptions == null)
-            {
-                <div>
-                    <InputText class="form-control" @bind-Value="@RuleToEdit.DataAttribute" />
-                    <ValidationMessage For="@(() => RuleToEdit.DataAttribute)" />
-                </div>
-            }
-            else
-            {
-                <select @bind="RuleToEdit.DataAttribute">
-                    @foreach (var att in DataAttributeOptions)
-                    {
-                        <option>@att</option>
-                    }
-                </select>
-            }
-        </div>
-    }
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="RuleToEdit.RuleName"
+                                  Label="Rule Name"
+                                  For="@(() => RuleToEdit.RuleName)"
+                                  Required="true"
+                                  MaxLength="40"
+                                  Variant="Variant.Filled"
+                                  Margin="Margin.Dense" />
+                </MudItem>
 
-    @if (Type == "Validity" || Type == "Predictions")
-    {
-        <div class="form-group">
-            <label>Rule Function:</label>
-            <div>
-                <select @bind="RuleToEdit.RuleFunction" @bind:after="OnRuleFunctionChanged">
-                    @foreach (var func in FunctionMethods)
-                    {
-                        <option>@func</option>
-                    }
-                </select>
-                <ValidationMessage For="@(() => RuleToEdit.RuleFunction)" />
-            </div>
-        </div>
-    }
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" @bind-Value="RuleToEdit.Active"
+                               Label="Active" Variant="Variant.Filled" Margin="Margin.Dense">
+                        <MudSelectItem T="string" Value="@("Y")">Y</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("N")">N</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
 
-    <div class="form-group">
-        <label>Rule Parameters:</label>
-        <div>
-            <RuleParametersEditor RuleFunction="@RuleToEdit.RuleFunction"
-                                   DataAttributeOptions="@DataAttributeOptions"
-                                   DataTypeOptions="@DataRef.DataTypeOptions"
-                                   @bind-RuleParameters="@RuleToEdit.RuleParameters" />
-            <ValidationMessage For="@(() => RuleToEdit.RuleParameters)" />
-        </div>
-    </div>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" Value="RuleToEdit.DataType" ValueChanged="SelectedDataType"
+                               Label="Data Type" Variant="Variant.Filled" Margin="Margin.Dense">
+                        @foreach (var option in DataRef.DataTypeOptions)
+                        {
+                            <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
 
-    <div class="form-group">
-        <label>Rule Filter:</label>
-        <div>
-            <InputText class="form-control" @bind-Value="@RuleToEdit.RuleFilter" />
-            <ValidationMessage For="@(() => RuleToEdit.RuleFilter)" />
-        </div>
-    </div>
+                @if (!noDataAttributes)
+                {
+                    <MudItem xs="12">
+                        @if (DataAttributeOptions == null)
+                        {
+                            <MudTextField @bind-Value="RuleToEdit.DataAttribute"
+                                          Label="Data Attribute"
+                                          For="@(() => RuleToEdit.DataAttribute)"
+                                          Variant="Variant.Filled" Margin="Margin.Dense" />
+                        }
+                        else
+                        {
+                            <MudSelect T="string" @bind-Value="RuleToEdit.DataAttribute"
+                                       Label="Data Attribute" Variant="Variant.Filled" Margin="Margin.Dense">
+                                @foreach (var att in DataAttributeOptions)
+                                {
+                                    <MudSelectItem T="string" Value="@att">@att</MudSelectItem>
+                                }
+                            </MudSelect>
+                        }
+                    </MudItem>
+                }
 
-    @if (Type == "Predictions")
-    {
-        <div class="form-group">
-            <label>Fail Rule:</label>
-            <div>
-                <InputText class="form-control" @bind-Value="RuleToEdit.FailRule" />
-                <ValidationMessage For="@(() => RuleToEdit.FailRule)" />
-            </div>
-        </div>
-        <div class="form-group">
-            <label>Prediction Order:</label>
-            <div>
-                <InputNumber class="form-control" @bind-Value="RuleToEdit.PredictionOrder" />
-                <ValidationMessage For="@(() => RuleToEdit.PredictionOrder)" />
-            </div>
-        </div>
-    }
+                @if (Type == "Validity" || Type == "Predictions")
+                {
+                    <MudItem xs="12">
+                        <MudSelect T="string" @bind-Value="RuleToEdit.RuleFunction" @bind-Value:after="OnRuleFunctionChanged"
+                                   Label="Rule Function" Variant="Variant.Filled" Margin="Margin.Dense">
+                            @foreach (var func in FunctionMethods)
+                            {
+                                <MudSelectItem T="string" Value="@func">@func</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                }
 
-    <div class="form-group">
-        <label>Description:</label>
-        <div>
-            <InputText class="form-control" @bind-Value="@RuleToEdit.RuleDescription" />
-            <ValidationMessage For="@(() => RuleToEdit.RuleDescription)" />
-        </div>
-    </div>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2" Class="mb-1">Rule Parameters</MudText>
+                    <RuleParametersEditor RuleFunction="@RuleToEdit.RuleFunction"
+                                          DataAttributeOptions="@DataAttributeOptions"
+                                          DataTypeOptions="@DataRef.DataTypeOptions"
+                                          @bind-RuleParameters="@RuleToEdit.RuleParameters" />
+                </MudItem>
 
-    <button class="btn btn-success" type="submit">Save Changes</button>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="RuleToEdit.RuleFilter"
+                                  Label="Rule Filter"
+                                  For="@(() => RuleToEdit.RuleFilter)"
+                                  Variant="Variant.Filled" Margin="Margin.Dense" />
+                </MudItem>
 
-</EditForm>
+                @if (Type == "Predictions")
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="RuleToEdit.FailRule"
+                                      Label="Fail Rule"
+                                      For="@(() => RuleToEdit.FailRule)"
+                                      Variant="Variant.Filled" Margin="Margin.Dense" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField @bind-Value="RuleToEdit.PredictionOrder"
+                                         Label="Prediction Order"
+                                         For="@(() => RuleToEdit.PredictionOrder)"
+                                         Variant="Variant.Filled" Margin="Margin.Dense" />
+                    </MudItem>
+                }
+
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="RuleToEdit.RuleDescription"
+                                  Label="Description"
+                                  For="@(() => RuleToEdit.RuleDescription)"
+                                  Variant="Variant.Filled" Margin="Margin.Dense"
+                                  Lines="2" MaxLength="255" />
+                </MudItem>
+
+                <MudItem xs="12" class="d-flex justify-end">
+                    <MudButton Color="Color.Success" Variant="Variant.Filled" OnClick="HandleValidSubmit">
+                        Save Changes
+                    </MudButton>
+                </MudItem>
+
+            </MudGrid>
+        </MudForm>
+    </MudCardContent>
+</MudCard>
 
 @code {
-    [Parameter] public RuleModel RuleToEdit { get; set; }
+    [Parameter] public DatabaseManager.ServerLessClient.Models.RuleModel RuleToEdit { get; set; }
     [Parameter] public RuleInfo DataRef { get; set; }
     [Parameter] public string Type { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public List<string> FunctionMethods { get; set; }
+
+    private MudForm form;
     private List<string> DataAttributeOptions;
     private bool noDataAttributes = false;
 
@@ -136,12 +144,14 @@
         if (Type == "Entirety" || Type == "Uniqueness") noDataAttributes = true;
     }
 
-
-    private void SelectedDataType(ChangeEventArgs e)
+    private void SelectedDataType(string dataType)
     {
-        string dataType = e.Value.ToString();
         RuleToEdit.DataType = dataType;
         DataAttributeOptions = GetAttributes(DataRef.DataAttributes[dataType]);
+        // The old DataAttribute almost certainly doesn't belong to the newly selected
+        // data type - reset it, same as OnInitialized does for the default type,
+        // instead of silently saving a value from the previous data type.
+        RuleToEdit.DataAttribute = DataAttributeOptions.FirstOrDefault();
     }
 
     private List<string> GetAttributes(string attributeList)
@@ -157,4 +167,12 @@
         RuleToEdit.RuleParameters = null;
     }
 
+    private async Task HandleValidSubmit()
+    {
+        await form.Validate();
+        if (form.IsValid && OnValidSubmit.HasDelegate)
+        {
+            await OnValidSubmit.InvokeAsync();
+        }
+    }
 }

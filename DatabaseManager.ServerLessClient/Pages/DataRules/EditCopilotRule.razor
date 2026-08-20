@@ -57,8 +57,8 @@ else
         {
             ruleInfo.DataTypeOptions.Add(accessDef.DataType);
             string select = accessDef.Select;
-            string[] attributeArray = select.GetAttributes();
-            string attributes = String.Join(",", attributeArray);
+            string[] attributeArray = select.GetAttributes().Select(x => x.Trim()).ToArray();
+            string attributes = string.Join(",", attributeArray);
             ruleInfo.DataAttributes.Add(accessDef.DataType, attributes);
         }
         return ruleInfo;
