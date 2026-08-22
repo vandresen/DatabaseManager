@@ -25,5 +25,7 @@ namespace DatabaseManager.Shared
         {
             get { return _dictionary[key]; }
         }
+
+        public bool ContainsKey(string key) => _dictionary.ContainsKey(key);
     }
 }

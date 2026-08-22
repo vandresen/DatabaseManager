@@ -72,7 +72,8 @@ namespace DatabaseManager.BlazorComponents.Helpers
             foreach (DataAccessDef accessDef in accessDefs)
             {
                 ruleInfo.DataTypeOptions.Add(accessDef.DataType);
-                string[] attributeArray = Common.GetAttributes(accessDef.Select);
+                //string[] attributeArray = select.GetAttributes().Select(x => x.Trim()).ToArray();
+                string[] attributeArray = Common.GetAttributes(accessDef.Select).Select(x => x.Trim()).ToArray();
                 string attributes = String.Join(",", attributeArray);
                 ruleInfo.DataAttributes.Add(accessDef.DataType, attributes);
             }

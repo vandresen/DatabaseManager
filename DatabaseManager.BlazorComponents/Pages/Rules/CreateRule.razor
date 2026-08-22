@@ -9,7 +9,7 @@
 
 @if (ruleInfo != null)
 {
-    <NewRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" Type="@type" OnValidSubmit="Create" FunctionMethods="functionMethods"/>
+    <NewRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" Type="@type" OnValidSubmit="Create" OnCancel="Cancel" FunctionMethods="functionMethods" />
 }
 
 @code {
@@ -19,16 +19,22 @@
     List<RuleFunctions> FunctionList;
     public string type;
     public List<string> functionMethods;
+    private readonly RuleTypeDictionary ruleTypes = new();
 
     protected override async Task OnInitializedAsync()
     {
+        if (!ruleTypes.ContainsKey(RuleType))
+        {
+            // handle invalid route parameter, e.g. navigationManager.NavigateTo("rules");
+            return;
+        }
+
         ruleInfo = await Common.GetRuleInfo(dataConfiguration, displayMessage);
         FunctionList = await rules.GetFunctions(singleton.TargetConnector);
         type = RuleType;
         Console.WriteLine($"New Rule: {type}");
-        string shortType = "";
-        if (type == "Validity") shortType = "V";
-        if (type == "Predictions") shortType = "P";
+
+        string shortType = ruleTypes[type];
         functionMethods = FunctionList.Where(s => s.FunctionType == shortType).Select(s => s.FunctionName).ToList();
     }
 
@@ -43,5 +49,10 @@
         {
             Console.WriteLine(ex.Message);
         }
+    }
+
+    private void Cancel()
+    {
+        navigationManager.NavigateTo("rules");
     }
 }

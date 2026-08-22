@@ -1,4 +1,4 @@
-﻿@page  "/rules/edit/{SourceName}/{Id:int}"
+﻿@page "/rules/edit/{SourceName}/{Id:int}"
 @inject IRules rules
 @inject NavigationManager navigationManager
 @inject SingletonServices singleton
@@ -9,7 +9,7 @@
 
 @if (ruleModel != null)
 {
-    <EditRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" OnValidSubmit="Edit" />
+    <EditRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" OnValidSubmit="Edit" OnCancel="Cancel" />
 }
 
 @code {
@@ -36,5 +36,10 @@
         {
             Console.WriteLine(ex.Message);
         }
+    }
+
+    private void Cancel()
+    {
+        navigationManager.NavigateTo("rules");
     }
 }
