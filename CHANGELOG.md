@@ -1,3 +1,8 @@
+# Release 1.4
+* Added rules parameter editor
+* Added edit function dialog
+* Several improvements for rules dialogs
+  
 # Release 1.32
 * Added edit functionality for PPDM data access under Settings
 * Created microservice for Dataops
