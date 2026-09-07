@@ -6,20 +6,19 @@ namespace DatabaseManager.ServerLessClient.Services
 {
     public class ReportService : BaseService, IReport
     {
-        string baseUrl;
-        string apiKey;
+        private readonly BlazorSingletonService _settings;
         private readonly IHttpClientFactory _clientFactory;
 
-        public ReportService(IHttpClientFactory clientFactory, IConfiguration configuration) : base(clientFactory)
+        public ReportService(IHttpClientFactory clientFactory, BlazorSingletonService settings, 
+            IConfiguration configuration) : base(clientFactory)
         {
-            baseUrl = configuration["ServiceUrls:ReportApiBase"];
-            apiKey = configuration["ServiceUrls:ReportKey"];
+            _settings = settings;
         }
 
         public async Task<List<QcResult>> GetResults(string source)
         {
             List<QcResult> result = new List<QcResult>();
-            string url = baseUrl.BuildFunctionUrl("GetResults", $"name={source}", apiKey);
+            string url = _settings.ReportApiBase.BuildFunctionUrl("GetResults", $"name={source}", _settings.ReportKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -33,7 +32,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<List<TableSchema>> GetAttributeInfo(string source, string dataType)
         {
             List<TableSchema> result = new List<TableSchema>();
-            string url = baseUrl.BuildFunctionUrl("ReportAttributeInfo", $"Name={source}&Datatype={dataType}", apiKey);
+            string url = _settings.ReportApiBase.BuildFunctionUrl("ReportAttributeInfo", $"Name={source}&Datatype={dataType}", _settings.ReportKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -47,7 +46,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<List<DmsIndex>> GetResult(string source, int id)
         {
             List<DmsIndex> result = new List<DmsIndex>();
-            string url = baseUrl.BuildFunctionUrl("GetResult", $"name={source}&Id={id}", apiKey);
+            string url = _settings.ReportApiBase.BuildFunctionUrl("GetResult", $"name={source}&Id={id}", _settings.ReportKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -60,7 +59,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task Update(string source, ReportData reportData)
         {
-            string url = baseUrl.BuildFunctionUrl("UpdateReportData", $"name={source}", apiKey);
+            string url = _settings.ReportApiBase.BuildFunctionUrl("UpdateReportData", $"name={source}", _settings.ReportKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -76,7 +75,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task Delete(int id, string source)
         {
-            string url = baseUrl.BuildFunctionUrl("DeleteReportData", $"name={source}&Id={id}", apiKey);
+            string url = _settings.ReportApiBase.BuildFunctionUrl("DeleteReportData", $"name={source}&Id={id}", _settings.ReportKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -91,7 +90,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task InsertChild(string source, ReportData reportData)
         {
-            string url = baseUrl.BuildFunctionUrl("InsertChildReportData", $"name={source}", apiKey);
+            string url = _settings.ReportApiBase.BuildFunctionUrl("InsertChildReportData", $"name={source}", _settings.ReportKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -107,7 +106,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task Merge(string source, ReportData reportData)
         {
-            string url = baseUrl.BuildFunctionUrl("MergeReportData", $"name={source}", apiKey);
+            string url = _settings.ReportApiBase.BuildFunctionUrl("MergeReportData", $"name={source}", _settings.ReportKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {

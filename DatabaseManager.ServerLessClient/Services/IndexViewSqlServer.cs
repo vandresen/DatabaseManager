@@ -11,10 +11,6 @@ namespace DatabaseManager.ServerLessClient.Services
     {
         private readonly IHttpClientFactory _clientFactory;
         private readonly BlazorSingletonService _settings;
-        private readonly string _indexAPIBase;
-        private readonly string _indexKey;
-        private readonly string _dataConfigurationAPIBase;
-        private readonly string _dataConfigurationKey;
         private readonly string _taxonomyShare = "taxonomy";
 
         public IndexViewSqlServer(IHttpClientFactory clientFactory,
@@ -22,15 +18,6 @@ namespace DatabaseManager.ServerLessClient.Services
         {
             _clientFactory = clientFactory;
             _settings = settings;
-            _indexAPIBase = configuration["ServiceUrls:IndexAPI"]
-                ?? throw new InvalidOperationException("Missing ServiceUrls:IndexAPI");
-            _indexKey = configuration["ServiceUrls:IndexKey"]
-                ?? throw new InvalidOperationException("Missing ServiceUrls:IndexKey");
-            _dataConfigurationAPIBase = configuration["ServiceUrls:DataConfigurationAPI"]
-                ?? throw new InvalidOperationException("Missing ServiceUrls:DataConfigurationAPI");
-            _dataConfigurationKey = configuration["ServiceUrls:DataConfigurationKey"]
-                ?? throw new InvalidOperationException("Missing ServiceUrls:DataConfigurationKey");
-
         }
 
         public async Task<List<DmsIndex>> GetChildren(string source, int id)
@@ -40,7 +27,7 @@ namespace DatabaseManager.ServerLessClient.Services
             {
                 throw new ArgumentException("Source must be provided", nameof(source));
             }
-            string url = _indexAPIBase.BuildFunctionUrl("/api/DmIndex", $"name={source}&id={id}", _indexKey);
+            string url = _settings.IndexAPI.BuildFunctionUrl("/api/DmIndex", $"name={source}&id={id}", _settings.IndexKey);
             Console.WriteLine($"GetDmIndexesAsync: url = {url}");
 
             try
@@ -77,7 +64,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<List<DmsIndex>> GetIndex(string source)
         {
             List<DmsIndex> index = new List<DmsIndex>();
-            string url = _indexAPIBase.BuildFunctionUrl("/api/DmIndexes", $"name={source}", _indexKey);
+            string url = _settings.IndexAPI.BuildFunctionUrl("/api/DmIndexes", $"name={source}", _settings.IndexKey);
             Console.WriteLine($"GetIndex: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -102,7 +89,7 @@ namespace DatabaseManager.ServerLessClient.Services
                 throw new ArgumentException("Source must be provided", nameof(source));
             }
 
-            string url = _indexAPIBase.BuildFunctionUrl("/api/DmIndexes", $"Name={source}&Node=/&Level=0", _indexKey);
+            string url = _settings.IndexAPI.BuildFunctionUrl("/api/DmIndexes", $"Name={source}&Node=/&Level=0", _settings.IndexKey);
             Console.WriteLine($"GetDmIndexesAsync: url = {url}");
 
             try
@@ -169,7 +156,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<List<IndexFileList>> GetTaxonomies()
         {
             List<IndexFileList> result = new();
-            string url = _dataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={_taxonomyShare}", _dataConfigurationKey);
+            string url = _settings.DataConfigurationAPI.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={_taxonomyShare}", _settings.DataConfigurationKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -196,7 +183,7 @@ namespace DatabaseManager.ServerLessClient.Services
             }
 
             IndexModel idx = new IndexModel();
-            string url = _indexAPIBase.BuildFunctionUrl($"/api/Indexes/{id}", $"Name={source}", _indexKey);
+            string url = _settings.IndexAPI.BuildFunctionUrl($"/api/Indexes/{id}", $"Name={source}", _settings.IndexKey);
             Console.WriteLine($"GetDmIndexesAsync: url = {url}");
 
             try
@@ -229,7 +216,7 @@ namespace DatabaseManager.ServerLessClient.Services
             }
 
             List<IndexFileDefinition> def = new List<IndexFileDefinition>();
-            string url = _dataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={_taxonomyShare}&name={fileName}", _dataConfigurationKey);
+            string url = _settings.DataConfigurationAPI.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={_taxonomyShare}&name={fileName}", _settings.DataConfigurationKey);
             Console.WriteLine(url);
 
             try
@@ -265,7 +252,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
             try
             {
-                string url = _dataConfigurationAPIBase.BuildFunctionUrl("/api/DataConfiguration", $"folder={_taxonomyShare}&name={fileName}", _dataConfigurationKey);
+                string url = _settings.DataConfigurationAPI.BuildFunctionUrl("/api/DataConfiguration", $"folder={_taxonomyShare}&name={fileName}", _settings.DataConfigurationKey);
                 Console.WriteLine(url);
                 ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
                 {

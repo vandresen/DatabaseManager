@@ -7,8 +7,6 @@ namespace DatabaseManager.ServerLessClient.Services
     {
         private readonly IHttpClientFactory _clientFactory;
         private readonly BlazorSingletonService _settings;
-        private readonly string _dataConfigurationAPIBase;
-        private readonly string _dataConfigurationKey;
         private readonly string folder = "connectdefinition";
         private string url;
 
@@ -17,10 +15,6 @@ namespace DatabaseManager.ServerLessClient.Services
         {
             _clientFactory = clientFactory;
             _settings = settings;
-            _dataConfigurationAPIBase = configuration["ServiceUrls:DataConfigurationAPI"]
-                ?? throw new InvalidOperationException("Missing ServiceUrls:DataConfigurationAPI");
-            _dataConfigurationKey = configuration["ServiceUrls:DataConfigurationKey"]
-                ?? throw new InvalidOperationException("Missing ServiceUrls:DataConfigurationKey");
         }
 
         public Task<T> DeleteRecord<T>(string name)
@@ -31,7 +25,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<T> GetRecord<T>(string name)
         {
             ResponseDto responseDto = new ResponseDto();
-            url = _dataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={folder}&name={name}", _dataConfigurationKey);
+            url = _settings.DataConfigurationAPI.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={folder}&name={name}", _settings.DataConfigurationKey);
             Console.WriteLine($"GetRecord URL:{url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -43,7 +37,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task<T> GetRecords<T>()
         {
-            url = _dataConfigurationAPIBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={folder}", _dataConfigurationKey);
+            url = _settings.DataConfigurationAPI.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={folder}", _settings.DataConfigurationKey);
             Console.WriteLine($"GetRecords URL:{url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -55,7 +49,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task<T> SaveRecords<T>(string name, object body)
         {
-            url = _dataConfigurationAPIBase.BuildFunctionUrl("/api/DataConfiguration", $"folder={folder}&name={name}", _dataConfigurationKey);
+            url = _settings.DataConfigurationAPI.BuildFunctionUrl("/api/DataConfiguration", $"folder={folder}&name={name}", _settings.DataConfigurationKey);
             Console.WriteLine(url);
             return await this.SendAsync<T>(new ApiRequest()
             {

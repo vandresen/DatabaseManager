@@ -8,8 +8,7 @@ namespace DatabaseManager.ServerLessClient.Services
     {
         private readonly IHttpClientFactory _clientFactory;
         private readonly BlazorSingletonService _settings;
-        private readonly string _dataOpsApiUrl;
-        private readonly string _dataOpsKey;
+
         private string resultMessage;
 
         public DataOps(IHttpClientFactory clientFactory, 
@@ -17,14 +16,12 @@ namespace DatabaseManager.ServerLessClient.Services
         {
             _clientFactory = clientFactory;
             _settings = settings;
-            _dataOpsApiUrl = configuration["ServiceUrls:DataOpsAPI"];
-            _dataOpsKey = configuration["ServiceUrls:DataOpsKey"];
         }
 
         public async Task<T> GetPipelines<T>()
         {
             List<DataOpsPipes> results = new List<DataOpsPipes>();
-            string url = SD.DataOpsManageAPIBase.BuildFunctionUrl($"/api/GetDataOpsList", "", SD.DataOpsManageKey);
+            string url = _settings.DataOpsManageAPI.BuildFunctionUrl($"/api/GetDataOpsList", "", _settings.DataOpsManageKey);
             Console.WriteLine($"GetPipelines: url = {url}");
             Console.WriteLine($"GetPipelines: AzureStorage = {_settings.AzureStorage}");
             return await SendAsync<T>(new ApiRequest()
@@ -53,7 +50,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<DataOpsResults> ProcessPipeline(List<DataOpParameters> parms)
         {
             var client = _clientFactory.CreateClient("DataOpsAPI");
-            string url = _dataOpsApiUrl.BuildFunctionUrl($"api/DataOps_HttpStart", "", _dataOpsKey);
+            string url = _settings.DataOpsAPI.BuildFunctionUrl($"api/DataOps_HttpStart", "", _settings.DataOpsKey);
 
             try
             {
@@ -89,7 +86,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<T> SavePipeline<T>(DataOpsPipes pipe, List<PipeLine> tubes)
         {
             string name = pipe.Name;
-            string url = SD.DataOpsManageAPIBase.BuildFunctionUrl($"/api/SavePipeline", $"Name={name}", SD.DataOpsManageKey);
+            string url = _settings.DataOpsManageAPI.BuildFunctionUrl($"/api/SavePipeline", $"Name={name}", _settings.DataOpsManageKey);
             Console.WriteLine($"GetPipelines: url = {url}");
             return await SendAsync<T>(new ApiRequest()
             {
@@ -102,7 +99,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task<T> CreatePipeline<T>(string name)
         {
-            string url = SD.DataOpsManageAPIBase.BuildFunctionUrl($"/api/SavePipeline", $"Name={name}", SD.DataOpsManageKey);
+            string url = _settings.DataOpsManageAPI.BuildFunctionUrl($"/api/SavePipeline", $"Name={name}", _settings.DataOpsManageKey);
             Console.WriteLine($"DeletePipeline: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -114,7 +111,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task<T> DeletePipeline<T>(string name)
         {
-            string url = SD.DataOpsManageAPIBase.BuildFunctionUrl($"/api/DeletePipeline", $"Name={name}", SD.DataOpsManageKey);
+            string url = _settings.DataOpsManageAPI.BuildFunctionUrl($"/api/DeletePipeline", $"Name={name}", _settings.DataOpsManageKey);
             Console.WriteLine($"DeletePipeline: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -127,7 +124,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<T> GetPipeline<T>(string name)
         {
             List<DataOpsPipes> results = new List<DataOpsPipes>();
-            string url = SD.DataOpsManageAPIBase.BuildFunctionUrl($"/api/GetPipe", $"Name={name}", SD.DataOpsManageKey);
+            string url = _settings.DataOpsManageAPI.BuildFunctionUrl($"/api/GetPipe", $"Name={name}", _settings.DataOpsManageKey);
             Console.WriteLine($"GetPipe: url = {url}");
             return await SendAsync<T>(new ApiRequest()
             {
@@ -137,65 +134,5 @@ namespace DatabaseManager.ServerLessClient.Services
             });
         }
 
-        
-
-        //public async Task CreatePipeline(DataOpsPipes pipe)
-        //{
-        //    string url = baseUrl.BuildFunctionUrl("SavePipeline", $"", apiKey);
-        //    Console.WriteLine($"Url = {url}");
-        //    var response = await httpService.Post(url, pipe);
-        //    if (!response.Success)
-        //    {
-        //        throw new ApplicationException(await response.GetBody());
-        //    }
-        //}
-
-
-
-        //public async Task DeletePipeline(string name)
-        //{
-        //    string url = baseUrl.BuildFunctionUrl("DeletePipeline", $"name={name}", apiKey);
-        //    Console.WriteLine($"Url = {url}");
-        //    var response = await httpService.Delete(url);
-        //    if (!response.Success)
-        //    {
-        //        throw new ApplicationException(await response.GetBody());
-        //    }
-        //}
-
-        //public async Task SavePipeline(DataOpsPipes pipe, List<PipeLine> tubes)
-        //{
-        //    string name = pipe.Name;
-        //    string url = baseUrl.BuildFunctionUrl("SavePipelineData", $"name={name}", apiKey);
-        //    Console.WriteLine($"Url = {url}");
-        //    var response = await httpService.Post(url, tubes);
-        //    if (!response.Success)
-        //    {
-        //        throw new ApplicationException(await response.GetBody());
-        //    }
-        //}
-
-
-        //public async Task<DataOpsResults> ProcessPipelineWithStatus(List<DataOpParameters> parms)
-        //{
-        //    string url = baseUrl.BuildFunctionUrl("ManageDataOps_HttpStart", $"", apiKey);
-        //    Console.WriteLine($"Url = {url}");
-        //    var response = await httpService.Post<List<DataOpParameters>, DataOpsResults>(url, parms);
-        //    if (!response.Success)
-        //    {
-        //        throw new ApplicationException(await response.GetBody());
-        //    }
-        //    return response.Response;
-        //}
-
-        //public async Task<DataOpsStatus> GetStatus(string url)
-        //{
-        //    var response = await httpService.Get<DataOpsStatus>(url);
-        //    if (!response.Success)
-        //    {
-        //        throw new ApplicationException(await response.GetBody());
-        //    }
-        //    return response.Response;
-        //}
     }
 }

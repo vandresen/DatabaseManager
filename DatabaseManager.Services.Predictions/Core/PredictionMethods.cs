@@ -36,14 +36,8 @@ namespace DatabaseManager.Services.Predictions.Core
             {
                 if (string.IsNullOrEmpty(qcSetup.DataConnector))
                 {
-                    ResponseDto response = Task.Run(() => idxdata.GetIndexes<ResponseDto>(qcSetup.DataConnector, qcSetup.Project, "MarkerWell", "", "", "Unknown"))
+                    var indexes = Task.Run(() => idxdata.GetIndexes(qcSetup.DataConnector, qcSetup.Project, "MarkerWell", "", "", "Unknown"))
                         .GetAwaiter().GetResult();
-                    if (!response.IsSuccess)
-                    {
-                        return result;
-                    }
-                    var json = response.Result!.ToString()!;
-                    var indexes = JsonSerializer.Deserialize<List<IndexDto>>(json, _jsonOptions)!;
                     _ageLookupCache = indexes
                         .Where(idx => !string.IsNullOrEmpty(idx.JsonDataObject))
                         .Select(idx => {
@@ -165,7 +159,7 @@ namespace DatabaseManager.Services.Predictions.Core
             if (pickDepth == null || pickDepth == -99999.0) return result;
 
             string dataKey = $"UWI = '{uwi}' AND CURVE_ID = '{curveName}'";
-            var indexes = idxdata.GetIndexes<List<IndexDto>>(qcSetup.DataConnector, qcSetup.Project, dataType, "", dataKey, "").GetAwaiter().GetResult();
+            var indexes = idxdata.GetIndexes(qcSetup.DataConnector, qcSetup.Project, dataType, "", dataKey, "").GetAwaiter().GetResult();
             if (indexes?.Count() != 1) return result;
 
             string logJson = indexes.FirstOrDefault()?.JsonDataObject;

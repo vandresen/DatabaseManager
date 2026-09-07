@@ -15,7 +15,7 @@ namespace DatabaseManager.ServerLessClient.Services
         }
         public async Task<T> CreateSource<T>(ConnectParameters connector)
         {
-            string url = SD.DataSourceAPIBase.BuildFunctionUrl($"/api/SaveDataSource", "", SD.DataSourceKey);
+            string url = _settings.DataSourceAPI.BuildFunctionUrl($"/api/SaveDataSource", "", _settings.DataSourceKey);
             Console.WriteLine($"CreateDataSourceAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -28,7 +28,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task<T> DeleteSource<T>(string name)
         {
-            string url = SD.DataSourceAPIBase.BuildFunctionUrl($"/api/DeleteDataSource/{name}", "", SD.DataSourceKey);
+            string url = _settings.DataSourceAPI.BuildFunctionUrl($"/api/DeleteDataSource/{name}", "", _settings.DataSourceKey);
             Console.WriteLine($"DeleteDataSourceAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -40,7 +40,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task<T> GetSource<T>(string name)
         {
-            string url = SD.DataSourceAPIBase.BuildFunctionUrl($"/api/GetDataSource/{name}", "", SD.DataSourceKey);
+            string url = _settings.DataSourceAPI.BuildFunctionUrl($"/api/GetDataSource/{name}", "", _settings.DataSourceKey);
             Console.WriteLine($"GetAllDataSources: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -52,7 +52,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task<T> GetSources<T>()
         {
-            string url = SD.DataSourceAPIBase.BuildFunctionUrl($"/api/GetDataSources", "", SD.DataSourceKey);
+            string url = _settings.DataSourceAPI.BuildFunctionUrl($"/api/GetDataSources", "", _settings.DataSourceKey);
             Console.WriteLine($"GetAllDataSources: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -64,7 +64,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task<T> UpdateSource<T>(ConnectParameters connector)
         {
-            string url = SD.DataSourceAPIBase.BuildFunctionUrl($"/api/SaveDataSource", "", SD.DataSourceKey);
+            string url = _settings.DataSourceAPI.BuildFunctionUrl($"/api/SaveDataSource", "", _settings.DataSourceKey);
             Console.WriteLine($"CreateDataSourceAsync: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {

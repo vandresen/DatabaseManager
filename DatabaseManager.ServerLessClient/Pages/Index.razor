@@ -96,11 +96,23 @@ else
     {
         try
         {
-            settings.AzureStorage = await localStorage.GetItemAsync<string>("AzureStorage");
+            await settings.LoadFromLocalStorageAsync(localStorage);
             sqlite = SD.Sqlite;
 
-            // client.DefaultRequestHeaders.Remove("azurestorageconnection");
-            // client.DefaultRequestHeaders.Add("azurestorageconnection", settings.AzureStorage);
+            var missingSettings = settings.GetMissingRequiredSettings();
+            if (missingSettings.Any())
+            {
+                await displayMessage.DisplayErrorMessage(
+                    $"Required settings are missing: {string.Join(", ", missingSettings)}. " +
+                    "Go to Settings to fix this before continuing.");
+                return; // stop here - don't attempt calls that will just fail
+            }
+
+            if (!string.IsNullOrEmpty(settings.AzureStorage))
+            {
+                client.DefaultRequestHeaders.Remove("AzureStorageConnection");
+                client.DefaultRequestHeaders.Add("AzureStorageConnection", settings.AzureStorage);
+            }
 
             if (sqlite)
             {

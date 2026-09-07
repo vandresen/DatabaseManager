@@ -3,8 +3,6 @@ using DatabaseManager.ServerLessClient.Helpers;
 using DatabaseManager.ServerLessClient.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Runtime;
 
 namespace DatabaseManager.ServerLessClient.Services
 {
@@ -12,29 +10,17 @@ namespace DatabaseManager.ServerLessClient.Services
     {
         private readonly IHttpClientFactory _clientFactory;
         private readonly string _taxonomyShare = "taxonomy";
-        private readonly string _indexAPIBase;
-        private readonly string _indexKey;
-        private readonly string _dataConfigurationKey;
-        private readonly string _dataConfigurationApiBase;
         private readonly BlazorSingletonService _settings;
 
         public IndexViewSqlLite(IHttpClientFactory clientFactory, IConfiguration configuration, BlazorSingletonService settings) : base(clientFactory)
         {
             _clientFactory = clientFactory;
-            _indexAPIBase = configuration["ServiceUrls:IndexAPI"]
-                ?? throw new InvalidOperationException("Missing ServiceUrls:IndexAPI");
-            _indexKey = configuration["ServiceUrls:IndexKey"]
-                ?? throw new InvalidOperationException("Missing ServiceUrls:IndexKey");
-            _dataConfigurationKey = configuration["ServiceUrls:DataConfigurationKey"]
-                ?? throw new InvalidOperationException("Missing ServiceUrls:DataConfigurationKey");
-            _dataConfigurationApiBase = configuration["ServiceUrls:DataConfigurationAPI"]
-                ?? throw new InvalidOperationException("Missing ServiceUrls:DataConfigurationAPI");
             _settings = settings;
         }
 
         public async Task CreateProject(string project)
         {
-            string url = _indexAPIBase.BuildFunctionUrl("/Project", $"project={project}", _indexKey);
+            string url = _settings.IndexAPI.BuildFunctionUrl("/Project", $"project={project}", _settings.IndexKey);
             Console.WriteLine($"GetIndexProject: url = {url}");
             try
             {
@@ -56,7 +42,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task DeleteProject(string project)
         {
-            string url = _indexAPIBase.BuildFunctionUrl("/Project", $"project={project}", _indexKey);
+            string url = _settings.IndexAPI.BuildFunctionUrl("/Project", $"project={project}", _settings.IndexKey);
             Console.WriteLine($"DeleteProject: url = {url}");
             try
             {
@@ -86,7 +72,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
             List<DmsIndex> children = new List<DmsIndex>();
 
-            string url = _indexAPIBase.BuildFunctionUrl("/DmIndexes", $"project={source}&id={id}", _indexKey);
+            string url = _settings.IndexAPI.BuildFunctionUrl("/DmIndexes", $"project={source}&id={id}", _settings.IndexKey);
             Console.WriteLine($"GetIndex: url = {url}");
 
             try
@@ -115,7 +101,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<List<DmsIndex>> GetIndex(string source)
         {
             List<DmsIndex> index = new List<DmsIndex>();
-            string url = _indexAPIBase.BuildFunctionUrl("/DmIndexes", $"project={source}", _indexKey);
+            string url = _settings.IndexAPI.BuildFunctionUrl("/DmIndexes", $"project={source}", _settings.IndexKey);
             Console.WriteLine($"GetIndex: url = {url}");
 
             try
@@ -145,7 +131,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<List<IndexFileDefinition>> GetIndexFileDefs(string fileName)
         {
             List<IndexFileDefinition> def = new List<IndexFileDefinition>();
-            string url = _dataConfigurationApiBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={_taxonomyShare}&name={fileName}", _dataConfigurationKey);
+            string url = _settings.DataConfigurationAPI.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={_taxonomyShare}&name={fileName}", _settings.DataConfigurationKey);
             Console.WriteLine($"GetIndexFileDefs: url = {url}");
 
             try
@@ -174,7 +160,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<List<string>> GetIndexProjects()
         {
             List<string> projects = new List<string>();
-            string url = _indexAPIBase.BuildFunctionUrl("/Project", $"", _indexKey);
+            string url = _settings.IndexAPI.BuildFunctionUrl("/Project", $"", _settings.IndexKey);
             Console.WriteLine($"GetIndexProject: url = {url}");
 
             try
@@ -254,7 +240,7 @@ namespace DatabaseManager.ServerLessClient.Services
             }
 
             IndexModel idx = new IndexModel();
-            string url = _indexAPIBase.BuildFunctionUrl($"/Index/{id}", $"Project={source}", _indexKey);
+            string url = _settings.IndexAPI.BuildFunctionUrl($"/Index/{id}", $"Project={source}", _settings.IndexKey);
             Console.WriteLine($"GetSingleIndexItem: url = {url}");
 
             try
@@ -284,7 +270,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<List<IndexFileList>> GetTaxonomies()
         {
             List<IndexFileList> result = new List<IndexFileList>();
-            string url = _dataConfigurationApiBase.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={_taxonomyShare}", _dataConfigurationKey);
+            string url = _settings.DataConfigurationAPI.BuildFunctionUrl("/api/GetDataConfiguration", $"folder={_taxonomyShare}", _settings.DataConfigurationKey);
             Console.WriteLine($"GetSingleIndexItem: url = {url}");
             try
             {
@@ -318,7 +304,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task SaveIndexFileDefs(List<IndexFileDefinition> indexDef, string fileName)
         {
-            string url = _dataConfigurationApiBase.BuildFunctionUrl("/api/DataConfiguration", $"folder={_taxonomyShare}&name={fileName}", _dataConfigurationKey);
+            string url = _settings.DataConfigurationAPI.BuildFunctionUrl("/api/DataConfiguration", $"folder={_taxonomyShare}&name={fileName}", _settings.DataConfigurationKey);
             Console.WriteLine($"GetSingleIndexItem: url = {url}");
             var jsonIndexDef = JsonConvert.SerializeObject(indexDef);
 

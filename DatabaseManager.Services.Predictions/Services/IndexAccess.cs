@@ -2,8 +2,7 @@
 using DatabaseManager.Services.Predictions.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.ComponentModel.DataAnnotations;
-using System.Data.Common;
+using System.Text.Json;
 
 namespace DatabaseManager.Services.Predictions.Services
 {
@@ -54,18 +53,50 @@ namespace DatabaseManager.Services.Predictions.Services
             });
         }
 
-        public async Task<T> GetIndexes<T>(string dataSource, string project, string dataType, string dataName, string dataKey, string storageConnection)
+        public async Task<List<IndexDto>> GetIndexes(
+            string dataSource,
+            string project,
+            string dataType,
+            string dataName,
+            string dataKey,
+            string storageConnection)
         {
-            string url = _indexAPIBase.BuildFunctionUrl($"/api/indexes/search", 
-                $"Name={dataSource}&DataType={dataType}&Project={project}&DataName={dataName}&DataKey={dataKey}", _indexApiKey);
-            _logger.LogInformation($"Retrieving index data from url {url}");
-            return await this.SendAsync<T>(new ApiRequest()
+            string url;
+
+            if (_sqlLite)
+            {
+                url = _indexAPIBase.BuildFunctionUrl(
+                    "/api/indexes/search",
+                    $"Name={dataSource}&DataType={dataType}&Project={project}&DataName={dataName}&DataKey={dataKey}",
+                    _indexApiKey);
+
+                return await SendAsync<List<IndexDto>>(new ApiRequest
+                {
+                    ApiType = SD.ApiType.GET,
+                    AzureStorage = storageConnection,
+                    Url = url
+                });
+            }
+
+            url = _indexAPIBase.BuildFunctionUrl(
+                "/api/QueryIndex",
+                $"Name={dataSource}&DataType={dataType}&DataName={dataName}&DataKey={dataKey}",
+                _indexApiKey);
+
+            ResponseDto response = await SendAsync<ResponseDto>(new ApiRequest
             {
                 ApiType = SD.ApiType.GET,
                 AzureStorage = storageConnection,
                 Url = url
             });
 
+            if (response == null || !response.IsSuccess || response.Result == null)
+                return new List<IndexDto>();
+
+            if (response.Result is JsonElement element)
+                return element.Deserialize<List<IndexDto>>() ?? new List<IndexDto>();
+
+            return response.Result as List<IndexDto> ?? new List<IndexDto>();
         }
 
         public async Task<T> GetNeighbors<T>(int id, string dataSource, string failRule, string path, string project)

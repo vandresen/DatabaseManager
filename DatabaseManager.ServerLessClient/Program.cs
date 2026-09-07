@@ -36,20 +36,10 @@ namespace DatabaseManager.ServerLessClient
             ConfigureServices(builder.Services, sqlite);
 
             SD.Sqlite = sqlite;
-            SD.DataSourceAPIBase = builder.Configuration["ServiceUrls:DataSourceAPI"];
-            SD.DataSourceKey = builder.Configuration["ServiceUrls:DataSourceKey"];
-            SD.DataConfigurationAPIBase = builder.Configuration["ServiceUrls:DataConfigurationAPI"];
-            SD.DataConfigurationKey = builder.Configuration["ServiceUrls:DataConfigurationKey"];
-            SD.DataModelAPIBase = builder.Configuration["ServiceUrls:DataModelAPI"];
-            SD.DataModelKey = builder.Configuration["ServiceUrls:DataModelKey"];
-            SD.DataRuleAPIBase = builder.Configuration["ServiceUrls:DataRuleAPI"];
-            SD.DataRuleKey = builder.Configuration["ServiceUrls:DataRuleKey"];
-            SD.DataTransferAPIBase = builder.Configuration["ServiceUrls:DataTransferAPI"];
-            SD.DataTransferKey = builder.Configuration["ServiceUrls:DataTransferKey"];
-            SD.DataOpsManageAPIBase = builder.Configuration["ServiceUrls:DataOpsManageAPI"];
-            SD.DataOpsManageKey = builder.Configuration["ServiceUrls:DataOpsManageKey"];
-            SD.DatabaseManagerAPIBase = builder.Configuration["ServiceUrls:DatabaseManagerAPI"];
-            SD.DatabaseManagerKey = builder.Configuration["ServiceUrls:DatabaseManagerKey"];
+            //SD.DataTransferAPIBase = builder.Configuration["ServiceUrls:DataTransferAPI"];
+            //SD.DataTransferKey = builder.Configuration["ServiceUrls:DataTransferKey"];
+            //SD.DataOpsManageAPIBase = builder.Configuration["ServiceUrls:DataOpsManageAPI"];
+            //SD.DataOpsManageKey = builder.Configuration["ServiceUrls:DataOpsManageKey"];
             SD.OpenAIKey = builder.Configuration["OpenAI:ApiKey"];
 
             await builder.Build().RunAsync();

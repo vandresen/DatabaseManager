@@ -5,6 +5,8 @@
 @inject HttpClient client
 
 @using MudBlazor
+@using System.Text.Json
+
 
 <style>
     input {
@@ -20,11 +22,109 @@
 
 <MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Primary">
     <MudTabPanel Text="System settings">
+        <MudStack Row="true" Class="mb-4" AlignItems="AlignItems.Center">
+            <MudFileUpload T="IBrowserFile" Accept=".json" FilesChanged="ImportSettingsFile">
+                <ActivatorContent>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Success"
+                               StartIcon="@Icons.Material.Filled.Upload">
+                        Import Settings File
+                    </MudButton>
+                </ActivatorContent>
+            </MudFileUpload>
+            <MudSwitch @bind-Value="showSecrets" Label="Show sensitive values" Color="Color.Primary" />
+        </MudStack>
+
+        @if (!string.IsNullOrEmpty(importError))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4" CloseIconClicked="@(() => importError = null)">
+                @importError
+            </MudAlert>
+        }
+        @if (!string.IsNullOrEmpty(importSuccessMessage))
+        {
+            <MudAlert Severity="Severity.Success" Class="mb-4" CloseIconClicked="@(() => importSuccessMessage = null)">
+                @importSuccessMessage
+            </MudAlert>
+        }
+
+        <MudGrid Spacing="1">
+            <MudItem xs="12">
+                <MudTextField @bind-Value="working.AzureStorage" Label="Azure Storage" Variant="Variant.Text" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="working.GeoBlazorRegistrationKey" Label="GeoBlazor Registration Key"
+                              InputType="@KeyInputType" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.OpenAIApiKey" Label="OpenAI API Key"
+                              InputType="@KeyInputType" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.EsriKey" Label="Esri Key"
+                              InputType="@KeyInputType" Margin="Margin.Dense" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.DataSourceAPI" Label="Data Source API" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.DataSourceKey" Label="Data Source Key" InputType="@KeyInputType" Margin="Margin.Dense" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.IndexAPI" Label="Index API" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.IndexKey" Label="Index Key" InputType="@KeyInputType" Margin="Margin.Dense" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.DataConfigurationAPI" Label="Data Configuration API" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.DataConfigurationKey" Label="Data Configuration Key" InputType="@KeyInputType" Margin="Margin.Dense" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.DataOpsManageAPI" Label="Data Ops Manage API" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.DataOpsManageKey" Label="Data Ops Manage Key" InputType="@KeyInputType" Margin="Margin.Dense" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.DataOpsAPI" Label="Data Ops API" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.DataOpsKey" Label="Data Ops Key" InputType="@KeyInputType" Margin="Margin.Dense" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.ReportApiBase" Label="Report API Base" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.ReportKey" Label="Report Key" InputType="@KeyInputType" Margin="Margin.Dense" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.DatabaseManagerAPI" Label="Database Manager API" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.DatabaseManagerKey" Label="Database Manager Key" InputType="@KeyInputType" Margin="Margin.Dense" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="working.DataRuleAPI" Label="Data Rule API" Margin="Margin.Dense" />
+            </MudItem>
+        </MudGrid>
+
         <br />
-            <MudTextField @bind-Value="@AzureStorage" Label="Azure Storage:" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
-            <br />
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="SaveServerless">Save</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="SaveServerless">Save</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Default" Class="ml-2" @onclick="CancelChanges">Cancel</MudButton>
+
     </MudTabPanel>
+
     <MudTabPanel Text="Taxonomy">
         <TaxonomySettings></TaxonomySettings>
     </MudTabPanel>
@@ -40,25 +140,71 @@
 </MudTabs>
 
 @code {
-    string AzureStorage;
-    string baseUrl;
-    string apiKey;
-    int ExpirationDays = 7;
+    private BlazorSingletonService working = new();
+
+    private InputType KeyInputType => showSecrets ? InputType.Text : InputType.Password;
+
+    private string importError;
+    private string importSuccessMessage;
+    private bool showSecrets = false;
 
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine("Init settings");
-        AzureStorage = settings.AzureStorage;
+        await settings.LoadFromLocalStorageAsync(localStorage);
+        working = settings.Clone();
     }
 
     private async Task SaveServerless()
     {
-        if (!string.IsNullOrEmpty(AzureStorage))
+        settings.CopyFrom(working);
+        await settings.SaveToLocalStorageAsync(localStorage);
+
+        if (!string.IsNullOrEmpty(settings.AzureStorage))
         {
-            await localStorage.SetItemAsync("AzureStorage", AzureStorage);
             client.DefaultRequestHeaders.Remove("AzureStorageConnection");
-            client.DefaultRequestHeaders.Add("AzureStorageConnection", AzureStorage);
+            client.DefaultRequestHeaders.Add("AzureStorageConnection", settings.AzureStorage);
         }
+
         navigationManager.NavigateTo("/");
+    }
+
+    private void CancelChanges()
+    {
+        working = settings.Clone();
+        importError = null;
+        importSuccessMessage = null;
+
+        navigationManager.NavigateTo("/");
+    }
+
+    private async Task ImportSettingsFile(IBrowserFile file)
+    {
+        if (file == null) return;
+        importError = null;
+        importSuccessMessage = null;
+
+        try
+        {
+            await using var stream = file.OpenReadStream(maxAllowedSize: 1024 * 1024);
+            var import = await System.Text.Json.JsonSerializer.DeserializeAsync<SettingsImportModel>(stream,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (import == null)
+            {
+                importError = "The selected file did not contain valid settings JSON.";
+                return;
+            }
+
+            working.ApplyImport(import);
+            importSuccessMessage = "Settings loaded from file. Review the values below, then Save or Cancel.";
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            importError = "That file isn't valid JSON. Check the format and try again.";
+        }
+        catch (Exception ex)
+        {
+            importError = $"Could not read the file: {ex.Message}";
+        }
     }
 }

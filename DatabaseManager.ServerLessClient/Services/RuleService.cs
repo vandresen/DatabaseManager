@@ -12,11 +12,12 @@ namespace DatabaseManager.ServerLessClient.Services
         public RuleService(IHttpClientFactory clientFactory, BlazorSingletonService settings) : base(clientFactory)
         {
             _clientFactory = clientFactory;
+            _settings = settings;
         }
 
         public async Task DeleteFunctionAsync(int id)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Function", $"Id={id}", SD.DataRuleKey);
+            string url = _settings.DataRuleAPI.BuildFunctionUrl($"/Function", $"Id={id}", "");
             Console.WriteLine($"DeleteFunctionAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -33,7 +34,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task DeletePredictionAsync(int id)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/PredictionSet", $"id={id}", SD.DataRuleKey);
+            string url = _settings.DataRuleAPI.BuildFunctionUrl($"/PredictionSet", $"id={id}", "");
             Console.WriteLine($"GetFunctionsAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -50,7 +51,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task DeleteRuleAsync(int id)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Rules", $"Id={id}", SD.DataRuleKey);
+            string url = _settings.DataRuleAPI.BuildFunctionUrl($"/Rules", $"Id={id}", "");
             Console.WriteLine($"DeleteRuleAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -73,7 +74,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<List<RuleFunctionDto>> GetFunctionsAsync()
         {
             List<RuleFunctionDto> result = new List<RuleFunctionDto>();
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Function", $"", SD.DataRuleKey);
+            string url = _settings.DataRuleAPI.BuildFunctionUrl($"/Function", $"", "");
             Console.WriteLine($"GetFunctionsAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -94,7 +95,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<PredictionSet> GetPredictionAsync(string predictionName)
         {
             PredictionSet result = new PredictionSet();
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/PredictionSet", $"Name={predictionName}", SD.DataRuleKey);
+            string url = _settings.DataRuleAPI.BuildFunctionUrl($"/PredictionSet", $"Name={predictionName}", "");
             Console.WriteLine($"GetPredictionAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -126,7 +127,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<List<PredictionSet>> GetPredictionsAsync()
         {
             List<PredictionSet> result = new List<PredictionSet>();
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/PredictionSet", $"", SD.DataRuleKey);
+            string url = _settings.DataRuleAPI.BuildFunctionUrl($"/PredictionSet", $"", "");
             Console.WriteLine($"GetPredictionsAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -150,7 +151,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<RuleModelDto> GetRuleAsync(string source, int id)
         {
             RuleModelDto result = new RuleModelDto();
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Rule", $"Name={source}&Id={id}", SD.DataRuleKey);
+            string url = _settings.DataRuleAPI.BuildFunctionUrl($"/Rule", $"Name={source}&Id={id}", "");
             Console.WriteLine($"GetRuleAsync: url = {url}");
             ResponseDto response =  await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -172,7 +173,7 @@ namespace DatabaseManager.ServerLessClient.Services
         public async Task<List<RuleModelDto>> GetRulesAsync()
         {
             List<RuleModelDto> result = new List<RuleModelDto>();
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Rules", $"", "");
+            string url = _settings.DataRuleAPI.BuildFunctionUrl($"/Rules", $"", "");
             Console.WriteLine($"GetRuleAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -193,7 +194,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task InsertFunctionAsync(RuleFunction function)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Function", $"", SD.DataRuleKey);
+            string url = _settings.DataRuleAPI.BuildFunctionUrl($"/Function", $"", "");
             Console.WriteLine($"InsertRulesAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -211,7 +212,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task InsertPredictionAsync(PredictionSet predictionSet)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/PredictionSet", $"", SD.DataRuleKey);
+            string url = _settings.DataRuleAPI.BuildFunctionUrl($"/PredictionSet", $"", "");
             Console.WriteLine($"InsertPredictionAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -229,7 +230,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task InsertRuleAsync(RuleModel rule)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Rules", $"", SD.DataRuleKey);
+            string url = _settings.DataRuleAPI.BuildFunctionUrl($"/Rules", $"", "");
             Console.WriteLine($"InsertRulesAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -247,7 +248,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task UpdateFunctionAsync(RuleFunction function)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Function", $"", SD.DataRuleKey);
+            string url = _settings.DataRuleAPI.BuildFunctionUrl($"/Function", $"", "");
             Console.WriteLine($"UpdateFunctionAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -265,7 +266,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task UpdateRuleAsync(RuleModel rule)
         {
-            string url = SD.DataRuleAPIBase.BuildFunctionUrl($"/Rules", $"", SD.DataRuleKey);
+            string url = _settings.DataRuleAPI.BuildFunctionUrl($"/Rules", $"", "");
             Console.WriteLine($"UpdateRulesAsync: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {

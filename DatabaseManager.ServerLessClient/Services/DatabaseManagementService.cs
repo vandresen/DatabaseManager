@@ -6,9 +6,9 @@ namespace DatabaseManager.ServerLessClient.Services
     public class DatabaseManagementService : BaseService, IDatabaseManagementService
     {
         private readonly ILogger<DatabaseManagementService> _logger;
-        private readonly string _databaseManagerAPIBase;
-        private readonly string _databaseManagerKey;
-        private readonly string _indexAPIBase;
+        //private readonly string _databaseManagerAPIBase;
+        //private readonly string _databaseManagerKey;
+        //private readonly string _indexAPIBase;
         private readonly BlazorSingletonService _settings;
 
         public DatabaseManagementService(IHttpClientFactory clientFactory, ILogger<DatabaseManagementService> logger, 
@@ -16,17 +16,17 @@ namespace DatabaseManager.ServerLessClient.Services
         {
             _logger = logger;
             _settings = settings;
-            _indexAPIBase = configuration["ServiceUrls:IndexAPI"]
-                ?? throw new InvalidOperationException("Missing ServiceUrls:IndexAPI");
-            _databaseManagerAPIBase = SD.DatabaseManagerAPIBase
-                ?? throw new InvalidOperationException("DatabaseManagerAPI is not configured");
-            _databaseManagerKey = SD.DatabaseManagerKey
-                ?? throw new InvalidOperationException("DatabaseManagerKey is not configured");
+            //_indexAPIBase = configuration["ServiceUrls:IndexAPI"]
+            //    ?? throw new InvalidOperationException("Missing ServiceUrls:IndexAPI");
+            //_databaseManagerAPIBase = SD.DatabaseManagerAPIBase
+            //    ?? throw new InvalidOperationException("DatabaseManagerAPI is not configured");
+            //_databaseManagerKey = SD.DatabaseManagerKey
+            //    ?? throw new InvalidOperationException("DatabaseManagerKey is not configured");
         }
 
         public async Task Create(DataModelParameters modelParameters)
         {
-            string url = _databaseManagerAPIBase.BuildFunctionUrl($"/Create", "", _databaseManagerKey);
+            string url = _settings.DatabaseManagerAPI.BuildFunctionUrl($"/Create", "", _settings.DatabaseManagerKey);
             Console.WriteLine($"Create data mode: url = {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -45,7 +45,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task CreateSqlite()
         {
-            string url = _indexAPIBase.BuildFunctionUrl("/CreateDatabase", "", "");
+            string url = _settings.IndexAPI.BuildFunctionUrl("/CreateDatabase", "", "");
             _logger.LogInformation($"Creating SQLite model from url {url}");
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -62,7 +62,7 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task<T> GetDataAccessDef<T>()
         {
-            string url = _databaseManagerAPIBase.BuildFunctionUrl($"/GetDatabaseAccessDefinition", $"", _databaseManagerKey);
+            string url = _settings.DatabaseManagerAPI.BuildFunctionUrl($"/GetDatabaseAccessDefinition", $"", _settings.DatabaseManagerKey);
             _logger.LogInformation($"Retrieving root index data from url {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
