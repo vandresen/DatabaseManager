@@ -1,44 +1,125 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Polly;
 using System.Data;
 
 namespace DatabaseManager.Services.Index.Services
 {
     public class DapperDataAccess : IDapperDataAccess
     {
-        public Task<T> Count<T, U>(string sql, U parameters, string connectionString)
+        private const int SqlCommandTimeout = 1000;
+        private const int RetryCount = 3;
+
+        private async Task<T> ExecuteWithRetry<T>(Func<Task<T>> operation)
         {
-            throw new NotImplementedException();
+            var retryPolicy = Policy
+                .Handle<SqlException>()
+                .WaitAndRetryAsync(
+                    RetryCount,
+                    retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
+
+            return await retryPolicy.ExecuteAsync(operation);
         }
 
-        public async Task<IEnumerable<T>> LoadData<T, U>(string storedProcedure, U parameters, string connectionString)
+        private async Task ExecuteWithRetry(Func<Task> operation)
         {
-            using IDbConnection cnn = new SqlConnection(connectionString);
-            return await cnn.QueryAsync<T>(storedProcedure, parameters, commandType: CommandType.StoredProcedure);
+            var retryPolicy = Policy
+                .Handle<SqlException>()
+                .WaitAndRetryAsync(
+                    RetryCount,
+                    retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
+
+            await retryPolicy.ExecuteAsync(operation);
         }
 
-        public async Task<IEnumerable<T>> ReadData<T>(string sql, string connectionString)
+        public async Task<T> Count<T, U>(
+            string sql,
+            U parameters,
+            string connectionString)
         {
-            using IDbConnection cnn = new SqlConnection(connectionString);
-            return await cnn.QueryAsync<T>(sql);
+            return await ExecuteWithRetry(async () =>
+            {
+                using IDbConnection cnn = new SqlConnection(connectionString);
+
+                return await cnn.ExecuteScalarAsync<T>(
+                    sql,
+                    parameters);
+            });
         }
 
-        public async Task SaveData<T>(string storedProcedure, T parameters, string connectionString)
+        public async Task<IEnumerable<T>> LoadData<T, U>(
+            string storedProcedure,
+            U parameters,
+            string connectionString)
         {
-            using IDbConnection cnn = new SqlConnection(connectionString);
-            cnn.Execute(storedProcedure, parameters, commandType: CommandType.StoredProcedure);
+            return await ExecuteWithRetry(async () =>
+            {
+                using IDbConnection cnn = new SqlConnection(connectionString);
+
+                return await cnn.QueryAsync<T>(
+                    storedProcedure,
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
+            });
         }
 
-        public async Task<T> SaveDataScalar<T, U>(string storedProcedure, U parameters, string connectionString)
+        public async Task<IEnumerable<T>> ReadData<T>(
+            string sql,
+            string connectionString)
         {
-            using IDbConnection cnn = new SqlConnection(connectionString);
-            var result = await cnn.ExecuteScalarAsync<T>(storedProcedure, parameters, commandType: CommandType.StoredProcedure);
-            return result;
+            return await ExecuteWithRetry(async () =>
+            {
+                using IDbConnection cnn = new SqlConnection(connectionString);
+
+                return await cnn.QueryAsync<T>(sql);
+            });
         }
 
-        public Task SaveDataSQL<T>(string sql, T parameters, string connectionString)
+        public async Task SaveData<T>(
+            string storedProcedure,
+            T parameters,
+            string connectionString)
         {
-            throw new NotImplementedException();
+            await ExecuteWithRetry(async () =>
+            {
+                using IDbConnection cnn = new SqlConnection(connectionString);
+
+                await cnn.ExecuteAsync(
+                    storedProcedure,
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
+            });
+        }
+
+        public async Task<T> SaveDataScalar<T, U>(
+            string storedProcedure,
+            U parameters,
+            string connectionString)
+        {
+            return await ExecuteWithRetry(async () =>
+            {
+                using IDbConnection cnn = new SqlConnection(connectionString);
+
+                return await cnn.ExecuteScalarAsync<T>(
+                    storedProcedure,
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
+            });
+        }
+
+        public async Task SaveDataSQL<T>(
+            string sql,
+            T parameters,
+            string connectionString)
+        {
+            await ExecuteWithRetry(async () =>
+            {
+                using IDbConnection cnn = new SqlConnection(connectionString);
+
+                await cnn.ExecuteAsync(
+                    sql,
+                    parameters);
+            });
         }
     }
 }

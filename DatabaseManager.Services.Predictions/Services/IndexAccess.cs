@@ -31,8 +31,15 @@ namespace DatabaseManager.Services.Predictions.Services
 
         public async Task<T> GetDescendants<T>(int id, string dataSource, string project, string storageConnection)
         {
-            string url = _indexAPIBase.BuildFunctionUrl($"/GetDescendants/{id}", $"Name={dataSource}&Project={project}", _indexApiKey);
-            _logger.LogInformation($"Retrieving index data from url {url}");
+            string url;
+            if (_sqlLite)
+            {
+                url = _indexAPIBase.BuildFunctionUrl($"/GetDescendants/{id}", $"Name={dataSource}&Project={project}", _indexApiKey);
+            }
+            else
+            {
+                url = _indexAPIBase.BuildFunctionUrl($"/api/GetDescendants/{id}", $"Name={dataSource}&Project={project}", _indexApiKey);
+            }
             return await this.SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,
@@ -159,7 +166,15 @@ namespace DatabaseManager.Services.Predictions.Services
 
         public async Task<T> UpdateIndexes<T>(List<IndexDto> indexes, string dataSource, string project, string storageConnection)
         {
-            string url = _indexAPIBase.BuildFunctionUrl($"/Indexes", $"Name={dataSource}&Project={project}", _indexApiKey);
+            string url;
+            if (_sqlLite)
+            {
+                url = _indexAPIBase.BuildFunctionUrl($"/Indexes", $"Name={dataSource}&Project={project}", _indexApiKey);
+            }
+            else
+            {
+                url = _indexAPIBase.BuildFunctionUrl($"/api/Indexes", $"Name={dataSource}", _indexApiKey);
+            }
             return await SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.PUT,

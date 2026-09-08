@@ -92,13 +92,6 @@ namespace DatabaseManager.Services.Index.Services
         public async Task<IEnumerable<DmIndexDto>> GetDmIndexes(string indexNode, int level, string connectionString) 
         {
             _log.LogInformation("Start GetDMIndexes");
-            var retryPolicy = Policy
-                .Handle<SqlException>()
-                .Retry(
-                retryCount: 3,
-                onRetry: (e, i) => _log.LogInformation("Retrying due to " + e.Message + " Retry " + i + " next.")
-                );
-            retryPolicy.Execute(() => _ida.WakeUpDatabase(connectionString));
             IEnumerable<DmIndexDto> result = await _dp.LoadData<DmIndexDto, dynamic>("dbo.spGetNumberOfDescendants",
                 new { indexnode = indexNode, level = level }, connectionString);
             return result;
@@ -125,13 +118,6 @@ namespace DatabaseManager.Services.Index.Services
             if (source.SourceType == "DataBase")
             {
                 _sourceAccess = new DBDataAccess();
-                var retryPolicy = Policy
-                .Handle<SqlException>()
-                .Retry(
-                retryCount: 3,
-                onRetry: (e, i) => _log.LogInformation("Retrying due to " + e.Message + " Retry " + i + " next.")
-                );
-                retryPolicy.Execute(() => _ida.WakeUpDatabase(source.ConnectionString));
             }
             else
             {
@@ -557,15 +543,11 @@ namespace DatabaseManager.Services.Index.Services
             return result;
         }
 
-        public async Task<IEnumerable<EntiretyListModel>> GetEntiretyIndexes(string sql, string connectionString)
+        public Task<IEnumerable<EntiretyListModel>> GetEntiretyIndexes(
+            string sql,
+            string connectionString)
         {
-            using (var connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-                var result = connection.Query<EntiretyListModel>(sql);
-
-                return result;
-            }
+            return _dp.ReadData<EntiretyListModel>(sql, connectionString);
         }
 
         public async Task UpdateIndexes(List<IndexDto> indexes, string connectionString)
