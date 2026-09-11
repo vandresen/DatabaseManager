@@ -1,4 +1,4 @@
-using System.Net;
+using Azure;
 using DatabaseManager.Services.Index.Extensions;
 using DatabaseManager.Services.Index.Helpers;
 using DatabaseManager.Services.Index.Models;
@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Net;
 
 namespace DatabaseManager.Services.Index
 {
@@ -303,47 +304,58 @@ namespace DatabaseManager.Services.Index
                 int? parentid = req.GetQuery("Parentid", true).GetIntFromString();
                 ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
                 ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
-                var stringBody = await new StreamReader(req.Body).ReadToEndAsync();
-                JObject dataObject = JObject.Parse(stringBody);
 
-                IndexDto rootIndex = await _indexDB.GetIndexRoot(connectParameter.ConnectionString);
-                string jsonStringObject = rootIndex.JsonDataObject;
-                IndexRootJson rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonStringObject);
-                _logger.LogInformation($"SaveIndexes: taxonomy is {rootJson.Taxonomy} ");
-                DataAccessDef accessDef = rootJson.Source.GetDataAccessDefintionFromSourceJson(dataType);
-                string taxonomy = rootJson.Taxonomy;
-                _logger.LogInformation($"SaveIndexes: taxonomy is {taxonomy} ");
-                JArray JsonIndexArray = JArray.Parse(taxonomy);
-                List<IndexFileData> idxData = new List<IndexFileData>();
-                foreach (JToken level in JsonIndexArray)
+                using var reader = new StreamReader(req.Body);
+                string body = await reader.ReadToEndAsync();
+                if (string.IsNullOrWhiteSpace(body))
                 {
-                    idxData.Add(Common.ProcessJTokens(level));
-                    idxData = Common.ProcessIndexArray(level, idxData);
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages.Add("Predictions: Request body is empty");
+                    return _response;
                 }
-                IndexFileData taxonomyInfoForMissingObject = idxData.FirstOrDefault(x => x.DataName == dataType);
-                string latitudeAttribute = taxonomyInfoForMissingObject.LatitudeAttribute;
-                string longitudeAttribute = taxonomyInfoForMissingObject.LongitudeAttribute;
+                var newIndex = JsonConvert.DeserializeObject<IndexDto>(body);
 
-                double latitude = Common.GetLocationFromJson(dataObject, latitudeAttribute);
-                double longitude = Common.GetLocationFromJson(dataObject, longitudeAttribute);
-                IndexDto parentObject = await _indexDB.GetIndex((int)parentid, connectParameter.ConnectionString);
-                if (taxonomyInfoForMissingObject.UseParentLocation)
-                {
-                    if (parentObject.Latitude != null) latitude = (double)parentObject.Latitude;
-                    if (parentObject.Longitude != null) longitude = (double)parentObject.Longitude;
-                }
+                //var stringBody = await new StreamReader(req.Body).ReadToEndAsync();
+                //JObject dataObject = JObject.Parse(stringBody);
 
-                string dataName = dataObject[taxonomyInfoForMissingObject.NameAttribute].ToString();
-                string dataKey = Common.GetDataKey(dataObject, accessDef.Keys);
-                int nodeId = await GetIndextNode(dataType, parentObject, connectParameter.ConnectionString);
-                IndexDto indexModel = new IndexDto();
-                indexModel.Latitude = latitude;
-                indexModel.Longitude = longitude;
-                indexModel.DataType = dataType;
-                indexModel.DataName = dataName;
-                indexModel.DataKey = dataKey;
-                indexModel.JsonDataObject = stringBody;
-                _response.Result = await _indexDB.InsertIndex(indexModel, nodeId, connectParameter.ConnectionString);
+                //IndexDto rootIndex = await _indexDB.GetIndexRoot(connectParameter.ConnectionString);
+                //string jsonStringObject = rootIndex.JsonDataObject;
+                //IndexRootJson rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonStringObject);
+                //_logger.LogInformation($"SaveIndexes: taxonomy is {rootJson.Taxonomy} ");
+                //DataAccessDef accessDef = rootJson.Source.GetDataAccessDefintionFromSourceJson(dataType);
+                //string taxonomy = rootJson.Taxonomy;
+                //_logger.LogInformation($"SaveIndexes: taxonomy is {taxonomy} ");
+                //JArray JsonIndexArray = JArray.Parse(taxonomy);
+                //List<IndexFileData> idxData = new List<IndexFileData>();
+                //foreach (JToken level in JsonIndexArray)
+                //{
+                //    idxData.Add(Common.ProcessJTokens(level));
+                //    idxData = Common.ProcessIndexArray(level, idxData);
+                //}
+                //IndexFileData taxonomyInfoForMissingObject = idxData.FirstOrDefault(x => x.DataName == dataType);
+                //string latitudeAttribute = taxonomyInfoForMissingObject.LatitudeAttribute;
+                //string longitudeAttribute = taxonomyInfoForMissingObject.LongitudeAttribute;
+
+                //double latitude = Common.GetLocationFromJson(dataObject, latitudeAttribute);
+                //double longitude = Common.GetLocationFromJson(dataObject, longitudeAttribute);
+                //IndexDto parentObject = await _indexDB.GetIndex((int)parentid, connectParameter.ConnectionString);
+                //if (taxonomyInfoForMissingObject.UseParentLocation)
+                //{
+                //    if (parentObject.Latitude != null) latitude = (double)parentObject.Latitude;
+                //    if (parentObject.Longitude != null) longitude = (double)parentObject.Longitude;
+                //}
+
+                //string dataName = dataObject[taxonomyInfoForMissingObject.NameAttribute].ToString();
+                //string dataKey = Common.GetDataKey(dataObject, accessDef.Keys);
+                int nodeId = (int)parentid;
+                //IndexDto indexModel = new IndexDto();
+                //indexModel.Latitude = latitude;
+                //indexModel.Longitude = longitude;
+                //indexModel.DataType = dataType;
+                //indexModel.DataName = dataName;
+                //indexModel.DataKey = dataKey;
+                //indexModel.JsonDataObject = stringBody;
+                _response.Result = await _indexDB.InsertIndex(newIndex, nodeId, connectParameter.ConnectionString);
             }
             catch (Exception ex)
             {

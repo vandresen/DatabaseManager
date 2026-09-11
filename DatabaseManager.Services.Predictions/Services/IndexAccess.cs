@@ -126,7 +126,7 @@ namespace DatabaseManager.Services.Predictions.Services
             }
             else
             {
-                url = _indexAPIBase.BuildFunctionUrl("/DmIndexes", $"Name={dataSource}&Node=/&Level=0", _indexApiKey);
+                url = _indexAPIBase.BuildFunctionUrl("/api/DmIndexes", $"Name={dataSource}&Node=/&Level=0", _indexApiKey);
             }
             _logger.LogInformation($"Url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
@@ -146,8 +146,7 @@ namespace DatabaseManager.Services.Predictions.Services
             }
             else
             {
-                throw new NotImplementedException();
-                //url = _indexAPIBase.BuildFunctionUrl("/DmIndexes", $"Name={dataSource}&Node=/&Level=0", _indexApiKey);
+                url = _indexAPIBase.BuildFunctionUrl("/api/Indexes", $"Name={dataSource}&Datatype={index.DataType}&Parentid={index.ParentId}", _indexApiKey);
             }
             _logger.LogInformation($"Url = {url}");
             return await this.SendAsync<T>(new ApiRequest()

@@ -1,9 +1,11 @@
 ﻿using Azure;
 using DatabaseManager.Services.Predictions.Core;
 using DatabaseManager.Services.Predictions.Models;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 //using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Configuration;
 using System.Data;
 using System.IO.Pipelines;
 using System.Net;
@@ -24,6 +26,7 @@ namespace DatabaseManager.Services.Predictions.Services
         private readonly IDatabaseManagementService _dmService;
         private List<DataAccessDef> _accessDefs;
         private List<IndexDto> _newIndexes;
+        private readonly bool _sqlLite;
         private static HttpClient Client = new HttpClient();
 
         private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -33,12 +36,16 @@ namespace DatabaseManager.Services.Predictions.Services
         };
 
         public PredictionCore(ILogger<PredictionCore> logger, IIndexAccess idxAccess, IDatabaseAccess dp,
-            IDatabaseManagementService dmService)
+            IDatabaseManagementService dmService, IConfiguration configuration)
         {
             _logger = logger;
             _idxAccess = idxAccess;
             _dp = dp;
             _dmService = dmService;
+            if (!bool.TryParse(configuration["Sqlite"], out _sqlLite))
+            {
+                throw new InvalidOperationException("Sqlite is not configured or is not a valid boolean");
+            }
         }
 
         public async Task<List<int>> ExecutePredictionAsync(List<IndexDto> indexes, RuleModelDto rule, PredictionParameters parms)
@@ -303,18 +310,31 @@ namespace DatabaseManager.Services.Predictions.Services
 
         private async Task<IndexRootJson> GetIndexRootData(PredictionParameters parms)
         {
-            IndexRootJson rootJson = new IndexRootJson();
-            ResponseDto response = await _idxAccess.GetRootIndex<ResponseDto>(parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+            ResponseDto response = await _idxAccess.GetRootIndex<ResponseDto>(
+                parms.DataConnector, parms.IndexProject, parms.AzureStorageKey);
+
             if (!response.IsSuccess)
             {
-                throw new InvalidOperationException($"Failed to get root index: {string.Join(", ", response.ErrorMessages)}");
+                throw new InvalidOperationException(
+                    $"Failed to get root index: {string.Join(", ", response.ErrorMessages)}");
             }
-            //IndexDto idxResult = await _idxAccess.GetIndexRoot(databaseConnectionString);
-            var indexElement = (JsonElement)response.Result!;
-            var index = indexElement.Deserialize<IndexDto>(_jsonOptions)!;
-            string jsonStringObject = index.JsonDataObject;
-            rootJson = JsonSerializer.Deserialize<IndexRootJson>(jsonStringObject);
-            return rootJson;
+
+            var resultElement = (JsonElement)response.Result!;
+            string jsonPayload;
+
+            if (_sqlLite)
+            {
+                var index = resultElement.Deserialize<IndexDto>(_jsonOptions)!;
+                jsonPayload = index.JsonDataObject;
+            }
+            else
+            {
+                var dmIndex = resultElement[0].Deserialize<DmIndexDto>(_jsonOptions)!;
+                jsonPayload = dmIndex.JsonData;
+            }
+
+            return JsonSerializer.Deserialize<IndexRootJson>(jsonPayload)
+                ?? throw new InvalidOperationException("Failed to deserialize root index JSON.");
         }
 
         private List<IndexFileData> GetIndexArray(string taxonomy)
