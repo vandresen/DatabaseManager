@@ -267,6 +267,40 @@ namespace DatabaseManager.Services.Index
             return _response;
         }
 
+        [Function("GetNeighbors")]
+        public async Task<ResponseDto> GetNeighbors(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "GetNeighbors/{id}")] HttpRequestData req, int id)
+        {
+            _logger.LogInformation("GetNeighbors: Starting.");
+
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                string failRule = req.GetQuery("Failrule", true);
+                string depthAttribute = req.GetQuery("Depthattribute", true);
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                if (dsResponse == null || !dsResponse.IsSuccess)
+                {
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages
+                     = new List<string>() { $"GetNeighbors: Could not get neighbors with id {id}" };
+                    _logger.LogError($"GetNeighbors: Could not get neighbors with id {id}");
+                }
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                IEnumerable<IndexDto> idx = await _indexDB.GetNeighbors(id, "", failRule, depthAttribute, connectParameter.ConnectionString);
+                _response.Result = idx.ToList();
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"GetNeighbors: Error getting indexes: {ex}");
+            }
+            _logger.LogInformation("GetNeighbors: Completed.");
+            return _response;
+        }
+
         [Function("GetIndex")]
         public async Task<ResponseDto> GetIndex(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Indexes/{id}")] HttpRequestData req,

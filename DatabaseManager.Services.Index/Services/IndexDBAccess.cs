@@ -633,5 +633,13 @@ namespace DatabaseManager.Services.Index.Services
             var results = await _dp.LoadData<IndexDto, dynamic>("dbo.spGetIndexWithINDEXNODE", new { query = '/' }, connectionString);
             return results.FirstOrDefault();
         }
+
+        public async Task<IEnumerable<IndexDto>> GetNeighbors(int id, string project, string failRule, string depthAttribute, string connectionString)
+        {
+            var jsonPath = $"$.{depthAttribute}";
+            var result = await _dp.LoadData<IndexDto, dynamic>("dbo.spGetNeighborsNoFailuresDepth",
+                new { indexId = id, failRule = failRule, path = jsonPath }, connectionString);
+            return result;
+        }
     }
 }
