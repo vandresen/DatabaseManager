@@ -287,7 +287,7 @@ namespace DatabaseManager.Services.Index
                     _logger.LogError($"GetNeighbors: Could not get neighbors with id {id}");
                 }
                 ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
-                IEnumerable<IndexDto> idx = await _indexDB.GetNeighbors(id, "", failRule, depthAttribute, connectParameter.ConnectionString);
+                IEnumerable<NeighbourIndex> idx = await _indexDB.GetNeighbors(id, "", failRule, depthAttribute, connectParameter.ConnectionString);
                 _response.Result = idx.ToList();
             }
             catch (Exception ex)

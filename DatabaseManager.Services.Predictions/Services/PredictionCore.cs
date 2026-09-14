@@ -86,6 +86,7 @@ namespace DatabaseManager.Services.Predictions.Services
             string jsonRules = JsonSerializer.Serialize(rule, _jsonOptions);
             setup.RuleObject = jsonRules;
             setup.Project = parms.IndexProject;
+            setup.DataConnector = parms.DataConnector;
             List<int> correctedObjects = new List<int>();
             bool externalQcMethod = rule.RuleFunction.StartsWith("http");
             List<IndexDto> correctedIndexes = new List<IndexDto>();

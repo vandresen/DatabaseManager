@@ -3,6 +3,7 @@ using DatabaseManager.Services.Predictions.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using System.Web;
 
 namespace DatabaseManager.Services.Predictions.Services
 {
@@ -106,15 +107,33 @@ namespace DatabaseManager.Services.Predictions.Services
             return response.Result as List<IndexDto> ?? new List<IndexDto>();
         }
 
-        public async Task<T> GetNeighbors<T>(int id, string dataSource, string failRule, string path, string project)
+        public async Task<ResponseDto> GetNeighbors(int id, string dataSource, string failRule, string path, string project)
         {
-            string url = _indexAPIBase.BuildFunctionUrl($"/GetNeighbors/{id}", $"Name={dataSource}&Project={project}&failRule={failRule}&depthAttribute={path}", 
-                _indexApiKey);
-            return await this.SendAsync<T>(new ApiRequest()
+            var queryParams = HttpUtility.ParseQueryString(string.Empty);
+            queryParams["Name"] = dataSource;
+            queryParams["Project"] = project;
+            queryParams["failRule"] = failRule;
+            queryParams["depthAttribute"] = path;
+            string queryString = queryParams.ToString();
+
+            string url = "";
+            if (_sqlLite)
+            {
+                url = _indexAPIBase.BuildFunctionUrl($"/GetNeighbors/{id}", queryString, _indexApiKey);
+                return await this.SendAsync<ResponseDto>(new ApiRequest()
+                {
+                    ApiType = SD.ApiType.GET,
+                    Url = url
+                });
+            }         
+
+            url = _indexAPIBase.BuildFunctionUrl($"/api/GetNeighbors/{id}", queryString,_indexApiKey);
+            var result = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,
                 Url = url
             });
+            return result;
         }
 
         public async Task<T> GetRootIndex<T>(string dataSource, string project, string storageConnection)

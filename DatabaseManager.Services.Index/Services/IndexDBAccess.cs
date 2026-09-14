@@ -634,10 +634,10 @@ namespace DatabaseManager.Services.Index.Services
             return results.FirstOrDefault();
         }
 
-        public async Task<IEnumerable<IndexDto>> GetNeighbors(int id, string project, string failRule, string depthAttribute, string connectionString)
+        public async Task<IEnumerable<NeighbourIndex>> GetNeighbors(int id, string project, string failRule, string depthAttribute, string connectionString)
         {
             var jsonPath = $"$.{depthAttribute}";
-            var result = await _dp.LoadData<IndexDto, dynamic>("dbo.spGetNeighborsNoFailuresDepth",
+            var result = await _dp.LoadData<NeighbourIndex, dynamic>("dbo.spGetNeighborsNoFailuresDepth",
                 new { indexId = id, failRule = failRule, path = jsonPath }, connectionString);
             return result;
         }

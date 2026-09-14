@@ -1,9 +1,4 @@
 ﻿using DatabaseManager.Services.Index.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.Index.Services
 {
@@ -25,6 +20,6 @@ namespace DatabaseManager.Services.Index.Services
         Task<int> InsertIndex(IndexDto indexModel, int parentid, string connectionString);
         Task<IndexDto> GetIndexRoot(string connectionString);
         Task<IEnumerable<IndexDto>> GetDescendants(int id, string project, string connectionString);
-        Task<IEnumerable<IndexDto>> GetNeighbors(int id, string project, string failRule, string depthAttribute, string connectionString);
+        Task<IEnumerable<NeighbourIndex>> GetNeighbors(int id, string project, string failRule, string depthAttribute, string connectionString);
     }
 }
