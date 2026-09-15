@@ -19,7 +19,8 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
             log.LogInformation($"RunOrchestrator: Number of pipelines: {pipelines.Count}.");
             foreach (var pipe in pipelines)
             {
-                context.SetCustomStatus($"Starting pipe number {pipe.Id} with name {pipe.Name}");
+                string baseText = $"Starting pipe number {pipe.Id} with name {pipe.Name}";
+                context.SetCustomStatus(baseText);
                 if (pipe.Name == "CreateIndex")
                 {
                     try
@@ -92,29 +93,52 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
                 else if (pipe.Name == "Predictions")
                 {
                     log.LogInformation($"Starting Predictions");
+                    string statusText = baseText + " Getting prediction list";
+                    context.SetCustomStatus(statusText);
                     List<QcResult> predictionList = await context.CallActivityAsync<List<QcResult>>("DataOps_InitPredictions", pipe);
                     if (predictionList is null || predictionList.Count == 0)
                     {
                         log.LogInformation("No predictions to process, skipping.");
-                        return "No predictions to process";
+                        context.SetCustomStatus("No predictions to process");
                     }
-
-                    PredictionParameters pipeParm = JObject.Parse(pipe.JsonParameters).ToObject<PredictionParameters>()
-                        ?? throw new InvalidOperationException("Failed to deserialize PredictionParameters.");
-
-                    for (int i = 0; i < predictionList.Count; i++)
+                    else
                     {
-                        log.LogInformation($"Processing prediction {i + 1} of {predictionList.Count}, RuleId: {predictionList[i].Id}");
-                        int id = predictionList[i].Id;
-                        pipeParm.PredictionId = id;
-                        pipe.JsonParameters = JsonConvert.SerializeObject(pipeParm);
-                        string stat = await context.CallActivityAsync<string>("DataOps_Prediction", pipe);
-                        log.LogInformation(stat);
+                        PredictionParameters pipeParm = JObject.Parse(pipe.JsonParameters).ToObject<PredictionParameters>()
+                            ?? throw new InvalidOperationException("Failed to deserialize PredictionParameters.");
+
+                        List<string> predictionResults = new List<string>();
+                        List<string> predictionFailures = new List<string>();
+
+                        for (int i = 0; i < predictionList.Count; i++)
+                        {
+                            int id = predictionList[i].Id;
+                            statusText = baseText + $" Processing prediction {i+1}. RuleId: {id}";
+                            context.SetCustomStatus(statusText);
+                            log.LogInformation($"Processing prediction {i + 1} of {predictionList.Count}, RuleId: {id}");
+
+                            try
+                            {
+                                pipeParm.PredictionId = id;
+                                pipe.JsonParameters = JsonConvert.SerializeObject(pipeParm);
+                                string stat = await context.CallActivityAsync<string>("DataOps_Prediction", pipe);
+                                log.LogInformation(stat);
+                                predictionResults.Add(stat);
+                            }
+                            catch (TaskFailedException ex)
+                            {
+                                string errorMessage = $"Prediction {id} (pipe Id: {pipe.Id}) failed: {ex.Message}";
+                                log.LogError(ex, errorMessage);
+                                predictionFailures.Add(errorMessage);
+                                // don't return, don't rethrow — just move to the next prediction
+                            }
+                        }
+
+                        string summary = $"Predictions complete: {predictionResults.Count} succeeded, {predictionFailures.Count} failed";
+                        log.LogInformation(summary);
+                        context.SetCustomStatus(predictionFailures.Count == 0
+                            ? summary
+                            : $"{summary} | Failures: {string.Join(" | ", predictionFailures)}");
                     }
-                }
-                else
-                {
-                    log.LogInformation($"Artifact {pipe.Name} does not exist");
                 }
                 context.SetCustomStatus($"Completed pipe number {pipe.Id} with name {pipe.Name}");
             }
