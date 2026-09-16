@@ -36,7 +36,6 @@ namespace DatabaseManager.ServerLessClient
             ConfigureServices(builder.Services, sqlite);
 
             SD.Sqlite = sqlite;
-            SD.OpenAIKey = builder.Configuration["OpenAI:ApiKey"];
 
             await builder.Build().RunAsync();
         }

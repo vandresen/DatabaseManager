@@ -10,13 +10,12 @@ namespace DatabaseManager.ServerLessClient.Models
         public string BaseUrl { get; set; }
         public string TargetConnector { get; set; }
         public string DataAccessDefinition { get; set; }
-        public string ApiKey { get; set; }
+        //public string ApiKey { get; set; }
         public bool ServerLess { get; set; }
         public int HttpTimeOut { get; set; } = 500;
         public string Project { get; set; }
 
         public string AzureStorage { get; set; }
-        public string GeoBlazorRegistrationKey { get; set; }
 
         public string DataSourceAPI { get; set; }
         public string DataSourceKey { get; set; }
@@ -76,7 +75,6 @@ namespace DatabaseManager.ServerLessClient.Models
             if (import == null) return;
 
             AzureStorage = import.AzureStorage;
-            GeoBlazorRegistrationKey = import.GeoBlazorRegistrationKey;
             DataSourceAPI = import.DataSourceAPI;
             DataSourceKey = import.DataSourceKey;
             IndexAPI = import.IndexAPI;
@@ -105,12 +103,11 @@ namespace DatabaseManager.ServerLessClient.Models
             BaseUrl = other.BaseUrl;
             TargetConnector = other.TargetConnector;
             DataAccessDefinition = other.DataAccessDefinition;
-            ApiKey = other.ApiKey;
+            //ApiKey = other.ApiKey;
             ServerLess = other.ServerLess;
             HttpTimeOut = other.HttpTimeOut;
 
             AzureStorage = other.AzureStorage;
-            GeoBlazorRegistrationKey = other.GeoBlazorRegistrationKey;
             DataSourceAPI = other.DataSourceAPI;
             DataSourceKey = other.DataSourceKey;
             IndexAPI = other.IndexAPI;

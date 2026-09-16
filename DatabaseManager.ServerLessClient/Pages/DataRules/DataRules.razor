@@ -3,6 +3,7 @@
 @inject IPopupMessage displayMessage
 @inject CopilotStateService copilotState
 @inject NavigationManager navigationManager
+@inject BlazorSingletonService settings
 @using MudBlazor
 
 <h3>Rules</h3>
@@ -24,7 +25,7 @@
         </MudFileUpload>
     </span>
 
-    @if (!string.IsNullOrEmpty(SD.OpenAIKey))
+    @if (!string.IsNullOrEmpty(settings.OpenAIApiKey))
     {
         <RuleCopilotComponent SelectedRule="@_copilotSelectedRule"
                               CurrentRuleset="@_copilotRuleset"

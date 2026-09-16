@@ -32,14 +32,15 @@ namespace DatabaseManager.ServerLessClient.Services
             ILLMBaseService llm,
             IConfiguration config,
             ILogger<CopilotService> logger,
-            IDatabaseManagementService dmService)
+            IDatabaseManagementService dmService,
+            BlazorSingletonService settings)
         {
             _llm = llm;
             _config = config;
             _dmService = dmService;
             _logger = logger;
+            _apiKey = settings.OpenAIApiKey;
 
-            _apiKey = SD.OpenAIKey;
             if (string.IsNullOrEmpty(_apiKey))
                 throw new InvalidOperationException("AI key is not configured.");
 
