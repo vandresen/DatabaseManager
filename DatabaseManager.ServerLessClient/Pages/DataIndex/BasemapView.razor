@@ -8,26 +8,22 @@
 @using dymaptic.GeoBlazor.Core.Model
 
 <br />
-<button disabled="@_graphicsAdded" class="btn btn-primary" @onclick="AddGraphicsToLayer">
-    Add wells to map
-</button>
-<br />
 
-<MapView Style="height: 600px; width: 100%;">
-    @if (_graphics.Any())
-    {
-        <Extent Ymin="@_ymin" Xmin="@_xmin" Ymax="@_ymax" Xmax="@_xmax">
-            <SpatialReference Wkid="3857" />
-        </Extent>
-    }
+<MapView Style="height: 600px; width: 100%;" OnViewRendered="OnViewRendered">
     <Map>
         <Basemap>
             <WebTileLayer UrlTemplate="https://tile.openstreetmap.org/{level}/{col}/{row}.png"
                           Copyright="© OpenStreetMap contributors" />
         </Basemap>
 
-        <GraphicsLayer @ref="_graphicsLayer"/>
+        <GraphicsLayer @ref="_graphicsLayer" />
     </Map>
+    @if (_graphics.Any())
+    {
+        <Extent Ymin="@_ymin" Xmin="@_xmin" Ymax="@_ymax" Xmax="@_xmax">
+            <SpatialReference Wkid="3857" />
+        </Extent>
+    }
 </MapView>
 
 @code {
@@ -103,6 +99,14 @@
        
     }
 
+    private async Task OnViewRendered(Guid viewId)
+    {
+        if (_graphicsAdded || _graphicsLayer == null || _graphics.Count == 0)
+            return;
+
+        await AddGraphicsToLayer();
+    }
+
     private async Task AddGraphicsToLayer()
     {
         if (_graphicsLayer == null)
@@ -110,9 +114,7 @@
             Console.WriteLine("GraphicsLayer is not ready yet.");
             return;
         }
-        StateHasChanged();
-        _cts.Cancel();
-        _cts = new CancellationTokenSource();
+        
         Console.WriteLine($"Adding {_graphics.Count} graphics to layer.");
         await _graphicsLayer!.Add(_graphics, _cts.Token);
         _graphicsAdded = true;

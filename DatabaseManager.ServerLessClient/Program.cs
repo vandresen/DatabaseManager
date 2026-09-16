@@ -27,19 +27,15 @@ namespace DatabaseManager.ServerLessClient
             builder.Configuration.AddJsonStream(stream);
             var config = builder.Configuration.Build();
             bool sqlite = config.GetValue<bool>("Sqlite");
-            if (!string.IsNullOrEmpty(config["ArcGISApiKey"]))
+            if (!string.IsNullOrEmpty(config["GeoBlazor:RegistrationKey"]))
             {
-                SD.EsriKey = builder.Configuration["ArcGISApiKey"];
+                SD.GeoBlazorKey = builder.Configuration["GeoBlazor:RegistrationKey"];
             }
 
             builder.Services.AddGeoBlazor(builder.Configuration);
             ConfigureServices(builder.Services, sqlite);
 
             SD.Sqlite = sqlite;
-            //SD.DataTransferAPIBase = builder.Configuration["ServiceUrls:DataTransferAPI"];
-            //SD.DataTransferKey = builder.Configuration["ServiceUrls:DataTransferKey"];
-            //SD.DataOpsManageAPIBase = builder.Configuration["ServiceUrls:DataOpsManageAPI"];
-            //SD.DataOpsManageKey = builder.Configuration["ServiceUrls:DataOpsManageKey"];
             SD.OpenAIKey = builder.Configuration["OpenAI:ApiKey"];
 
             await builder.Build().RunAsync();

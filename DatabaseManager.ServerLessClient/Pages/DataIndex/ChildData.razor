@@ -79,7 +79,7 @@
         try
         {
             data = new List<JObject>();
-            if (!string.IsNullOrEmpty(SD.EsriKey)) basemap = true;
+            if (!string.IsNullOrEmpty(SD.GeoBlazorKey)) basemap = true;
             if (SD.Sqlite) indexSource = settings.Project;
             else indexSource = settings.TargetConnector;
             index = await indexData.GetChildren(indexSource, Id);
