@@ -114,12 +114,13 @@ else
                 client.DefaultRequestHeaders.Add("AzureStorageConnection", settings.AzureStorage);
             }
 
+            settings.DataAccessDefinition = await GetDataAccessDef();
+
             if (sqlite)
             {
                 projects = await idxView.GetIndexProjects();
                 if (string.IsNullOrEmpty(settings.Project) == true) settings.Project = "Default";
                 await GetIndexData();
-                settings.DataAccessDefinition = await GetDataAccessDef();
             }
             else
             {
@@ -173,7 +174,6 @@ else
         StateHasChanged();
         var connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
         settings.TargetConnector = selectedString;
-        settings.DataAccessDefinition = connector.DataAccessDefinition;
         await GetIndexData();
     }
 

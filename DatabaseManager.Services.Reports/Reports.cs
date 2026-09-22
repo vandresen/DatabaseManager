@@ -29,10 +29,9 @@ namespace DatabaseManager.Services.Reports
             _ia = ia;
             _db = db;
             SD.RuleAPIBase = _configuration.GetValue<string>("DataRuleAPI");
-            SD.RuleKey = _configuration["RuleKey"];
-            SD.IndexAPIBase = _configuration["IndexAPI"];
+            SD.IndexSqliteAPI = _configuration.GetValue<string>("IndexSqliteAPI");
+            SD.IndexSqlServerAPI = _configuration.GetValue<string>("IndexSqlServerAPI");
             SD.IndexKey = _configuration["IndexKey"];
-            SD.Sqlite = bool.Parse(_configuration["Sqlite"]);
         }
 
         [Function("GetResults")]
@@ -43,6 +42,9 @@ namespace DatabaseManager.Services.Reports
             {
                 List<QcResult> qcResult = new List<QcResult>();
                 string name = req.GetQuery("Name", true);
+
+                req.InitializeEnvironment();
+
                 ResponseDto dsResponse = await _ra.GetRules<ResponseDto>(name);
                 if (dsResponse != null && dsResponse.IsSuccess)
                 {
@@ -89,6 +91,7 @@ namespace DatabaseManager.Services.Reports
             _logger.LogInformation("GetResults: Starting.");
             try
             {
+                req.InitializeEnvironment();
                 string name = req.GetQuery("Name", true);
                 int? id = req.GetQuery("Id", true).GetIntFromString();
                 ResponseDto dsResponse = await _ra.GetRule<ResponseDto>(name, (int)id);
@@ -153,61 +156,62 @@ namespace DatabaseManager.Services.Reports
             return result;
         }
 
-        [Function("ReportAttributeInfo")]
-        public async Task<HttpResponseData> GetReportAttributeInfo([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req)
-        {
-            _logger.LogInformation("GetReportAttributeInfo: Starting.");
-            IndexRootJson rootJson = new IndexRootJson();
-            try
-            {
-                string name = req.GetQuery("Name", true);
-                string dataType = req.GetQuery("Datatype", true);
-                string project = req.GetQuery("Project", false);
+        //[Function("ReportAttributeInfo")]
+        //public async Task<HttpResponseData> GetReportAttributeInfo([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req)
+        //{
+        //    _logger.LogInformation("GetReportAttributeInfo: Starting.");
+        //    IndexRootJson rootJson = new IndexRootJson();
+        //    try
+        //    {
+        //        req.InitializeEnvironment();
+        //        string name = req.GetQuery("Name", true);
+        //        string dataType = req.GetQuery("Datatype", true);
+        //        string project = req.GetQuery("Project", false);
 
-                ResponseDto indexResponse = await _ia.GetRootIndex<ResponseDto>(name, project);
-                if (indexResponse != null && indexResponse.IsSuccess)
-                {
-                    if (SD.Sqlite)
-                    {
-                        IndexDto idx = JsonConvert.DeserializeObject<IndexDto>(indexResponse.Result.ToString());
-                        string jsonData = idx.JsonDataObject;
-                        rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonData);
-                    }
-                    else
-                    {
-                        List<DmsIndex> idx = JsonConvert.DeserializeObject<List<DmsIndex>>(indexResponse.Result.ToString());
-                        rootJson = JsonConvert.DeserializeObject<IndexRootJson>(idx[0].JsonData);
-                    }
-                    _logger.LogInformation($"GetReportAttributeInfo: source info: {rootJson.Source}");
-                    ConnectParametersDto source = JsonConvert.DeserializeObject<ConnectParametersDto>(rootJson.Source);
-                    List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(source.DataAccessDefinition);
-                    DataAccessDef dataAccess = accessDefs.First(x => x.DataType == dataType);
-                    string table = dataAccess.Select.GetTable();
+        //        ResponseDto indexResponse = await _ia.GetRootIndex<ResponseDto>(name, project);
+        //        if (indexResponse != null && indexResponse.IsSuccess)
+        //        {
+        //            if (SD.Sqlite)
+        //            {
+        //                IndexDto idx = JsonConvert.DeserializeObject<IndexDto>(indexResponse.Result.ToString());
+        //                string jsonData = idx.JsonDataObject;
+        //                rootJson = JsonConvert.DeserializeObject<IndexRootJson>(jsonData);
+        //            }
+        //            else
+        //            {
+        //                List<DmsIndex> idx = JsonConvert.DeserializeObject<List<DmsIndex>>(indexResponse.Result.ToString());
+        //                rootJson = JsonConvert.DeserializeObject<IndexRootJson>(idx[0].JsonData);
+        //            }
+        //            _logger.LogInformation($"GetReportAttributeInfo: source info: {rootJson.Source}");
+        //            ConnectParametersDto source = JsonConvert.DeserializeObject<ConnectParametersDto>(rootJson.Source);
+        //            List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(source.DataAccessDefinition);
+        //            DataAccessDef dataAccess = accessDefs.First(x => x.DataType == dataType);
+        //            string table = dataAccess.Select.GetTable();
 
-                    var tableSchema = await 
-                        _db.LoadData<TableSchema, dynamic>("dbo.sp_columns", new { TABLE_NAME = table }, source.ConnectionString);
+        //            var tableSchema = await 
+        //                _db.LoadData<TableSchema, dynamic>("dbo.sp_columns", new { TABLE_NAME = table }, source.ConnectionString);
 
-                    _response.Result = tableSchema;
-                }
-                else
-                {
-                    _response.IsSuccess = false;
-                    _response.ErrorMessages
-                         = new List<string>() { "Error getting index root" };
-                    _logger.LogError($"GetReportAttributeInfo: Error getting index root");
-                }
-            }
-            catch (Exception ex)
-            {
-                _response.IsSuccess = false;
-                _response.ErrorMessages
-                     = new List<string>() { ex.ToString() };
-                _logger.LogError($"GetReportAttributeInfo: Error getting results for GetReportAttributeInfo: {ex}");
-            }
-            var result = req.CreateResponse(HttpStatusCode.OK);
-            await result.WriteAsJsonAsync(_response);
-            return result;
-        }
+        //            _response.Result = tableSchema;
+        //        }
+        //        else
+        //        {
+        //            _response.IsSuccess = false;
+        //            _response.ErrorMessages
+        //                 = new List<string>() { "Error getting index root" };
+        //            _logger.LogError($"GetReportAttributeInfo: Error getting index root");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _response.IsSuccess = false;
+        //        _response.ErrorMessages
+        //             = new List<string>() { ex.ToString() };
+        //        _logger.LogError($"GetReportAttributeInfo: Error getting results for GetReportAttributeInfo: {ex}");
+        //    }
+        //    var result = req.CreateResponse(HttpStatusCode.OK);
+        //    await result.WriteAsJsonAsync(_response);
+        //    return result;
+        //}
 
         [Function("UpdateReportData")]
         public async Task<HttpResponseData> UpdateIndex([HttpTrigger(AuthorizationLevel.Function, "put", Route = null)] HttpRequestData req)
@@ -215,6 +219,7 @@ namespace DatabaseManager.Services.Reports
             _logger.LogInformation("UpdateReportData: Starting");
             try
             {
+                req.InitializeEnvironment();
                 string name = req.GetQuery("Name", true);
                 ReportData reportData = await req.ReadFromJsonAsync<ReportData>();
                 await _ia.InsertEdits(reportData, name, "");
@@ -237,6 +242,7 @@ namespace DatabaseManager.Services.Reports
             _logger.LogInformation("DeleteReportData: Starting");
             try
             {
+                req.InitializeEnvironment();
                 string name = req.GetQuery("Name", true);
                 int? id = req.GetQuery("Id", true).GetIntFromString();
                 ResponseDto deleteResponse = await _ia.DeleteEdits<ResponseDto>((int)id, name, "");
@@ -266,6 +272,7 @@ namespace DatabaseManager.Services.Reports
             _logger.LogInformation("UpdateReportData: Starting");
             try
             {
+                req.InitializeEnvironment();
                 string name = req.GetQuery("Name", true);
                 ReportData reportData = await req.ReadFromJsonAsync<ReportData>();
                 await _ia.InsertChildEdits(reportData, name, "");
@@ -288,6 +295,7 @@ namespace DatabaseManager.Services.Reports
             _logger.LogInformation("MergeReportData: Starting");
             try
             {
+                req.InitializeEnvironment();
                 string name = req.GetQuery("Name", true);
                 ReportData reportData = await req.ReadFromJsonAsync<ReportData>();
                 await _ia.MergeIndexes(reportData, name, "");

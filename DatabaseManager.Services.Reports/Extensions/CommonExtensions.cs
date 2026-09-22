@@ -128,6 +128,26 @@ namespace DatabaseManager.Services.Reports.Extensions
             return result;
         }
 
+        public static void InitializeEnvironment(this HttpRequestData req)
+        {
+            string dbType = req.GetQuery("DbType", false) ?? "sqlserver";
+            dbType = dbType.Trim().ToLower();
+
+            if (dbType == "sqlite")
+            {
+                SD.Sqlite = true;
+                SD.IndexAPIBase = SD.IndexSqliteAPI;
+                SD.IndexKey = "";
+            }
+            else
+            {
+                // Default to SQL Server if it's explicitly asked for or left blank
+                SD.Sqlite = false;
+                SD.IndexAPIBase = SD.IndexSqlServerAPI;
+            }
+        }
+
+
         public static string GetTable(this string select)
         {
             select = select.ToUpper();

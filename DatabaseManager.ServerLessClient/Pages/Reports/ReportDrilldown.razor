@@ -3,6 +3,7 @@
 @inject BlazorSingletonService singleton
 @inject IReport rp
 @inject IPopupMessage displayMessage
+@inject IDatabaseManagementService dmService
 @using MudBlazor
 
 
@@ -136,8 +137,8 @@ else
         if (canEdit)
         {
             TableSchema attributeInfo = null;
-            if (SD.Sqlite)
-            {
+            // if (SD.Sqlite)
+            // {
                 if (dataDef != null && dataDef.AttributeTypes.TryGetValue(columnName, out AttributeType attrType))
                 {
                     attributeInfo = new TableSchema
@@ -150,13 +151,6 @@ else
                 {
                     Console.WriteLine($"Error: Could not find {columnName} in AttributeTypes");
                 }
-            }
-            else
-            {
-                List<TableSchema> info = await rp.GetAttributeInfo(singleton.TargetConnector, dataType);
-                Console.WriteLine($"Number of attributes: {info.Count}");
-                attributeInfo = info.FirstOrDefault(p => p.COLUMN_NAME == columnName);
-            }
             
             if (attributeInfo != null)
             {
@@ -281,5 +275,16 @@ else
     {
         ReportData item = reportList.First(f => f.Id == id);
         item.ShowDetails = !item.ShowDetails;
+    }
+
+    private async Task<string> GetDataAccessDef()
+    {
+        ResponseDto response = await dmService.GetDataAccessDef<ResponseDto>();
+        if (!response.IsSuccess)
+        {
+            await displayMessage.DisplayErrorMessage("Cannot get data access definition");
+            throw new InvalidOperationException($"Cannot get data access definition");
+        }
+        return response.Result.ToString()!;
     }
 }

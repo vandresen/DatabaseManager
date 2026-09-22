@@ -14,7 +14,7 @@ namespace DatabaseManager.Services.Reports.Services
 
         public async Task<T> GetRule<T>(string sourceName, int id)
         {
-            string url = SD.RuleAPIBase.BuildFunctionUrl($"/Rule", $"Name={sourceName}&Id={id}", SD.RuleKey);
+            string url = SD.RuleAPIBase.BuildFunctionUrl($"/Rule", $"Name={sourceName}&Id={id}", "");
             Console.WriteLine($"GetRule: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {
@@ -25,7 +25,7 @@ namespace DatabaseManager.Services.Reports.Services
 
         public async Task<T> GetRules<T>(string sourceName)
         {
-            string url = SD.RuleAPIBase.BuildFunctionUrl($"/Rules", $"Name={sourceName}", SD.RuleKey);
+            string url = SD.RuleAPIBase.BuildFunctionUrl($"/Rules", $"Name={sourceName}", "");
             Console.WriteLine($"GetRules: url = {url}");
             return await this.SendAsync<T>(new ApiRequest()
             {

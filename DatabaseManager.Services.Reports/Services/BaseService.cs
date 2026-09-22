@@ -1,10 +1,6 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using DatabaseManager.Services.Reports.Models;
+using Newtonsoft.Json;
 using System.Text;
-using System.Threading.Tasks;
-using DatabaseManager.Services.Reports.Models;
 
 namespace DatabaseManager.Services.Reports.Services
 {
@@ -26,7 +22,30 @@ namespace DatabaseManager.Services.Reports.Services
                 var client = httpClient.CreateClient("DatabaseManagerAPI");
                 HttpRequestMessage message = new HttpRequestMessage();
                 message.Headers.Add("Accept", "application/json");
-                message.RequestUri = new Uri(apiRequest.Url);
+
+                // ─── START AUTOMATIC KEY STRIPPING & HEADER SHIFT ───
+                var uriBuilder = new UriBuilder(apiRequest.Url);
+                var queryParams = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
+
+                // Automatically find the Azure function key parameter from ANY of your 10 services
+                string functionKey = queryParams["code"];
+
+                if (!string.IsNullOrEmpty(functionKey))
+                {
+                    // Strip the secret out of the query collection completely
+                    queryParams.Remove("code");
+
+                    // Re-apply the clean parameters to the URI builder
+                    uriBuilder.Query = queryParams.ToString();
+
+                    // Safely move the key to the background HTTP Header
+                    message.Headers.Add("x-functions-key", functionKey);
+                }
+
+                // Assign the sanitized, secure URL to the request message
+                message.RequestUri = uriBuilder.Uri;
+                // ─── END AUTOMATIC KEY STRIPPING & HEADER SHIFT ───
+
                 client.DefaultRequestHeaders.Clear();
                 if (apiRequest.Data != null)
                 {
