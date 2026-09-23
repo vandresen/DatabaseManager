@@ -17,8 +17,10 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task<List<QcResult>> GetResults(string source)
         {
+            string dbType = "sqlserver";
+            if (SD.Sqlite) dbType = "sqlite";
             List<QcResult> result = new List<QcResult>();
-            string url = _settings.ReportApiBase.BuildFunctionUrl("GetResults", $"name={source}", _settings.ReportKey);
+            string url = _settings.ReportApiBase.BuildFunctionUrl("GetResults", $"name={source}&DbType={dbType}", _settings.ReportKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -29,24 +31,26 @@ namespace DatabaseManager.ServerLessClient.Services
             return result;
         }
 
-        public async Task<List<TableSchema>> GetAttributeInfo(string source, string dataType)
-        {
-            List<TableSchema> result = new List<TableSchema>();
-            string url = _settings.ReportApiBase.BuildFunctionUrl("ReportAttributeInfo", $"Name={source}&Datatype={dataType}", _settings.ReportKey);
-            Console.WriteLine(url);
-            ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
-            {
-                ApiType = SD.ApiType.GET,
-                Url = url
-            });
-            result = JsonConvert.DeserializeObject<List<TableSchema>>(response.Result.ToString());
-            return result;
-        }
+        //public async Task<List<TableSchema>> GetAttributeInfo(string source, string dataType)
+        //{
+        //    List<TableSchema> result = new List<TableSchema>();
+        //    string url = _settings.ReportApiBase.BuildFunctionUrl("ReportAttributeInfo", $"Name={source}&Datatype={dataType}", _settings.ReportKey);
+        //    Console.WriteLine(url);
+        //    ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
+        //    {
+        //        ApiType = SD.ApiType.GET,
+        //        Url = url
+        //    });
+        //    result = JsonConvert.DeserializeObject<List<TableSchema>>(response.Result.ToString());
+        //    return result;
+        //}
 
         public async Task<List<DmsIndex>> GetResult(string source, int id)
         {
+            string dbType = "sqlserver";
+            if (SD.Sqlite) dbType = "sqlite";
             List<DmsIndex> result = new List<DmsIndex>();
-            string url = _settings.ReportApiBase.BuildFunctionUrl("GetResult", $"name={source}&Id={id}", _settings.ReportKey);
+            string url = _settings.ReportApiBase.BuildFunctionUrl("GetResult", $"name={source}&Id={id}&DbType={dbType}", _settings.ReportKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -59,7 +63,9 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task Update(string source, ReportData reportData)
         {
-            string url = _settings.ReportApiBase.BuildFunctionUrl("UpdateReportData", $"name={source}", _settings.ReportKey);
+            string dbType = "sqlserver";
+            if (SD.Sqlite) dbType = "sqlite";
+            string url = _settings.ReportApiBase.BuildFunctionUrl("UpdateReportData", $"name={source}&DbType={dbType}", _settings.ReportKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -75,7 +81,9 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task Delete(int id, string source)
         {
-            string url = _settings.ReportApiBase.BuildFunctionUrl("DeleteReportData", $"name={source}&Id={id}", _settings.ReportKey);
+            string dbType = "sqlserver";
+            if (SD.Sqlite) dbType = "sqlite";
+            string url = _settings.ReportApiBase.BuildFunctionUrl("DeleteReportData", $"name={source}&Id={id}&DbType={dbType}", _settings.ReportKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -90,7 +98,9 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task InsertChild(string source, ReportData reportData)
         {
-            string url = _settings.ReportApiBase.BuildFunctionUrl("InsertChildReportData", $"name={source}", _settings.ReportKey);
+            string dbType = "sqlserver";
+            if (SD.Sqlite) dbType = "sqlite";
+            string url = _settings.ReportApiBase.BuildFunctionUrl("InsertChildReportData", $"name={source}&DbType={dbType}", _settings.ReportKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
@@ -106,7 +116,9 @@ namespace DatabaseManager.ServerLessClient.Services
 
         public async Task Merge(string source, ReportData reportData)
         {
-            string url = _settings.ReportApiBase.BuildFunctionUrl("MergeReportData", $"name={source}", _settings.ReportKey);
+            string dbType = "sqlserver";
+            if (SD.Sqlite) dbType = "sqlite";
+            string url = _settings.ReportApiBase.BuildFunctionUrl("MergeReportData", $"name={source}&DbType={dbType}", _settings.ReportKey);
             Console.WriteLine(url);
             ResponseDto response = await this.SendAsync<ResponseDto>(new ApiRequest()
             {
