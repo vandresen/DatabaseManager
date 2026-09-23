@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Microsoft.Azure.Functions.Worker.Http;
+using Newtonsoft.Json.Linq;
 using System.Data;
 
 namespace DatabaseManager.Services.DataQuality.Extensions
@@ -123,6 +124,37 @@ namespace DatabaseManager.Services.DataQuality.Extensions
             if (!string.IsNullOrEmpty(apiKey)) url = url + "code=" + apiKey;
             if (url.EndsWith("&")) url = url.Substring(0, url.Length - 1);
             return url;
+        }
+
+        public static string GetQuery(this HttpRequestData req, string queryAttribute, bool mandatory)
+        {
+            var query = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
+            string result = query[queryAttribute];
+            if (string.IsNullOrEmpty(result) && mandatory)
+            {
+                Exception error = new Exception($"Error getting query result for {queryAttribute}");
+                throw error;
+            }
+            return result;
+        }
+
+        public static void InitializeEnvironment(this HttpRequestData req)
+        {
+            string dbType = req.GetQuery("DbType", false) ?? "sqlserver";
+            dbType = dbType.Trim().ToLower();
+
+            if (dbType == "sqlite")
+            {
+                SD.Sqlite = true;
+                SD.IndexAPIBase = SD.IndexSqliteAPI;
+                SD.IndexKey = "";
+            }
+            else
+            {
+                // Default to SQL Server if it's explicitly asked for or left blank
+                SD.Sqlite = false;
+                SD.IndexAPIBase = SD.IndexSqlServerAPI;
+            }
         }
     }
 }

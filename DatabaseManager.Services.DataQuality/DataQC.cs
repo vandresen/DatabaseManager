@@ -1,4 +1,5 @@
 using Azure;
+using DatabaseManager.Services.DataQuality.Extensions;
 using DatabaseManager.Services.DataQuality.Models;
 using DatabaseManager.Services.DataQuality.Services;
 using Microsoft.Azure.Functions.Worker;
@@ -28,6 +29,9 @@ public class DataQC
         _idxAccess = idxAccess;
         _dataQc = dataQc;
         _execContext = execContext;
+        SD.IndexSqliteAPI = _configuration.GetValue<string>("IndexSqliteAPI");
+        SD.IndexSqlServerAPI = _configuration.GetValue<string>("IndexSqlServerAPI");
+        SD.IndexKey = _configuration.GetValue<string>("IndexKey");
     }
 
     [Function("DataQC")]
@@ -36,6 +40,7 @@ public class DataQC
         _logger.LogInformation($"DataQC: Starting");
         var response = req.CreateResponse();
         var result = new ResponseDto();
+        req.InitializeEnvironment();
         try
         {
             var body = await new StreamReader(req.Body).ReadToEndAsync();
@@ -75,7 +80,14 @@ public class DataQC
                 return response;
             }
 
-            var ruleElement = (JsonElement)ruleResponse.Result!;
+            if (ruleResponse.Result is not JsonElement ruleElement)
+            {
+                response.StatusCode = HttpStatusCode.BadRequest;
+                result.IsSuccess = false;
+                result.ErrorMessages.Add("No rule found");
+                await response.WriteAsJsonAsync(result);
+                return response;
+            }
             var rule = ruleElement.Deserialize<RuleModelDto>(
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
 
