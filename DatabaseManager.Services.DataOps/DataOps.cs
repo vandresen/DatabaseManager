@@ -17,10 +17,22 @@ namespace DatabaseManager.Services.DataOps
             FunctionContext executionContext)
         {
             ILogger logger = executionContext.GetLogger("DataOps_HttpStart");
-            List<DataOpParameters> pipelines = await req.ReadFromJsonAsync<List<DataOpParameters>>();
+
+            DataOpsRequest request = await req.ReadFromJsonAsync<DataOpsRequest>();
+            if (request is null || request.Pipelines is null || request.Pipelines.Count == 0)
+            {
+                var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResponse.WriteStringAsync("Request body must contain at least one pipeline.");
+                return badResponse;
+            }
+
             string instanceId = await client.ScheduleNewOrchestrationInstanceAsync(
-                nameof(DataOpsOrchestrator), pipelines);
-            logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
+                nameof(DataOpsOrchestrator), request);
+
+            logger.LogInformation(
+                "Started orchestration with ID = '{instanceId}' using provider '{provider}'.",
+                instanceId, request.DatabaseProvider);
+
             return await client.CreateCheckStatusResponseAsync(req, instanceId);
         }
     }

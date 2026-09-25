@@ -5,6 +5,7 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Data;
 
 namespace DatabaseManager.Services.DataOps.Services
 {
@@ -13,6 +14,7 @@ namespace DatabaseManager.Services.DataOps.Services
         private readonly IConfiguration _configuration;
         private readonly IIndexAccess _indexAccess;
         private readonly IRuleAccess _ruleAccess;
+        private readonly bool _sqlite;
 
         public DataQc(IConfiguration configuration,
             IIndexAccess indexAccess, IRuleAccess ruleAccess,
@@ -21,14 +23,16 @@ namespace DatabaseManager.Services.DataOps.Services
             _configuration = configuration;
             _indexAccess = indexAccess;
             _ruleAccess = ruleAccess;
+            _sqlite = configuration.GetValue<bool?>("Sqlite")
+                ?? throw new InvalidOperationException("Configuration setting 'Sqlite' is missing.");
         }
 
-        public async Task<T> CloseDataQc<T>(string source, string project, List<RuleFailures> ruleFailures)
+        public async Task<T> CloseDataQc<T>(string source, string project, List<RuleFailures> ruleFailures, DatabaseProvider databaseProvider)
         {
             ResponseDto response = new ResponseDto();
             try
             {
-                ResponseDto idxResponse = await _indexAccess.GetIndexes<ResponseDto>(source, project, "");
+                ResponseDto idxResponse = await _indexAccess.GetIndexes<ResponseDto>(source, project, "", databaseProvider);
                 ResponseDto ruleResponse = await _ruleAccess.GetRules<ResponseDto>(source);
                 if (idxResponse.IsSuccess && ruleResponse.IsSuccess)
                 {
@@ -54,7 +58,7 @@ namespace DatabaseManager.Services.DataOps.Services
                             index.QC_String = qcString;
                         }
                     }
-                    ResponseDto updateRespones = await _indexAccess.UpdateIndexes<ResponseDto>(indexes, source, project);
+                    ResponseDto updateRespones = await _indexAccess.UpdateIndexes<ResponseDto>(indexes, source, project, databaseProvider);
                     if (updateRespones.IsSuccess) 
                     { 
                         response.IsSuccess = true; 
@@ -84,9 +88,11 @@ namespace DatabaseManager.Services.DataOps.Services
 
         public async Task<T> ExecuteDataQc<T>(DataQCParameters qcParms)
         {
+            string dbType = qcParms.DatabaseProvider == DatabaseProvider.Sqlite ? "sqlite" : "sqlserver";
+
             var dataQCAPIBase = _configuration.GetValue<string>("DataQCAPI");
             var dataQCKey = _configuration.GetValue<string>("DataQCKey");
-            string url = dataQCAPIBase.BuildFunctionUrl($"/DataQC", $"", dataQCKey);
+            string url = dataQCAPIBase.BuildFunctionUrl($"/DataQC", $"DbType={dbType}", dataQCKey);
             return await this.SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.POST,

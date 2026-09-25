@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Web;
 using DatabaseManager.Services.DataOps.Models;
 using Newtonsoft.Json;
 
@@ -33,7 +34,17 @@ namespace DatabaseManager.Services.DataOps.Services
                         httpMethod = HttpMethod.Delete;
                         break;
                 }
-                HttpRequestMessage message = new HttpRequestMessage(httpMethod, apiRequest.Url);
+
+                var uriBuilder = new UriBuilder(apiRequest.Url);
+                var queryParams = HttpUtility.ParseQueryString(uriBuilder.Query);
+                var functionKey = queryParams["code"];
+                if (!string.IsNullOrEmpty(functionKey))
+                {
+                    queryParams.Remove("code");
+                    uriBuilder.Query = queryParams.ToString();
+                }
+
+                HttpRequestMessage message = new HttpRequestMessage(httpMethod, uriBuilder.Uri);
                 message.Headers.Add("Accept", "application/json");
                 if (apiRequest.Data != null)
                 {
@@ -44,6 +55,11 @@ namespace DatabaseManager.Services.DataOps.Services
                 if (!string.IsNullOrEmpty(apiRequest.AzureStorage))
                 {
                     message.Headers.Add("azurestorageconnection", apiRequest.AzureStorage);
+                }
+
+                if (!string.IsNullOrEmpty(functionKey))
+                {
+                    message.Headers.Add("x-functions-key", functionKey);
                 }
 
                 HttpResponseMessage apiResponse = null;

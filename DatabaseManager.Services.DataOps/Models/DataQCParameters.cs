@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DatabaseManager.Services.DataOps.Models
+﻿namespace DatabaseManager.Services.DataOps.Models
 {
     public class DataQCParameters
     {
@@ -12,5 +6,6 @@ namespace DatabaseManager.Services.DataOps.Models
         public string DataConnector { get; set; }
         public string IndexProject { get; set; }
         public int RuleId { get; set; }
+        public DatabaseProvider DatabaseProvider { get; set; }
     }
 }

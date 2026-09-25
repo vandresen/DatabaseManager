@@ -15,10 +15,16 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
         {
             ILogger log = context.CreateReplaySafeLogger(nameof(DataOps));
             string response = "OK";
-            List<DataOpParameters> pipelines = context.GetInput<List<DataOpParameters>>();
-            log.LogInformation($"RunOrchestrator: Number of pipelines: {pipelines.Count}.");
+
+            DataOpsRequest request = context.GetInput<DataOpsRequest>();
+            List<DataOpParameters> pipelines = request.Pipelines;
+
+            log.LogInformation($"RunOrchestrator: Number of pipelines: {pipelines.Count}. Provider: {request.DatabaseProvider}.");
+
             foreach (var pipe in pipelines)
             {
+                pipe.DatabaseProvider = request.DatabaseProvider;
+
                 string baseText = $"Starting pipe number {pipe.Id} with name {pipe.Name}";
                 context.SetCustomStatus(baseText);
                 if (pipe.Name == "CreateIndex")
@@ -34,7 +40,7 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
                         context.SetCustomStatus(errorMessage);
                         return errorMessage;
                     }
-                    
+
                 }
                 else if (pipe.Name == "DataQC")
                 {
@@ -42,8 +48,7 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
                     List<QcResult> qcList = await context.CallActivityAsync<List<QcResult>>("DataOps_InitDataQC", pipe);
                     var tasks = new Task<List<int>>[qcList.Count];
                     for (int i = 0; i < qcList.Count; i++)
-                        //for (int i = 0; i < 1; i++)
-                        {
+                    {
                         int qcId = qcList[i].Id;
                         JObject pipeParm = JObject.Parse(pipe.JsonParameters);
                         pipeParm["RuleId"] = qcId;
@@ -112,7 +117,7 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
                         for (int i = 0; i < predictionList.Count; i++)
                         {
                             int id = predictionList[i].Id;
-                            statusText = baseText + $" Processing prediction {i+1}. RuleId: {id}";
+                            statusText = baseText + $" Processing prediction {i + 1}. RuleId: {id}";
                             context.SetCustomStatus(statusText);
                             log.LogInformation($"Processing prediction {i + 1} of {predictionList.Count}, RuleId: {id}");
 
@@ -129,7 +134,6 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
                                 string errorMessage = $"Prediction {id} (pipe Id: {pipe.Id}) failed: {ex.Message}";
                                 log.LogError(ex, errorMessage);
                                 predictionFailures.Add(errorMessage);
-                                // don't return, don't rethrow — just move to the next prediction
                             }
                         }
 

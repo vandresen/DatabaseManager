@@ -31,7 +31,7 @@ namespace DatabaseManager.Services.DataOps.ActivityFolder
                 }
 
                 parms.StorageAccount = pipe.StorageAccount;
-                ResponseDto response = await _indexAccess.BuildIndex<ResponseDto>(parms);
+                ResponseDto response = await _indexAccess.BuildIndex<ResponseDto>(parms, pipe.DatabaseProvider);
 
                 if (response is { IsSuccess: true })
                 {

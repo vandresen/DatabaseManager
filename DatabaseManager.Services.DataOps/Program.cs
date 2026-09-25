@@ -10,14 +10,11 @@ var host = new HostBuilder()
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
 
-        // Just register IHttpClientFactory once — AddHttpClient() does this
-        //services.AddHttpClient();
         services.AddHttpClient("DataOps", client =>
         {
             client.Timeout = TimeSpan.FromMinutes(10);
         });
 
-        // Register services as scoped — they resolve IHttpClientFactory themselves
         services.AddScoped<IRuleAccess, RuleAccess>();
         services.AddScoped<IDataQc, DataQc>();
         services.AddScoped<IDataTransferAccess, DataTransferAccess>();
@@ -25,6 +22,5 @@ var host = new HostBuilder()
         services.AddScoped<IPredictionService, PredictionService>();
     })
     .Build();
-
 
 host.Run();

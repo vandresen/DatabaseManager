@@ -4,11 +4,6 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DatabaseManager.Services.DataOps.ActivityFolder
 {
@@ -32,6 +27,7 @@ namespace DatabaseManager.Services.DataOps.ActivityFolder
                 log.LogInformation($"DataQC: Starting");
                 DataQCParameters qcParms = JObject.Parse(pipe.JsonParameters).ToObject<DataQCParameters>();
                 qcParms.AzureStorageKey = pipe.StorageAccount;
+                qcParms.DatabaseProvider = pipe.DatabaseProvider;
                 JObject pipeParm = JObject.Parse(pipe.JsonParameters);
                 qcParms.RuleId = (int)pipeParm["RuleId"];
                 ResponseDto response = await _dataQc.ExecuteDataQc<ResponseDto>(qcParms);
