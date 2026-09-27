@@ -47,7 +47,7 @@ namespace DatabaseManager.ServerLessClient.Services
             }
         }
 
-        public async Task<DataOpsResults> ProcessPipeline(List<DataOpParameters> parms)
+        public async Task<DataOpsResults> ProcessPipeline(DataOpsRequest parms)
         {
             var client = _clientFactory.CreateClient("DataOpsAPI");
             string url = _settings.DataOpsAPI.BuildFunctionUrl($"api/DataOps_HttpStart", "", _settings.DataOpsKey);

@@ -8,7 +8,7 @@ namespace DatabaseManager.ServerLessClient.Services
         Task<T> DeletePipeline<T>(string name);
         Task<T> GetPipeline<T>(string name);
         Task<T> GetPipelines<T>();
-        Task<DataOpsResults> ProcessPipeline(List<DataOpParameters> parms);
+        Task<DataOpsResults> ProcessPipeline(DataOpsRequest parms);
         Task<T> SavePipeline<T>(DataOpsPipes pipe, List<PipeLine> tubes);
         Task<DataOpsStatus> GetStatus(string url);
 

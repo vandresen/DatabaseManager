@@ -139,11 +139,18 @@ input {
                     JsonParameters = pipe.Parameters.ToString()
                 });
             }
-            string parmString = JsonConvert.SerializeObject(parms);
+
+            var request = new DataOpsRequest
+            {
+                DatabaseProvider = SD.Sqlite ? DatabaseProvider.Sqlite : DatabaseProvider.SqlServer,
+                Pipelines = parms
+            };
+
+            string parmString = JsonConvert.SerializeObject(request);
             Console.WriteLine($"Pipeline parameters are {parmString}");
             statusMessage = "Starting";
             StateHasChanged();
-            var result = await dataOps.ProcessPipeline(parms);
+            var result = await dataOps.ProcessPipeline(request);
             Console.WriteLine(result.statusQueryGetUri);
             for (int i = 0; i < maxPollAttempts; i++)
             {
@@ -152,11 +159,11 @@ input {
                 Console.WriteLine($"Runtime status: {status.runtimeStatus}");
                 statusMessage = status.runtimeStatus + ": " + status.customStatus;
                 StateHasChanged();
-                if (status.runtimeStatus == "Completed") 
+                if (status.runtimeStatus == "Completed")
                 {
                     statusMessage = status.runtimeStatus;
                     StateHasChanged();
-                    break; 
+                    break;
                 }
                 if (status.runtimeStatus == "Failed")
                 {

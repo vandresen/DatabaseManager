@@ -14,7 +14,7 @@ namespace DatabaseManager.Services.DataOps.Services
         private readonly IConfiguration _configuration;
         private readonly IIndexAccess _indexAccess;
         private readonly IRuleAccess _ruleAccess;
-        private readonly bool _sqlite;
+        //private readonly bool _sqlite;
 
         public DataQc(IConfiguration configuration,
             IIndexAccess indexAccess, IRuleAccess ruleAccess,
@@ -23,8 +23,8 @@ namespace DatabaseManager.Services.DataOps.Services
             _configuration = configuration;
             _indexAccess = indexAccess;
             _ruleAccess = ruleAccess;
-            _sqlite = configuration.GetValue<bool?>("Sqlite")
-                ?? throw new InvalidOperationException("Configuration setting 'Sqlite' is missing.");
+            //_sqlite = configuration.GetValue<bool?>("Sqlite")
+            //    ?? throw new InvalidOperationException("Configuration setting 'Sqlite' is missing.");
         }
 
         public async Task<T> CloseDataQc<T>(string source, string project, List<RuleFailures> ruleFailures, DatabaseProvider databaseProvider)
