@@ -322,6 +322,12 @@ namespace DatabaseManager.Services.RulesSqlite
             try
             {
                 var rule = await ra.GetRule(Id);
+                if (rule == null)
+                {
+                    response.IsSuccess = false;
+                    response.ErrorMessages = new List<string> { $"GetRuleAndFunction: Rule with ID {Id} was not found." };
+                    return Results.NotFound(response); // Returns a clean HTTP 404 Status
+                }
                 IEnumerable<RuleFunctionsDto> functions = await fa.GetFunctions();
                 RuleFunctionsDto function = functions.FirstOrDefault(x => x.FunctionName == rule.RuleFunction);
                 if (function != null)

@@ -70,7 +70,10 @@ else
         }
         else if (TubeType == "DataQC")
         {
-            qcParms.DataConnector = singleton.TargetConnector;
+            if (!SD.Sqlite)
+            {
+                qcParms.DataConnector = singleton.TargetConnector;
+            }
         }
         else if (TubeType == "Predictions")
         {

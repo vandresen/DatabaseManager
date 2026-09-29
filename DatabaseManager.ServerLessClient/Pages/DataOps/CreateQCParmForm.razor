@@ -11,12 +11,24 @@ else
     <EditForm Model="DataQcParms" OnValidSubmit="OnValidSubmit">
         <DataAnnotationsValidator />
         <div class="form-group">
-            <MudSelect T="string" Label="Source:" @bind-Value="DataQcParms.DataConnector" Variant="Variant.Outlined">
-                @foreach (var option in options)
-                {
-                    <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
-                }
-            </MudSelect>
+            @if (SD.Sqlite)
+            {
+                <MudSelect T="string" Label="Project:" @bind-Value="DataQcParms.IndexProject" Variant="Variant.Outlined">
+                    @foreach (var option in options)
+                    {
+                        <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+            else
+            {
+                <MudSelect T="string" Label="Source:" @bind-Value="DataQcParms.DataConnector" Variant="Variant.Outlined">
+                    @foreach (var option in options)
+                    {
+                        <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                    }
+                </MudSelect>
+            }
         </div>
         <button class="btn btn-success" type="submit">Save Changes</button>
     </EditForm>
@@ -34,10 +46,6 @@ else
         if (SD.Sqlite)
         {
             options = await idxView.GetIndexProjects();
-            foreach (var option in options)
-            {
-                Console.WriteLine($"Option: {option}");
-            }
         }
         else
         {

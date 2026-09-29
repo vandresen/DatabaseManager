@@ -1,3 +1,4 @@
+using DatabaseManager.Services.Predictions;
 using DatabaseManager.Services.Predictions.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
@@ -17,10 +18,12 @@ builder.Services.AddScoped<IIndexAccess, IndexAccess>();
 builder.Services.AddScoped<IPrediction, PredictionCore>();
 builder.Services.AddScoped<IDatabaseAccess, DapperDataAccess>();
 builder.Services.AddScoped<IDatabaseManagementService, DatabaseManagementService>();
-//builder.Services.AddScoped<IConfigFileService, ConfigFileService>();
-//builder.Services.AddScoped<IDataQc, DataQcCore>();
-//builder.Services.AddScoped<IDataSourceService, DataSourceService>();
-//builder.Services.AddScoped<DataQcExecutionContext>();
+
+SD.IndexSqliteAPI = builder.Configuration["IndexSqliteAPI"]
+    ?? throw new InvalidOperationException("Setting 'IndexSqliteAPI' is missing.");
+SD.IndexSqlServerAPI = builder.Configuration["IndexSqlServerAPI"]
+    ?? throw new InvalidOperationException("Setting 'IndexSqlServerAPI' is missing.");
+SD.IndexKeySetting = builder.Configuration["IndexKey"];
 
 builder.Services
     .AddApplicationInsightsTelemetryWorkerService()

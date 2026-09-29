@@ -26,7 +26,6 @@ namespace DatabaseManager.Services.Predictions.Services
         private readonly IDatabaseManagementService _dmService;
         private List<DataAccessDef> _accessDefs;
         private List<IndexDto> _newIndexes;
-        private readonly bool _sqlLite;
         private static HttpClient Client = new HttpClient();
 
         private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -36,16 +35,12 @@ namespace DatabaseManager.Services.Predictions.Services
         };
 
         public PredictionCore(ILogger<PredictionCore> logger, IIndexAccess idxAccess, IDatabaseAccess dp,
-            IDatabaseManagementService dmService, IConfiguration configuration)
+            IDatabaseManagementService dmService)
         {
             _logger = logger;
             _idxAccess = idxAccess;
             _dp = dp;
             _dmService = dmService;
-            if (!bool.TryParse(configuration["Sqlite"], out _sqlLite))
-            {
-                throw new InvalidOperationException("Sqlite is not configured or is not a valid boolean");
-            }
         }
 
         public async Task<List<int>> ExecutePredictionAsync(List<IndexDto> indexes, RuleModelDto rule, PredictionParameters parms)
@@ -323,7 +318,7 @@ namespace DatabaseManager.Services.Predictions.Services
             var resultElement = (JsonElement)response.Result!;
             string jsonPayload;
 
-            if (_sqlLite)
+            if (SD.Sqlite)
             {
                 var index = resultElement.Deserialize<IndexDto>(_jsonOptions)!;
                 jsonPayload = index.JsonDataObject;

@@ -1,3 +1,4 @@
+using DatabaseManager.Services.Predictions.Extensions;
 using DatabaseManager.Services.Predictions.Models;
 using DatabaseManager.Services.Predictions.Services;
 using Microsoft.AspNetCore.Http;
@@ -32,6 +33,7 @@ public class Predictions
     [Function("Predictions")]
     public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
     {
+        req.InitializeEnvironment();
         _logger.LogInformation($"Predictions: Starting");
         var response = req.CreateResponse();
         var result = new ResponseDto();
