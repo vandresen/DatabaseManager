@@ -1,5 +1,6 @@
 ﻿@using MudBlazor
 @inject DatabaseManager.ServerLessClient.Services.IDataSources dataSources
+@inject IIndexView idxView
 
 @if (options == null)
 {
@@ -10,12 +11,24 @@ else
     <EditForm Model="PredictioncParms" OnValidSubmit="OnValidSubmit">
         <DataAnnotationsValidator />
         <div class="form-group">
-            <MudSelect T="string" Label="Source:" @bind-Value="PredictioncParms.DataConnector" Variant="Variant.Outlined">
-                @foreach (var option in options)
-                {
-                    <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
-                }
-            </MudSelect>
+            @if (SD.Sqlite)
+            {
+                <MudSelect T="string" Label="Project:" @bind-Value="PredictioncParms.IndexProject" Variant="Variant.Outlined">
+                    @foreach (var option in options)
+                    {
+                        <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+            else
+            {
+                <MudSelect T="string" Label="Source:" @bind-Value="PredictioncParms.DataConnector" Variant="Variant.Outlined">
+                    @foreach (var option in options)
+                    {
+                        <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+                    }
+                </MudSelect>
+            }
         </div>
         <button class="btn btn-success" type="submit">Save Changes</button>
     </EditForm>
@@ -30,10 +43,16 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        response = await dataSources.GetSources<DatabaseManager.ServerLessClient.Models.ResponseDto>();
-        Console.WriteLine(response.Result);
-        connectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
-        Console.WriteLine($"Number of options: {connectParameters.Count}");
-        options = connectParameters.Select(x => x.SourceName).ToArray();
+        if (SD.Sqlite)
+        {
+            var projectList = await idxView.GetIndexProjects();
+            options = projectList.ToArray();
+        }
+        else
+        {
+            response = await dataSources.GetSources<DatabaseManager.ServerLessClient.Models.ResponseDto>();
+            connectParameters = JsonConvert.DeserializeObject<List<ConnectParameters>>(Convert.ToString(response.Result));
+            options = connectParameters.Select(x => x.SourceName).ToArray();
+        }
     }
 }

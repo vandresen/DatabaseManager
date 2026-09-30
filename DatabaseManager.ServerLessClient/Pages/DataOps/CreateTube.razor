@@ -78,8 +78,14 @@ else
         else if (TubeType == "Predictions")
         {
             predictionParms.AzureStorageKey = singleton.AzureStorage;
-            predictionParms.DataConnector = singleton.TargetConnector;
-            predictionParms.IndexProject = singleton.Project;
+            if (SD.Sqlite)
+            {
+                predictionParms.IndexProject = singleton.Project;
+            }
+            else
+            {
+                predictionParms.DataConnector = singleton.TargetConnector;
+            }
         }
 
     }
