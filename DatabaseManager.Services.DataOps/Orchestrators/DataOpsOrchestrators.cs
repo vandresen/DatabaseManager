@@ -110,6 +110,7 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
                     {
                         PredictionParameters pipeParm = JObject.Parse(pipe.JsonParameters).ToObject<PredictionParameters>()
                             ?? throw new InvalidOperationException("Failed to deserialize PredictionParameters.");
+                        pipeParm.DatabaseProvider = pipe.DatabaseProvider;
 
                         List<string> predictionResults = new List<string>();
                         List<string> predictionFailures = new List<string>();

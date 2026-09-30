@@ -15,9 +15,11 @@ namespace DatabaseManager.Services.DataOps.Services
 
         public async Task<T> ProcessPrediction<T>(PredictionParameters predictionParameter)
         {
+            string dbType = predictionParameter.DatabaseProvider == DatabaseProvider.Sqlite ? "sqlite" : "sqlserver";
+
             var predictionAPIBase = _configuration.GetValue<string>("PredictionAPI");
             var predictionKey = _configuration.GetValue<string>("PredictionKey");
-            string url = predictionAPIBase.BuildFunctionUrl($"/Predictions", $"", predictionKey);
+            string url = predictionAPIBase.BuildFunctionUrl($"/Predictions", $"DbType={dbType}", predictionKey);
             return await this.SendAsync<T>(new ApiRequest()
             {
                 ApiType = SD.ApiType.POST,
