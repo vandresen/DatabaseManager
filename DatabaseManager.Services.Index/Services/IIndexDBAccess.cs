@@ -21,5 +21,6 @@ namespace DatabaseManager.Services.Index.Services
         Task<IndexDto> GetIndexRoot(string connectionString);
         Task<IEnumerable<IndexDto>> GetDescendants(int id, string project, string connectionString);
         Task<IEnumerable<NeighbourIndex>> GetNeighbors(int id, string project, string failRule, string depthAttribute, string connectionString);
+        Task<List<FailureCountDto>> GetFailures (string connectionString);
     }
 }

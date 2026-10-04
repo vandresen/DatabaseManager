@@ -152,6 +152,30 @@ namespace DatabaseManager.Services.Index
             return _response;
         }
 
+        [Function("GetFailures")]
+        public async Task<ResponseDto> GetFailures(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "GetFailures")] HttpRequestData req)
+        {
+            _logger.LogInformation("GetFailures: Starting.");
+
+            try
+            {
+                string name = req.GetQuery("Name", true);
+                ResponseDto dsResponse = await _ds.GetDataSourceByNameAsync<ResponseDto>(name);
+                ConnectParametersDto connectParameter = JsonConvert.DeserializeObject<ConnectParametersDto>(Convert.ToString(dsResponse.Result));
+                List<FailureCountDto> idx = await _indexDB.GetFailures(connectParameter.ConnectionString);
+                _response.Result = idx;
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = new List<string>() { ex.ToString() };
+                _logger.LogError($"GetFailures: Error getting failures: {ex}");
+            }
+            return _response;
+        }
+
         [Function("QueryIndex")]
         public async Task<ResponseDto> QueryIndexes(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "QueryIndex")] HttpRequestData req)
