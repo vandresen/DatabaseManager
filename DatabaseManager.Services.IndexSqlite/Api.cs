@@ -13,6 +13,7 @@ namespace DatabaseManager.Services.IndexSqlite
             app.MapPost("/BuildIndex", BuildIndex);
             app.MapGet("/GetDescendants/{id}", GetDescendants);
             app.MapGet("/GetNeighbors/{id}", GetNeighbors);
+            app.MapGet("/GetFailures", GetFailures);
             app.MapGet("/DmIndexes", GetDmIndexes);
             app.MapGet("/QueryIndex", QueryIndexes);
             app.MapGet("/EntiretyIndexes", EntiretyIndexes);
@@ -108,6 +109,23 @@ namespace DatabaseManager.Services.IndexSqlite
             {
                 response.IsSuccess = false;
                 response.ErrorMessages.Insert(0, $"GetDescendants: Could not get descendents for id {id}, {ex}");
+            }
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> GetFailures(string project, IIndexAccess idxAccess)
+        {
+            ResponseDto response = new();
+            try
+            {
+                var result = await idxAccess.GetFailures(project);
+                response.IsSuccess = true;
+                response.Result = result;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                response.ErrorMessages.Insert(0, $"GetFailures: Could not get failure counts for project {project}, {ex}");
             }
             return Results.Ok(response);
         }

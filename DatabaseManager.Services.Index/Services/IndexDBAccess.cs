@@ -662,9 +662,9 @@ namespace DatabaseManager.Services.Index.Services
                     DataType = kv.Key.DataType,
                     RuleKey = kv.Key.RuleKey,
                     Count = kv.Value
-        })
-        .OrderBy(f => f.DataType).ThenBy(f => f.RuleKey)
-        .ToList();
+                })
+                .OrderBy(f => f.DataType).ThenBy(f => f.RuleKey)
+                .ToList();
         }
     }
 }

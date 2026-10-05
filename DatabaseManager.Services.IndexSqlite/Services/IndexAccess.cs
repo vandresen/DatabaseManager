@@ -892,5 +892,29 @@ namespace DatabaseManager.Services.IndexSqlite.Services
 
             return result;
         }
+
+        public async Task<List<FailureCountDto>> GetFailures(string project)
+        {
+            IEnumerable<IndexModel> indexes = await GetIndexes(project);
+            var counts = new Dictionary<(string DataType, string RuleKey), int>();
+            foreach (var idx in indexes.Where(i => !string.IsNullOrEmpty(i.QC_String)))
+            {
+                var keys = idx.QC_String.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                foreach (var key in keys)
+                {
+                    var k = (idx.DataType, key);
+                    counts[k] = counts.GetValueOrDefault(k) + 1;
+                }
+            }
+            return counts
+                .Select(kv => new FailureCountDto
+                {
+                    DataType = kv.Key.DataType,
+                    RuleKey = kv.Key.RuleKey,
+                    Count = kv.Value
+                })
+                .OrderBy(f => f.DataType).ThenBy(f => f.RuleKey)
+                .ToList();
+        }
     }
 }
