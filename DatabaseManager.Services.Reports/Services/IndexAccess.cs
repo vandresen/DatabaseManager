@@ -4,10 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Runtime.Intrinsics.Arm;
 
 namespace DatabaseManager.Services.Reports.Services
 {
@@ -277,6 +273,13 @@ namespace DatabaseManager.Services.Reports.Services
                 IEnumerable<IndexDto> indexes = JsonConvert.DeserializeObject<IEnumerable<IndexDto>>(indexResponse.Result.ToString());
                 return indexes;
             }
+        }
+
+        public async Task<T> GetFailureCounts<T>(string dataSource, string project)
+        {
+            string url = SD.IndexAPIBase.BuildFunctionUrl("/GetFailures",
+                $"Name={Uri.EscapeDataString(dataSource)}&Project={Uri.EscapeDataString(project ?? "")}", SD.IndexKey);
+            return await SendAsync<T>(new ApiRequest { ApiType = SD.ApiType.GET, Url = url });
         }
 
         private async Task InsertNewObjectToIndex(string json, string dataType, IndexFileData taxonomyInfoForMissingObject,

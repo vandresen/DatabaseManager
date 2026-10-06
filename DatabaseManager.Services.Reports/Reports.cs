@@ -40,7 +40,6 @@ namespace DatabaseManager.Services.Reports
             _logger.LogInformation("GetResults: Starting.");
             try
             {
-                List<QcResult> qcResult = new List<QcResult>();
                 string name = req.GetQuery("Name", true);
 
                 req.InitializeEnvironment();
@@ -51,18 +50,18 @@ namespace DatabaseManager.Services.Reports
                     string content = Convert.ToString(dsResponse.Result);
                     List<RuleModel> rules = JsonConvert.DeserializeObject<List<RuleModel>>(content);
                     List<RuleModel> activeRules = rules.Where(x => x.Active == "Y").ToList();
-                    string jsonString = JsonConvert.SerializeObject(activeRules, Formatting.Indented);
-                    if (activeRules != null && activeRules.Count > 0) 
-                    {
-                        qcResult = JsonConvert.DeserializeObject<List<QcResult>>(jsonString);
-                        foreach (QcResult qcItem in qcResult) 
-                        {
-                            ResponseDto iaResponse = await _ia.GetIndexFailures<ResponseDto>(name, "", qcItem.DataType, qcItem.RuleKey);
-                            var indexes = JsonConvert.DeserializeObject<List<IndexDto>>(Convert.ToString(iaResponse.Result));
-                            qcItem.Failures = indexes.Count;
-                        }
-                        _response.Result = qcResult;
-                    }
+                    List<QcResult> qcResult = JsonConvert.DeserializeObject<List<QcResult>>(
+                        JsonConvert.SerializeObject(activeRules)) ?? new List<QcResult>();
+                    ResponseDto iaResponse = await _ia.GetFailureCounts<ResponseDto>(name, "");
+                    if (iaResponse == null || !iaResponse.IsSuccess)
+                        throw new Exception("Error getting failure counts from the index service.");
+                    var failureCounts = JsonConvert.DeserializeObject<List<FailureCountDto>>(
+                        Convert.ToString(iaResponse.Result)) ?? new List<FailureCountDto>();
+
+                    var counts = failureCounts.ToDictionary(c => (c.DataType, c.RuleKey), c => c.Count);
+                    foreach (QcResult qcItem in qcResult)
+                        qcItem.Failures = counts.GetValueOrDefault((qcItem.DataType, qcItem.RuleKey));
+                    _response.Result = qcResult;
                 }
                 else
                 {
