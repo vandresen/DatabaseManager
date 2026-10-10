@@ -225,7 +225,8 @@ namespace DatabaseManager.Services.DatabaseManagement.Core
 
             type = "Index";
             DataAccessDef indexDef = accessDefs.FirstOrDefault(x => x.DataType == type);
-            BuildGetProcedure(type, ruleDef);
+            BuildGetProcedure(type, indexDef);
+            BuildGetProcedureNoJson(type, indexDef);
             BuildGetProcedureWithQcString(indexDef);
             BuildGetProcedureWithAttributeQuery(type, "INDEXNODE", indexDef);
         }
@@ -244,6 +245,20 @@ namespace DatabaseManager.Services.DatabaseManagement.Core
             sqlCommand = sqlCommand + " END";
             _DbStorage.ExecuteSQL(sqlCommand, _dbConnectionString);
         }
+
+        private void BuildGetProcedureNoJson(string dataType, DataAccessDef accessDef)
+        {
+            string procName = $"spGet{dataType}NoJson";
+            _DbStorage.ExecuteSQL($"DROP PROCEDURE IF EXISTS {procName}", _dbConnectionString);
+
+            string select = accessDef.Select.Replace(" JsonDataObject,", "", StringComparison.OrdinalIgnoreCase);
+            if (select == accessDef.Select)
+                throw new ArgumentException("JsonDataObject was not found in the select statement");
+
+            string sqlCommand = $"CREATE PROCEDURE {procName} AS BEGIN SET NOCOUNT ON; {select} END";
+            _DbStorage.ExecuteSQL(sqlCommand, _dbConnectionString);
+        }
+
         private void BuildGetProcedureWithId(string dataType, DataAccessDef accessDef)
         {
             string sqlCommand = $"DROP PROCEDURE IF EXISTS spGetWithId{dataType} ";

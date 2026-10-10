@@ -1,7 +1,9 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using Polly;
 using System.Data;
+using System.Diagnostics;
 
 namespace DatabaseManager.Services.Index.Services
 {
@@ -9,6 +11,12 @@ namespace DatabaseManager.Services.Index.Services
     {
         private const int SqlCommandTimeout = 1000;
         private const int RetryCount = 3;
+        private readonly ILogger _log;
+
+        public DapperDataAccess(ILogger<DapperDataAccess> log)
+        {
+            _log = log;
+        }
 
         private async Task<T> ExecuteWithRetry<T>(Func<Task<T>> operation)
         {
@@ -54,6 +62,7 @@ namespace DatabaseManager.Services.Index.Services
         {
             return await ExecuteWithRetry(async () =>
             {
+                var sw = Stopwatch.StartNew();
                 using IDbConnection cnn = new SqlConnection(connectionString);
 
                 return await cnn.QueryAsync<T>(
