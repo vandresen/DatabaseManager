@@ -645,7 +645,7 @@ namespace DatabaseManager.Services.Index.Services
         public async Task<List<FailureCountDto>> GetFailures(string connectionString)
         {
             List<FailureCountDto> failureCounts = new List<FailureCountDto>();
-            var indexes = await _dp.LoadData<IndexDto, dynamic>("dbo.spGetIndex", new { }, connectionString);
+            var indexes = await _dp.LoadData<IndexDto, dynamic>("dbo.spGetIndexNoJson", new { }, connectionString);
             var counts = new Dictionary<(string DataType, string RuleKey), int>();
             foreach (var idx in indexes.Where(i => !string.IsNullOrEmpty(i.QC_String)))
             {
