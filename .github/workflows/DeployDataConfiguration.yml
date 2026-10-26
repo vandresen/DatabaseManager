@@ -12,18 +12,18 @@ jobs:
     name: Build release
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Build
         shell: pwsh
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          dotnet build DatabaseManager.Services.DataConfiguration/DatabaseManager.Services.DataConfiguration.csproj --configuration Release --output ./output
+          dotnet publish DatabaseManager.Services.DataConfiguration/DatabaseManager.Services.DataConfiguration.csproj --configuration Release --output ./output
           popd
 
       - name: 'Run Azure Functions Action'
