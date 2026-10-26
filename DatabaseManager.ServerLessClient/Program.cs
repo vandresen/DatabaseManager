@@ -1,5 +1,4 @@
 using Blazored.LocalStorage;
-using BlazorTable;
 using DatabaseManager.ServerLessClient.Models;
 using DatabaseManager.ServerLessClient.Services;
 using dymaptic.GeoBlazor.Core;
@@ -72,7 +71,6 @@ namespace DatabaseManager.ServerLessClient
                 services.AddScoped<Services.IIndexView, IndexViewSqlServer>();
             }
 
-            services.AddBlazorTable();
             services.AddMudServices();
         }
     }

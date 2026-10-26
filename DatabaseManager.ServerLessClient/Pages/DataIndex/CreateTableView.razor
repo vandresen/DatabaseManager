@@ -1,33 +1,97 @@
-﻿<br />
-<Table TableItem="JObject" Items="Data" PageSize="15" ColumnReorder="true">
-    @foreach (var head in headers)
-    {
-        @if (head.Name == "Children")
+﻿@using MudBlazor
+
+<MudTable T="JObject"
+          Items="Data"
+          Dense="true"
+          Hover="true"
+          Breakpoint="Breakpoint.Sm"
+          RowsPerPage="15"
+          Filter="FilterRow">
+    <HeaderContent>
+        @foreach (var head in headers)
         {
-            <Column TableItem="JObject" Title="" Sortable="false">
-                <Template>
+            @if (head.Name == "Children")
+            {
+                <MudTh Style="background-color:lightgray; width:1%; white-space:nowrap">
+                    <MudTooltip Text="Clear all filters">
+                        <MudIconButton Icon="@Icons.Material.Filled.FilterAltOff"
+                                       Color="Color.Secondary"
+                                       OnClick="@ClearFilters"
+                                       Size="Size.Small" />
+                    </MudTooltip>
+                </MudTh>
+            }
+            else if (head.IsArray)
+            {
+                <MudTh Style="background-color:lightgray">@head.Name</MudTh>
+            }
+            else
+            {
+                <MudTh Style="background-color:lightgray">
+                    <MudTableSortLabel SortBy="@(new Func<JObject, object>(x => GetSortValue(x, head)))">
+                        @head.Name
+                    </MudTableSortLabel>
+                    @if (head.Filter)
+                    {
+                        <div style="display:flex; gap:4px; align-items:center">
+                            @if (IsComparable(head))
+                            {
+                                <MudSelect T="string"
+                                           @bind-Value="ops[head.Name]"
+                                           Margin="Margin.Dense"
+                                           Variant="Variant.Outlined"
+                                           Style="width:90px; flex:0 0 90px">
+                                    @foreach (var op in Operators)
+                                    {
+                                        <MudSelectItem Value="@op">@op</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            }
+                            <MudTextField @bind-Value="filters[head.Name]"
+                                          Margin="Margin.Dense"
+                                          Variant="Variant.Outlined" />
+                        </div>
+                    }
+                </MudTh>
+            }
+        }
+    </HeaderContent>
+
+    <RowTemplate>
+        @foreach (var head in headers)
+        {
+            @if (head.Name == "Children")
+            {
+                <MudTd Style="white-space:nowrap">
                     @if (context.Property("Children").Value.Value<int>() > 0)
                     {
-                        <button class="btn btn-info" @onclick="@(() => DrillDown(context.ToString()))">...</button>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Info"
+                                   Size="Size.Small"
+                                   OnClick="@(() => DrillDown(context.ToString()))">...</MudButton>
                     }
-                </Template>
-            </Column>
+                </MudTd>
+            }
+            else if (head.IsArray)
+            {
+                <MudTd DataLabel="@head.Name">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Info"
+                               Size="Size.Small"
+                               OnClick="@(() => ArrayAction(context.ToString()))">...</MudButton>
+                </MudTd>
+            }
+            else
+            {
+                <MudTd DataLabel="@head.Name">@context.Property(head.Name)?.Value</MudTd>
+            }
         }
-        else if (head.IsArray)
-        {
-            <Column TableItem="JObject" Title="@head.Name" Sortable="false">
-                <Template>
-                    <button class="btn btn-info" @onclick="@(() => ArrayAction(context.ToString()))">...</button>
-                </Template>
-            </Column>
-        }
-        else
-        {
-            <Column TableItem="JObject" Title="@head.Name" Field="@(x => x.Property(head.Name).Value)" Sortable="true" Filterable="@head.Filter" Type="@head.Type" />
-        }
-    }
-    <Pager ShowPageNumber="true" ShowTotalCount="true" />
-</Table>
+    </RowTemplate>
+
+    <PagerContent>
+        <MudTablePager HorizontalAlignment="HorizontalAlignment.Center" />
+    </PagerContent>
+</MudTable>
 
 @code {
     [Parameter] public List<JObject> Data { get; set; }
@@ -35,15 +99,105 @@
     [Parameter] public EventCallback<string> ChildrenDrillDown { get; set; }
     [Parameter] public EventCallback<string> ArrayDrillDown { get; set; }
     [Parameter] public IndexFileData Taxonomy { get; set; }
+
     private List<Header> headers = new List<Header>();
     private List<string> attributeList;
     private List<string> arrayColumns;
+    private Dictionary<string, string> filters = new();
+
+    private Dictionary<string, string> ops = new();
+    private static readonly string[] Operators = { "=", ">", ">=", "<", "<=", "!=" };
+
+    private bool IsComparable(Header head) =>
+        head.Type == typeof(int) || head.Type == typeof(double) || head.Type == typeof(DateTime);
 
     protected override void OnInitialized()
     {
         Console.WriteLine($"Arrays: {Taxonomy.Arrays}");
         attributeList = Attributes.Split(',').Select(p => p.Trim()).ToList();
         headers = CreateHeader();
+        filters = headers.ToDictionary(h => h.Name, h => string.Empty);
+        ops = headers.ToDictionary(h => h.Name, h => "=");
+    }
+
+    private bool FilterRow(JObject row)
+    {
+        foreach (var head in headers)
+        {
+            if (!filters.TryGetValue(head.Name, out var filter) || string.IsNullOrWhiteSpace(filter))
+                continue;
+
+            var token = row.Property(head.Name)?.Value;
+
+            if (IsComparable(head))
+            {
+                if (!CompareToken(token, head, filter.Trim(), ops[head.Name]))
+                    return false;
+            }
+            else
+            {
+                var text = token?.ToString() ?? string.Empty;
+                if (!text.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    private bool CompareToken(JToken token, Header head, string filter, string op)
+    {
+        if (token == null || token.Type == JTokenType.Null)
+            return false;
+
+        int cmp;
+        if (head.Type == typeof(DateTime))
+        {
+            // Not a valid date yet (still typing): don't filter
+            if (!DateTime.TryParse(filter, out var target)) return true;
+            cmp = token.Value<DateTime>().Date.CompareTo(target.Date);
+        }
+        else if (head.Type == typeof(int))
+        {
+            if (!long.TryParse(filter, out var target)) return true;
+            cmp = token.Value<long>().CompareTo(target);
+        }
+        else
+        {
+            if (!double.TryParse(filter, out var target)) return true;
+            cmp = token.Value<double>().CompareTo(target);
+        }
+
+        return op switch
+        {
+            ">" => cmp > 0,
+            ">=" => cmp >= 0,
+            "<" => cmp < 0,
+            "<=" => cmp <= 0,
+            "!=" => cmp != 0,
+            _ => cmp == 0
+        };
+    }
+
+    private void ClearFilters()
+    {
+        foreach (var key in filters.Keys.ToList())
+        {
+            filters[key] = string.Empty;
+            ops[key] = "=";
+        }
+    }
+
+    // Returns a typed value so numbers and dates sort correctly instead of as text
+    private object GetSortValue(JObject row, Header head)
+    {
+        var token = row.Property(head.Name)?.Value;
+        if (token == null || token.Type == JTokenType.Null)
+            return null;
+
+        if (head.Type == typeof(int)) return token.Value<long>();
+        if (head.Type == typeof(double)) return token.Value<double>();
+        if (head.Type == typeof(DateTime)) return token.Value<DateTime>();
+        return token.ToString();
     }
 
     private List<Header> CreateHeader()
@@ -52,69 +206,40 @@
         List<Header> newHeader = new List<Header>();
         JObject headerToken = Data.FirstOrDefault();
 
-        if (Taxonomy.Arrays != null)
+        if (Taxonomy.Arrays != null && Taxonomy.Arrays.Type == JTokenType.Array)
         {
-            if (Taxonomy.Arrays.Type == JTokenType.Array)
+            arrayColumns = new List<string>();
+            foreach (var item in Taxonomy.Arrays)
             {
-                arrayColumns = new List<string>();
-                foreach (var item in Taxonomy.Arrays)
-                {
-                    var col = item.Value<string>("Attribute");
-                    arrayColumns.Add(col);
-                }
+                var col = item.Value<string>("Attribute");
+                arrayColumns.Add(col);
             }
-
         }
 
         newHeader.Add(new Header() { Name = "Children", Type = typeof(string) });
         foreach (JProperty property in headerToken.Properties())
         {
+            if (!attributeList.Contains(property.Name)) continue;
+
             bool filter = true;
             if (Data.FirstOrDefault(s => s.Property(property.Name).Value.Type == JTokenType.Null) != null) filter = false;
 
             Type type = typeof(string);
-            var vidar = Data.FirstOrDefault(s => s.Property(property.Name).Value != null);
-            var tokenType = vidar.Property(property.Name).Value.Type;
-            if (tokenType == JTokenType.Integer)
-            {
-                type = typeof(int);
-            }
-            else if (tokenType == JTokenType.Float)
-            {
-                type = typeof(double);
-            }
-            else if (tokenType == JTokenType.Date)
-            {
-                type = typeof(DateTime);
-            }
+            var sample = Data.FirstOrDefault(s => s.Property(property.Name).Value != null);
+            var tokenType = sample.Property(property.Name).Value.Type;
+            if (tokenType == JTokenType.Integer) type = typeof(int);
+            else if (tokenType == JTokenType.Float) type = typeof(double);
+            else if (tokenType == JTokenType.Date) type = typeof(DateTime);
 
-            bool isArray = false;
-            if (arrayColumns != null)
-            {
-                foreach (var col in arrayColumns)
-                {
-                    if (col == property.Name)
-                    {
-                        isArray = true;
-                    }
-                }
-            }
+            bool isArray = arrayColumns != null && arrayColumns.Contains(property.Name);
 
-            bool display = false;
-            if (attributeList.Contains(property.Name)) display = true;
-
-            if (display)
+            newHeader.Add(new Header()
             {
-                //Console.WriteLine(property.Name);
-                if (display) newHeader.Add(
-                    new Header()
-                    {
-                        Name = property.Name,
-                        Type = type,
-                        Filter = filter,
-                        IsArray = isArray
-                    });
-            }
+                Name = property.Name,
+                Type = type,
+                Filter = filter,
+                IsArray = isArray
+            });
         }
 
         return newHeader;

@@ -1,79 +1,139 @@
-﻿@page  "/dataops/edit/{Name}"
+﻿@page "/dataops/edit/{Name}"
+@using MudBlazor
+@using Newtonsoft.Json
 @inject DatabaseManager.ServerLessClient.Services.IDataOps dataOps
+@inject IPopupMessage displayMessage
 
 <h3>Edit DataOps Pipeline</h3>
 
-<div class="dropdown" style="margin-top:20px">
-    <button @onclick="ToggleDropdownMenu" class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="@expandedState">
-        New Tube
-    </button>
-    <div class="dropdown-menu collapse @showMenu">
+<div class="mb-4">
+    <MudMenu Label="New Tube" Variant="Variant.Filled" Color="Color.Secondary"
+             EndIcon="@Icons.Material.Filled.ArrowDropDown">
         @foreach (var tube in TubeTypes)
         {
-            <a class="dropdown-item" href="createtube/@Name/@tube">@tube</a>
+            <MudMenuItem Href="@($"createtube/{Name}/{tube}")">@tube</MudMenuItem>
         }
-    </div>
+    </MudMenu>
 </div>
-
-<br />
 
 @if (tubes == null)
 {
-    <p>No tubes available</p>
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
 }
 else
 {
-    <Table TableItem="PipeLine" Items="tubes" PageSize="@pageSize" ColumnReorder="true">
-        <Column TableItem="PipeLine" Title="Action" Sortable="false">
-            <Template>
-                <a class="btn btn-primary" href="/edittube/@Name/@context.Id">Edit</a>
-                <button class="btn btn-danger" @onclick="@(() => DeleteTube(context.Id))">Delete</button>
-            </Template>
-        </Column>
-        <Column TableItem="PipeLine" Title="Priority" Field="@(x => x.Priority)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
-        <Column TableItem="PipeLine" Title="Tube Type" Field="@(x => x.ArtifactType)" Sortable="true" Filterable="true"></Column>
-        <Column TableItem="PipeLine" Title="Parameters" Field="@(x => x.Parameters)" Sortable="true" Filterable="true"></Column>
-        <Pager ShowPageNumber="true" ShowTotalCount="true" />
-    </Table>
+    <MudTable Items="@tubes" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Filter="FilterTubes">
+        <HeaderContent>
+            <MudTh style="background-color:lightgray">
+                Action
+                <MudTooltip Text="Clear all filters">
+                    <MudIconButton Icon="@Icons.Material.Filled.FilterAltOff"
+                                   Color="Color.Secondary"
+                                   OnClick="@ClearFilters"
+                                   Size="Size.Small" />
+                </MudTooltip>
+            </MudTh>
+
+            <MudTh style="background-color:lightgray">
+                <MudTableSortLabel SortBy="@((PipeLine x) => x.Priority)"
+                                   InitialDirection="SortDirection.Ascending">Priority</MudTableSortLabel>
+                <MudTextField @bind-Value="filterPriority" Margin="Margin.Dense" Variant="Variant.Outlined" />
+            </MudTh>
+
+            <MudTh style="background-color:lightgray">
+                <MudTableSortLabel SortBy="@((PipeLine x) => x.ArtifactType)">Tube Type</MudTableSortLabel>
+                <MudTextField @bind-Value="filterTubeType" Margin="Margin.Dense" Variant="Variant.Outlined" />
+            </MudTh>
+
+            <MudTh style="background-color:lightgray">
+                <MudTableSortLabel SortBy="@((PipeLine x) => x.Parameters)">Parameters</MudTableSortLabel>
+                <MudTextField @bind-Value="filterParameters" Margin="Margin.Dense" Variant="Variant.Outlined" />
+            </MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd Style="white-space:nowrap">
+                <MudFab StartIcon="@Icons.Material.Filled.Edit"
+                        Color="Color.Secondary"
+                        Size="Size.Small"
+                        IconSize="Size.Small"
+                        Class="me-1"
+                        Href="@($"/edittube/{Name}/{context.Id}")" />
+                <MudFab StartIcon="@Icons.Material.Filled.Delete"
+                        Color="Color.Primary"
+                        Size="Size.Small"
+                        IconSize="Size.Small"
+                        @onclick="@(() => DeleteTube(context.Id))" />
+            </MudTd>
+            <MudTd DataLabel="Priority">@context.Priority</MudTd>
+            <MudTd DataLabel="Tube Type">@context.ArtifactType</MudTd>
+            <MudTd DataLabel="Parameters">@context.Parameters</MudTd>
+        </RowTemplate>
+
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
 }
 
 @code {
     [Parameter] public string Name { get; set; }
-    private List<string> TubeTypes = new List<string>{ "DataTransfer", "CreateIndex", "DataQC", "Predictions"};
-    List<PipeLine> tubes;
-    private bool expandedState = false;
-    private string showMenu = null;
-    int pageSize = 10;
-    DatabaseManager.ServerLessClient.Models.ResponseDto response;
+
+    private List<string> TubeTypes = new() { "DataTransfer", "CreateIndex", "DataQC", "Predictions" };
+    private List<PipeLine>? tubes;
+    private string filterPriority = string.Empty;
+    private string filterTubeType = string.Empty;
+    private string filterParameters = string.Empty;
+    private DatabaseManager.ServerLessClient.Models.ResponseDto response;
 
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine($"Edit data ops, name is {Name}");
+        try
+        {
+            await RefreshTubes();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors in edit data ops: {ex}");
+            await displayMessage.DisplayErrorMessage("Problems getting pipeline");
+        }
+    }
+
+    private async Task RefreshTubes()
+    {
         response = await dataOps.GetPipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(Name);
-        tubes = JsonConvert.DeserializeObject<List<PipeLine>>(Convert.ToString(response.Result));
+        tubes = JsonConvert.DeserializeObject<List<PipeLine>>(Convert.ToString(response.Result))
+                ?? new List<PipeLine>();
+    }
+
+    private bool FilterTubes(PipeLine tube)
+    {
+        return (string.IsNullOrWhiteSpace(filterPriority) || tube.Priority.ToString().Contains(filterPriority, StringComparison.OrdinalIgnoreCase))
+            && (string.IsNullOrWhiteSpace(filterTubeType) || tube.ArtifactType?.ToString().Contains(filterTubeType, StringComparison.OrdinalIgnoreCase) == true)
+            && (string.IsNullOrWhiteSpace(filterParameters) || tube.Parameters?.ToString().Contains(filterParameters, StringComparison.OrdinalIgnoreCase) == true);
+    }
+
+    private void ClearFilters()
+    {
+        filterPriority = string.Empty;
+        filterTubeType = string.Empty;
+        filterParameters = string.Empty;
     }
 
     private async Task DeleteTube(int id)
     {
         try
         {
-            Console.WriteLine($"Delete tube with iod={id}");
-            response = await dataOps.GetPipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(Name);
-            tubes = JsonConvert.DeserializeObject<List<PipeLine>>(Convert.ToString(response.Result));
-            tubes.RemoveAll(x => x.Id == id);
+            await RefreshTubes();
+            tubes!.RemoveAll(x => x.Id == id);
             DataOpsPipes pipe = new DataOpsPipes { Name = Name };
             response = await dataOps.SavePipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(pipe, tubes);
-            this.StateHasChanged();
+            StateHasChanged();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Errors: {ex}");
+            await displayMessage.DisplayErrorMessage("Failed to delete tube");
         }
-    }
-
-    private void ToggleDropdownMenu()
-    {
-        expandedState = !expandedState;
-        showMenu = expandedState ? "show" : null;
     }
 }

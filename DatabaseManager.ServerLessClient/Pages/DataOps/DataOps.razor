@@ -1,4 +1,5 @@
 ﻿@page "/dataops"
+@using MudBlazor
 @inject IPopupMessage displayMessage
 @inject DatabaseManager.ServerLessClient.Services.IDataOps dataOps
 @inject BlazorSingletonService settings
@@ -6,74 +7,150 @@
 
 <h3>Data Ops</h3>
 
-<style> 
-input {
-  padding: 5px 10px 5px 10px;
-  margin: 2px 0;
-  box-sizing: border-box;
-  border: 1px solid black;
-  width: 300px;
+<div style="display:inline-flex; flex-direction:row; justify-content:flex-start; align-items:center; gap:12px; width:max-content; margin-bottom:16px;">
+    <MudTextField @bind-Value="pipelineName"
+                  Label="New Pipeline"
+                  Margin="Margin.Dense"
+                  Variant="Variant.Outlined"
+                  Style="width:260px;" />
+
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               OnClick="AddPipeline">
+        Add New Pipeline
+    </MudButton>
+</div>
+
+<MudDivider Class="mb-4" />
+
+@if (pipeList == null)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
 }
-</style>
+else
+{
+    <MudTable Items="@pipeList"
+              Dense="true"
+              Hover="true"
+              Breakpoint="Breakpoint.Sm"
+              Filter="FilterPipes">
+        <HeaderContent>
+            <MudTh Style="background-color:lightgray; width:50px;">
+                Action
+                <MudTooltip Text="Clear all filters">
+                    <MudIconButton Icon="@Icons.Material.Filled.FilterAltOff"
+                                   Color="Color.Secondary"
+                                   OnClick="@ClearFilters"
+                                   Size="Size.Small" />
+                </MudTooltip>
+            </MudTh>
 
-<p>New Pipeline:</p>
-<p><input @bind="@pipelineName" size="50" /></p>
-<button class="btn btn-primary" @onclick="AddPipeline">Add New Pipeline</button>
-<br />
-<hr />
+            <MudTh Style="background-color:lightgray; width:180px">
+                <MudTableSortLabel SortBy="@((DataOpsPipes x) => x.Name)"
+                                   InitialDirection="SortDirection.Ascending">Pipe Name</MudTableSortLabel>
+                <MudTextField @bind-Value="filterName" Margin="Margin.Dense" Variant="Variant.Outlined" />
+            </MudTh>
+        </HeaderContent>
 
-<Table TableItem="DataOpsPipes" Items="pipeList" PageSize="@pageSize" ColumnReorder="true">
-    <Column TableItem="DataOpsPipes" Title="Action" Sortable="false">
-        <Template>
-            <a class="btn btn-primary" href="/dataops/edit/@context.Name">Edit</a>
-            <button class="btn btn-danger" @onclick="@(() => DeletePipeline(context.Name))">Delete</button>
-            <button class="btn btn-success" @onclick="@(() => ExecutePipeline(context.Name))" disabled="@(_cts != null)">Execute</button>
-        </Template>
-    </Column>
-    <Column TableItem="DataOpsPipes" Title="Pipe Name" Field="@(x => x.Name)" Sortable="true" Filterable="true" DefaultSortColumn="true"></Column>
-    <Pager ShowPageNumber="true" ShowTotalCount="true" />
-</Table>
+        <RowTemplate>
+            <MudTd Style="white-space:nowrap">
+                <MudTooltip Text="Edit">
+                    <MudFab StartIcon="@Icons.Material.Filled.Edit"
+                            Color="Color.Secondary"
+                            Size="Size.Small"
+                            IconSize="Size.Small"
+                            Class="me-1"
+                            Href="@($"/dataops/edit/{context.Name}")" />
+                </MudTooltip>
+                <MudTooltip Text="Delete">
+                    <MudFab StartIcon="@Icons.Material.Filled.Delete"
+                            Color="Color.Primary"
+                            Size="Size.Small"
+                            IconSize="Size.Small"
+                            Class="me-1"
+                            @onclick="@(() => DeletePipeline(context.Name))" />
+                </MudTooltip>
+                <MudTooltip Text="Execute">
+                    <MudFab StartIcon="@Icons.Material.Filled.PlayArrow"
+                            Color="Color.Success"
+                            Size="Size.Small"
+                            IconSize="Size.Small"
+                            Disabled="@(_cts != null)"
+                            @onclick="@(() => ExecutePipeline(context.Name))" />
+                </MudTooltip>
+            </MudTd>
 
-<div>
-    <p>DataOps status: @statusMessage</p>
+            <MudTd DataLabel="Pipe Name">@context.Name</MudTd>
+        </RowTemplate>
+
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+}
+
+<div class="mt-4">
+    <MudText>DataOps status: @statusMessage</MudText>
     @if (_cts != null)
     {
-        <button class="btn btn-warning mt-2" @onclick="CancelPipeline">
-            ⏹ Cancel
-        </button>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Warning"
+                   StartIcon="@Icons.Material.Filled.Stop"
+                   Class="mt-2"
+                   OnClick="CancelPipeline">
+            Cancel
+        </MudButton>
     }
 </div>
 
 @code {
-    string pipelineName;
+    private string pipelineName = string.Empty;
+    private string filterName = string.Empty;
     private string statusMessage = "None running";
-    List<DataOpsPipes> pipeList;
-    List<PipeLine> pipelines;
-    int pageSize = 10;
-    ResponseDto response;
+    private List<DataOpsPipes>? pipeList;
+    private List<PipeLine> pipelines;
+    private ResponseDto response;
     private CancellationTokenSource? _cts;
-
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
-            if (response.IsSuccess)
-            {
-                pipeList = JsonConvert.DeserializeObject<List<DataOpsPipes>>(Convert.ToString(response.Result));
-                Console.WriteLine($"Pipes: {pipeList.Count}");
-            }
-            else
-            {
-                string error = string.Join(";", response.ErrorMessages);
-                Console.WriteLine($"Dataops: error getting pipelines; {error}");
-            }
+            await RefreshPipes();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Dataops: Errors getting pipelines {ex.ToString()}");
+            Console.WriteLine($"Dataops: Errors getting pipelines {ex}");
+            pipeList ??= new List<DataOpsPipes>();
+            await displayMessage.DisplayErrorMessage("Problems getting pipelines");
         }
+    }
+
+    private async Task RefreshPipes()
+    {
+        response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
+        if (response.IsSuccess)
+        {
+            pipeList = JsonConvert.DeserializeObject<List<DataOpsPipes>>(Convert.ToString(response.Result))
+                       ?? new List<DataOpsPipes>();
+        }
+        else
+        {
+            string error = string.Join(";", response.ErrorMessages);
+            Console.WriteLine($"Dataops: error getting pipelines; {error}");
+            pipeList ??= new List<DataOpsPipes>();
+        }
+    }
+
+    private bool FilterPipes(DataOpsPipes pipe)
+    {
+        return string.IsNullOrWhiteSpace(filterName)
+            || pipe.Name?.Contains(filterName, StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    private void ClearFilters()
+    {
+        filterName = string.Empty;
     }
 
     private async Task AddPipeline()
@@ -86,16 +163,21 @@ input {
                 return;
             }
             response = await dataOps.CreatePipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(pipelineName);
-            response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
-            pipeList = JsonConvert.DeserializeObject<List<DataOpsPipes>>(Convert.ToString(response.Result));
-            pipelineName = "";
-            this.StateHasChanged();
+            if (!response.IsSuccess)
+            {
+                string error = string.Join(";", response.ErrorMessages);
+                Console.WriteLine($"Dataops: error creating pipeline; {error}");
+                await displayMessage.DisplayErrorMessage($"Failed to add pipeline: {error}");
+                return;
+            }
+            await RefreshPipes();
+            pipelineName = string.Empty;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Errors: {ex}");
+            await displayMessage.DisplayErrorMessage("Failed to add pipeline");
         }
-        Console.WriteLine($"Add pipeline {pipelineName}");
     }
 
     private async Task DeletePipeline(string name)
@@ -103,13 +185,19 @@ input {
         try
         {
             response = await dataOps.DeletePipeline<DatabaseManager.ServerLessClient.Models.ResponseDto>(name);
-            response = await dataOps.GetPipelines<DatabaseManager.ServerLessClient.Models.ResponseDto>();
-            pipeList = JsonConvert.DeserializeObject<List<DataOpsPipes>>(Convert.ToString(response.Result));
-            this.StateHasChanged();
+            if (!response.IsSuccess)
+            {
+                string error = string.Join(";", response.ErrorMessages);
+                Console.WriteLine($"Dataops: error deleting pipeline; {error}");
+                await displayMessage.DisplayErrorMessage($"Failed to delete pipeline: {error}");
+                return;
+            }
+            await RefreshPipes();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Errors: {ex}");
+            await displayMessage.DisplayErrorMessage("Failed to delete pipeline");
         }
     }
 
@@ -176,7 +264,7 @@ input {
             }
 
             if (statusMessage.StartsWith("Starting") ||
-            (!statusMessage.StartsWith("Completed") && !statusMessage.StartsWith("Failed")))
+                (!statusMessage.StartsWith("Completed") && !statusMessage.StartsWith("Failed")))
             {
                 statusMessage = "Timed out waiting for pipeline to complete.";
                 StateHasChanged();
@@ -209,5 +297,4 @@ input {
         _cts?.Cancel();
         _cts?.Dispose();
     }
-
 }
