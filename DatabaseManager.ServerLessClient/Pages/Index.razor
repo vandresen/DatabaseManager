@@ -6,7 +6,7 @@
 @inject NavigationManager navigationManager
 @inject IIndexView idxView
 @inject IDatabaseManagementService dmService
-@inject DatabaseManager.ServerLessClient.Services.IDataSources dataSourceService
+@inject IDataSources dataSourceService
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration Configuration
 @using MudBlazor
@@ -91,6 +91,7 @@ else
     private string indexStatus = "No index available";
     bool spinner = false;
     bool sqlite = false;
+    private int indexRequestId = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -169,11 +170,17 @@ else
 
     private async Task Selected(string selectedString)
     {
+        settings.TargetConnector = selectedString;
+
+        // Wipe the old table immediately and show the wait indicator
+        index = null;
         spinner = true;
         indexStatus = "Fetching index";
         StateHasChanged();
-        var connector = ConnectParameters.FirstOrDefault(s => s.SourceName == selectedString);
-        settings.TargetConnector = selectedString;
+
+        // Persist the new selection
+        await settings.SaveToLocalStorageAsync(localStorage);   // <-- use your actual save method
+
         await GetIndexData();
     }
 
@@ -189,17 +196,33 @@ else
 
     private async Task GetIndexData()
     {
+        int requestId = ++indexRequestId;
         try
         {
-            if (sqlite) index = await idxView.GetIndex(settings.Project);
-            else index = await idxView.GetIndex(settings.TargetConnector);
+            var result = sqlite
+                ? await idxView.GetIndex(settings.Project)
+                : await idxView.GetIndex(settings.TargetConnector);
+
+            // A newer selection was made while we were waiting - discard this result
+            if (requestId != indexRequestId) return;
+
+            index = result;
         }
         catch (Exception ex)
         {
+            if (requestId != indexRequestId) return;
+
             index = null;
             Console.WriteLine(ex);
             indexStatus = "No index found";
-            StateHasChanged();
+        }
+        finally
+        {
+            if (requestId == indexRequestId)
+            {
+                spinner = false;
+                StateHasChanged();
+            }
         }
     }
 
