@@ -10,20 +10,20 @@ env:
 jobs:
   build:
     name: Build release
-    runs-on: windows-2022
+    runs-on: windows-2025
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
           
       - name: Build
         shell: pwsh
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          dotnet build DatabaseManager.Services.DataOpsManagement/DatabaseManager.Services.DataOpsManagement.csproj --configuration Release --output ./output
+          dotnet publish DatabaseManager.Services.DataOpsManagement/DatabaseManager.Services.DataOpsManagement.csproj --configuration Release --output ./output
           popd
           
       - name: Deploy to Azure
