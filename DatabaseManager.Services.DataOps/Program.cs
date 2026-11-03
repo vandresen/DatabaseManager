@@ -7,9 +7,6 @@ var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
     .ConfigureServices(services =>
     {
-        services.AddApplicationInsightsTelemetryWorkerService();
-        services.ConfigureFunctionsApplicationInsights();
-
         services.AddHttpClient("DataOps", client =>
         {
             client.Timeout = TimeSpan.FromMinutes(10);

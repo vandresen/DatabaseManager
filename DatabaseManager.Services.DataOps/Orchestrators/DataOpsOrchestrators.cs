@@ -92,7 +92,17 @@ namespace DatabaseManager.Services.DataOps.Orchestrators
                         JObject pipeParm = JObject.Parse(pipe.JsonParameters);
                         pipeParm["Table"] = file;
                         pipe.JsonParameters = pipeParm.ToString();
-                        string stat = await context.CallActivityAsync<string>("ManageDataOps_DataTransfer", pipe);
+                        try
+                        {
+                            string stat = await context.CallActivityAsync<string>("ManageDataOps_DataTransfer", pipe);
+                        }
+                        catch (TaskFailedException ex)
+                        {
+                            string errorMessage = $"Transfer of '{file}' failed: {ex.FailureDetails?.ErrorType}: {ex.FailureDetails?.ErrorMessage}";
+                            log.LogError(errorMessage);
+                            context.SetCustomStatus(errorMessage);
+                            return errorMessage;   // or collect and continue, as in your Predictions branch
+                        }
                     }
                 }
                 else if (pipe.Name == "Predictions")

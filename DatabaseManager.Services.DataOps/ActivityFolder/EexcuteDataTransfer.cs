@@ -19,28 +19,26 @@ namespace DatabaseManager.Services.DataOps.ActivityFolder
         public async Task<string> ManageDataOps_DataTransfer([ActivityTrigger] DataOpParameters pipe, FunctionContext executionContext)
         {
             ILogger log = executionContext.GetLogger("ManageDataOps_DataTransfer");
-            log.LogInformation($"DataTransfer: Starting transfer");
+            log.LogInformation("DataTransfer: Starting transfer");
 
             var parms = JsonSerializer.Deserialize<TransferParameters>(pipe.JsonParameters);
             if (parms == null)
             {
                 log.LogError("DataTransfer: Failed to deserialize TransferParameters.");
-                return $"DataTransfer Completed with failure";
+                throw new InvalidOperationException("DataTransfer: Failed to deserialize TransferParameters.");
             }
 
             ResponseDto response = await _dataTransfer.Copy<ResponseDto>(parms, pipe.StorageAccount);
-            if (response.IsSuccess)
+
+            if (response == null || !response.IsSuccess)
             {
-                log.LogInformation($"DataTransfer: Table {parms.Table} copied");
-            }
-            else
-            {
-                string separator = ";";
-                log.LogInformation($"DataTransfer: Error {string.Join(separator, response.ErrorMessages)}");
+                string errors = string.Join(";", response?.ErrorMessages ?? Enumerable.Empty<string>());
+                log.LogError("DataTransfer: Error for table {table}: {errors}", parms.Table, errors);
+                throw new InvalidOperationException($"DataTransfer failed for table '{parms.Table}': {errors}");
             }
 
-            log.LogInformation($"DataTransfer: Complete");
-            return $"OK Data transfer complete";
+            log.LogInformation("DataTransfer: Table {table} copied", parms.Table);
+            return "OK Data transfer complete";
         }
     }
 }
