@@ -18,11 +18,5 @@ builder.Services.AddScoped<IDataQc, DataQcCore>();
 builder.Services.AddScoped<IDataSourceService, DataSourceService>();
 builder.Services.AddScoped<DataQcExecutionContext>();
 
-
-// Add Application Insights
-builder.Services
-    .AddApplicationInsightsTelemetryWorkerService()
-    .ConfigureFunctionsApplicationInsights();
-
 // Build and run
 builder.Build().Run();
