@@ -13,8 +13,6 @@ var host = new HostBuilder()
     })
     .ConfigureServices(services =>
     {
-        services.AddApplicationInsightsTelemetryWorkerService();
-        services.ConfigureFunctionsApplicationInsights();
         services.AddHttpClient<IRuleAccess, RuleAccess>();
         services.AddScoped<IRuleAccess, RuleAccess>();
         services.AddHttpClient<IIndexAccess, IndexAccess>();
