@@ -25,8 +25,4 @@ SD.IndexSqlServerAPI = builder.Configuration["IndexSqlServerAPI"]
     ?? throw new InvalidOperationException("Setting 'IndexSqlServerAPI' is missing.");
 SD.IndexKeySetting = builder.Configuration["IndexKey"];
 
-builder.Services
-    .AddApplicationInsightsTelemetryWorkerService()
-    .ConfigureFunctionsApplicationInsights();
-
 builder.Build().Run();
