@@ -6,7 +6,7 @@ on:
 env:
   AZURE_FUNCTIONAPP_NAME: 'PetrodataOnlinePredictions'
   AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'
-  DOTNET_VERSION: '8.0.x'
+  DOTNET_VERSION: '10.0.x'
   
 jobs:
   build-and-deploy:
@@ -25,7 +25,7 @@ jobs:
       shell: pwsh
       run: |
         pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-        dotnet build DatabaseManager.Services.Predictions/DatabaseManager.Services.Predictions.csproj --configuration Release --output ./output
+        dotnet publish DatabaseManager.Services.Predictions/DatabaseManager.Services.Predictions.csproj --configuration Release --output ./output
         popd
 
     - name: 'Azure Login'
