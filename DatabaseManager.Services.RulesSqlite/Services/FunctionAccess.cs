@@ -1,6 +1,5 @@
-﻿using AutoMapper;
+﻿using DatabaseManager.Services.RulesSqlite.Extensions;
 using DatabaseManager.Services.RulesSqlite.Models;
-using Newtonsoft.Json;
 
 namespace DatabaseManager.Services.RulesSqlite.Services
 {
@@ -12,19 +11,17 @@ namespace DatabaseManager.Services.RulesSqlite.Services
         private string _getSql;
         private string _table = "pdo_rule_functions";
         private string _selectAttributes = "Id, FunctionName, FunctionUrl, FunctionKey, FunctionType";
-        private readonly IMapper _mapper;
 
-        public FunctionAccess(IDataAccess id, IMapper mapper)
+        public FunctionAccess(IDataAccess id)
         {
             _id = id;
             _getSql = "Select " + _selectAttributes + " From " + _table;
-            _mapper = mapper;
             _connectionString = @"Data Source=" + _databaseFile;
         }
 
         public async Task CreateUpdateFunction(RuleFunctionsDto function)
         {
-            RuleFunctions newFunction = _mapper.Map<RuleFunctions>(function);
+            RuleFunctions newFunction = function.ToModel();
             IEnumerable<RuleFunctionsDto> existingFunctions = await _id.ReadData<RuleFunctionsDto>(_getSql, _connectionString);
             var functionExist = existingFunctions.FirstOrDefault(m => m.FunctionName == function.FunctionName);
             if (functionExist == null)

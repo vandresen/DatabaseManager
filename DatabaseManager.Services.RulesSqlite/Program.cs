@@ -1,4 +1,3 @@
-using AutoMapper;
 using DatabaseManager.Services.RulesSqlite;
 using DatabaseManager.Services.RulesSqlite.Services;
 using Microsoft.Extensions.Logging.AzureAppServices;
@@ -14,13 +13,12 @@ builder.Services.Configure<AzureBlobLoggerOptions>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
-builder.Services.AddSingleton(mapper);
+//IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
+//builder.Services.AddSingleton(mapper);
 builder.Services.AddSingleton<IRuleAccess, RuleAccess>();
 builder.Services.AddSingleton<IDataAccess, SqliteDataAccess>();
 builder.Services.AddSingleton<IFunctionAccess, FunctionAccess>();
 builder.Services.AddSingleton<IPredictionSetAccess, PredictionSetAccess>();
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddCors(options =>
 {

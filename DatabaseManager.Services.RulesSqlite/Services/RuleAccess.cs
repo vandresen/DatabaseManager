@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+﻿using DatabaseManager.Services.RulesSqlite.Extensions;
 using DatabaseManager.Services.RulesSqlite.Models;
 using Microsoft.Data.Sqlite;
 using Newtonsoft.Json;
@@ -11,22 +11,19 @@ namespace DatabaseManager.Services.RulesSqlite.Services
         private readonly IDataAccess _id;
         private readonly ILogger<RuleAccess> _log;
         private readonly IFunctionAccess _fa;
-        private readonly IMapper _mapper;
         private string _connectionString;
         private readonly IFileStorage _embeddedStorage;
         private string _getSql;
         private string _table = "pdo_qc_rules";
         private string _selectAttributes = "Id, DataType, RuleType, RuleParameters, RuleKey, RuleName, RuleFunction, DataAttribute, RuleFilter, FailRule, PredictionOrder, KeyNumber, Active, RuleDescription, CreatedBy, ModifiedBy, CreatedDate, ModifiedDate";
 
-        public RuleAccess(IDataAccess id, ILogger<RuleAccess> log, IFunctionAccess fa,
-            IMapper mapper)
+        public RuleAccess(IDataAccess id, ILogger<RuleAccess> log, IFunctionAccess fa)
         {
             _embeddedStorage = new EmbeddedFileStorage();
             _connectionString = @"Data Source=" + _databaseFile;
             _id = id;
             _log = log;
             _fa = fa;
-            _mapper = mapper;
             _getSql = "Select " + _selectAttributes + " From " + _table;
         }
 
@@ -98,7 +95,7 @@ namespace DatabaseManager.Services.RulesSqlite.Services
 
         public async Task CreateUpdateRule(RuleModelDto rule)
         {
-            RuleModel newRule = _mapper.Map<RuleModel>(rule);
+            RuleModel newRule = rule.ToModel();
             IEnumerable<RuleModelDto> rules = await _id.ReadData<RuleModelDto>(_getSql, _connectionString);
             var ruleExist = rules.FirstOrDefault(m => m.RuleName == rule.RuleName);
             if (ruleExist == null)
@@ -109,9 +106,9 @@ namespace DatabaseManager.Services.RulesSqlite.Services
                 else newRule.KeyNumber = rulesWithLastKeyNumber.KeyNumber + 1;
                 await InsertRule(newRule, _connectionString);
             }
-            else 
-            { 
-                await UpdateRule(newRule, ruleExist, _connectionString); 
+            else
+            {
+                await UpdateRule(newRule, ruleExist, _connectionString);
             }
         }
 
