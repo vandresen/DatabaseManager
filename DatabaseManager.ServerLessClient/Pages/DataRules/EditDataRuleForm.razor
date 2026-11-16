@@ -110,7 +110,11 @@
                                   Lines="2" MaxLength="255" />
                 </MudItem>
 
-                <MudItem xs="12" class="d-flex justify-end">
+                <MudItem xs="12" Class="d-flex justify-end gap-2">
+                    <MudButton Variant="Variant.Text"
+                               OnClick="@(() => OnCancel.InvokeAsync())">
+                        Cancel
+                    </MudButton>
                     <MudButton Color="Color.Success" Variant="Variant.Filled"
                                OnClick="HandleValidSubmit" Disabled="@staleDataType">
                         Save Changes
@@ -126,6 +130,7 @@
     [Parameter] public RuleModel RuleToEdit { get; set; }
     [Parameter] public RuleInfo DataRef { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
 
     private MudForm form;
     private List<string> DataAttributeOptions;

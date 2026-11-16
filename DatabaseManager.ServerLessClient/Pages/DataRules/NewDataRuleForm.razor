@@ -62,8 +62,9 @@
                 {
                     <MudItem xs="12">
                         <MudSelect T="string" @bind-Value="RuleToEdit.RuleFunction" @bind-Value:after="OnRuleFunctionChanged"
+                                   Required="true" RequiredError="Select a rule function"
                                    Label="Rule Function" Variant="Variant.Filled" Margin="Margin.Dense">
-                            @foreach (var func in FunctionMethods)
+                            @foreach (var func in FunctionMethods ?? new List<string>())
                             {
                                 <MudSelectItem T="string" Value="@func">@func</MudSelectItem>
                             }
@@ -110,11 +111,17 @@
                                   Lines="2" MaxLength="255" />
                 </MudItem>
 
-                <MudItem xs="12" class="d-flex justify-end">
-                    <MudButton Color="Color.Success" Variant="Variant.Filled" OnClick="HandleValidSubmit">
-                        Save Changes
+                <MudItem xs="12" Class="d-flex justify-end gap-2">
+                    <MudButton Variant="Variant.Text" Disabled="@IsBusy"
+                               OnClick="@(() => OnCancel.InvokeAsync())">
+                        Cancel
+                    </MudButton>
+                    <MudButton Color="Color.Success" Variant="Variant.Filled"
+                               OnClick="HandleValidSubmit" Disabled="@IsBusy">
+                        Create Rule
                     </MudButton>
                 </MudItem>
+
 
             </MudGrid>
         </MudForm>
@@ -127,6 +134,8 @@
     [Parameter] public string Type { get; set; }
     [Parameter] public EventCallback OnValidSubmit { get; set; }
     [Parameter] public List<string> FunctionMethods { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public bool IsBusy { get; set; }
 
     private MudForm form;
     private List<string> DataAttributeOptions;
@@ -134,24 +143,32 @@
 
     protected override void OnInitialized()
     {
-        string dataType = DataRef.DataTypeOptions[0];
-        DataAttributeOptions = GetAttributes(DataRef.DataAttributes[dataType]);
-        RuleToEdit.DataType = dataType;
         RuleToEdit.RuleType = Type;
         RuleToEdit.Active = "Y";
-        RuleToEdit.DataAttribute = DataAttributeOptions[0];
-        RuleToEdit.RuleFunction = Type;
-        if (Type == "Entirety" || Type == "Uniqueness") noDataAttributes = true;
+
+        var dataType = DataRef.DataTypeOptions.FirstOrDefault();
+        if (dataType != null && DataRef.DataAttributes.TryGetValue(dataType, out var attrs))
+        {
+            DataAttributeOptions = GetAttributes(attrs);
+            RuleToEdit.DataType = dataType;
+            RuleToEdit.DataAttribute = DataAttributeOptions.FirstOrDefault();
+        }
+
+        if (Type == "Entirety" || Type == "Uniqueness")
+        {
+            noDataAttributes = true;
+            RuleToEdit.RuleFunction = Type;
+            RuleToEdit.DataAttribute = null;   // hidden field shouldn't be saved
+        }
     }
 
     private void SelectedDataType(string dataType)
     {
         RuleToEdit.DataType = dataType;
-        DataAttributeOptions = GetAttributes(DataRef.DataAttributes[dataType]);
-        // The old DataAttribute almost certainly doesn't belong to the newly selected
-        // data type - reset it, same as OnInitialized does for the default type,
-        // instead of silently saving a value from the previous data type.
-        RuleToEdit.DataAttribute = DataAttributeOptions.FirstOrDefault();
+        DataAttributeOptions = DataRef.DataAttributes.TryGetValue(dataType, out var attrs)
+            ? GetAttributes(attrs)
+            : new List<string>();
+        RuleToEdit.DataAttribute = noDataAttributes ? null : DataAttributeOptions.FirstOrDefault();
     }
 
     private List<string> GetAttributes(string attributeList)

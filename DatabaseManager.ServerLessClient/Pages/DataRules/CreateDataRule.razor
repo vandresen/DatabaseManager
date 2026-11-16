@@ -5,12 +5,30 @@
 @inject IRuleService rules
 @inject NavigationManager navigationManager
 @using DatabaseManager.ServerLessClient.Helpers;
+@using MudBlazor
 
 <h3>New @RuleType Rule</h3>
 
-@if (ruleInfo != null)
+<MudOverlay @bind-Visible="_isBusy" DarkBackground="true" Absolute="false">
+    <div class="d-flex flex-column align-items-center">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        <MudText Class="mt-2">@_busyMessage</MudText>
+    </div>
+</MudOverlay>
+
+@if (_loadFailed)
 {
-    <NewDataRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" Type="@type" OnValidSubmit="Create" FunctionMethods="functionMethods"/>
+    <MudAlert Severity="Severity.Error">
+        Could not load the data needed to create a rule.
+        <MudButton Variant="Variant.Text" OnClick="LoadAsync">Retry</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Cancel">Back</MudButton>
+    </MudAlert>
+}
+else if (ruleInfo != null && functionMethods != null)
+{
+    <NewDataRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" Type="@type"
+                     FunctionMethods="functionMethods"
+                     OnValidSubmit="Create" OnCancel="Cancel" IsBusy="@_isBusy" />
 }
 
 @code {
@@ -20,33 +38,63 @@
     private List<RuleFunctionDto> FunctionList;
     public string type;
     public List<string> functionMethods;
+    private bool _isBusy = true;
+    private string _busyMessage = "Loading...";
+    private bool _loadFailed;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
     {
-        ruleInfo = await GetRuleInfo();
-        FunctionList = await rules.GetFunctionsAsync();
-        type = RuleType;
-        Console.WriteLine($"New Rule: {type}");
-        string shortType = "";
-        if (type == "Validity") shortType = "V";
-        if (type == "Predictions") shortType = "P";
-        functionMethods = FunctionList.Where(s => s.FunctionType == shortType).Select(s => s.FunctionName).ToList();
+        _loadFailed = false;
+        _isBusy = true;
+        _busyMessage = "Loading...";
+        StateHasChanged();
+
+        try
+        {
+            var infoTask = GetRuleInfo();
+            var functionsTask = rules.GetFunctionsAsync();
+            await Task.WhenAll(infoTask, functionsTask);
+
+            type = RuleType;
+            string shortType = type switch
+            {
+                "Validity" => "V",
+                "Predictions" => "P",
+                _ => ""
+            };
+
+            // assign only after both calls succeeded
+            FunctionList = functionsTask.Result;
+            functionMethods = FunctionList
+                .Where(s => s.FunctionType == shortType)
+                .Select(s => s.FunctionName)
+                .ToList();
+            ruleInfo = infoTask.Result;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading create page: {ex}");
+            _loadFailed = true;
+            await dm.DisplayErrorMessage("Problems loading the page");
+        }
+        finally
+        {
+            _isBusy = false;
+            StateHasChanged();
+        }
     }
 
     private async Task<RuleInfo> GetRuleInfo()
     {
-        string content = "";
-        DatabaseManager.ServerLessClient.Models.ResponseDto response = await dcs.GetRecord<DatabaseManager.ServerLessClient.Models.ResponseDto>("PPDMDataAccess.json");
-        if (response != null && response.IsSuccess)
+        ResponseDto response = await dcs.GetRecord<ResponseDto>("PPDMDataAccess.json");
+        if (response == null || !response.IsSuccess)
         {
-            content = Convert.ToString(response.Result);
-            Console.WriteLine(content);
+            Console.WriteLine(response?.ErrorMessages);
+            throw new InvalidOperationException("Error getting rule info");
         }
-        else
-        {
-            Console.WriteLine(response.ErrorMessages);
-            await dm.DisplayErrorMessage("Error getting rule info");
-        }
+        string content = Convert.ToString(response.Result);
         List<DataAccessDef> accessDefs = JsonConvert.DeserializeObject<List<DataAccessDef>>(content);
         RuleInfo ruleInfo = new RuleInfo();
         ruleInfo.DataTypeOptions = new List<string>();
@@ -64,6 +112,12 @@
 
     private async Task Create()
     {
+        if (_isBusy) return;
+
+        _isBusy = true;
+        _busyMessage = "Saving rule...";
+        StateHasChanged();
+
         try
         {
             await rules.InsertRuleAsync(ruleModel);
@@ -72,6 +126,11 @@
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
+            await dm.DisplayErrorMessage("Failed to save rule");
+            _isBusy = false;
+            StateHasChanged();
         }
     }
+
+    private void Cancel() => navigationManager.NavigateTo("datarules");
 }

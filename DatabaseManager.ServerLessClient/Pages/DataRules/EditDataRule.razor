@@ -3,13 +3,28 @@
 @inject IDataConfigurationService dcs
 @inject IPopupMessage dm
 @inject IRuleService rules
-@using DatabaseManager.ServerLessClient.Helpers;
+@using MudBlazor
+@* @using DatabaseManager.ServerLessClient.Helpers; *@
 
 <h3>Edit Rule</h3>
 
-@if (ruleModelDto != null)
+<MudOverlay @bind-Visible="_isBusy" DarkBackground="true" Absolute="false">
+    <div class="d-flex flex-column align-items-center">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        <MudText Class="mt-2">@_busyMessage</MudText>
+    </div>
+</MudOverlay>
+
+@if (_loadFailed)
 {
-    <EditDataRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" OnValidSubmit="Edit" />
+    <MudAlert Severity="Severity.Error">
+        Could not load this rule.
+        <MudButton Variant="Variant.Text" OnClick="LoadAsync">Retry</MudButton>
+    </MudAlert>
+}
+else if (ruleModel != null)
+{
+    <EditDataRuleForm RuleToEdit="ruleModel" DataRef="ruleInfo" OnValidSubmit="Edit" OnCancel="Cancel" />
 }
 
 @code {
@@ -17,25 +32,62 @@
     public RuleModelDto ruleModelDto;
     public RuleModel ruleModel;
     public RuleInfo ruleInfo;
+    private bool _isBusy = true;          // true from the start so there's no blank flash
+    private string _busyMessage = "Loading rule...";
+    private bool _loadFailed;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
     {
-        Console.WriteLine("Inside Edit rule page");
-        ruleInfo = await GetRuleInfo();
-        ruleModelDto = await rules.GetRuleAsync("", Id);
-        ruleModel = ruleModelDto.FromRuleModelDto();
+        _loadFailed = false;
+        _isBusy = true;
+        _busyMessage = "Loading rule...";
+        StateHasChanged();
+
+        try
+        {
+            // run both calls at the same time instead of one after the other
+            var infoTask = GetRuleInfo();
+            var ruleTask = rules.GetRuleAsync("", Id);
+            await Task.WhenAll(infoTask, ruleTask);
+
+            ruleInfo = infoTask.Result;
+            ruleModelDto = ruleTask.Result;
+            ruleModel = ruleModelDto.FromRuleModelDto();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading rule {Id}: {ex}");
+            _loadFailed = true;
+            await dm.DisplayErrorMessage("Problems loading the rule");
+        }
+        finally
+        {
+            _isBusy = false;
+            StateHasChanged();
+        }
     }
 
     private async Task Edit()
     {
+        if (_isBusy) return;              // blocks double submit
+
+        _isBusy = true;
+        _busyMessage = "Saving rule...";
+        StateHasChanged();
+
         try
         {
             await rules.UpdateRuleAsync(ruleModel);
-            navigationManager.NavigateTo("datarules");
+            navigationManager.NavigateTo("datarules");   // leave the overlay up until the page changes
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
+            await dm.DisplayErrorMessage("Failed to save rule");
+            _isBusy = false;              // only reset on failure
+            StateHasChanged();
         }
     }
 
@@ -67,4 +119,6 @@
         }
         return ruleInfo;
     }
+
+    private void Cancel() => navigationManager.NavigateTo("datarules");
 }

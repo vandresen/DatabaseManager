@@ -53,79 +53,85 @@
     }
 </MudMenu>
 
+<MudOverlay @bind-Visible="_isBusy" DarkBackground="true" Absolute="false">
+    <div class="d-flex flex-column align-items-center">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        <MudText Class="mt-2">@_busyMessage</MudText>
+    </div>
+</MudOverlay>
 
+<MudTable Items="@(RuleList ?? new())" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm"
+            Filter="FilterRules" Loading="@_isBusy" LoadingProgressColor="Color.Primary">
+    <LoadingContent>
+        <MudText>Loading rules...</MudText>
+    </LoadingContent>
+    @* HeaderContent, RowTemplate, PagerContent unchanged *@
+</MudTable>
 
-@if (RuleList == null)
-{
-    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-}
-else
-{
-    <MudTable Items="@RuleList" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Filter="FilterRules">
-        <HeaderContent>
-            <MudTh style="background-color:lightgray">
-                Action
-                <MudTooltip Text="Clear all filters">
-                    <MudIconButton Icon="@Icons.Material.Filled.FilterAltOff"
-                                   Color="Color.Secondary"
-                                   OnClick="@ClearFilters"
-                                   Size="Size.Small" />
-                </MudTooltip>
-            </MudTh>
+<MudTable Items="@RuleList" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Filter="FilterRules">
+    <HeaderContent>
+        <MudTh style="background-color:lightgray">
+            Action
+            <MudTooltip Text="Clear all filters">
+                <MudIconButton Icon="@Icons.Material.Filled.FilterAltOff"
+                                Color="Color.Secondary"
+                                OnClick="@ClearFilters"
+                                Size="Size.Small" />
+            </MudTooltip>
+        </MudTh>
 
-            <MudTh style="background-color:lightgray">
-                <MudTableSortLabel SortBy="@((RuleModelDto x) => x.DataType)">Data Type</MudTableSortLabel>
-                <MudTextField @bind-Value="filterDataType" Margin="Margin.Dense" Variant="Variant.Outlined" />
-            </MudTh>
+        <MudTh style="background-color:lightgray">
+            <MudTableSortLabel SortBy="@((RuleModelDto x) => x.DataType)">Data Type</MudTableSortLabel>
+            <MudTextField @bind-Value="filterDataType" Margin="Margin.Dense" Variant="Variant.Outlined" />
+        </MudTh>
 
-            <MudTh style="background-color:lightgray">
-                <MudTableSortLabel SortBy="@((RuleModelDto x) => x.RuleType)">Category</MudTableSortLabel>
-                <MudTextField @bind-Value="filterCategory" Margin="Margin.Dense" Variant="Variant.Outlined" />
-            </MudTh>
+        <MudTh style="background-color:lightgray">
+            <MudTableSortLabel SortBy="@((RuleModelDto x) => x.RuleType)">Category</MudTableSortLabel>
+            <MudTextField @bind-Value="filterCategory" Margin="Margin.Dense" Variant="Variant.Outlined" />
+        </MudTh>
 
-            <MudTh style="background-color:lightgray">
-                <MudTableSortLabel SortBy="@((RuleModelDto x) => x.RuleName)">Rule Name</MudTableSortLabel>
-                <MudTextField @bind-Value="filterRuleName" Margin="Margin.Dense" Variant="Variant.Outlined" />
-            </MudTh>
+        <MudTh style="background-color:lightgray">
+            <MudTableSortLabel SortBy="@((RuleModelDto x) => x.RuleName)">Rule Name</MudTableSortLabel>
+            <MudTextField @bind-Value="filterRuleName" Margin="Margin.Dense" Variant="Variant.Outlined" />
+        </MudTh>
 
-            <MudTh style="background-color:lightgray">
-                <MudTableSortLabel SortBy="@((RuleModelDto x) => x.Active)">Active</MudTableSortLabel>
-                <MudTextField @bind-Value="filterActive" Margin="Margin.Dense" Variant="Variant.Outlined" />
-            </MudTh>
+        <MudTh style="background-color:lightgray">
+            <MudTableSortLabel SortBy="@((RuleModelDto x) => x.Active)">Active</MudTableSortLabel>
+            <MudTextField @bind-Value="filterActive" Margin="Margin.Dense" Variant="Variant.Outlined" />
+        </MudTh>
 
-            <MudTh style="background-color:lightgray">
-                <MudTableSortLabel SortBy="@((RuleModelDto x) => x.RuleKey)">Rule Key</MudTableSortLabel>
-                <MudTextField @bind-Value="filterRuleKey" Margin="Margin.Dense" Variant="Variant.Outlined" />
-            </MudTh>
-        </HeaderContent>
+        <MudTh style="background-color:lightgray">
+            <MudTableSortLabel SortBy="@((RuleModelDto x) => x.RuleKey)">Rule Key</MudTableSortLabel>
+            <MudTextField @bind-Value="filterRuleKey" Margin="Margin.Dense" Variant="Variant.Outlined" />
+        </MudTh>
+    </HeaderContent>
 
-        <RowTemplate>
-            <MudTd>
-                <MudFab StartIcon="@Icons.Material.Filled.Edit"
-                        Color="Color.Secondary"
-                        Size="Size.Small"
-                        IconSize="Size.Small"
-                        Class="me-1"
-                        @onclick="@(() => EditRule(context.Id))" />
-                <MudFab StartIcon="@Icons.Material.Filled.Delete"
-                        Color="Color.Primary"
-                        Size="Size.Small"
-                        IconSize="Size.Small"
-                        @onclick="@(() => RuleDelete(context.Id))" />
-            </MudTd>
-            <MudTd DataLabel="Data Type">@context.DataType</MudTd>
-            <MudTd DataLabel="Category">@context.RuleType</MudTd>
-            <MudTd DataLabel="Rule Name">@context.RuleName</MudTd>
-            <MudTd DataLabel="Active">@context.Active</MudTd>
-            <MudTd DataLabel="Rule Key">@context.RuleKey</MudTd>
-        </RowTemplate>
+    <RowTemplate>
+        <MudTd>
+            <MudFab StartIcon="@Icons.Material.Filled.Edit"
+                    Color="Color.Secondary"
+                    Size="Size.Small"
+                    IconSize="Size.Small"
+                    Class="me-1"
+                    @onclick="@(() => EditRule(context.Id))" />
+            <MudFab StartIcon="@Icons.Material.Filled.Delete"
+                    Color="Color.Primary"
+                    Size="Size.Small"
+                    IconSize="Size.Small"
+                    @onclick="@(() => RuleDelete(context.Id))" />
+        </MudTd>
+        <MudTd DataLabel="Data Type">@context.DataType</MudTd>
+        <MudTd DataLabel="Category">@context.RuleType</MudTd>
+        <MudTd DataLabel="Rule Name">@context.RuleName</MudTd>
+        <MudTd DataLabel="Active">@context.Active</MudTd>
+        <MudTd DataLabel="Rule Key">@context.RuleKey</MudTd>
+    </RowTemplate>
 
-        <PagerContent>
-            <MudTablePager />
-        </PagerContent>
-    </MudTable>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
 
-}
 
 @code {
     private List<string> RuleTypes = new();
@@ -137,28 +143,59 @@ else
     private string filterRuleName = string.Empty;
     private string filterActive = string.Empty;
     private string filterRuleKey = string.Empty;
-    private bool isImporting = false;
     private RuleModel? _copilotSelectedRule;
     private List<RuleModel> _copilotRuleset = new();
+    private bool _isBusy;
+    private string _busyMessage = "Loading...";
 
 
     protected override async Task OnInitializedAsync()
     {
+        RuleTypeDictionary rt = new RuleTypeDictionary();
+        RuleTypes = rt._dictionary.Keys.ToList();
+
         try
         {
-            RuleTypeDictionary rt = new RuleTypeDictionary();
-            RuleTypes = new List<string>();
-            foreach (var item in rt._dictionary)
-            {
-                RuleTypes.Add(item.Key);
-            }
-            await RefreshRules();
-
+            await RunBusy("Loading rules...", RefreshRules);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Errors in Rules.razor: {ex}");
+            RuleList ??= new();   // so the page doesn't hang on a null list
             await displayMessage.DisplayErrorMessage("Problems getting rules");
+        }
+    }
+
+    private async Task RunBusy(string message, Func<Task> work)
+    {
+        _isBusy = true;
+        _busyMessage = message;
+        StateHasChanged();
+        try
+        {
+            await work();
+        }
+        finally
+        {
+            _isBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RuleDelete(int id)
+    {
+        try
+        {
+            await RunBusy("Deleting rule...", async () =>
+            {
+                await rules.DeleteRuleAsync(id);
+                await RefreshRules();
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errors: {ex}");
+            await displayMessage.DisplayErrorMessage("Failed to delete rule");
         }
     }
 
@@ -166,19 +203,6 @@ else
     {
         expandedState = !expandedState;
         showMenu = expandedState ? "show" : null;
-    }
-
-    private async Task RuleDelete(int id)
-    {
-        try
-        {
-            await rules.DeleteRuleAsync(id);
-            await RefreshRules();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Errors: {ex}");
-        }
     }
 
     private bool FilterRules(RuleModelDto rule)
@@ -212,67 +236,47 @@ else
     {
         if (file == null) return;
 
-        isImporting = true;
-        StateHasChanged();
-
         try
         {
-            // Read the file content (cap at 5MB to be safe)
-            using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
-            using var reader = new StreamReader(stream);
-            var json = await reader.ReadToEndAsync();
-
-            List<RuleModelDto> importedRules = System.Text.Json.JsonSerializer.Deserialize<List<RuleModelDto>>(json,
-                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            if (importedRules == null || importedRules.Count == 0)
+            await RunBusy("Reading file...", async () =>
             {
-                await displayMessage.DisplayErrorMessage("No valid rules found in the file.");
-                return;
-            }
+                using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+                using var reader = new StreamReader(stream);
+                var json = await reader.ReadToEndAsync();
 
-            List<RuleModelDto> currentRules = await rules.GetRulesAsync();
-            foreach (RuleModelDto currRule in currentRules)
-            {
-                try
-                {
-                    await rules.DeleteRuleAsync(currRule.Id);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to delete existing rule '{currRule.RuleName}': {ex.Message}");
-                }   
-            }
+                var importedRules = System.Text.Json.JsonSerializer.Deserialize<List<RuleModelDto>>(json,
+                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-            // // Save each rule via the service
-            int successCount = 0;
-            foreach (var rule in importedRules)
-            {
-                try
+                if (importedRules == null || importedRules.Count == 0)
                 {
-                    RuleModel mappedRule = rule.FromRuleModelDto();
-                    await rules.InsertRuleAsync(mappedRule);
-                    successCount++;
+                    await displayMessage.DisplayErrorMessage("No valid rules found in the file.");
+                    return;
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to import rule '{rule.RuleName}': {ex.Message}");
-                }
-            }
 
-            // Refresh the list
-            await RefreshRules();
-            await displayMessage.DisplaySuccessMessage($"Successfully imported {successCount} of {importedRules.Count} rule(s).");
+                _busyMessage = $"Importing {importedRules.Count} rules...";
+                StateHasChanged();
+
+                foreach (var currRule in await rules.GetRulesAsync())
+                {
+                    try { await rules.DeleteRuleAsync(currRule.Id); }
+                    catch (Exception ex) { Console.WriteLine($"Failed to delete '{currRule.RuleName}': {ex.Message}"); }
+                }
+
+                int successCount = 0;
+                foreach (var rule in importedRules)
+                {
+                    try { await rules.InsertRuleAsync(rule.FromRuleModelDto()); successCount++; }
+                    catch (Exception ex) { Console.WriteLine($"Failed to import '{rule.RuleName}': {ex.Message}"); }
+                }
+
+                await RefreshRules();
+                await displayMessage.DisplaySuccessMessage($"Successfully imported {successCount} of {importedRules.Count} rule(s).");
+            });
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error importing rule file: {ex}");
             await displayMessage.DisplayErrorMessage($"Failed to import rule file: {ex.Message}");
-        }
-        finally
-        {
-            isImporting = false;
-            StateHasChanged();
         }
     }
 
